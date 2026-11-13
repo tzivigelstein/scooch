@@ -115,27 +115,40 @@ export async function renameProject(storage, id, name, now) {
 /** Elimina el proyecto y sus archivos (no se puede deshacer). */
 export const deleteProject = (storage, id) => storage.remove(id);
 
-/** ¿El documento del registro se puede abrir? (sin mirar los archivos) */
-export function isDamaged(record) {
+/**
+ * Why the record's document can't be opened (without looking at the files):
+ * null, 'corrupt' or 'newer' (saved by a newer version of the app: it is
+ * fine, this one just can't read it).
+ */
+export function openProblem(record) {
   try {
     deserialize(record.doc);
-    return false;
-  } catch {
-    return true;
+    return null;
+  } catch (err) {
+    return err instanceof ProjectError && err.code === 'newer' ? 'newer' : 'corrupt';
   }
 }
 
-/** Todos los proyectos, del más reciente al más viejo, con `damaged`. */
+/** ¿El documento del registro está dañado? (sin mirar los archivos) */
+export const isDamaged = (record) => openProblem(record) === 'corrupt';
+
+/**
+ * Todos los proyectos, del más reciente al más viejo, con `damaged` y
+ * `newer` (de una versión más nueva de la app: no se toca).
+ */
 export async function listProjects(storage) {
   const records = await storage.list();
   return records
-    .map((record) => ({ ...record, damaged: isDamaged(record) }))
+    .map((record) => {
+      const problem = openProblem(record);
+      return { ...record, damaged: problem === 'corrupt', newer: problem === 'newer' };
+    })
     .sort((a, b) => (b.modified ?? 0) - (a.modified ?? 0));
 }
 
 /** Qué proyecto abrir al empezar: el último abierto si existe, si no el más reciente (o null). */
 export function pickProject(list, lastId) {
-  const usable = list.filter((record) => !record.damaged);
+  const usable = list.filter((record) => !record.damaged && !record.newer);
   return (usable.find((record) => record.id === lastId) ?? usable[0])?.id ?? null;
 }
 

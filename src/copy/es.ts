@@ -731,6 +731,9 @@ const es = {
     current: 'Abierto',
     damaged: 'Dañado',
     damagedMeta: 'No se puede abrir: sus datos están dañados',
+    // Saved by a newer version of the app: nothing is wrong with it
+    newer: 'Versión más nueva',
+    newerMeta: 'Se guardó con una versión más nueva de {app}. Recarga la página para abrirlo.',
     meta: '{when} · {sheets} · {pieces}',
     sheets: { one: '{n} hoja', other: '{n} hojas' },
     open: 'Abrir «{name}»',

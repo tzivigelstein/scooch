@@ -20,8 +20,10 @@ export function loadProject(storage: ProjectStorage, id: string): Promise<{ reco
 export function duplicateProject(storage: ProjectStorage, id: string, copy: { newId: string; name: string; now: number }): Promise<ProjectRecord>;
 export function renameProject(storage: ProjectStorage, id: string, name: string, now: number): Promise<ProjectRecord>;
 export function deleteProject(storage: ProjectStorage, id: string): Promise<void>;
+/** Why a record's document can't be opened: null, 'corrupt' or 'newer' (saved by a newer version of the app). */
+export function openProblem(record: ProjectRecord): 'corrupt' | 'newer' | null;
 export function isDamaged(record: ProjectRecord): boolean;
-/** Every project, newest first, with `damaged`. */
+/** Every project, newest first, with `damaged` and `newer`. */
 export function listProjects(storage: ProjectStorage): Promise<ListedProject[]>;
 /** Which project to open on start: the last one if it can be opened, else the newest (or null). */
 export function pickProject(list: readonly ListedProject[], lastId: string | null): string | null;

@@ -172,9 +172,13 @@ export interface ProjectRecord {
   thumb: Blob | null;
 }
 
-/** A project as listed: `damaged` when its document cannot be opened. */
+/**
+ * A project as listed: `damaged` when its document cannot be interpreted,
+ * `newer` when a newer version of the app saved it (left as it is).
+ */
 export interface ListedProject extends ProjectRecord {
   damaged: boolean;
+  newer?: boolean;
 }
 
 /** Minimal storage behind projectstore.js (IndexedDB in the browser, memory in tests). */

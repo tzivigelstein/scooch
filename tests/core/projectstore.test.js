@@ -171,6 +171,21 @@ describe('duplicar, renombrar, eliminar y listar', () => {
     assert.equal(pickProject(list, 'borrado'), 'b', 'si ya no existe, el más reciente');
     assert.equal(pickProject([], 'x'), null);
     assert.equal(pickProject([{ id: 'r', damaged: true }, ...list], 'r'), 'b', 'nunca uno dañado');
+    assert.equal(pickProject([{ id: 'n', damaged: false, newer: true }, ...list], 'n'), 'b', 'nor one a newer version saved');
+  });
+
+  test('a project saved by a newer version is listed as newer, not damaged, and left as it is', async () => {
+    const storage = memoryStorage();
+    await saved(storage);
+    const record = await storage.get('p1');
+    await storage.write({ ...record, id: 'future', version: 99, doc: { ...record.doc, version: 99, somethingNew: true } });
+    const list = await listProjects(storage);
+    const future = list.find((r) => r.id === 'future');
+    assert.equal(future.damaged, false);
+    assert.equal(future.newer, true);
+    assert.equal(list.find((r) => r.id === 'p1').newer, false);
+    await assert.rejects(loadProject(storage, 'future'), (err) => err.code === 'newer');
+    assert.equal((await storage.get('future')).doc.somethingNew, true, 'untouched');
   });
 });
 

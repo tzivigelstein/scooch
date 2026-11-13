@@ -39,7 +39,9 @@ async function refreshKeepingFocus() {
 function Card({ record, current, thumb, renaming, onRename }: { record: ListedProject; current: boolean; thumb: string | null; renaming: boolean; onRename: (save: boolean, value: string) => void }) {
   const input = useRef<HTMLInputElement>(null);
   const metaId = `project-meta-${record.id}`;
-  const size = record.damaged ? null : sizeOf(record.doc.paper, record.doc.landscape);
+  // Damaged, or saved by a newer version of the app: listed, but it can't be opened here.
+  const closed = record.damaged || !!record.newer;
+  const size = closed ? null : sizeOf(record.doc.paper, record.doc.landscape);
 
   useLayoutEffect(() => {
     if (!renaming || !input.current) return;
@@ -66,7 +68,7 @@ function Card({ record, current, thumb, renaming, onRename }: { record: ListedPr
   );
 
   return (
-    <li className={`project-card${current ? ' is-current' : ''}${record.damaged ? ' is-damaged' : ''}`} data-id={record.id}>
+    <li className={`project-card${current ? ' is-current' : ''}${closed ? ' is-damaged' : ''}`} data-id={record.id}>
       {renaming ? (
         // Renaming edits the title in place: the card keeps its size and its thumbnail.
         <div className="project-open is-renaming">
@@ -96,7 +98,7 @@ function Card({ record, current, thumb, renaming, onRename }: { record: ListedPr
           type="button"
           className="project-open"
           data-act="open"
-          disabled={record.damaged}
+          disabled={closed}
           aria-label={t(current ? 'projects.openCurrent' : 'projects.open', { name: record.name })}
           aria-describedby={metaId}
           data-tip={record.name}
@@ -106,7 +108,9 @@ function Card({ record, current, thumb, renaming, onRename }: { record: ListedPr
         </button>
       )}
       <p className="project-meta" id={metaId}>
-        {record.damaged
+        {record.newer
+          ? t('projects.newerMeta')
+          : record.damaged
           ? t('projects.damagedMeta')
           : t('projects.meta', {
               when: relativeTime(record.modified, Date.now(), { locale: numberLocale }),
@@ -120,15 +124,15 @@ function Card({ record, current, thumb, renaming, onRename }: { record: ListedPr
             {t('projects.current')}
           </span>
         )}
-        {record.damaged && (
+        {closed && (
           <span className="project-badge" data-kind="damaged">
-            {t('projects.damaged')}
+            {t(record.newer ? 'projects.newer' : 'projects.damaged')}
           </span>
         )}
       </span>
       <div className="project-actions">
-        {tool('duplicate', Copy, 'projects.duplicateLabel', 'projects.duplicate', record.damaged)}
-        {tool('rename', Pencil, 'projects.renameLabel', 'projects.rename', record.damaged)}
+        {tool('duplicate', Copy, 'projects.duplicateLabel', 'projects.duplicate', closed)}
+        {tool('rename', Pencil, 'projects.renameLabel', 'projects.rename', closed)}
         {tool('delete', Trash2, 'projects.deleteLabel', 'projects.delete')}
       </div>
     </li>

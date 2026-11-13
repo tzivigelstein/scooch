@@ -179,9 +179,10 @@ async function restoreLast() {
   try {
     const list = await listProjects(storage);
     const lastId = storageGet(LAST_PROJECT_STORAGE);
-    // The last one opened is damaged: nothing breaks; it says so and offers to delete it.
-    const broken = list.find((record) => record.id === lastId && record.damaged);
-    if (broken) hooks.notify('openFailed', { record: broken, error: Object.assign(new Error('damaged'), { code: 'corrupt' }) });
+    // The last one opened can't be opened: nothing breaks; it says so (and, if
+    // it is damaged, offers to delete it; one saved by a newer version is left alone).
+    const broken = list.find((record) => record.id === lastId && (record.damaged || record.newer));
+    if (broken) hooks.notify('openFailed', { record: broken, error: Object.assign(new Error('unreadable'), { code: broken.newer ? 'newer' : 'corrupt' }) });
     const id = pickProject(list, lastId);
     if (id) {
       try {
