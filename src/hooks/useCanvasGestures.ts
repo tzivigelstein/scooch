@@ -130,19 +130,26 @@ let unsubscribe: (() => void) | null = null;
 
 const el = (id: string) => document.getElementById(id)!;
 
-// Moves a node keeping its focus where the browser can (moveBefore).
+// Moves a node keeping its focus where the browser can (moveBefore). Moving
+// the focused piece makes Chrome scroll the stage to where the node lands
+// before it is painted there (the top of #sheets): the scroll is put back.
 function place(container: Node, node: Node, before: Node | null) {
   if (node.parentNode === container && node.nextSibling === before) return;
+  const stage = el('stage');
+  const { scrollLeft, scrollTop } = stage;
   const move = (container as Node & { moveBefore?: (node: Node, child: Node | null) => void }).moveBefore;
+  let moved = false;
   if (move && node.isConnected) {
     try {
       move.call(container, node, before);
-      return;
+      moved = true;
     } catch {
       // falls back to insertBefore
     }
   }
-  container.insertBefore(node, before);
+  if (!moved) container.insertBefore(node, before);
+  if (stage.scrollTop !== scrollTop) stage.scrollTop = scrollTop;
+  if (stage.scrollLeft !== scrollLeft) stage.scrollLeft = scrollLeft;
 }
 
 /** A piece travels in the drag layer while dragged (remembering where it was). */
