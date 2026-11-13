@@ -1876,6 +1876,49 @@ input[role="switch"]:checked::before {
   color: var(--muted);
 }
 
+/* Texto de apoyo dentro de un diálogo, con un botón de texto al final. */
+.dialog-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.dialog-note .text-btn {
+  color: var(--accent-strong);
+  font-size: inherit;
+}
+
+/* ---------- Preferencias ---------- */
+
+.dialog.prefs {
+  width: min(460px, calc(100vw - 24px));
+}
+
+.pref-group {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.pref-label {
+  padding: 0;
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.segmented.units {
+  max-width: 280px;
+}
+
+.segmented.units .seg > span {
+  height: 34px;
+  font-size: 13.5px;
+}
+
 /* ---------- Modal de donación ---------- */
 
 .donate {

@@ -24,7 +24,7 @@ import {
   setGrid,
   area,
 } from './store.js';
-import { sizeText as measureSize, lengthText, paperName, stepTexts } from './measure.js';
+import { sizeText as measureSize, lengthText, paperName, stepTexts, unitName } from './measure.js';
 import { readFile, pdfPage } from './assets.js';
 import { makePdf, pdfFileName, downloadBytes, printBytes } from './output.js';
 import { arrange, keepCenter, centerOnSheet, fitToSheet, placeNew, fillWithCopies } from './layout.js';
@@ -37,7 +37,8 @@ import { overlapsAny, nearestFree, nextFreeInDirection, maxGrowth } from './coll
 import { initPanels, renderPanels, expandSection, firstPieceField, firstSheetField, setFrontEnabled } from './panels.js';
 import { initPieceList, renderPieceList, focusList, listFocusTarget } from './piecelist.js';
 import { initDrawers, closeDrawer, isDrawerOpen, isCollapsible, drawerOf, revealPanel } from './drawers.js';
-import { initShortcuts, openShortcuts } from './shortcuts.js';
+import { initShortcuts, openShortcuts, syncShortcuts } from './shortcuts.js';
+import { initPrefs, openPrefs } from './prefs.js';
 import { initDonate, shouldAskDonation, askDonation, isDonationOpen } from './donate.js';
 import { initKeyboard } from './keyboard.js';
 import { $, clamp, round1, tidy, fine } from './util.js';
@@ -507,7 +508,15 @@ function syncSingleKeys() {
   ui.pieceHint.textContent = t(settings.singleKeys ? 'piecebar.hint' : 'piecebar.hintNoKeys', stepTexts());
   document.body.classList.toggle('single-keys-off', !settings.singleKeys);
   ui.emptyText.textContent = t(settings.singleKeys ? 'sheet.drop' : 'sheet.dropNoKeys');
+  syncShortcuts();
   refreshTooltip();
+}
+
+// Cambiar de unidad no toca el documento: solo cómo se muestran y cargan las medidas.
+function unitChanged() {
+  render();
+  syncSingleKeys();
+  announce(t('prefs.unitChanged', { unit: unitName() }));
 }
 
 // ---------- Cableado ----------
@@ -541,7 +550,8 @@ function wire() {
 
   initLive();
   initNotice({ onArrange: doArrange });
-  initShortcuts({ trigger: ui.help, onSingleKeysChange: syncSingleKeys });
+  initPrefs({ trigger: $('prefs-open'), onSingleKeysChange: syncSingleKeys, onUnitChange: unitChanged });
+  initShortcuts({ trigger: ui.help, openPrefs });
   initDonate();
   initTooltips({ showShortcut: (el) => el.dataset.single === undefined || settings.singleKeys });
   initSheetView({

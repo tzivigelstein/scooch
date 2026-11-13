@@ -1,10 +1,11 @@
-// Diálogo de atajos (<dialog> modal) con el interruptor «Atajos de una tecla»
-// (WCAG 2.1.4), que se guarda en localStorage.
+// Diálogo de atajos (<dialog> modal). El interruptor «Atajos de 1 tecla» vive
+// en «Preferencias» (prefs.js); aquí se marca lo que queda desactivado y hay un
+// botón para ir a cambiarlo.
 
-import { SINGLE_KEYS_STORAGE } from './config.js';
 import { settings } from './store.js';
 import { stepTexts } from './measure.js';
-import { $, storageGet, storageSet } from './util.js';
+import { setupDialog } from './dialogs.js';
+import { $ } from './util.js';
 import { t, keyLabel } from './copy/index.js';
 
 // [teclas (nombres de keyLabel), acción (clave en shortcuts.rows), es de una tecla]
@@ -35,20 +36,28 @@ const ROWS = [
 ];
 
 let dialog;
-let toggle;
 let trigger;
-let session = 0;
-let onChange = () => {};
+let openDialog = () => {};
+let shownUnit = null;
 
-export function initShortcuts({ trigger: button, onSingleKeysChange }) {
+/** `openPrefs({returnTo})`: abre «Preferencias» (desde el botón del diálogo). */
+export function initShortcuts({ trigger: button, openPrefs }) {
   trigger = button;
   dialog = $('shortcuts');
-  toggle = $('single-keys');
-  onChange = onSingleKeysChange;
-  settings.singleKeys = storageGet(SINGLE_KEYS_STORAGE) !== 'off';
+  openDialog = setupDialog(dialog, { close: [$('shortcuts-close')], fallback: () => trigger });
+  renderRows();
+  syncShortcuts();
+  trigger.addEventListener('click', () => openShortcuts());
+  $('shortcuts-prefs').addEventListener('click', () => {
+    dialog.close();
+    openPrefs({ returnTo: trigger.offsetParent ? trigger : null });
+  });
+}
 
-  const body = $('shortcuts-rows');
-  body.replaceChildren(
+function renderRows() {
+  shownUnit = settings.unit;
+  const steps = stepTexts();
+  $('shortcuts-rows').replaceChildren(
     ...ROWS.map(([keys, action, single]) => {
       const row = document.createElement('tr');
       if (single) row.dataset.single = '';
@@ -60,7 +69,7 @@ export function initShortcuts({ trigger: button, onSingleKeysChange }) {
         keyCell.append(kbd);
       });
       const actionCell = document.createElement('td');
-      actionCell.textContent = t(`shortcuts.rows.${action}`, stepTexts());
+      actionCell.textContent = t(`shortcuts.rows.${action}`, steps);
       if (single) {
         const off = document.createElement('span');
         off.className = 'off-badge';
@@ -71,43 +80,15 @@ export function initShortcuts({ trigger: button, onSingleKeysChange }) {
       return row;
     })
   );
-
-  toggle.checked = settings.singleKeys;
-  toggle.addEventListener('change', () => {
-    settings.singleKeys = toggle.checked;
-    storageSet(SINGLE_KEYS_STORAGE, toggle.checked ? 'on' : 'off');
-    syncState();
-    onChange();
-  });
-  syncState();
-
-  trigger.addEventListener('click', () => openShortcuts());
-  $('shortcuts-close').addEventListener('click', () => dialog.close());
-  // Click en el fondo (fuera de la caja) cierra.
-  dialog.addEventListener('click', (e) => {
-    if (e.target !== dialog) return;
-    const r = dialog.getBoundingClientRect();
-    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-    if (!inside) dialog.close();
-  });
 }
 
-function syncState() {
+/** Marca los atajos de 1 tecla si están desactivados y pone los pasos en la unidad elegida. */
+export function syncShortcuts() {
   dialog.classList.toggle('single-off', !settings.singleKeys);
+  if (shownUnit !== settings.unit) renderRows();
 }
 
 export function openShortcuts() {
-  if (dialog.open) return;
-  // Quién lo abrió, por apertura: «close» llega de forma asíncrona y uno
-  // atrasado de una apertura anterior no tiene que pisar a este.
-  const opener = document.activeElement;
-  const id = ++session;
-  dialog.addEventListener('close', function onClose() {
-    if (dialog.open) return; // atrasado: sigue esperando su propio cierre
-    dialog.removeEventListener('close', onClose);
-    if (id !== session) return;
-    const target = opener?.isConnected && opener !== document.body && !opener.closest('[hidden]') ? opener : trigger;
-    target.focus({ preventScroll: true });
-  });
-  dialog.showModal();
+  syncShortcuts();
+  openDialog();
 }

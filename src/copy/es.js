@@ -372,12 +372,24 @@ export default {
     thanks: 'Gracias por usar {app}, con o sin aporte',
   },
 
-  // Diálogo «Atajos de teclado»
-  shortcuts: {
-    title: 'Atajos de teclado',
+  // Diálogo «Preferencias» (ajustes de este navegador)
+  prefs: {
+    title: 'Preferencias',
+    units: 'Unidades',
+    unitsHint: 'Para mostrar y escribir medidas. No cambia el documento ni el PDF.',
+    // Después del símbolo visible («mm»), para lectores de pantalla
+    unitNames: { mm: ', milímetros', cm: ', centímetros', in: ', pulgadas' },
+    unitChanged: 'Medidas en {unit}',
     singleKeys: 'Atajos de 1 tecla',
     singleKeysHint:
       'Desactívalos si usas control por voz o si se activan sin querer. Los atajos con {mod}, las flechas y Supr sobre una pieza siguen funcionando.',
+  },
+
+  // Diálogo «Atajos de teclado»
+  shortcuts: {
+    title: 'Atajos de teclado',
+    singleKeysNote: 'Los atajos de 1 tecla se activan y desactivan en «Preferencias».',
+    openPrefs: 'Abrir «Preferencias»',
     caption: 'Atajos de teclado',
     key: 'Tecla',
     action: 'Acción',

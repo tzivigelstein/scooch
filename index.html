@@ -48,6 +48,9 @@
       </div>
 
       <div class="bar-group end">
+        <button type="button" id="prefs-open" class="tool" aria-haspopup="dialog" data-i18n-label="prefs.title" data-i18n-tip="prefs.title">
+          <span data-icon="settings"></span>
+        </button>
         <button type="button" id="help" class="tool" aria-haspopup="dialog" data-i18n-label="bar.shortcuts" data-i18n-tip="bar.shortcuts" data-kbd="?" data-aks="?" data-single>
           <span data-icon="keyboard"></span>
         </button>
@@ -364,10 +367,10 @@
         <button type="button" id="shortcuts-close" class="icon-btn" data-i18n-label="app.close"><span data-icon="x"></span></button>
       </div>
       <div class="dialog-body">
-        <div class="switch-row boxed">
-          <label for="single-keys"><span data-i18n="shortcuts.singleKeys"></span><span class="switch-hint" id="single-keys-hint" data-i18n="shortcuts.singleKeysHint"></span></label>
-          <input type="checkbox" role="switch" id="single-keys" aria-describedby="single-keys-hint" checked />
-        </div>
+        <p class="dialog-note">
+          <span data-i18n="shortcuts.singleKeysNote"></span>
+          <button type="button" id="shortcuts-prefs" class="text-btn" aria-haspopup="dialog" data-i18n="shortcuts.openPrefs"></button>
+        </p>
         <table class="keys">
           <caption class="sr-only" data-i18n="shortcuts.caption"></caption>
           <thead>
@@ -382,6 +385,27 @@
       <div class="dialog-foot">
         <p><strong data-i18n="shortcuts.printLead"></strong> <span data-i18n="shortcuts.printTip"></span></p>
         <p data-i18n="shortcuts.private"></p>
+      </div>
+    </dialog>
+    <dialog id="prefs" class="dialog prefs" aria-labelledby="prefs-title">
+      <div class="dialog-head">
+        <h2 id="prefs-title" class="dialog-title" data-i18n="prefs.title"></h2>
+        <button type="button" id="prefs-close" class="icon-btn" data-i18n-label="app.close"><span data-icon="x"></span></button>
+      </div>
+      <div class="dialog-body">
+        <fieldset class="pref-group" aria-describedby="units-hint">
+          <legend class="pref-label" data-i18n="prefs.units"></legend>
+          <div class="segmented chips units">
+            <label class="seg"><input type="radio" name="unit" value="mm" /><span><span data-i18n="units.mm"></span><span class="sr-only" data-i18n="prefs.unitNames.mm"></span></span></label>
+            <label class="seg"><input type="radio" name="unit" value="cm" /><span><span data-i18n="units.cm"></span><span class="sr-only" data-i18n="prefs.unitNames.cm"></span></span></label>
+            <label class="seg"><input type="radio" name="unit" value="in" /><span><span data-i18n="units.in"></span><span class="sr-only" data-i18n="prefs.unitNames.in"></span></span></label>
+          </div>
+          <p class="switch-hint" id="units-hint" data-i18n="prefs.unitsHint"></p>
+        </fieldset>
+        <div class="switch-row boxed">
+          <label for="single-keys"><span data-i18n="prefs.singleKeys"></span><span class="switch-hint" id="single-keys-hint" data-i18n="prefs.singleKeysHint"></span></label>
+          <input type="checkbox" role="switch" id="single-keys" aria-describedby="single-keys-hint" checked />
+        </div>
       </div>
     </dialog>
   </body>
