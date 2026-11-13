@@ -70,6 +70,11 @@ export function paintSelection(list: readonly Piece[], { place = true } = {}) {
   if (frame) {
     frame.hidden = !box;
     if (single && box) Object.assign(frame.style, px(rectOf(single), box, zoom));
+    // The cut box, faint, while cut lines are on and the cut margin moves them off the image.
+    const { mode, margin } = getDocument().cuts;
+    const cut = mode !== 'none' && margin !== 0;
+    frame.toggleAttribute('data-cut', cut);
+    if (cut) frame.style.setProperty('--cut', `${margin * zoom}px`);
   }
   const bySheet = group ? groupBoxes(list) : new Map<number, Rect>();
   const frames = [...document.querySelectorAll<HTMLElement>('#sheets > .group-frame')];

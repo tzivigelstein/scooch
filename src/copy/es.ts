@@ -370,6 +370,8 @@ const es = {
     modes: { none: 'Ninguna', corners: 'Esquinas', outline: 'Contorno' },
     modeTips: { none: 'Sin líneas de corte', corners: 'Marcas en las esquinas de cada pieza', outline: 'El contorno de cada pieza' },
     more: 'Más opciones',
+    margin: 'Margen de corte',
+    marginLabel: 'Margen de corte, en {unit}',
     length: 'Largo',
     lengthLabel: 'Largo de las marcas, en {unit}',
     lengthTip: 'Largo de las marcas',

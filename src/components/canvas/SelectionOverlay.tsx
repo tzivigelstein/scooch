@@ -17,6 +17,7 @@ export function SelectionOverlay({ layout }: { layout: number }) {
   const zoom = useView((s) => s.zoom);
   const drawer = useView((s) => s.drawer);
   const unit = usePrefs((s) => s.unit);
+  const cuts = useDocument((s) => s.cuts);
 
   // One frame per sheet with selected pieces (only with several selected).
   const frameSheets =
@@ -26,7 +27,7 @@ export function SelectionOverlay({ layout }: { layout: number }) {
 
   useLayoutEffect(() => {
     paintCommittedSelection();
-  }, [items, selection, sheets, zoom, drawer, layout, unit]);
+  }, [items, selection, sheets, zoom, drawer, layout, unit, cuts]);
 
   // Live values during a gesture; when it ends, back to the document.
   useEffect(

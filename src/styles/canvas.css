@@ -669,3 +669,16 @@
   height: 2rem;
   padding: 0 0.75rem;
 }
+
+/* The selected piece's cut box (with a cut margin): faint, under the frame. */
+.frame[data-cut]::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--cut, 0px));
+  border: 1px dashed color-mix(in srgb, var(--sel) 65%, transparent);
+  pointer-events: none;
+}
+
+.canvas.is-dragging .frame[data-cut]::before {
+  display: none;
+}

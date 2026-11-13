@@ -116,6 +116,27 @@ export function CutsSection() {
       <details id="cut-options" className="fill-details cut-details" hidden={cuts.mode === 'none'}>
         <summary>{t('cuts.more')}</summary>
         <div className="fill-body">
+          <div className="field cut-margin">
+            <label className="field-label" htmlFor="cut-margin">
+              {t('cuts.margin')}
+            </label>
+            <span className="num-field">
+              <LengthField
+                id="cut-margin"
+                aria-label={t('cuts.marginLabel', { unit: unitName() })}
+                data-tip={t('cuts.margin')}
+                disabled={busy}
+                value={() => getDocument().cuts.margin}
+                range={() => ({ min: CUT_LIMITS.margin[0], max: CUT_LIMITS.margin[1] })}
+                editKey={() => 'cuts:margin'}
+                busy={() => getDocument().busy}
+                apply={(mm, { final }) => setCuts({ margin: mm }, { key: 'cuts:margin', final })}
+              />
+              <span className="num-unit" aria-hidden="true">
+                {unitSymbol()}
+              </span>
+            </span>
+          </div>
           {cuts.mode === 'corners' && (
             <div className="prop-grid">
               {(['length', 'offset'] as const).map((name) => (
