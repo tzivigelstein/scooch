@@ -1,0 +1,6 @@
+{
+  "about": "scooch:view-preferences version 1: the zoom's mode and percentage, «Alinear a» and «Distribuir con»",
+  "key": "scooch:view-preferences",
+  "value": { "v": 1, "zoomMode": "manual", "zoomPct": 150, "alignTo": "sheet", "distribute": "even" },
+  "reads": { "zoomMode": "manual", "zoomPct": 150, "alignTo": "sheet", "distribute": "even" }
+}

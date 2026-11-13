@@ -1,0 +1,6 @@
+{
+  "about": "scooch:panel-sections version 2: the collapsed sections and the open «Más opciones» of the cut lines",
+  "key": "scooch:panel-sections",
+  "value": { "v": 2, "sheet": false, "cuts": true, "cutOptions": true },
+  "reads": { "sections": { "sheet": false, "cuts": true }, "cutOptions": true }
+}

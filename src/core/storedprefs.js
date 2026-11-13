@@ -1,0 +1,56 @@
+// The shapes this browser keeps in localStorage that are more than one value:
+// reading them (tolerant: what is missing or can't be read takes its default)
+// and what gets written. Pure module (no DOM, no storage).
+//
+// RULE: like project documents, a shape that was ever written is frozen. A
+// change is a new `v` with its reading of the previous ones here, and a fixture
+// in tests/fixtures/storage/ that tests/core/storedprefs.test.js reads.
+
+import { ZOOM_MAX, ZOOM_MIN } from './zoom.js';
+
+const isRecord = (value) => !!value && typeof value === 'object' && !Array.isArray(value);
+const oneOf = (value, options, fallback) => (options.includes(value) ? value : fallback);
+
+// ---------- View preferences (scooch:view-preferences) ----------
+//
+// Version 1: {v: 1, zoomMode: 'fit' | 'width' | 'manual', zoomPct, alignTo:
+// 'selection' | 'sheet', distribute: 'gap' | 'even'}. zoomPct is the zoom in
+// percent, used only when zoomMode is 'manual'.
+
+export const VIEW_DEFAULTS = Object.freeze({ zoomMode: 'fit', zoomPct: 100, alignTo: 'selection', distribute: 'gap' });
+
+export function parseViewPrefs(raw) {
+  const saved = isRecord(raw) ? raw : {};
+  const pct = Number(saved.zoomPct);
+  return {
+    zoomMode: oneOf(saved.zoomMode, ['fit', 'width', 'manual'], VIEW_DEFAULTS.zoomMode),
+    zoomPct: Number.isFinite(pct) && pct > 0 ? Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, pct)) : VIEW_DEFAULTS.zoomPct,
+    alignTo: oneOf(saved.alignTo, ['selection', 'sheet'], VIEW_DEFAULTS.alignTo),
+    distribute: oneOf(saved.distribute, ['gap', 'even'], VIEW_DEFAULTS.distribute),
+  };
+}
+
+export const serializeViewPrefs = ({ zoomMode, zoomPct, alignTo, distribute }) => ({ v: 1, zoomMode, zoomPct: Math.round(zoomPct * 100) / 100, alignTo, distribute });
+
+// ---------- Panel sections (scooch:panel-sections) ----------
+//
+// Version 1 (no `v`): {sheet?, arrange?, cuts?, grid?: boolean}, false when
+// that section is collapsed (missing: open).
+// Version 2: {v: 2, sheet?, arrange?, cuts?, grid?, cutOptions?: boolean}:
+// cutOptions is the open «Más opciones» of the cut lines (missing: closed).
+
+export const SECTION_NAMES = Object.freeze(['sheet', 'arrange', 'cuts', 'grid']);
+
+export function parseSections(raw) {
+  const saved = isRecord(raw) ? raw : {};
+  const sections = {};
+  for (const name of SECTION_NAMES) if (typeof saved[name] === 'boolean') sections[name] = saved[name];
+  return { sections, cutOptions: saved.v === 2 && saved.cutOptions === true };
+}
+
+export const serializeSections = ({ sections, cutOptions }) => {
+  const out = { v: 2 };
+  for (const name of SECTION_NAMES) if (typeof sections[name] === 'boolean') out[name] = sections[name];
+  if (cutOptions) out.cutOptions = true;
+  return out;
+};

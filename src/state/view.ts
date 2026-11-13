@@ -1,7 +1,11 @@
 // View state: what is on screen but not part of the document or the undo history.
 
 import { create } from 'zustand';
+import { VIEW_STORAGE } from '../config.ts';
 import type { DistributeMode } from '../core/group.js';
+import { parseViewPrefs, serializeViewPrefs } from '../core/storedprefs.js';
+import { fromPercent, toPercent } from '../core/zoom.js';
+import { storageJson, storageSet } from '../services/storage/local.ts';
 
 export interface NoticeAction {
   label: string;
@@ -61,15 +65,19 @@ export interface ViewState {
   cropping: number | null;
 }
 
+// The zoom's mode (and percentage, when manual), «Alinear a» and «Distribuir
+// con» are remembered in this browser; where the sheets are scrolled is not.
+const remembered = parseViewPrefs(storageJson(VIEW_STORAGE));
+
 export const useView = create<ViewState>()(() => ({
   sheet: 1,
   pinned: false,
   flash: null,
   busyText: '',
-  alignTo: 'selection',
-  distribute: 'gap',
-  zoom: 1,
-  zoomMode: 'fit',
+  alignTo: remembered.alignTo,
+  distribute: remembered.distribute,
+  zoom: fromPercent(remembered.zoomPct),
+  zoomMode: remembered.zoomMode,
   drawer: null,
   propsTab: 'sheet',
   animating: false,
@@ -80,6 +88,33 @@ export const useView = create<ViewState>()(() => ({
 
 export const getView = () => useView.getState();
 export const setView = (patch: Partial<ViewState>) => useView.setState(patch);
+
+// ---------- What this browser remembers ----------
+
+/** Wheel and pinch change the zoom many times a second: it is written once they stop. */
+const REMEMBER_DELAY = 400;
+let rememberTimer: ReturnType<typeof setTimeout> | undefined;
+let written = JSON.stringify(serializeViewPrefs(remembered));
+
+/** Writes the remembered part of the view now, if it changed. */
+export function rememberView() {
+  clearTimeout(rememberTimer);
+  rememberTimer = undefined;
+  const { zoomMode, zoom, alignTo, distribute } = getView();
+  // A fitted zoom is fitted again on start: only a manual one keeps its percentage.
+  const next = JSON.stringify(serializeViewPrefs({ zoomMode, zoomPct: zoomMode === 'manual' ? toPercent(zoom) : 100, alignTo, distribute }));
+  if (next === written) return;
+  written = next;
+  storageSet(VIEW_STORAGE, next);
+}
+
+useView.subscribe((state, previous) => {
+  if (state.zoom === previous.zoom && state.zoomMode === previous.zoomMode && state.alignTo === previous.alignTo && state.distribute === previous.distribute) return;
+  clearTimeout(rememberTimer);
+  rememberTimer = setTimeout(rememberView, REMEMBER_DELAY);
+});
+
+if (typeof window !== 'undefined') window.addEventListener('pagehide', () => rememberTimer !== undefined && rememberView());
 
 let animationTimer: ReturnType<typeof setTimeout> | undefined;
 

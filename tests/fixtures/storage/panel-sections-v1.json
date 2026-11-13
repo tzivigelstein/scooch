@@ -1,0 +1,6 @@
+{
+  "about": "scooch:panel-sections as written before version 2 (no «v»): false is a collapsed section; it never had cutOptions, and an unknown or non-boolean value is dropped",
+  "key": "scooch:panel-sections",
+  "value": { "sheet": false, "arrange": true, "grid": "false", "zoom": false },
+  "reads": { "sections": { "sheet": false, "arrange": true }, "cutOptions": false }
+}

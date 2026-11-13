@@ -29,8 +29,18 @@ const stored = (name: string) => `${STORAGE_NAMESPACE}:${name}`;
 export const PROJECTS_DB = STORAGE_NAMESPACE;
 export const TABS_CHANNEL = `${STORAGE_NAMESPACE}-projects`;
 
-/** localStorage key of the collapsed sections of the properties panel. */
+/**
+ * localStorage key of the collapsed sections of the properties panel and the
+ * open «Más opciones» of the cut lines ({v: 2, sheet?, arrange?, cuts?, grid?,
+ * cutOptions?}; version 1 had no `v` and no `cutOptions`).
+ */
 export const SECTIONS_STORAGE = stored('panel-sections');
+/**
+ * What this browser remembers of the view ({v: 1, zoomMode, zoomPct, alignTo,
+ * distribute}): the zoom's mode and, when manual, its percentage (never where
+ * the sheets are scrolled), «Alinear a» and «Distribuir con».
+ */
+export const VIEW_STORAGE = stored('view-preferences');
 /** localStorage key of the «Atajos de 1 tecla» switch. */
 export const SINGLE_KEYS_STORAGE = stored('single-key-shortcuts');
 /** Grid preferences (view, not document: outside the undo history). */
