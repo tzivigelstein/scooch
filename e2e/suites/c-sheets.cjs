@@ -324,7 +324,7 @@ const SPY = () => {
       return { moved, median: times[60], p95: times[114], max: times.at(-1), frameP95: frames[114], up, longs };
     });
     check('arrastre con 150 piezas: el gesto realmente arrastra (capa de arrastre)', drag.moved, JSON.stringify(drag));
-    check('arrastre: cada movimiento < 4 ms (mediana) y < 8 ms (p95); cuadros p95 < 34 ms', drag.median < 4 && drag.p95 < 8 && drag.frameP95 < 34, JSON.stringify(drag));
+    check('arrastre: cada movimiento < 1 ms (p95); cuadros p95 < 34 ms', drag.p95 < 1 && drag.frameP95 < 34, JSON.stringify(drag));
     check('arrastre: soltar (con render completo) < 50 ms y sin tareas largas', drag.up < 50 && drag.longs.filter((x) => x > 50).length === 0, JSON.stringify({ up: drag.up, longs: drag.longs }));
     const scroll = await p.evaluate(async () => {
       const stage = document.getElementById('stage');
@@ -360,7 +360,63 @@ const SPY = () => {
       return { median: times[5], max: times.at(-1) };
     });
     check('seleccionar una pieza (render completo) con 150: < 30 ms', sel.median < 30, JSON.stringify(sel));
-    fs.writeFileSync(path.join(OUT4, 'perf.json'), JSON.stringify({ loadMs, drag, scroll, sel }, null, 2));
+    // Zooming with Ctrl + wheel (one turn a frame, in and out): no long tasks, frames ~16 ms.
+    const zoom = await p.evaluate(async () => {
+      const stage = document.getElementById('stage');
+      const r = stage.getBoundingClientRect();
+      const longs = [];
+      const obs = new PerformanceObserver((l) => longs.push(...l.getEntries().map((e) => e.duration)));
+      obs.observe({ entryTypes: ['longtask'] });
+      const gaps = [];
+      let last = performance.now();
+      for (let i = 0; i < 40; i++) {
+        const deltaY = i < 20 ? -40 : 40;
+        stage.dispatchEvent(new WheelEvent('wheel', { deltaY, ctrlKey: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true, cancelable: true }));
+        await new Promise((res) => requestAnimationFrame(res));
+        const now = performance.now();
+        gaps.push(now - last);
+        last = now;
+      }
+      await new Promise((res) => setTimeout(res, 100));
+      obs.disconnect();
+      gaps.sort((a, b) => a - b);
+      return { median: gaps[20], p95: gaps[37], max: gaps.at(-1), longs };
+    });
+    check('zoom con 150 piezas: cuadros p95 < 34 ms, sin tareas largas', zoom.p95 < 34 && zoom.longs.filter((x) => x > 50).length === 0, JSON.stringify(zoom));
+    // Dragging at 200 % and out of the sheets (the new-sheet placeholders): still < 1 ms a move.
+    await p.click('#zoom-level');
+    await p.click('#zoom-menu-level-200');
+    const dragZoomed = await p.evaluate(async () => {
+      const longs = [];
+      const obs = new PerformanceObserver((l) => longs.push(...l.getEntries().map((e) => e.duration)));
+      obs.observe({ entryTypes: ['longtask'] });
+      const node = document.querySelectorAll('.page')[4].querySelector('.piece');
+      node.scrollIntoView({ block: 'center', inline: 'center' });
+      await new Promise((res) => requestAnimationFrame(res));
+      const r = node.getBoundingClientRect();
+      const sheet = node.closest('.sheet').getBoundingClientRect();
+      const opts = (x, y) => ({ bubbles: true, cancelable: true, pointerId: 8, pointerType: 'mouse', isPrimary: true, clientX: x, clientY: y, button: 0, buttons: 1 });
+      node.dispatchEvent(new PointerEvent('pointerdown', opts(r.left + 5, r.top + 5)));
+      const times = [];
+      // Inside the sheet, then out past its left edge (outside every sheet).
+      const to = (i) => (i < 60 ? [r.left + 5 + i * 2, r.top + 5 + i] : [r.left + 5 - (i - 60) * ((r.left - sheet.left + 400) / 60), r.top + 65]);
+      for (let i = 1; i <= 120; i++) {
+        const [x, y] = to(i);
+        const t = performance.now();
+        node.dispatchEvent(new PointerEvent('pointermove', opts(x, y)));
+        times.push(performance.now() - t);
+        await new Promise((res) => requestAnimationFrame(res));
+      }
+      const outside = !document.getElementById('new-sheet-end').hidden;
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      node.dispatchEvent(new PointerEvent('pointerup', opts(r.left, r.top)));
+      await new Promise((res) => setTimeout(res, 100));
+      obs.disconnect();
+      times.sort((a, b) => a - b);
+      return { median: times[60], p95: times[114], max: times.at(-1), outside, longs };
+    });
+    check('arrastre a 200 % y fuera de las hojas (con los lugares para una hoja nueva): < 1 ms (p95), sin tareas largas', dragZoomed.outside && dragZoomed.p95 < 1 && dragZoomed.longs.filter((x) => x > 50).length === 0, JSON.stringify(dragZoomed));
+    fs.writeFileSync(path.join(OUT4, 'perf.json'), JSON.stringify({ loadMs, drag, scroll, sel, zoom, dragZoomed }, null, 2));
     allErrors.push(...s.errors);
     await s.browser.close();
   }
