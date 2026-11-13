@@ -247,11 +247,11 @@ function adopt(record: ProjectRecord, stored: Set<string>) {
   setStatus('saved');
 }
 
-// The current project's settings (paper, margin, gap, «Permitir
-// superposición», cut lines): a new one keeps them.
+// The current project's settings (paper, margin, gap, «Girar si conviene»,
+// «Permitir superposición», cut lines): a new one keeps them.
 function currentSettings() {
-  const { paper, landscape, margin, gap, allowOverlap, cuts } = getDocument();
-  return { paper: typeof paper === 'string' ? paper : { ...paper }, landscape, margin, gap, rotate: true, allowOverlap, cuts: { ...cuts } };
+  const { paper, landscape, margin, gap, rotate, allowOverlap, cuts } = getDocument();
+  return { paper: typeof paper === 'string' ? paper : { ...paper }, landscape, margin, gap, rotate, allowOverlap, cuts: { ...cuts } };
 }
 
 /** What documents saved before a setting was the project's take (projectdoc.migrate). */

@@ -145,12 +145,12 @@ describe('autosave', () => {
 });
 
 describe('the settings a project keeps', () => {
-  test('«Nuevo proyecto» keeps the open one’s settings, «Permitir superposición» included', async () => {
+  test('«Nuevo proyecto» keeps the open one’s settings, «Girar si conviene» and «Permitir superposición» included', async () => {
     const app = await start();
-    app.setDocument({ allowOverlap: true, margin: 7, gap: 3, landscape: true });
+    app.setDocument({ rotate: false, allowOverlap: true, margin: 7, gap: 3, landscape: true });
     await app.projects.newProject();
-    expect(app.getDocument()).toMatchObject({ allowOverlap: true, margin: 7, gap: 3, landscape: true, items: [] });
-    expect((await app.stored()).doc).toMatchObject({ allowOverlap: true });
+    expect(app.getDocument()).toMatchObject({ rotate: false, allowOverlap: true, margin: 7, gap: 3, landscape: true, items: [] });
+    expect((await app.stored()).doc).toMatchObject({ rotate: false, allowOverlap: true });
   });
 
   test('a project saved before «Permitir superposición» was the project’s opens with the value this browser had', async () => {
