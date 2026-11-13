@@ -206,7 +206,9 @@ const SPY = () => {
     await p.mouse.down();
     await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 40, { steps: 5 });
     await p.mouse.move(box.x + box.width / 2, 885, { steps: 10 });
-    await p.waitForTimeout(1600);
+    // Held near the bottom edge until sheet 2 shows (past the last sheet there is room to scroll on:
+    // the place to drop onto a new sheet).
+    for (let i = 0; i < 200 && (await p.locator('.page').nth(1).locator('.sheet').boundingBox()).y > 300; i++) await p.waitForTimeout(16);
     check('scroll automático al arrastrar cerca del borde', (await p.evaluate(() => document.getElementById('stage').scrollTop)) > 200);
     const s2 = await p.locator('.page').nth(1).locator('.sheet').boundingBox();
     await p.mouse.move(s2.x + s2.width * 0.7, Math.min(860, s2.y + s2.height * 0.7), { steps: 8 });
