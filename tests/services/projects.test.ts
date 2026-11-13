@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { memoryStorage } from '../../src/core/projectstore.js';
 import type { ProjectDoc, ProjectStorage } from '../../src/core/types.ts';
 import { storedProject } from '../support/projects.ts';
+import { FakeBroadcastChannel } from '../support/tabs.ts';
 
 // The storage the service opens instead of IndexedDB (set by each test).
 const opened = vi.hoisted(() => ({ storage: null as ProjectStorage | null, legacyFails: false }));
@@ -233,6 +234,34 @@ describe('the last opened project', () => {
     expect(localStorage.getItem('scooch:last-project')).toBe('p1');
     const created = await app.projects.newProject();
     expect(localStorage.getItem('scooch:last-project')).toBe(created.id);
+  });
+});
+
+describe('two tabs', () => {
+  // Real timers: the tabs talk through a channel and wait for each other.
+  beforeEach(() => {
+    vi.useRealTimers();
+    FakeBroadcastChannel.reset();
+    vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel);
+  });
+
+  test('renaming the project in the tab that stopped saving it (another tab took it) keeps the new name', async () => {
+    const storage = memoryStorage();
+    await storedProject(storage, 'p1', 'Tarjetas', 11, 1000);
+    localStorage.setItem('scooch:last-project', 'p1');
+    const a = await start(storage);
+    const b = await start(storage);
+    await vi.waitFor(() => expect(a.status()).toBe('readonly'));
+    expect(b.status()).toBe('saved');
+
+    await a.projects.rename('p1', 'Desde la otra pestaña');
+    expect((await storage.get('p1'))!.name).toBe('Desde la otra pestaña');
+    await vi.waitFor(() => expect(b.projects.projectSession().record?.name).toBe('Desde la otra pestaña'));
+    // What the tab that saves it writes next keeps that name.
+    b.setDocument({ selection: [1] });
+    b.nudge(1, 0);
+    await b.projects.flush();
+    expect((await storage.get('p1'))!).toMatchObject({ name: 'Desde la otra pestaña', doc: { items: [{ x: 12 }] } });
   });
 });
 

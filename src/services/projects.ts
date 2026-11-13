@@ -517,8 +517,10 @@ export async function duplicate(id: string) {
 
 /**
  * Renames (empty: keeps the previous name). Returns the final name. The open
- * project goes through the same queue as autosave, so a save in progress
- * doesn't overwrite it.
+ * project, when this tab saves it, goes through the same queue as autosave, so
+ * a save in progress doesn't overwrite it. Any other project (also the open
+ * one when another tab saves it) gets only its name written, in one
+ * operation; the tab that has it open takes the name (see onMessage).
  */
 export async function rename(id: string, name: string) {
   const open = id === session.record?.id;
@@ -528,9 +530,11 @@ export async function rename(id: string, name: string) {
     session.record = { ...session.record!, name: clean };
     publish();
     hooks.statusChanged?.({});
-    if (session.storage && session.status !== 'readonly') await save();
-  } else {
-    await renameProject(session.storage!, id, clean);
+  }
+  if (open && session.status !== 'readonly') {
+    if (session.storage) await save();
+  } else if (session.storage) {
+    await renameProject(session.storage, id, clean);
   }
   post({ type: 'renamed', project: id, name: clean });
   return clean;
@@ -660,9 +664,18 @@ async function onMessage(e: MessageEvent<TabMessage>) {
   } else if (m.type === 'deleted' && mine) {
     deletedElsewhere();
   } else if (m.type === 'renamed' && mine) {
-    session.record = { ...session.record!, name: m.name ?? session.record!.name };
+    const name = m.name ?? session.record!.name;
+    session.record = { ...session.record!, name };
     publish();
     hooks.statusChanged?.({});
+    // Renamed in a tab that doesn't save it: written already, but a save of
+    // this tab in progress may write the old name over it; once it is done,
+    // the name is written again (only the name).
+    if (saving && session.storage && session.status !== 'readonly' && session.status !== 'off') {
+      const storage = session.storage;
+      const id = session.record!.id;
+      void saving.then(() => (session.record?.id === id && session.record.name === name ? renameProject(storage, id, name) : null)).catch(() => {});
+    }
   }
   if (['changed', 'renamed', 'deleted'].includes(m.type)) hooks.listChanged?.();
 }
