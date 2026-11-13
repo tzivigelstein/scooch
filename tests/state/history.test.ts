@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from 'vitest';
+import { MAX_UNDO } from '../../src/config.ts';
 import { getDocument, patchItem, setDocument, type Piece } from '../../src/state/document.ts';
 import { cancelEdit, commit, endEdit, historyDepth, redo, resetHistory, undo } from '../../src/state/history.ts';
 import { getView, setView } from '../../src/state/view.ts';
@@ -90,5 +91,17 @@ describe('history', () => {
     expect(before[0].x).toBe(0);
     undo();
     expect(getDocument().items).toBe(before);
+  });
+
+  test('keeps at most MAX_UNDO steps: the oldest ones go first', () => {
+    for (let x = 1; x <= MAX_UNDO + 5; x++) {
+      commit();
+      patchItem(1, { x });
+    }
+    expect(historyDepth()).toEqual({ undo: MAX_UNDO, redo: 0 });
+    while (undo());
+    // The first 5 steps were dropped: undo stops at the state after the 5th change.
+    expect(getDocument().items[0].x).toBe(5);
+    expect(historyDepth()).toEqual({ undo: 0, redo: MAX_UNDO });
   });
 });
