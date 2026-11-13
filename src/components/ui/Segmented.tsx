@@ -15,6 +15,8 @@ export function Segmented<T extends string>({
   onChange,
   className = 'segmented chips',
   id,
+  labelledBy,
+  label,
 }: {
   name: string;
   value: T | null;
@@ -22,9 +24,13 @@ export function Segmented<T extends string>({
   onChange: (value: T) => void;
   className?: string;
   id?: string;
+  /** Names the group (it becomes a radiogroup): an element's id, or a text. */
+  labelledBy?: string;
+  label?: string;
 }) {
+  const group = labelledBy || label ? { role: 'radiogroup', 'aria-labelledby': labelledBy, 'aria-label': label } : {};
   return (
-    <div id={id} className={className}>
+    <div id={id} className={className} {...group}>
       {options.map((option) => (
         <label key={option.value} className="seg">
           <input
