@@ -18,7 +18,7 @@ import { currentSheet, sheetIndex, sheetSize } from '../../state/selectors.ts';
 import { getView, setView, useView } from '../../state/view.ts';
 import { openFiles } from '../../state/actions/files.ts';
 import { focusPiece } from '../../state/actions/selection.ts';
-import { addSheet, removeSheet } from '../../state/actions/sheets.ts';
+import { addSheet, removeSheet, showSheetSettings } from '../../state/actions/sheets.ts';
 import { Icon } from '../ui/Icon.tsx';
 import { Piece } from './Piece.tsx';
 import { SelectionOverlay } from './SelectionOverlay.tsx';
@@ -102,7 +102,9 @@ const Page = memo(function Page({ id, index, total, items, W, H, zoom, margin, e
   return (
     <div className={current ? 'page is-current' : 'page'} data-sheet={id} style={{ width: `${W * zoom}px` }}>
       <div className="page-head">
-        <span className="page-label">{label}</span>
+        <button type="button" className="page-label" data-tip={t('sheet.settingsTip')} aria-describedby="sheet-settings-hint" onClick={() => showSheetSettings(id)}>
+          {label}
+        </button>
         <button
           type="button"
           className="icon-btn small page-remove"
@@ -245,6 +247,9 @@ export function Stage() {
           </button>
         </div>
         <div className="marquee" hidden aria-hidden="true" />
+        <p id="sheet-settings-hint" className="sr-only">
+          {t('sheet.settingsHint')}
+        </p>
       </div>
     </div>
   );

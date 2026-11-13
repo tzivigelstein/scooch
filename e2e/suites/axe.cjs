@@ -25,6 +25,9 @@ async function scan(page, label, results) {
       await scan(p, `${colorScheme} 1440 con piezas, sin selección`, results);
       await h.pieceByName('small.jpg').focus();
       await scan(p, `${colorScheme} 1440 con selección (barra de pieza)`, results);
+      await p.locator('.page-label').first().focus();
+      await scan(p, `${colorScheme} 1440 sheet title button focused (Hoja tab, tooltip)`, results);
+      await h.pieceByName('small.jpg').focus();
       await h.setMeasure('scale', 400);
       await h.setMeasure('pos-x', -5);
       await p.click('#fill-details summary');

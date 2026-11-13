@@ -183,6 +183,14 @@
     height: 2.875rem;
   }
 
+  .page-head {
+    height: 2.75rem;
+  }
+
+  .page-label {
+    height: 2.5rem;
+  }
+
   .action-row .icon-btn,
   .tool-row .icon-btn {
     width: 2.5rem;

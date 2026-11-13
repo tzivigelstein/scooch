@@ -63,10 +63,25 @@ const STATE = () => {
     await h.clickPiece(1);
     await p.mouse.click(sheet.x - 60, sheet.y + 200);
     check('click the canvas background: Hoja opens', (await st()).selected.join() === 'sheet');
-    await h.clickPiece(1);
-    // (The piece's toolbar may sit over the label: the press goes to the label itself.)
-    await p.locator('.page-label').dispatchEvent('pointerdown', { button: 0, pointerId: 1, isPrimary: true });
-    check('click a sheet’s label: Hoja, nothing selected', (await st()).selected.join() === 'sheet' && (await p.locator('#sheets .piece.is-selected').count()) === 0);
+    // The sheet's title is a button to its settings (mouse: the lowest piece, so its toolbar
+    // isn't over the title; keyboard: Enter and Space), and the focus stays on it.
+    const lowest = await p.evaluate(() => [...document.querySelectorAll('#sheets .piece')].sort((a, b) => b.getBoundingClientRect().top - a.getBoundingClientRect().top)[0].dataset.id);
+    await p.locator(`#sheets .piece[data-id="${lowest}"]`).click();
+    await p.locator('.page-label').click();
+    x = await st();
+    check('click the sheet’s title: Hoja, nothing selected, the focus on the title', x.selected.join() === 'sheet' && (await p.locator('#sheets .piece.is-selected').count()) === 0 && x.active === 'page-label', JSON.stringify(x));
+    check('the title is a button named «Hoja 1 de 1», with the tooltip and a description', (await p.evaluate(() => {
+      const b = document.querySelector('.page-label');
+      return b.tagName === 'BUTTON' && b.textContent === 'Hoja 1 de 1' && b.dataset.tip === 'Configurar hoja' && document.getElementById(b.getAttribute('aria-describedby'))?.textContent.length > 0;
+    })));
+    for (const key of ['Enter', ' ']) {
+      await p.locator('#sheets .piece').first().focus();
+      await p.keyboard.press('Shift+Tab');
+      while (!(await p.evaluate(() => document.activeElement.classList.contains('page-label')))) await p.keyboard.press('Shift+Tab');
+      await p.keyboard.press(key === ' ' ? 'Space' : key);
+      x = await st();
+      check(`${key === ' ' ? 'Space' : key} on the title (reached with Shift+Tab before the pieces): Hoja, nothing selected, focus stays`, x.selected.join() === 'sheet' && (await p.locator('#sheets .piece.is-selected').count()) === 0 && x.active === 'page-label', JSON.stringify(x));
+    }
 
     // Keyboard: Tab onto a piece selects it and switches (announced); Esc clears and switches back.
     await p.locator('#sheets .piece').first().focus();
@@ -146,6 +161,15 @@ const STATE = () => {
     if (w < 800) await p.click('#props-toggle');
     let x = await p.evaluate(STATE);
     check(`${w}: Propiedades opens on the contextual tab (Pieza)`, x.selected.join() === 'piece' && (await p.isVisible('#props-tab-piece')), JSON.stringify(x));
+    if (w < 800) {
+      await p.keyboard.press('Escape');
+      await p.locator('#sheets .piece').first().focus();
+      await p.locator('.page-label').first().click();
+      check(`${w}: the sheet’s title opens Propiedades on Hoja, the focus stays on the title`, (await p.locator('#props-panel').isVisible()) && (await p.evaluate(STATE)).selected.join() === 'sheet' && (await p.evaluate(() => document.activeElement.className)) === 'page-label');
+      await p.locator('#sheets .piece').first().focus();
+      if (!(await p.locator('#props-panel').isVisible())) await p.click('#props-toggle');
+      await p.click('#props-tab-piece');
+    }
     await p.click('#props-tab-sheet');
     check(`${w}: switching to Hoja inside the panel`, (await p.isVisible('#paper')) && (await p.evaluate(STATE)).selected.join() === 'sheet');
     const tabBox = await p.locator('#props-tab-sheet').boundingBox();

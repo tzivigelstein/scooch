@@ -184,9 +184,6 @@ function begin(next: Gesture) {
 function onPointerDown(e: PointerEvent) {
   if (getDocument().busy || e.button !== 0 || gesture) return;
   const target = e.target as Element;
-  // A sheet's label: that sheet becomes the current one, like a click on its empty area.
-  const label = target.closest<HTMLElement>('.page-label');
-  if (label) return pickSheet(Number(label.closest<HTMLElement>('.page')!.dataset.sheet));
   if (target.closest('.dropzone, .page-head, .sheets-foot')) return;
   const additive = e.shiftKey || e.ctrlKey || e.metaKey;
   const handle = target.closest<HTMLElement>('.handle');

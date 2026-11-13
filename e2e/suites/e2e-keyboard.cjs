@@ -40,8 +40,9 @@ const { open, makeChecker, helpers, overlaps, FIX, path, norm } = require('../li
     if (seq.at(-1) !== r) seq.push(r);
     if (r === 'propiedades') break;
   }
-  // v4: después de las piezas de la hoja está «Agregar hoja» (región «hoja»).
-  check('orden: saltar → barra → piezas → piezas de la hoja → «Agregar hoja» → barra de pieza → propiedades', seq.join(' > ') === 'saltar > barra > piezas > pieza > hoja > barra-pieza > propiedades', seq.join(' > '));
+  // v4: después de las piezas de la hoja está «Agregar hoja» (región «hoja»); before them, the
+  // sheet's title (a button to its settings).
+  check('orden: saltar → barra → piezas → título de la hoja → piezas de la hoja → «Agregar hoja» → barra de pieza → propiedades', seq.join(' > ') === 'saltar > barra > piezas > hoja > pieza > hoja > barra-pieza > propiedades', seq.join(' > '));
   check('la lista es una sola parada de Tab', (await page.evaluate(() => document.querySelectorAll('#piece-list [tabindex="0"]').length)) === 1);
 
   await k.press('Shift+Tab');

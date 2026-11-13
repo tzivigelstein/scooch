@@ -16,7 +16,9 @@ import { commit, endEdit } from '../history.ts';
 import { loadCustomPaper, saveCustomPaper, setGrid, getPrefs } from '../prefs.ts';
 import { area, boxOf, currentSheet, itemsOn, selectedItem, sheetIndex, sheetSize } from '../selectors.ts';
 import { animateNext, setView } from '../view.ts';
+import { revealPanel } from './drawers.ts';
 import { focusSheet, pieceNode, sheetNode } from './focus.ts';
+import { showPropsTab } from './panels.ts';
 import { forgetSpill } from './layout.ts';
 import { singleOnly } from './notify.ts';
 import { select, setSelection } from './selection.ts';
@@ -67,6 +69,19 @@ export async function removeSheet(id: number, { viaKeyboard = false } = {}) {
     sheetNode(next.id)?.focus({ preventScroll: true });
   }
   announce(n ? t('announce.sheetRemoved', { i: index + 1, n }) : t('announce.sheetRemovedEmpty', { i: index + 1 }));
+}
+
+/**
+ * A sheet's title: that sheet becomes the current one, nothing stays
+ * selected and Propiedades shows Hoja (opening it on narrow screens). The
+ * focus stays where it is.
+ */
+export function showSheetSettings(id: number) {
+  if (sheetIndex(id) < 0) return;
+  setView({ sheet: id });
+  if (getDocument().selection.length) setSelection([]);
+  showPropsTab('sheet');
+  revealPanel('props');
 }
 
 /** Page Up / Page Down: the focus goes to the previous or next sheet (to its first piece). */
