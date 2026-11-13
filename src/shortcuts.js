@@ -33,6 +33,7 @@ const ROWS = [
   [['Mod+Shift+Z', 'Control+Y'], 'redo', false],
   [['Mod+P'], 'print', false],
   [['Mod+S', 'Mod+E'], 'download', false],
+  [['Mod+O'], 'projects', false],
   [['Escape'], 'escape', false],
   [['?'], 'help', true],
 ];

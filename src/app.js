@@ -30,7 +30,7 @@ import {
   boxOf,
 } from './store.js';
 import { sizeText as measureSize, lengthText, paperName, stepTexts, unitName } from './measure.js';
-import { readFile, pdfPage } from './assets.js';
+import { readFile, pdfPage, openPdf } from './assets.js';
 import { makePdf, pdfFileName, downloadBytes, printBytes } from './output.js';
 import { arrange, keepCenter, centerOnSheet, fitToSheet, placeNew, fillWithCopies, duplicatePiece } from './layout.js';
 import { spotOnSheet } from './sheets.js';
@@ -57,6 +57,8 @@ import { initShortcuts, openShortcuts, syncShortcuts } from './shortcuts.js';
 import { initPrefs, openPrefs } from './prefs.js';
 import { initConfirm, confirmAction } from './confirm.js';
 import { initDonate, shouldAskDonation, askDonation, isDonationOpen } from './donate.js';
+import { initProjects, documentChanged, retry as retrySave, saveAsNew } from './projects.js';
+import { initProjectsUi, renderProjectBar, openProjects, listChanged, removeWithUi, takeOverWithUi } from './projectsui.js';
 import { initKeyboard } from './keyboard.js';
 import { $, clamp, round1, tidy, fine } from './util.js';
 
@@ -70,10 +72,12 @@ let shownSelection = null;
 function renderAll() {
   renderSheetView();
   renderTopbar();
+  renderProjectBar();
   renderPanels();
   renderPieceList();
   renderNotice();
   rescueFocus();
+  documentChanged(); // guardado automático del proyecto
   // La pieza recién seleccionada (con teclado, desde la lista, al agregar…) se lleva a la vista.
   if (state.selected !== shownSelection) {
     shownSelection = state.selected;
@@ -435,6 +439,11 @@ async function changePage(n) {
   if (!asset || asset.kind !== 'pdf' || asset.page === n || state.busy) return;
   setBusy(true, t('busy.loadingPage', { page: n }));
   try {
+    // En un proyecto restaurado, pdf.js se abre recién ahora (y queda para las otras páginas).
+    if (!asset.pdf) {
+      const pdf = await openPdf(asset.bytes);
+      for (const other of assets.values()) if (other.kind === 'pdf' && other.src === asset.src) other.pdf = pdf;
+    }
     let key = [...assets].find(([, a]) => a.kind === 'pdf' && a.src === asset.src && a.page === n)?.[0];
     key ??= addAsset(await pdfPage(asset, n));
     commit();
@@ -659,6 +668,79 @@ function unitChanged() {
   announce(t('prefs.unitChanged', { unit: unitName() }));
 }
 
+// ---------- Proyectos ----------
+
+const isQuota = (err) => err?.name === 'QuotaExceededError' || err?.inner?.name === 'QuotaExceededError';
+
+/** Avisos de projects.js (guardado, apertura, otras pestañas). */
+function projectNotice(kind, { error = null, record = null } = {}) {
+  if (kind === 'unavailable') return say(t('projects.unavailable'), { warn: true, persist: true });
+  if (kind === 'saveFailed') {
+    if (isQuota(error)) return say(t('notices.quota'), { warn: true, action: { label: t('notices.seeProjects'), run: openProjects } });
+    return say(t('notices.saveFailed'), { warn: true, action: { label: t('projects.retry'), run: retrySave } });
+  }
+  if (kind === 'openFailed') return openFailed(record, error);
+  if (kind === 'takenOver') return say(t('notices.takenOver'), { warn: true, action: { label: t('projects.takeOver'), run: takeOverWithUi } });
+  if (kind === 'deletedElsewhere') return say(t('notices.deletedElsewhere'), { warn: true, action: { label: t('notices.saveAsNew'), run: saveAsNew } });
+}
+
+// No se pudo abrir un proyecto: si está dañado, se ofrece eliminarlo.
+function openFailed(record, error) {
+  console.warn(error);
+  const name = record?.name ?? t('projects.untitled');
+  if (error?.code === 'newer') return say(t('notices.openNewer', { name }), { warn: true });
+  if (error?.code === 'corrupt' && record?.id) {
+    return say(t('notices.openFailed', { name }), {
+      warn: true,
+      action: {
+        label: t('notices.deleteProject'),
+        run: async () => {
+          const ok = await confirmAction({
+            title: t('projects.deleteTitle', { name }),
+            body: t('projects.deleteBody'),
+            confirm: t('projects.deleteConfirm'),
+            focus: 'cancel',
+          });
+          if (ok) await removeWithUi(record.id, name);
+        },
+      },
+    });
+  }
+  say(t(record ? 'notices.openError' : 'notices.projectError'), { warn: true });
+}
+
+/** Después de abrir, crear o reemplazar el proyecto abierto. */
+function projectOpened(record, how, previous) {
+  shownSelection = null;
+  render();
+  if (how === 'replaced') return announce(t('announce.projectReplaced', { name: record.name }));
+  focusSheet();
+  if (how === 'new') announce(t('announce.projectCreated', { name: previous ?? t('projects.untitled') }));
+  else announce(t('announce.projectOpened', { name: record.name }));
+}
+
+/** Al empezar: restaura el último proyecto, con estado de carga accesible y sin parpadeos. */
+async function startProjects() {
+  // Si tarda, la píldora lo dice; mientras tanto el lienzo queda oculto (sin la zona vacía).
+  const slow = setTimeout(() => setBusy(true, t('busy.openingProject')), 400);
+  ui.canvas.setAttribute('aria-busy', 'true');
+  await initProjects({
+    statusChanged: ({ recovered }) => {
+      renderProjectBar();
+      if (recovered) announce(t('announce.projectSaved'));
+    },
+    notify: projectNotice,
+    listChanged,
+    thumbImage: (item) => pieceNode(item.id)?.firstChild ?? null,
+  });
+  clearTimeout(slow);
+  state.busy = false;
+  status.busyText = '';
+  document.body.classList.remove('is-loading');
+  ui.canvas.removeAttribute('aria-busy');
+  render();
+}
+
 // ---------- Cableado ----------
 
 function wire() {
@@ -693,6 +775,11 @@ function wire() {
   initPrefs({ trigger: $('prefs-open'), onSingleKeysChange: syncSingleKeys, onUnitChange: unitChanged });
   initShortcuts({ trigger: ui.help, openPrefs });
   initDonate();
+  initProjectsUi({
+    busy: (on, text) => setBusy(on, text),
+    opened: projectOpened,
+    failed: openFailed,
+  });
   initTooltips({ showShortcut: (el) => el.dataset.single === undefined || settings.singleKeys });
   initSheetView({
     select,
@@ -783,6 +870,7 @@ function wire() {
     toggleOrientation: () => setOrientation(!state.landscape),
     toggleGrid: () => setGridVisible(!settings.grid.show),
     help: openShortcuts,
+    openProjects,
     hasSelection: () => !!selectedItem() && !state.busy,
     endEdit,
     nudge,
@@ -841,3 +929,4 @@ function wire() {
 
 wire();
 render();
+startProjects();

@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="/src/styles.css" />
     <script type="module" src="/src/app.js"></script>
   </head>
-  <body>
+  <body class="is-loading">
     <a id="skip" class="skip-link" href="#sheets" data-i18n="app.skip"></a>
 
     <header class="topbar">
@@ -30,6 +30,21 @@
         </svg>
         <span class="brand-name" data-i18n="app.name"></span>
       </a>
+
+      <!-- Proyecto abierto: nombre (editable en el lugar), estado del guardado y «Proyectos» -->
+      <div class="project-group">
+        <div id="project" class="project" hidden>
+          <button type="button" id="project-name" class="project-name" aria-describedby="project-status-text" data-i18n-tip="projects.renameTip">
+            <span id="project-name-text" class="project-name-text"></span>
+          </button>
+          <input type="text" id="project-name-input" class="project-name-input" maxlength="80" autocomplete="off" spellcheck="false" data-i18n-label="projects.nameField" hidden />
+          <span id="project-status" class="project-status"><span id="project-status-icon" class="project-status-icon" aria-hidden="true"></span><span id="project-status-text" class="project-status-text"></span></span>
+          <button type="button" id="project-retry" class="text-btn project-retry" hidden></button>
+        </div>
+        <button type="button" id="projects-open" class="tool" aria-haspopup="dialog" data-i18n-label="projects.title" data-i18n-tip="projects.title" data-kbd="Mod+O" data-aks="Control+O Meta+O">
+          <span data-icon="folder-open"></span>
+        </button>
+      </div>
 
       <div class="bar-group">
         <button type="button" id="add" class="btn ghost" data-i18n-tip="bar.addTip" data-kbd="O" data-aks="O" data-single>
@@ -386,6 +401,25 @@
         <p data-i18n="shortcuts.private"></p>
       </div>
     </dialog>
+    <dialog id="projects" class="dialog projects" aria-labelledby="projects-title">
+      <div class="dialog-head">
+        <h2 id="projects-title" class="dialog-title" data-i18n="projects.title"></h2>
+        <button type="button" id="projects-close" class="icon-btn" data-i18n-label="app.close"><span data-icon="x"></span></button>
+      </div>
+      <div class="dialog-body">
+        <div class="projects-top">
+          <button type="button" id="project-new" class="btn primary"><span data-icon="plus"></span><span data-i18n="projects.new"></span></button>
+          <p class="projects-note" data-i18n="projects.newNote"></p>
+        </div>
+        <p id="projects-unavailable" class="callout" hidden><span data-icon="triangle-alert"></span><span data-i18n="projects.unavailable"></span></p>
+        <ul id="project-list" class="project-list" aria-labelledby="projects-title"></ul>
+        <p id="projects-empty" class="projects-empty" data-i18n="projects.empty" hidden></p>
+      </div>
+      <div class="dialog-foot">
+        <p class="projects-usage"><span data-icon="hard-drive"></span><span id="projects-usage"></span></p>
+      </div>
+    </dialog>
+
     <dialog id="confirm" class="dialog confirm" aria-labelledby="confirm-title" aria-describedby="confirm-body">
       <div class="dialog-head">
         <h2 id="confirm-title" class="dialog-title"></h2>

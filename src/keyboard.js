@@ -28,6 +28,12 @@ function onKeyDown(e, a) {
   const lower = key.length === 1 ? key.toLowerCase() : key;
   const mod = e.ctrlKey || e.metaKey;
   const typing = isTyping(t);
+  // Mod+O abre «Proyectos» (y nunca el diálogo de archivos del navegador).
+  if (mod && !e.altKey && lower === 'o') {
+    e.preventDefault();
+    if (!t.closest('dialog')) a.openProjects();
+    return;
+  }
   if (t.closest('dialog')) return; // el <dialog> maneja Esc y Tab por su cuenta
 
   // Con Ctrl/Cmd: funcionan siempre (salvo deshacer mientras se escribe, que es del campo).

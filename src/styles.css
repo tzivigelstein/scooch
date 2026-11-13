@@ -27,6 +27,8 @@
   --primary-ink: #ffffff;
   --focus: #0066ff;
   --danger: #c2261d;
+  --danger-bg: #c2261d;
+  --danger-ink: #ffffff;
 
   --warn-bg: #fff3df;
   --warn-text: #6b3800;
@@ -86,6 +88,8 @@
     --primary-ink: #04132b;
     --focus: #6ea8ff;
     --danger: #ff7b72;
+    --danger-bg: #ff7b72;
+    --danger-ink: #2b0603;
 
     --warn-bg: #36260d;
     --warn-text: #ffd699;
@@ -435,6 +439,95 @@ kbd {
   margin: 0 6px;
   background: var(--line);
   flex: none;
+}
+
+/* Proyecto abierto: nombre editable, estado del guardado y «Proyectos». */
+.project-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.project {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.project-name {
+  min-width: 0;
+  max-width: 220px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: text;
+}
+
+.project-name:hover {
+  border-color: var(--line-strong);
+}
+
+.project-name-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+input.project-name-input {
+  width: 220px;
+  height: 32px;
+  padding: 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.project-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.project-status .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.project-status[data-status="pending"] .icon,
+.project-status[data-status="loading"] .icon {
+  animation: spin 1s linear infinite;
+}
+
+.project-status[data-status="error"] {
+  color: var(--danger);
+}
+
+.project-retry {
+  padding: 4px;
+  color: var(--accent-strong);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Mientras se restaura el proyecto al abrir la app, el lienzo y la lista no se
+   muestran (sin el parpadeo de la hoja vacía). */
+.is-loading #sheets,
+.is-loading #piece-list,
+.is-loading #list-empty {
+  visibility: hidden;
 }
 
 /* ---------- Área de trabajo: panel · lienzo · panel ---------- */
@@ -2061,6 +2154,197 @@ input[role="switch"]:checked::before {
 .dialog-note .text-btn {
   color: var(--accent-strong);
   font-size: inherit;
+}
+
+/* ---------- Proyectos ---------- */
+
+.dialog.projects {
+  width: min(760px, calc(100vw - 24px));
+}
+
+.dialog.projects .dialog-body {
+  flex: 1 1 auto;
+}
+
+.projects-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.projects-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.project-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+}
+
+.project-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 4px;
+  padding: 8px 8px 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  min-width: 0;
+}
+
+.project-card.is-current {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.project-open {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  text-align: left;
+  min-width: 0;
+}
+
+.project-open:disabled {
+  cursor: not-allowed;
+}
+
+.project-thumb {
+  display: grid;
+  place-items: center;
+  height: 132px;
+  border-radius: 8px;
+  background: var(--canvas);
+  overflow: hidden;
+}
+
+.project-thumb img {
+  max-width: 86%;
+  max-height: 112px;
+  box-shadow: var(--shadow-sm);
+  background: #fff;
+}
+
+.project-thumb .blank-page {
+  height: 112px;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.project-open:hover:not(:disabled) .project-thumb {
+  background: var(--hover);
+}
+
+.project-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+input.project-title-input {
+  height: 30px;
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.project-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.project-badges {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.project-badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--primary-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.project-badge[data-kind="damaged"] {
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+}
+
+.project-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  margin-top: -2px;
+}
+
+.projects-empty {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.projects-usage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.projects-usage .icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Botones al pie de un diálogo breve (confirmar). */
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 4px 20px 18px;
+}
+
+.dialog.confirm {
+  width: min(420px, calc(100vw - 24px));
+}
+
+.confirm-body {
+  margin: 0;
+  color: var(--muted);
+}
+
+.btn.danger {
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+  font-weight: 600;
+}
+
+.btn.danger:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 
 /* ---------- Preferencias ---------- */
