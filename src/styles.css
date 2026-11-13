@@ -1435,13 +1435,6 @@ input[type="range"] {
   display: none;
 }
 
-.switch-row.boxed {
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-}
-
 input[role="switch"] {
   appearance: none;
   position: relative;
@@ -2541,17 +2534,23 @@ input.project-title-input {
   width: min(460px, calc(100vw - 24px));
 }
 
-.pref-group {
+/* Cada sección: título y contenido, sin tarjeta; un separador entre secciones. */
+.pref-section {
   display: grid;
   gap: 8px;
-  margin: 0;
-  padding: 0;
-  border: 0;
   min-width: 0;
 }
 
-.pref-label {
-  padding: 0;
+.pref-section + .pref-section {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.pref-section > p {
+  margin: 0;
+}
+
+.pref-title {
   margin: 0 0 2px;
   font-size: 14px;
   font-weight: 600;

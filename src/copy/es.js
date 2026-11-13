@@ -611,6 +611,7 @@ export default {
     // Después del símbolo visible («mm»), para lectores de pantalla
     unitNames: { mm: ', milímetros', cm: ', centímetros', in: ', pulgadas' },
     unitChanged: 'Medidas en {unit}',
+    keyboard: 'Teclado',
     singleKeys: 'Atajos de 1 tecla',
     singleKeysHint:
       'Desactívalos si usas control por voz o si se activan sin querer. Los atajos con {mod}, las flechas y Supr sobre una pieza siguen funcionando.',

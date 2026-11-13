@@ -475,18 +475,22 @@
         <button type="button" id="prefs-close" class="icon-btn" data-i18n-label="app.close"><span data-icon="x"></span></button>
       </div>
       <div class="dialog-body">
-        <fieldset class="pref-group" aria-describedby="units-hint">
-          <legend class="pref-label" data-i18n="prefs.units"></legend>
+        <!-- Dos secciones con el mismo patrón: título y contenido, con un separador entre ellas. -->
+        <div class="pref-section" role="group" aria-labelledby="prefs-units-title">
+          <h3 id="prefs-units-title" class="pref-title" data-i18n="prefs.units"></h3>
           <div class="segmented chips units">
-            <label class="seg"><input type="radio" name="unit" value="mm" /><span><span data-i18n="units.mm"></span><span class="sr-only" data-i18n="prefs.unitNames.mm"></span></span></label>
-            <label class="seg"><input type="radio" name="unit" value="cm" /><span><span data-i18n="units.cm"></span><span class="sr-only" data-i18n="prefs.unitNames.cm"></span></span></label>
-            <label class="seg"><input type="radio" name="unit" value="in" /><span><span data-i18n="units.in"></span><span class="sr-only" data-i18n="prefs.unitNames.in"></span></span></label>
+            <label class="seg"><input type="radio" name="unit" value="mm" aria-describedby="units-hint" /><span><span data-i18n="units.mm"></span><span class="sr-only" data-i18n="prefs.unitNames.mm"></span></span></label>
+            <label class="seg"><input type="radio" name="unit" value="cm" aria-describedby="units-hint" /><span><span data-i18n="units.cm"></span><span class="sr-only" data-i18n="prefs.unitNames.cm"></span></span></label>
+            <label class="seg"><input type="radio" name="unit" value="in" aria-describedby="units-hint" /><span><span data-i18n="units.in"></span><span class="sr-only" data-i18n="prefs.unitNames.in"></span></span></label>
           </div>
           <p class="switch-hint" id="units-hint" data-i18n="prefs.unitsHint"></p>
-        </fieldset>
-        <div class="switch-row boxed">
-          <label for="single-keys"><span data-i18n="prefs.singleKeys"></span><span class="switch-hint" id="single-keys-hint" data-i18n="prefs.singleKeysHint"></span></label>
-          <input type="checkbox" role="switch" id="single-keys" aria-describedby="single-keys-hint" checked />
+        </div>
+        <div class="pref-section" role="group" aria-labelledby="prefs-keys-title">
+          <h3 id="prefs-keys-title" class="pref-title" data-i18n="prefs.keyboard"></h3>
+          <div class="switch-row">
+            <label for="single-keys"><span data-i18n="prefs.singleKeys"></span><span class="switch-hint" id="single-keys-hint" data-i18n="prefs.singleKeysHint"></span></label>
+            <input type="checkbox" role="switch" id="single-keys" aria-describedby="single-keys-hint" checked />
+          </div>
         </div>
       </div>
     </dialog>
