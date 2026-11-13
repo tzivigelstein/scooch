@@ -16,7 +16,9 @@ export const assets = new Map();
 export const state = {
   sheets: [{ id: 1 }],
   items: [], // {id, asset, sheet, x, y, scale, r}, en orden de apilado
-  selected: null,
+  // Piezas elegidas (ids), en el orden en que se eligieron: la última es la
+  // principal (la de la barra, la hoja actual y el foco).
+  selection: [],
   paper: 'A4', // id de un preset de papers.js o {custom: true, w, h}
   landscape: false,
   margin: 10,
@@ -82,8 +84,12 @@ export function setGrid(changes) {
 /** Aviso de la última acción ({text, warn, action}) y texto mientras se carga algo. */
 export const status = { flash: null, busyText: '' };
 
-/** Vista (no entra en el historial): la hoja actual cuando no hay pieza seleccionada. */
-export const view = { sheet: 1 };
+/**
+ * Vista (no entra en el historial): la hoja actual cuando no hay pieza
+ * seleccionada y si la selección está «fijada» (se armó con Shift o Ctrl, un
+ * recuadro o Ctrl+A: enfocar otra pieza ya no la reemplaza).
+ */
+export const view = { sheet: 1, pinned: false };
 
 let nextItemId = 1;
 let nextAssetId = 1;
@@ -117,8 +123,27 @@ export function dims(item) {
   return item.r % 180 ? [asset.h * k, asset.w * k] : [asset.w * k, asset.h * k];
 }
 
-export const selectedItem = () => state.items.find((item) => item.id === state.selected) ?? null;
 export const findItem = (id) => state.items.find((item) => item.id === id);
+
+// ---------- Selección ----------
+
+export const isSelected = (id) => state.selection.includes(id);
+/** Las piezas elegidas, en orden de apilado. */
+export const selectedItems = () => state.items.filter((item) => state.selection.includes(item.id));
+/** La pieza principal de la selección (la última elegida), o null. */
+export const primaryItem = () => findItem(state.selection.at(-1)) ?? null;
+/** La pieza elegida si es una sola; con ninguna o con varias, null. */
+export const selectedItem = () => (state.selection.length === 1 ? primaryItem() : null);
+export const selectionSize = () => state.selection.length;
+
+/**
+ * Reemplaza la selección (sin redibujar). `pinned`: la selección queda fijada
+ * (ver `view`); vacía, nunca.
+ */
+export function setSelection(ids, { pinned = false } = {}) {
+  state.selection = [...new Set(ids)].filter((id) => findItem(id));
+  view.pinned = pinned && state.selection.length > 0;
+}
 
 // ---------- Hojas ----------
 
@@ -129,9 +154,9 @@ export const sheetIndex = (id) => state.sheets.findIndex((sheet) => sheet.id ===
 /** Piezas de una hoja, en orden de apilado. */
 export const itemsOn = (id) => state.items.filter((item) => item.sheet === id);
 
-/** La hoja actual: la de la pieza seleccionada o, si no hay, la de la vista. */
+/** La hoja actual: la de la pieza principal de la selección o, si no hay, la de la vista. */
 export function currentSheet() {
-  const item = selectedItem();
+  const item = primaryItem();
   if (item) return item.sheet;
   return sheetIndex(view.sheet) >= 0 ? view.sheet : state.sheets[0].id;
 }
@@ -168,11 +193,11 @@ export const canUndo = () => undoStack.length > 0;
 export const canRedo = () => redoStack.length > 0;
 
 function snapshot() {
-  const { selected, paper, landscape, margin, gap } = state;
+  const { paper, landscape, margin, gap } = state;
   return {
     sheets: state.sheets.map((sheet) => ({ ...sheet })),
     items: state.items.map((item) => ({ ...item })),
-    selected,
+    selection: [...state.selection],
     paper,
     landscape,
     margin,
@@ -196,12 +221,12 @@ export const endEdit = () => (editKey = null);
 function restore(snap) {
   state.sheets = snap.sheets.map((sheet) => ({ ...sheet }));
   state.items = snap.items.map((item) => ({ ...item }));
-  state.selected = snap.selected;
+  state.selection = snap.selection.filter((id) => findItem(id));
+  if (state.selection.length < 2) view.pinned = false;
   state.paper = snap.paper;
   state.landscape = snap.landscape;
   state.margin = snap.margin;
   state.gap = snap.gap;
-  if (!selectedItem()) state.selected = null;
   status.flash = null;
 }
 
@@ -257,7 +282,8 @@ export function replaceDocument(doc, loaded = new Map()) {
   state.landscape = doc.landscape;
   state.margin = doc.margin;
   state.gap = doc.gap;
-  state.selected = null;
+  state.selection = [];
+  view.pinned = false;
   settings.rotate = doc.rotate;
   view.sheet = state.sheets[0].id;
   undoStack.length = 0;

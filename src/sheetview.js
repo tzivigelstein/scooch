@@ -7,7 +7,7 @@
 // marco, y el scroll solo reubica la barra y marca la hoja actual.
 
 import { DRAG_THRESHOLD, NARROW_QUERY } from './config.js';
-import { state, settings, assets, view, sheetSize, dims, findItem, commit, itemsOn, currentSheet, sheetIndex } from './store.js';
+import { state, settings, assets, view, sheetSize, dims, findItem, commit, itemsOn, currentSheet, sheetIndex, isSelected, selectedItem, primaryItem } from './store.js';
 import { overlapsAny, nearestFree, maxGrowth } from './collide.js';
 import { sheetAt, keepCenterInside } from './sheets.js';
 import { paperTitle, sizeText, lengthText } from './measure.js';
@@ -321,7 +321,7 @@ function updatePiece(node, item, offset = null) {
   const k = item.scale / 100;
   const left = (offset?.left ?? 0) + item.x * zoom;
   const top = (offset?.top ?? 0) + item.y * zoom;
-  const selected = item.id === state.selected;
+  const selected = isSelected(item.id);
   const key = `${left}|${top}|${w}|${h}|${zoom}|${item.r}|${asset.url}|${selected}|${settings.unit}|${asset.name}|${asset.page}`;
   if (node.dataset.key === key) return;
   node.dataset.key = key;
@@ -347,7 +347,7 @@ export function rectOf(item) {
 // ---------- Selección: marco, tirador y barra de la pieza ----------
 
 function renderSelection(draft = null) {
-  const item = draft ?? findItem(state.selected);
+  const item = draft ?? selectedItem();
   const box = item && boxes.get(item.sheet);
   ui.frame.hidden = !box;
   ui.piecebar.hidden = !box;
@@ -449,13 +449,11 @@ function onScroll() {
   scrollFrame = requestAnimationFrame(() => {
     scrollFrame = 0;
     if (gesture?.moved) return;
-    if (state.selected === null) {
+    const item = primaryItem();
+    if (!item) {
       const id = visibleSheet();
       if (id !== null) setViewSheet(id);
-    } else {
-      const item = findItem(state.selected);
-      if (item) placePiecebar(item);
-    }
+    } else placePiecebar(item);
   });
 }
 
@@ -528,7 +526,7 @@ function onPointerDown(e) {
   if (state.busy || e.button !== 0) return;
   if (e.target.closest('.dropzone, .page-head, .sheets-foot')) return;
   const onHandle = !!e.target.closest('.handle');
-  const node = onHandle ? nodes.get(state.selected) : e.target.closest('.piece');
+  const node = onHandle ? nodes.get(primaryItem()?.id) : e.target.closest('.piece');
   if (!node) {
     const page = e.target.closest('.page');
     return handlers.background(page ? Number(page.dataset.sheet) : null);

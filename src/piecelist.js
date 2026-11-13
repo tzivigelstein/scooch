@@ -4,7 +4,7 @@
 // encabezado y contador); las flechas pasan de un grupo al siguiente.
 // La selección de la lista y la de la hoja son la misma.
 
-import { state, assets, dims, settings } from './store.js';
+import { state, assets, dims, settings, isSelected } from './store.js';
 import { problemsById } from './notice.js';
 import { printResolution } from './layout.js';
 import { icon } from './icons.js';
@@ -70,7 +70,7 @@ function onKeyDown(e) {
 /** La fila a enfocar (la seleccionada o la primera); null si la lista está vacía. */
 export function listFocusTarget() {
   if (ui.list.hidden) return null;
-  return rows.get(state.selected) ?? ui.list.querySelector('[role="option"]');
+  return rows.get(state.selection.at(-1)) ?? ui.list.querySelector('[role="option"]');
 }
 
 /** Enfoca la fila seleccionada (o la primera). Devuelve false si la lista está vacía. */
@@ -96,7 +96,7 @@ function createRow(item) {
 function updateRow(row, item, problems = {}) {
   const asset = assets.get(item.asset);
   const [w, h] = dims(item);
-  const selected = item.id === state.selected;
+  const selected = isSelected(item.id);
   row.setAttribute('aria-selected', String(selected));
   const img = row.querySelector('img');
   if (img.getAttribute('src') !== asset.url) img.src = asset.url;
@@ -223,9 +223,9 @@ export function renderPieceList() {
 
   // Foco itinerante: una sola fila en el orden de tabulación (la seleccionada o la primera).
   const first = ui.list.querySelector('[role="option"]');
-  const current = rows.get(state.selected) ?? first;
+  const current = rows.get(state.selection.at(-1)) ?? first;
   for (const [, row] of rows) row.tabIndex = row === current ? 0 : -1;
-  const active = rows.get(state.selected);
+  const active = rows.get(state.selection.at(-1));
   if (active && active !== lastScrolled) scrollIntoList(active);
   lastScrolled = active ?? null;
 }

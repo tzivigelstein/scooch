@@ -17,6 +17,7 @@ import {
   newId,
   commit,
   selectedItem,
+  setSelection,
   boxOf,
   newSheetId,
   sheetIndex,
@@ -257,7 +258,7 @@ export function placeNew(keys) {
     item.y = tidy((H - h) / 2 + offset);
   });
   state.items.push(...fresh);
-  state.selected = fresh[fresh.length - 1].id;
+  setSelection([fresh[fresh.length - 1].id]);
 }
 
 /**
@@ -352,7 +353,7 @@ export function fillWithCopies() {
   const rest = state.items.filter((other) => other.sheet !== sheet);
   rest.splice(Math.min(at, rest.length), 0, ...copies);
   state.items = rest;
-  state.selected = copies[0].id;
+  setSelection([copies[0].id]);
   const many = state.sheets.length > 1;
   say(many ? t('notices.filledSheet', { n: plan.count, i: sheetIndex(sheet) + 1 }) : t('notices.filled', { n: plan.count }));
   return true;

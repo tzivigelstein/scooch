@@ -12,6 +12,8 @@ import {
   view,
   dims,
   selectedItem,
+  primaryItem,
+  setSelection,
   addAsset,
   commit,
   endEdit,
@@ -79,9 +81,10 @@ function renderAll() {
   rescueFocus();
   documentChanged(); // guardado automático del proyecto
   // La pieza recién seleccionada (con teclado, desde la lista, al agregar…) se lleva a la vista.
-  if (state.selected !== shownSelection) {
-    shownSelection = state.selected;
-    if (state.selected !== null && !isDragging()) revealPiece(state.selected);
+  const primary = state.selection.at(-1) ?? null;
+  if (primary !== shownSelection) {
+    shownSelection = primary;
+    if (primary !== null && !isDragging()) revealPiece(primary);
   }
 }
 
@@ -114,7 +117,7 @@ const sheetNumber = (id) => sheetIndex(id) + 1;
 
 /** Enfoca la pieza seleccionada; si no hay, la zona para soltar o la hoja actual. */
 function focusSheet() {
-  const node = pieceNode(state.selected);
+  const node = pieceNode(primaryItem()?.id);
   if (node) return node.focus({ preventScroll: true });
   if (!state.items.length && !ui.empty.disabled) return ui.empty.focus({ preventScroll: true });
   sheetNode(currentSheet())?.focus({ preventScroll: true });
@@ -137,9 +140,10 @@ function rescueFocus() {
 // ---------- Selección y edición ----------
 
 function select(id) {
-  if (state.selected === id) return;
-  state.selected = id;
-  const item = selectedItem();
+  const ids = id === null ? [] : [id];
+  if (state.selection.length === ids.length && state.selection.every((v, i) => v === ids[i])) return;
+  setSelection(ids);
+  const item = primaryItem();
   if (item) view.sheet = item.sheet;
   render();
 }
@@ -178,7 +182,7 @@ const pieceActions = {
       (item) => {
         const copy = duplicatePiece(item);
         moved = copy.sheet !== item.sheet;
-        state.selected = copy.id;
+        setSelection([copy.id]);
         view.sheet = copy.sheet;
       },
       {
@@ -218,7 +222,7 @@ const pieceActions = {
     state.items = state.items.filter((other) => other !== item);
     const rest = sameSheet.filter((other) => other !== item);
     const neighbor = focus ? (rest[index] ?? rest[index - 1] ?? null) : null;
-    state.selected = neighbor?.id ?? null;
+    setSelection(neighbor ? [neighbor.id] : []);
     view.sheet = item.sheet;
     render();
     if (inList && focusList()) {
@@ -330,7 +334,7 @@ function clearSheet() {
   commit();
   state.items = [];
   state.sheets = [state.sheets[0]];
-  state.selected = null;
+  setSelection([]);
   view.sheet = state.sheets[0].id;
   render();
   announce(t('announce.cleared'));
@@ -345,7 +349,7 @@ function addSheet() {
   forgetSpill();
   const sheet = newSheet();
   state.sheets.push(sheet);
-  state.selected = null;
+  setSelection([]);
   view.sheet = sheet.id;
   render();
   revealSheet(sheet.id);
@@ -371,7 +375,7 @@ async function removeSheet(id, { viaKeyboard = false } = {}) {
   forgetSpill();
   state.items = state.items.filter((item) => item.sheet !== id);
   state.sheets = state.sheets.filter((sheet) => sheet.id !== id);
-  if (!selectedItem()) state.selected = null;
+  setSelection(state.selection);
   const next = state.sheets[Math.min(index, state.sheets.length - 1)];
   view.sheet = next.id;
   render();
@@ -399,7 +403,7 @@ function gotoSheet(dir) {
     pieceNode(first.id)?.focus({ preventScroll: true });
     revealPiece(first.id);
   } else {
-    state.selected = null;
+    setSelection([]);
     render();
     revealSheet(sheet.id);
     sheetNode(sheet.id)?.focus({ preventScroll: true });
@@ -571,7 +575,7 @@ function setupDropZone(zone) {
     const page = e.target.closest?.('.page');
     if (page) {
       view.sheet = Number(page.dataset.sheet);
-      state.selected = null;
+      setSelection([]);
     }
     loadFiles(filesFrom(e.dataTransfer));
   });
@@ -797,7 +801,7 @@ function wire() {
     select,
     background: (sheetId) => {
       if (sheetId !== null) view.sheet = sheetId;
-      if (state.selected === null) return render();
+      if (!state.selection.length) return render();
       select(null);
       sheetNode(currentSheet())?.focus({ preventScroll: true });
     },
@@ -911,13 +915,13 @@ function wire() {
           return true;
         }
       }
-      if (target.closest('#piecebar') && pieceNode(state.selected)) {
+      if (target.closest('#piecebar') && pieceNode(primaryItem()?.id)) {
         focusSheet();
         return true;
       }
-      if (state.selected === null) return false;
+      if (!state.selection.length) return false;
       const onPiece = !!target.closest('.piece');
-      const sheet = selectedItem()?.sheet;
+      const sheet = primaryItem()?.sheet;
       select(null);
       if (onPiece && sheet) sheetNode(sheet)?.focus({ preventScroll: true });
       announce(t('announce.deselected'));
