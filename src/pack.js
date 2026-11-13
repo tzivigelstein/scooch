@@ -85,21 +85,27 @@ function orientations(rects, rotate) {
   return variants;
 }
 
+// Mejor hueco para la pieza según la heurística (con su gap), o null si no entra.
+function bestSpot(p, free, gap, heuristic) {
+  let best = null;
+  for (const turn of p.free ? [false, true] : [false]) {
+    const w = (turn ? p.h : p.w) + gap;
+    const h = (turn ? p.w : p.h) + gap;
+    for (const f of free) {
+      if (w > f.w + EPS || h > f.h + EPS) continue;
+      const s = heuristic(f, w, h);
+      if (!best || better(s, best.s)) best = { s, x: f.x, y: f.y, w, h, turn };
+    }
+  }
+  return best;
+}
+
 // Ubica las piezas en el orden dado; null si alguna no entra.
 function packOnce(pieces, start, gap, heuristic) {
   let free = start;
   const placements = [];
   for (const p of pieces) {
-    let best = null;
-    for (const turn of p.free ? [false, true] : [false]) {
-      const w = (turn ? p.h : p.w) + gap;
-      const h = (turn ? p.w : p.h) + gap;
-      for (const f of free) {
-        if (w > f.w + EPS || h > f.h + EPS) continue;
-        const s = heuristic(f, w, h);
-        if (!best || better(s, best.s)) best = { s, x: f.x, y: f.y, w, h, turn };
-      }
-    }
+    const best = bestSpot(p, free, gap, heuristic);
     if (!best) return null;
     free = occupy(free, best);
     placements.push({ id: p.id, x: best.x, y: best.y, rotated: best.turn !== p.flip });
@@ -425,4 +431,286 @@ export function fitScale(rects, W, H, options = {}) {
     else hi = mid;
   }
   return lo < 0.01 ? 0 : lo;
+}
+
+// --- Varias hojas ----------------------------------------------------------
+// Reparto en hojas iguales: hoja por hoja se elige qué piezas van (de las que
+// quedan) con rellenos voraces que saltean lo que no entra, y después cada
+// hoja se reacomoda con `pack` para que quede prolija. Así las primeras hojas
+// salen llenas y la última es la más vacía.
+
+// ¿Entra sola en los huecos `start`? (Con una hoja vacía, el gap no influye.)
+function fitsAlone(r, start, gap, rotate) {
+  return bestSpot({ w: r.w, h: r.h, free: rotate && !isSquare(r) }, start, gap, HEURISTICS[0]) !== null;
+}
+
+// Como packOnce, pero saltea las piezas que no entran.
+function fillOnce(pieces, start, gap, heuristic) {
+  let free = start;
+  const placements = [];
+  for (const p of pieces) {
+    const best = bestSpot(p, free, gap, heuristic);
+    if (!best) continue;
+    free = occupy(free, best);
+    placements.push({ id: p.id, x: best.x, y: best.y, rotated: best.turn !== p.flip });
+  }
+  return placements;
+}
+
+// Primero cada grupo de piezas iguales entero (si no entra todo, no va
+// ninguna) y después, si `topUp`, rellena con las que quedaron afuera. Los
+// grupos van en el orden de su primera pieza.
+function fillGroups(pieces, start, gap, heuristic, info, topUp) {
+  const blocks = new Map();
+  for (const p of pieces) {
+    const g = info.get(p.id).group;
+    if (!blocks.has(g)) blocks.set(g, []);
+    blocks.get(g).push(p);
+  }
+  let free = start;
+  const placements = [];
+  const placed = new Set();
+  for (const block of blocks.values()) {
+    let trial = free;
+    const mine = [];
+    for (const p of block) {
+      const best = bestSpot(p, trial, gap, heuristic);
+      if (!best) break;
+      trial = occupy(trial, best);
+      mine.push({ id: p.id, x: best.x, y: best.y, rotated: best.turn !== p.flip });
+    }
+    if (mine.length < block.length) continue;
+    free = trial;
+    for (const m of mine) {
+      placements.push(m);
+      placed.add(m.id);
+    }
+  }
+  if (!topUp) return placements;
+  const rest = pieces.filter((p) => !placed.has(p.id));
+  return placements.concat(fillOnce(rest, free, gap, heuristic));
+}
+
+// Conjuntos distintos de piezas que pueden ir en una hoja, con una ubicación
+// válida de cada uno: todas las combinaciones fijas orientación × orden ×
+// heurística, rellenando de tres maneras (pieza por pieza, grupos enteros y
+// grupos enteros más relleno). `index`: id → posición canónica.
+const FILL_MODES = [null, 'groups', 'groups+'];
+
+function sheetCandidates(remaining, start, gap, rotate, info, index) {
+  const byId = new Map(remaining.map((r) => [r.id, r]));
+  const seen = new Set();
+  const out = [];
+  for (const pieces of orientations(remaining, rotate)) {
+    for (const order of ORDERS) {
+      const sorted = [...pieces].sort(order);
+      for (const heuristic of HEURISTICS) {
+        for (const mode of FILL_MODES) {
+          const placements = mode
+            ? fillGroups(sorted, start, gap, heuristic, info, mode === 'groups+')
+            : fillOnce(sorted, start, gap, heuristic);
+          if (!placements.length) continue;
+          const key = placements
+            .map((p) => index.get(p.id))
+            .sort((a, b) => a - b)
+            .join(',');
+          if (seen.has(key)) continue;
+          seen.add(key);
+          let area = 0;
+          for (const p of placements) area += byId.get(p.id).w * byId.get(p.id).h;
+          out.push({ placements, area, splits: null });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+// Cuántos grupos de piezas iguales parte el candidato: tiene algunas del
+// grupo pero no todas las que quedan.
+function countSplits(candidate, remaining, info) {
+  const left = new Map();
+  for (const r of remaining) {
+    const g = info.get(r.id).group;
+    left.set(g, (left.get(g) ?? 0) + 1);
+  }
+  const taken = new Map();
+  for (const p of candidate.placements) {
+    const g = info.get(p.id).group;
+    taken.set(g, (taken.get(g) ?? 0) + 1);
+  }
+  let splits = 0;
+  for (const [g, n] of taken) if (n < left.get(g)) splits++;
+  return splits;
+}
+
+// Cuánto relleno de una hoja (fracción del mejor candidato) se puede resignar
+// para no partir grupos de piezas iguales. Se prueba cada valor por separado
+// y gana el reparto que use menos hojas; a igual cantidad, el que parta menos
+// grupos; después, el que llene más las primeras hojas.
+const COHESION = [0, 0.15, 1];
+
+function choose(candidates, tolerance, remaining, info) {
+  let maxArea = 0;
+  for (const c of candidates) maxArea = Math.max(maxArea, c.area);
+  const tiny = maxArea * 1e-9;
+  const floor = maxArea * (1 - tolerance) - tiny;
+  let best = null;
+  for (const c of candidates) {
+    if (c.area < floor) continue;
+    c.splits ??= countSplits(c, remaining, info);
+    if (!best || c.splits < best.splits || (c.splits === best.splits && c.area > best.area + tiny)) best = c;
+  }
+  return best;
+}
+
+// Reparte `pieces` (orden canónico, todas entran solas en una hoja vacía)
+// hoja por hoja: primero las existentes (`existing`: obstáculos por hoja) y
+// después hojas nuevas. `memo` comparte candidatos entre tolerancias: con las
+// mismas piezas restantes y la misma hoja salen los mismos.
+function assign(pieces, W, H, gap, rotate, existing, tolerance, info, index, memo) {
+  const sheets = [];
+  let remaining = pieces;
+  for (let s = 0; remaining.length; s++) {
+    const isNew = s >= existing.length;
+    const key = `${isNew ? 'n' : s}|${remaining.map((p) => index.get(p.id)).join(',')}`;
+    let candidates = memo.get(key);
+    if (!candidates) {
+      candidates = sheetCandidates(remaining, startFree(W, H, gap, isNew ? [] : existing[s]), gap, rotate, info, index);
+      memo.set(key, candidates);
+    }
+    const pick = choose(candidates, tolerance, remaining, info);
+    if (!pick) {
+      if (isNew) break; // no pasa: en una hoja vacía siempre entra al menos una
+      sheets.push(null);
+      continue;
+    }
+    sheets.push(pick);
+    const used = new Set(pick.placements.map((p) => p.id));
+    remaining = remaining.filter((p) => !used.has(p.id));
+  }
+  // Las hojas nuevas, de la más llena a la más vacía.
+  const fresh = sheets.slice(existing.length).sort((a, b) => b.area - a.area);
+  const all = sheets.slice(0, existing.length).concat(fresh);
+  // Grupos partidos en total: por grupo, en cuántas hojas quedó, menos una.
+  const where = new Map();
+  all.forEach((sheet, s) => {
+    for (const p of sheet?.placements ?? []) {
+      const g = info.get(p.id).group;
+      if (!where.has(g)) where.set(g, new Set());
+      where.get(g).add(s);
+    }
+  });
+  let splits = 0;
+  for (const set of where.values()) splits += set.size - 1;
+  return { sheets: all, fresh: fresh.length, splits, rest: remaining };
+}
+
+function betterAssignment(a, b) {
+  if (a.rest.length !== b.rest.length) return a.rest.length < b.rest.length;
+  if (a.fresh !== b.fresh) return a.fresh < b.fresh;
+  if (a.splits !== b.splits) return a.splits < b.splits;
+  for (let s = 0; s < a.sheets.length; s++) {
+    const da = a.sheets[s]?.area ?? 0;
+    const db = b.sheets[s]?.area ?? 0;
+    if (Math.abs(da - db) > 1e-9 * Math.max(da, db)) return da > db;
+  }
+  return false;
+}
+
+// Separa las que no entran ni solas en una hoja vacía. Devuelve las que sí
+// (en orden canónico), las que no (ids, en orden canónico) y los datos comunes.
+function prepare(rects, W, H, gap, rotate) {
+  const pieces = canonical(rects);
+  const empty = startFree(W, H, gap, []);
+  const fit = [];
+  const unplaced = [];
+  for (const r of pieces) {
+    if (r.w > 0 && r.h > 0 && W > 0 && H > 0 && fitsAlone(r, empty, gap, rotate)) fit.push(r);
+    else unplaced.push(r.id);
+  }
+  return { fit, unplaced, info: pieceInfo(fit), index: new Map(fit.map((r, i) => [r.id, i])) };
+}
+
+// El mejor reparto entre las tolerancias de COHESION.
+function bestAssignment(fit, W, H, gap, rotate, existing, info, index) {
+  const memo = new Map();
+  let best = null;
+  for (const tolerance of COHESION) {
+    const a = assign(fit, W, H, gap, rotate, existing, tolerance, info, index, memo);
+    if (!best || betterAssignment(a, best)) best = a;
+  }
+  return best;
+}
+
+// Ubicación final de una hoja: lo mejor entre `pack` con esas piezas y la
+// ubicación con que se eligieron (que es válida aunque `pack` no la encuentre).
+function finalLayout(sheet, byId, W, H, gap, rotate, obstacles) {
+  const rects = sheet.placements.map((p) => byId.get(p.id));
+  const packed = pack(rects, W, H, { gap, rotate, obstacles });
+  if (packed && score(packed, rects, W, H) <= score(sheet.placements, rects, W, H) + 1e-12) return packed;
+  return sheet.placements;
+}
+
+/**
+ * Reparte `rects` ({id, w, h}) en hojas iguales de W×H (área útil), usando
+ * pocas hojas. Devuelve `{sheets, unplaced}`: `sheets[i]` son las ubicaciones
+ * ({id, x, y, rotated}, como las de `pack`) de la hoja i; `unplaced`, los ids
+ * de las piezas que no entran ni solas en una hoja vacía. Cada id aparece una
+ * sola vez, en una hoja o en `unplaced`.
+ *
+ * Criterios, en orden: menos hojas; no partir entre hojas los grupos de
+ * piezas de igual medida; llenar bien las primeras hojas (la última es la más
+ * vacía: las hojas van de mayor a menor área ocupada). Cada hoja queda con la
+ * mejor distribución que encuentra `pack` para sus piezas.
+ *
+ * Es heurístico (el problema exacto es intratable): en casos fáciles usa la
+ * cota por área o una hoja más. Determinístico e independiente del orden de
+ * `rects`; `unplaced` va en orden canónico (lado mayor, lado menor, id).
+ */
+export function packSheets(rects, W, H, { gap = 0, rotate = true } = {}) {
+  const { fit, unplaced, info, index } = prepare(rects, W, H, gap, rotate);
+  if (!fit.length) return { sheets: [], unplaced };
+  const best = bestAssignment(fit, W, H, gap, rotate, [], info, index);
+  const byId = new Map(fit.map((r) => [r.id, r]));
+  return {
+    sheets: best.sheets.map((sheet) => finalLayout(sheet, byId, W, H, gap, rotate, [])),
+    unplaced: unplaced.concat(best.rest.map((r) => r.id)),
+  };
+}
+
+/**
+ * Ubica piezas NUEVAS (`rects`: {id, w, h}) sin mover las que ya están.
+ * `sheets`: por cada hoja existente, sus obstáculos ({x, y, w, h}, en
+ * coordenadas del área útil: lo ocupado). Rellena los huecos de las hojas
+ * existentes en orden (empezando por la hoja `from`, si se indica, y siguiendo
+ * con las siguientes y después las anteriores) y lo que no entra va a hojas
+ * nuevas, con índices desde `sheets.length` (de la más llena a la más vacía).
+ *
+ * Devuelve `{placements, unplaced}`: `placements` son {id, sheet, x, y,
+ * rotated}; `unplaced`, los ids de las que no entran ni solas en una hoja
+ * vacía. Respeta `gap` entre piezas nuevas y entre piezas y obstáculos.
+ * Mismos criterios y garantías que `packSheets`.
+ */
+export function packInto(rects, W, H, { gap = 0, rotate = true, sheets = [], from = 0 } = {}) {
+  const { fit, unplaced, info, index } = prepare(rects, W, H, gap, rotate);
+  if (!fit.length) return { placements: [], unplaced };
+  const n = sheets.length;
+  const first = n ? Math.min(n - 1, Math.max(0, Math.floor(from) || 0)) : 0;
+  const order = [...Array(n).keys()].map((i) => (first + i) % n);
+  const existing = order.map((i) => sheets[i] ?? []);
+  const best = bestAssignment(fit, W, H, gap, rotate, existing, info, index);
+  const byId = new Map(fit.map((r) => [r.id, r]));
+  const placements = [];
+  best.sheets.forEach((sheet, k) => {
+    if (!sheet) return;
+    const isNew = k >= n;
+    const target = isNew ? k : order[k];
+    const obstacles = isNew ? [] : existing[k];
+    for (const p of finalLayout(sheet, byId, W, H, gap, rotate, obstacles)) {
+      placements.push({ id: p.id, sheet: target, x: p.x, y: p.y, rotated: p.rotated });
+    }
+  });
+  placements.sort((a, b) => a.sheet - b.sheet);
+  return { placements, unplaced: unplaced.concat(best.rest.map((r) => r.id)) };
 }
