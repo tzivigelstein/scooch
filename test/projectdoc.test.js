@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DOC_VERSION, ProjectError, serialize, fileKeys, counts, nextIds, migrate, validate, deserialize } from '../src/projectdoc.js';
+import { DOC_VERSION, DEFAULT_CUTS, ProjectError, serialize, fileKeys, counts, nextIds, migrate, validate, deserialize } from '../src/projectdoc.js';
 
 const image = (props = {}) => ({
   kind: 'image',
@@ -37,7 +37,7 @@ function sampleState() {
     sheets: [{ id: 1 }, { id: 4 }],
     items: [
       { id: 3, asset: 'a1', sheet: 1, x: 10, y: 10, scale: 50, r: 0 },
-      { id: 7, asset: 'a2', sheet: 4, x: 20.5, y: 12, scale: 80, r: 90 },
+      { id: 7, asset: 'a2', sheet: 4, x: 20.5, y: 12, scale: 80, r: 90, crop: { x: 0.1, y: 0.2, w: 0.5, h: 0.6 } },
       { id: 8, asset: 'a1', sheet: 4, x: 120, y: 200, scale: 25, r: 270 },
     ],
     paper: { custom: true, w: 216, h: 330 },
@@ -45,6 +45,7 @@ function sampleState() {
     margin: 8,
     gap: 4,
     rotate: false,
+    cuts: { mode: 'corners', length: 3, offset: 2 },
   };
 }
 
@@ -66,6 +67,8 @@ describe('serialize', () => {
     assert.deepEqual(doc.assets.a1, { kind: 'image', name: 'foto.jpg', src: 1, px: [1200, 800], format: 'jpg', dpi: 300, w: 101.6, h: 67.73, derived: true });
     assert.deepEqual(doc.assets.a2, { kind: 'pdf', name: 'plano.pdf', src: 2, page: 2, pages: 3, pageRotation: 0, view: [0, 0, 595.28, 841.89], px: [1697, 2400], w: 210, h: 297 });
     assert.equal(doc.rotate, false);
+    assert.deepEqual(doc.cuts, { mode: 'corners', length: 3, offset: 2 });
+    assert.deepEqual(doc.items.map((item) => item.crop), [null, { x: 0.1, y: 0.2, w: 0.5, h: 0.6 }, null], 'sin recorte → null');
     // Es JSON puro: ida y vuelta sin pérdidas.
     assert.deepEqual(JSON.parse(JSON.stringify(doc)), doc);
     assert.deepEqual(validate(doc), []);
@@ -113,13 +116,34 @@ describe('deserialize', () => {
       assets: { a1: { kind: 'image', name: 'x.png', src: 1, px: [10, 10], format: 'png', dpi: 300, w: 1, h: 1 } },
     };
     const doc = deserialize(v0);
-    assert.equal(doc.version, 1);
+    assert.equal(doc.version, DOC_VERSION);
+    assert.deepEqual(doc.cuts, DEFAULT_CUTS);
+    assert.equal(doc.items[0].crop, null);
     assert.equal(doc.paper, 'letter');
     assert.equal(doc.rotate, true);
     assert.deepEqual(doc.sheets, [{ id: 1 }]);
     assert.equal(doc.items[0].sheet, 1);
     assert.equal(v0.version, undefined, 'no toca el original');
     assert.equal(migrate({ ...v0, paper: 'Oficio' }).paper, 'legal');
+  });
+
+  test('migra la versión 1 (sin recorte ni líneas de corte)', () => {
+    const v1 = { ...serialize(sampleState(), sampleAssets()), version: 1 };
+    delete v1.cuts;
+    for (const item of v1.items) delete item.crop;
+    const doc = deserialize(v1);
+    assert.equal(doc.version, 2);
+    assert.deepEqual(doc.cuts, { mode: 'none', length: 4, offset: 1.5 });
+    assert.ok(doc.items.every((item) => item.crop === null));
+    assert.equal(v1.cuts, undefined, 'no toca el original');
+  });
+
+  test('sin recorte en una pieza: vale (es «sin recorte»); el recorte de la imagen entera se guarda como null', () => {
+    const doc = serialize(sampleState(), sampleAssets());
+    delete doc.items[0].crop;
+    assert.deepEqual(validate(doc), []);
+    const whole = serialize({ ...sampleState(), items: [{ ...sampleState().items[0], crop: { x: 0, y: 0, w: 1, h: 1 } }] }, sampleAssets());
+    assert.equal(whole.items[0].crop, null);
   });
 
   test('versión futura → «newer»; cualquier otra cosa rara → «corrupt»', () => {
@@ -149,6 +173,15 @@ describe('deserialize', () => {
       { ...doc, assets: { ...doc.assets, a1: { ...doc.assets.a1, kind: 'video' } } },
       { ...doc, assets: { ...doc.assets, x1: doc.assets.a1 } },
       { ...doc, assets: null },
+      { ...doc, cuts: undefined },
+      { ...doc, cuts: { mode: 'dotted', length: 4, offset: 1 } },
+      { ...doc, cuts: { mode: 'corners', length: 0, offset: 1 } },
+      { ...doc, cuts: { mode: 'corners', length: 4, offset: -1 } },
+      { ...doc, cuts: { mode: 'outline', length: 4, offset: 50 } },
+      { ...doc, items: [{ ...doc.items[0], crop: { x: 0.5, y: 0, w: 0.6, h: 1 } }] },
+      { ...doc, items: [{ ...doc.items[0], crop: { x: 0, y: 0, w: 0.001, h: 1 } }] },
+      { ...doc, items: [{ ...doc.items[0], crop: { x: 0, y: 0, w: NaN, h: 1 } }] },
+      { ...doc, items: [{ ...doc.items[0], crop: 'todo' }] },
     ];
     for (const raw of broken) {
       assert.throws(

@@ -1,16 +1,18 @@
 // Formato del documento de un proyecto guardado: serializar, deserializar,
 // migrar versiones viejas y validar. Módulo puro (sin DOM ni textos).
 //
-// Forma (versión 1):
+// Forma (versión 2):
 //
 //   {
-//     version: 1,
+//     version: 2,
 //     paper: 'A4' | {custom: true, w, h},   // ids de papers.js; medidas en mm
 //     landscape: false,
 //     margin: 10, gap: 5,                  // mm
 //     rotate: true,                        // «Girar si conviene»
+//     cuts: {mode: 'none', length: 4, offset: 1.5},  // líneas de corte (cutmarks.js): modo y mm
 //     sheets: [{id: 1}, {id: 2}],          // en orden; al menos una
-//     items: [{id, asset, sheet, x, y, scale, r}],   // en orden de apilado
+//     items: [{id, asset, sheet, x, y, scale, r, crop}],   // en orden de apilado;
+//                                          // crop: null o {x, y, w, h} normalizado (crop.js)
 //     assets: {
 //       a1: {kind: 'image', name, src, px: [w, h], format: 'jpg' | 'png', dpi, w, h, derived},
 //       a2: {kind: 'pdf', name, src, page, pages, pageRotation, view: [x0, y0, x1, y1], px, w, h},
@@ -25,8 +27,18 @@
 //   'preview:aK' la vista previa ya rasterizada (así no hace falta pdf.js al abrir)
 
 import { sizeOf } from './papers.js';
+import { MIN_CROP, isIdentity } from './crop.js';
+import { CUT_MODES } from './cutmarks.js';
 
-export const DOC_VERSION = 1;
+export const DOC_VERSION = 2;
+
+/** Líneas de corte de un documento nuevo (o de uno de antes de que existieran): ninguna. */
+export const DEFAULT_CUTS = Object.freeze({ mode: 'none', length: 4, offset: 1.5 });
+/** Largo de las marcas y separación de la esquina, en mm (inclusive). */
+export const CUT_LIMITS = Object.freeze({ length: [0.5, 20], offset: [0, 10] });
+
+/** Copia limpia de un recorte (o null si no hay o es la imagen entera). */
+export const cleanCrop = (crop) => (isIdentity(crop) ? null : { x: crop.x, y: crop.y, w: crop.w, h: crop.h });
 
 /** Error de un documento que no se puede abrir: `code` 'corrupt' o 'newer'. */
 export class ProjectError extends Error {
@@ -47,7 +59,7 @@ const pick = (obj, fields) => Object.fromEntries(fields.map((key) => [key, Array
  * de la app, con sus binarios); solo se incluyen los que usan las piezas.
  * Para imágenes, `derived` dice si lo que se embebe no es el archivo original.
  */
-export function serialize({ sheets, items, paper, landscape, margin, gap, rotate }, assets) {
+export function serialize({ sheets, items, paper, landscape, margin, gap, rotate, cuts = DEFAULT_CUTS }, assets) {
   const used = {};
   for (const item of items) {
     if (used[item.asset]) continue;
@@ -63,8 +75,9 @@ export function serialize({ sheets, items, paper, landscape, margin, gap, rotate
     margin,
     gap,
     rotate: rotate !== false,
+    cuts: { mode: cuts.mode, length: cuts.length, offset: cuts.offset },
     sheets: sheets.map((sheet) => ({ id: sheet.id })),
-    items: items.map(({ id, asset, sheet, x, y, scale, r }) => ({ id, asset, sheet, x, y, scale, r })),
+    items: items.map(({ id, asset, sheet, x, y, scale, r, crop }) => ({ id, asset, sheet, x, y, scale, r, crop: cleanCrop(crop) })),
     assets: used,
   };
 }
@@ -112,6 +125,13 @@ const MIGRATIONS = {
     sheets: [{ id: 1 }],
     items: (doc.items ?? []).map((item) => ({ ...item, sheet: 1 })),
   }),
+  // La 1 no tenía recorte ni líneas de corte.
+  1: (doc) => ({
+    ...doc,
+    version: 2,
+    cuts: { ...DEFAULT_CUTS },
+    items: Array.isArray(doc.items) ? doc.items.map((item) => ({ ...item, crop: null })) : doc.items,
+  }),
 };
 
 /**
@@ -158,6 +178,13 @@ function assetProblem(key, asset) {
   return `tipo de ${key}`;
 }
 
+// Recorte: lados entre MIN_CROP y 1 y la zona dentro de la imagen (con un pelo de tolerancia).
+function validCrop(crop) {
+  if (!crop || typeof crop !== 'object' || ![crop.x, crop.y, crop.w, crop.h].every(isFiniteNumber)) return false;
+  const tol = 1e-9;
+  return crop.x >= -tol && crop.y >= -tol && crop.w >= MIN_CROP - tol && crop.h >= MIN_CROP - tol && crop.x + crop.w <= 1 + tol && crop.y + crop.h <= 1 + tol;
+}
+
 /**
  * Problemas de un documento ya migrado: [] si está bien, o una lista de
  * descripciones (para el registro; la interfaz solo dice «dañado»).
@@ -172,6 +199,14 @@ export function validate(doc) {
     if (!isFiniteNumber(doc[key]) || doc[key] < 0 || doc[key] > 50) problems.push(key);
   }
   if (typeof doc.rotate !== 'boolean') problems.push('rotate');
+  const cuts = doc.cuts;
+  if (!cuts || typeof cuts !== 'object' || !CUT_MODES.includes(cuts.mode)) problems.push('líneas de corte');
+  else {
+    for (const key of ['length', 'offset']) {
+      const [lo, hi] = CUT_LIMITS[key];
+      if (!isFiniteNumber(cuts[key]) || cuts[key] < lo || cuts[key] > hi) problems.push(`líneas de corte: ${key}`);
+    }
+  }
   const sheets = Array.isArray(doc.sheets) ? doc.sheets : null;
   if (!sheets || !sheets.length) problems.push('hojas');
   const sheetIds = new Set();
@@ -196,6 +231,8 @@ export function validate(doc) {
     if (!isFiniteNumber(item?.x) || !isFiniteNumber(item?.y)) problems.push(`${where}: posición`);
     if (!isPositive(item?.scale)) problems.push(`${where}: escala`);
     if (![0, 90, 180, 270].includes(item?.r)) problems.push(`${where}: giro`);
+    // Sin `crop` (o null): sin recorte.
+    if (item?.crop != null && !validCrop(item.crop)) problems.push(`${where}: recorte`);
   }
   return problems;
 }

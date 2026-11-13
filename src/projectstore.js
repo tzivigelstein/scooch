@@ -16,7 +16,7 @@
 //   (miniatura de la primera hoja) o null. Los archivos van por proyecto con
 //   las claves de projectdoc.fileKeys().
 
-import { DOC_VERSION, ProjectError, deserialize, fileKeys, counts } from './projectdoc.js';
+import { DOC_VERSION, DEFAULT_CUTS, ProjectError, deserialize, fileKeys, counts } from './projectdoc.js';
 
 /** Largo máximo del nombre de un proyecto. */
 export const NAME_MAX = 80;
@@ -38,8 +38,8 @@ export function cleanName(name, fallback) {
 }
 
 /** Documento de un proyecto nuevo: una hoja vacía con los ajustes dados. */
-export function emptyDoc({ paper = 'A4', landscape = false, margin = 10, gap = 5, rotate = true } = {}) {
-  return { version: DOC_VERSION, paper, landscape, margin, gap, rotate, sheets: [{ id: 1 }], items: [], assets: {} };
+export function emptyDoc({ paper = 'A4', landscape = false, margin = 10, gap = 5, rotate = true, cuts = DEFAULT_CUTS } = {}) {
+  return { version: DOC_VERSION, paper, landscape, margin, gap, rotate, cuts: { ...cuts }, sheets: [{ id: 1 }], items: [], assets: {} };
 }
 
 /** Crea y guarda un proyecto (por omisión, vacío). Devuelve el registro. */
