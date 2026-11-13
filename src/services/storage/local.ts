@@ -1,9 +1,28 @@
 // localStorage access that never throws: in private windows or with storage
-// blocked, preferences last as long as the tab.
+// blocked, preferences last as long as the tab. The first access moves the
+// keys saved under the app's former name (migrate.ts).
+
+import { LEGACY_STORAGE_KEYS, MIGRATED_STORAGE } from '../../config.ts';
+import { migrateKeys } from './migrate.ts';
+
+let migrated = false;
+
+function store(): Storage {
+  const local = window.localStorage;
+  if (!migrated) {
+    migrated = true;
+    try {
+      migrateKeys(local, LEGACY_STORAGE_KEYS, MIGRATED_STORAGE);
+    } catch {
+      // Storage full or blocked: the old keys stay and the next start tries again.
+    }
+  }
+  return local;
+}
 
 export function storageGet(key: string): string | null {
   try {
-    return window.localStorage.getItem(key);
+    return store().getItem(key);
   } catch {
     return null;
   }
@@ -11,7 +30,7 @@ export function storageGet(key: string): string | null {
 
 export function storageSet(key: string, value: string) {
   try {
-    window.localStorage.setItem(key, value);
+    store().setItem(key, value);
   } catch {
     // Storage blocked: the setting lasts as long as the tab.
   }
@@ -19,7 +38,7 @@ export function storageSet(key: string, value: string) {
 
 export function storageRemove(key: string) {
   try {
-    window.localStorage.removeItem(key);
+    store().removeItem(key);
   } catch {
     // Storage blocked: nothing to remove.
   }

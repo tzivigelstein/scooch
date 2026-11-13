@@ -14,26 +14,60 @@ export const DRAG_THRESHOLD = 3; // px before a press counts as a drag
 export const NARROW_QUERY = '(max-width: 799.98px)';
 /** From here down, the pieces panel collapses to a rail and opens as an overlay. */
 export const LEFT_DRAWER_QUERY = '(max-width: 1099.98px)';
+
+// ---------- Storage ----------
+
+/**
+ * Prefix of everything saved in this browser (IndexedDB, localStorage and
+ * the tabs' channel). Apart from APP_NAME on purpose: renaming the app must
+ * not lose anyone's projects; changing this needs a migration.
+ */
+export const STORAGE_NAMESPACE = 'scooch';
+const stored = (name: string) => `${STORAGE_NAMESPACE}:${name}`;
+
+/** The projects' IndexedDB database and the channel that coordinates tabs. */
+export const PROJECTS_DB = STORAGE_NAMESPACE;
+export const TABS_CHANNEL = `${STORAGE_NAMESPACE}-projects`;
+
 /** localStorage key of the collapsed sections of the properties panel. */
-export const SECTIONS_STORAGE = 'panel-sections';
-
+export const SECTIONS_STORAGE = stored('panel-sections');
 /** localStorage key of the «Atajos de 1 tecla» switch. */
-export const SINGLE_KEYS_STORAGE = 'single-key-shortcuts';
-
+export const SINGLE_KEYS_STORAGE = stored('single-key-shortcuts');
 /** Grid preferences (view, not document: outside the undo history). */
-export const GRID_STORAGE = 'grid-preferences';
+export const GRID_STORAGE = stored('grid-preferences');
 export const GRID_DEFAULTS = Object.freeze({ show: false, size: 1, snap: true });
 export const GRID_MIN = 0.5;
 export const GRID_MAX = 50;
-export const PIECES_STORAGE = 'piece-preferences';
+export const PIECES_STORAGE = stored('piece-preferences');
 /** Unit of the lengths ('mm' | 'cm' | 'in'), chosen in «Preferencias». */
-export const UNIT_STORAGE = 'unit-preference';
+export const UNIT_STORAGE = stored('unit-preference');
 /** Last-moment journal of the open project (if the tab closed before saving finished). */
-export const JOURNAL_STORAGE = 'project-journal';
+export const JOURNAL_STORAGE = stored('project-journal');
 /** Id of the last open project (to restore it on return). */
-export const LAST_PROJECT_STORAGE = 'last-project';
+export const LAST_PROJECT_STORAGE = stored('last-project');
 /** Last custom paper ({w, h} in mm, as typed): a local preference. */
-export const CUSTOM_PAPER_STORAGE = 'custom-paper';
+export const CUSTOM_PAPER_STORAGE = stored('custom-paper');
+/** «No volver a mostrar en este dispositivo» of the donation dialog. */
+export const DONATE_STORAGE = stored('donate-dismissed');
+
+/**
+ * Where those lived before the app was renamed (database «pliego», keys
+ * without a prefix): moved once, on the first start (services/storage/migrate.ts).
+ */
+export const LEGACY_PROJECTS_DB = 'pliego';
+/** Set once the legacy keys were moved: they're never looked at again. */
+export const MIGRATED_STORAGE = stored('migrated');
+export const LEGACY_STORAGE_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  'panel-sections': SECTIONS_STORAGE,
+  'single-key-shortcuts': SINGLE_KEYS_STORAGE,
+  'grid-preferences': GRID_STORAGE,
+  'piece-preferences': PIECES_STORAGE,
+  'unit-preference': UNIT_STORAGE,
+  'project-journal': JOURNAL_STORAGE,
+  'last-project': LAST_PROJECT_STORAGE,
+  'custom-paper': CUSTOM_PAPER_STORAGE,
+  'donate-dismissed': DONATE_STORAGE,
+});
 
 // ---------- Donations ----------
 
@@ -41,6 +75,4 @@ export const CUSTOM_PAPER_STORAGE = 'custom-paper';
 export const DONATE_URL = '';
 /** 'session': only the first print/download of each page load; 'always': every one. */
 export const DONATE_EVERY: 'session' | 'always' = 'session';
-/** localStorage key of «No volver a mostrar en este dispositivo». */
-export const DONATE_STORAGE = 'donate-dismissed';
 // The texts of the dialog are in src/copy (donate).

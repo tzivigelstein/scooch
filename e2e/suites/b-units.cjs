@@ -18,9 +18,9 @@ const { open, makeChecker, helpers, norm, addFiles, pdfInfo, download, heard } =
   const piece = () => p.locator('#sheets .piece[aria-label^="small.jpg"]');
   const docSnapshot = () =>
     p.evaluate(async () => {
-      const id = localStorage.getItem('last-project');
+      const id = localStorage.getItem('scooch:last-project');
       const record = await new Promise((resolve) => {
-        const req = indexedDB.open('pliego');
+        const req = indexedDB.open('scooch');
         req.onsuccess = () => {
           const tx = req.result.transaction('projects');
           tx.objectStore('projects').get(id).onsuccess = (e) => resolve(e.target.result);
@@ -156,7 +156,7 @@ const { open, makeChecker, helpers, norm, addFiles, pdfInfo, download, heard } =
   check('in: tabla de atajos con pasos en pulgadas', /Mover la pieza 1\/16\sin \(Shift: 1\/2\sin; Alt: 1\/64\sin\)/.test(await p.textContent('#shortcuts-rows')));
   await p.keyboard.press('Escape');
   await setUnit('mm');
-  check('la unidad se recuerda (localStorage)', (await p.evaluate(() => localStorage.getItem('unit-preference'))) === 'mm');
+  check('la unidad se recuerda (localStorage)', (await p.evaluate(() => localStorage.getItem('scooch:unit-preference'))) === 'mm');
   await setUnit('in');
   await p.reload();
   await p.waitForFunction(() => !document.body.classList.contains('is-loading'));

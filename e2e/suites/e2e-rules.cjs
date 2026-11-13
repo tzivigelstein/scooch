@@ -141,7 +141,7 @@ const multiple = (v, step, tol = 0.02) => Math.abs(v / step - Math.round(v / ste
   if ((await arrangeToggle.getAttribute('aria-expanded')) === 'false') await arrangeToggle.click();
   await p.locator('#allow-overlap').check();
   check('el interruptor queda activado', await p.isChecked('#allow-overlap'));
-  check('se guarda en el navegador', (await p.evaluate(() => localStorage.getItem('piece-preferences'))) === '{"allowOverlap":true}', await p.evaluate(() => localStorage.getItem('piece-preferences')));
+  check('se guarda en el navegador', (await p.evaluate(() => localStorage.getItem('scooch:piece-preferences'))) === '{"allowOverlap":true}', await p.evaluate(() => localStorage.getItem('scooch:piece-preferences')));
   await place(A, 30, 60);
   await place(B, 120, 60);
   const tA = await center(A);
@@ -171,7 +171,7 @@ const multiple = (v, step, tol = 0.02) => Math.abs(v / step - Math.round(v / ste
   await p.waitForTimeout(150);
   const pl2 = await pill(p);
   check('al desactivarla, se avisa «Hay piezas superpuestas» con «Acomodar»', /Hay piezas superpuestas/.test(pl2.text) && pl2.action === 'Acomodar', JSON.stringify(pl2));
-  check('se guarda desactivada', (await p.evaluate(() => localStorage.getItem('piece-preferences'))) === '{"allowOverlap":false}');
+  check('se guarda desactivada', (await p.evaluate(() => localStorage.getItem('scooch:piece-preferences'))) === '{"allowOverlap":false}');
   await place(B, 120, 60);
   await p.evaluate(() => document.getElementById('pill-close')?.click());
 
@@ -206,7 +206,7 @@ const multiple = (v, step, tol = 0.02) => Math.abs(v / step - Math.round(v / ste
   await dragTo(A, (await center(A)).x + 33, (await center(A)).y + 11);
   a2 = await byName(A);
   check('sin imán, queda donde se soltó (no en múltiplos de 2,5)', !(multiple(a2.x, 2.5) && multiple(a2.y, 2.5)), `${a2.x}, ${a2.y}`);
-  check('preferencias de grilla guardadas', (await p.evaluate(() => JSON.parse(localStorage.getItem('grid-preferences')))).size === 2.5);
+  check('preferencias de grilla guardadas', (await p.evaluate(() => JSON.parse(localStorage.getItem('scooch:grid-preferences')))).size === 2.5);
   await p.keyboard.press('Control+z');
   await p.waitForTimeout(50);
   check('deshacer no cambia la grilla', (await p.isChecked('#grid-show')) && !(await p.isChecked('#grid-snap')));

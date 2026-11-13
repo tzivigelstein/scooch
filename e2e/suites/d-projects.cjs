@@ -237,7 +237,7 @@ const TRACK = () => {
     await addFiles(p, ['twopage.pdf', 'card06.png']);
     await saved(p);
     const ids = await p.evaluate(async () => {
-      const req = indexedDB.open('pliego');
+      const req = indexedDB.open('scooch');
       return new Promise((resolve) => (req.onsuccess = () => (req.result.transaction('projects').objectStore('projects').getAllKeys().onsuccess = (e) => resolve(e.target.result))));
     });
     const openById = async (id) => {
@@ -249,7 +249,7 @@ const TRACK = () => {
         return;
       }
       await card.click();
-      await p.waitForFunction((i) => localStorage.getItem('last-project') === i && !document.getElementById('projects').open, id);
+      await p.waitForFunction((i) => localStorage.getItem('scooch:last-project') === i && !document.getElementById('projects').open, id);
       await p.waitForFunction(() => document.getElementById('project-status-text').textContent === 'Guardado');
     };
     const [x, y] = ids;
@@ -301,8 +301,8 @@ const TRACK = () => {
     await b.keyboard.press('ArrowDown');
     await saved(b);
     const stored = await b.evaluate(async () => {
-      const id = localStorage.getItem('last-project');
-      const req = indexedDB.open('pliego');
+      const id = localStorage.getItem('scooch:last-project');
+      const req = indexedDB.open('scooch');
       return new Promise((resolve) => (req.onsuccess = () => (req.result.transaction('projects').objectStore('projects').get(id).onsuccess = (e) => resolve(e.target.result.doc.items[0]))));
     });
     check('lo editado en la vieja no pisa lo guardado por la nueva', stored.x === 11 && stored.y === 11, JSON.stringify(stored));
@@ -358,8 +358,8 @@ const TRACK = () => {
     await saved(p);
     check('«Reintentar» guarda y lo anuncia', await heard(p, /Se guardó el proyecto/));
     await p.evaluate(async () => {
-      const id = localStorage.getItem('last-project');
-      const req = indexedDB.open('pliego');
+      const id = localStorage.getItem('scooch:last-project');
+      const req = indexedDB.open('scooch');
       await new Promise((resolve) => {
         req.onsuccess = () => {
           const tx = req.result.transaction('projects', 'readwrite');

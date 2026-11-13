@@ -346,7 +346,7 @@ async function matrix() {
       for (const overlap of [false, true]) {
         for (const twoSheets of [false, true]) {
           const tag = `[${unit} imán:${snapOn ? 'sí' : 'no'} sup:${overlap ? 'sí' : 'no'} ${twoSheets ? '2 hojas' : '1 hoja'}]`;
-          const s = await open({ storage: { 'unit-preference': unit } });
+          const s = await open({ storage: { 'scooch:unit-preference': unit } });
           const p = s.page;
           const L = lib(p);
           await addFiles(p, tiles(20, 4));

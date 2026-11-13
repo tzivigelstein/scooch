@@ -97,7 +97,7 @@ const { open, makeChecker, helpers, norm, addFiles, pill, pdfInfo, download } = 
   check('A5 elegido', norm(await p.textContent('#paper-label')) === 'A5 · 148 × 210 mm');
   await p.selectOption('#paper', 'custom');
   check('«Personalizado» recuerda el último (111 × …)', (await p.inputValue('#paper-w')) === '111', await p.inputValue('#paper-w'));
-  const saved = await p.evaluate(() => JSON.parse(localStorage.getItem('custom-paper')));
+  const saved = await p.evaluate(() => JSON.parse(localStorage.getItem('scooch:custom-paper')));
   check('preferencia local guardada', saved && saved.w === 111, JSON.stringify(saved));
   check('etiqueta de la hoja con personalizado', /^Personalizado · 111 × \d+ mm$/.test(norm(await p.textContent('#paper-label'))));
 

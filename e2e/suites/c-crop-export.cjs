@@ -10,8 +10,8 @@ const PDFJS = path.join(ROOT, 'node_modules/pdfjs-dist/build');
 
 // Cambia el documento guardado del proyecto abierto (sin interfaz) y devuelve el nuevo.
 const PATCH = async (patch) => {
-  const id = localStorage.getItem('last-project');
-  const db = await new Promise((res, rej) => { const r = indexedDB.open('pliego', 1); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const id = localStorage.getItem('scooch:last-project');
+  const db = await new Promise((res, rej) => { const r = indexedDB.open('scooch', 1); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
   const get = () => new Promise((res) => { const r = db.transaction('projects').objectStore('projects').get(id); r.onsuccess = () => res(r.result); });
   const record = await get();
   const doc = record.doc;

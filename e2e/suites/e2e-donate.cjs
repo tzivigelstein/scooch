@@ -103,7 +103,7 @@ async function withPage(opts, fn, { url = `${BASE}?donar=${encodeURIComponent(UR
       await page.waitForSelector('#donate[open]');
       await page.check('#donate-never');
       await Promise.all([page.waitForEvent('download'), page.click('#donate-skip')]);
-      check('la casilla se guarda en localStorage', (await page.evaluate(() => localStorage.getItem('donate-dismissed'))) === 'never');
+      check('la casilla se guarda en localStorage', (await page.evaluate(() => localStorage.getItem('scooch:donate-dismissed'))) === 'never');
       await page.reload();
       await page.waitForSelector('#paper option', { state: 'attached' });
       await page.waitForFunction(() => !document.body.classList.contains('is-loading'));

@@ -14,7 +14,7 @@
 // tab, «Editar aquí» asks for it again and reloads it. If a tab doesn't
 // answer (frozen), it waits 3 s: it saved when it got hidden anyway.
 
-import { JOURNAL_STORAGE, LAST_PROJECT_STORAGE } from '../config.ts';
+import { JOURNAL_STORAGE, LAST_PROJECT_STORAGE, TABS_CHANNEL } from '../config.ts';
 import { DEFAULT_CUTS, fileKeys, nextIds, serialize } from '../core/projectdoc.js';
 import {
   cleanName,
@@ -41,6 +41,7 @@ import { itemsOn, sheetSize } from '../state/selectors.ts';
 import { setView } from '../state/view.ts';
 import { assetBlob, restoreAssets, type AppAsset } from './assets.ts';
 import { openIdbStorage } from './storage/idb.ts';
+import { migrateLegacyProjects } from './storage/migrate.ts';
 import { storageGet, storageJson, storageRemove, storageSet } from './storage/local.ts';
 import { drawThumbnail, thumbnailSignature } from './thumbnail.ts';
 
@@ -74,7 +75,7 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 let saving: Promise<void> | null = null;
 let persistAsked = false;
 const tab = newProjectId();
-const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('pliego-projects') : null;
+const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel(TABS_CHANNEL) : null;
 
 const now = () => Date.now();
 const untitled = () => t('projects.untitled');
@@ -160,6 +161,8 @@ export async function initProjects(h: ProjectHooks) {
     console.warn('This browser cannot save projects.', err);
     return startUnsaved();
   }
+  // The projects saved before the app was renamed (once; a failure keeps them for the next start).
+  await migrateLegacyProjects(session.storage).catch((err: unknown) => console.warn('The projects saved under the former name could not be moved.', err));
   const later: Parameters<ProjectHooks['notify']>[] = [];
   const notify = hooks.notify;
   hooks.notify = (...args) => later.push(args);
