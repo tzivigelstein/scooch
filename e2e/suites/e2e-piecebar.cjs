@@ -111,7 +111,12 @@ const within = (a, b) => a.x >= b.x - 0.5 && a.y >= b.y - 0.5 && a.x + a.w <= b.
     await p.locator('#sheets .piece').first().focus();
     await p.waitForTimeout(150);
     const g = await p.evaluate(RECTS);
-    check(`${w}: anclada abajo («docked»), centrada`, g.side === 'docked' && Math.abs(g.bar.x + g.bar.w / 2 - w / 2) < 2, JSON.stringify(g.bar));
+    // Centered on the stage without its scrollbar (as the panel buttons and the notice).
+    const content = await p.evaluate(() => {
+      const stage = document.getElementById('stage');
+      return stage.getBoundingClientRect().left + stage.clientWidth / 2;
+    });
+    check(`${w}: anclada abajo («docked»), centrada en el lienzo sin su barra de desplazamiento`, g.side === 'docked' && Math.abs(g.bar.x + g.bar.w / 2 - content) < 2, JSON.stringify({ bar: g.bar, content }));
     check(`${w}: encima de los botones de panel, sin pisarlos`, g.dock.every((d) => g.bar.y + g.bar.h <= d.y + 0.5), JSON.stringify({ bar: g.bar, dock: g.dock }));
     check(`${w}: dentro del lienzo`, within(g.bar, g.canvas));
     await h.setMeasure('pos-x', -5);
