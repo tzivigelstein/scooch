@@ -12,13 +12,11 @@ body {
   margin: 0;
 }
 
-/* Interface scale: the browser's font size (100 %) up to 1600 px wide; from
-   there it grows little by little up to 1.25 × towards 2800 px. Everything in
-   the interface is in rem, so it grows with this (the sheet has its own zoom).
-   To change it: the divisor (300: how many px of width per px of font) and
-   the cap (125 %). */
+/* The browser's font size at every width: everything in the interface is in
+   rem, so browser zoom and the person's font size preference scale it, and a
+   wide screen doesn't (only the side panels get wider, see tokens.css). */
 html {
-  font-size: clamp(100%, calc(100% + (100vw - 1600px) / 300), 125%);
+  font-size: 100%;
 }
 
 /* React's root takes no box: the top bar and the workspace stay body's flex children. */
