@@ -1,4 +1,5 @@
-// The document's PDF (makePdf, built with pdf-lib in Node): one page per sheet
+// @vitest-environment jsdom
+// The document’s PDF (makePdf, built with pdf-lib): one page per sheet
 // that has pieces, empty sheets skipped, in the sheets' order, each the size of
 // the paper. Every piece is a different real PNG (its width in pixels tells
 // which one it is), so each page's images say which sheet it came from.
