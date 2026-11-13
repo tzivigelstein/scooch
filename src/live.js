@@ -2,6 +2,7 @@
 // el inicio en el DOM (#live-polite y #live-assertive).
 
 import { $ } from './util.js';
+import { asSentence } from './copy/index.js';
 
 const regions = { polite: null, assertive: null };
 const pending = { polite: [], assertive: [] };
@@ -51,7 +52,8 @@ function flush() {
     if (!region || !pending[channel].length) continue;
     // Un espacio duro alternado fuerza el cambio aunque el texto se repita.
     toggle = !toggle;
-    region.textContent = pending[channel].join(' ') + (toggle ? ' ' : '');
+    // Los mensajes van sin punto final (docs/copy.md): se agrega al unirlos.
+    region.textContent = pending[channel].map(asSentence).join(' ') + (toggle ? ' ' : '');
     pending[channel] = [];
   }
 }

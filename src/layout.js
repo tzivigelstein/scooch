@@ -115,7 +115,7 @@ export function arrange() {
     return 'error';
   }
   const factor = Math.floor(k * 0.999 * 1000) / 1000;
-  say(t('notices.noFit'), {
+  say(t('notices.noFit', { n }), {
     warn: true,
     action: { label: t('notices.shrinkAction', { pct: factor * 100 }), run: () => shrinkAndArrange(factor, k) },
   });
@@ -248,6 +248,6 @@ export function fillWithCopies() {
     }
   }
   state.selected = state.items[0].id;
-  say(t('notices.filled', { n: plan.count, paper: paperName() }));
+  say(t('notices.filled', { n: plan.count }));
   return true;
 }

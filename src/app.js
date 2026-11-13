@@ -360,10 +360,11 @@ async function loadFiles(files) {
   if (!files.length || state.busy) return;
   const errors = [];
   const keys = [];
+  let skipped = 0; // los que no entran por el máximo de piezas
   setBusy(true, t('busy.loading'));
   for (const [i, file] of files.entries()) {
     if (state.items.length + keys.length >= MAX_ITEMS) {
-      errors.push(t('errors.maxReached', { max: MAX_ITEMS, n: files.length - i }));
+      skipped = files.length - i;
       break;
     }
     status.busyText = files.length > 1 ? t('busy.loadingCount', { i: i + 1, n: files.length }) : t('busy.loadingFile', { name: file.name });
@@ -380,7 +381,9 @@ async function loadFiles(files) {
     placeNew(keys);
   }
   state.busy = false;
-  if (errors.length) say(t('errors.load', { n: errors.length, list: errors.join(t('errors.loadSeparator')) }), { warn: true });
+  const failed = errors.length + skipped;
+  if (skipped) errors.push(t('errors.maxReached', { max: MAX_ITEMS, n: skipped }));
+  if (errors.length) say(t('errors.load', { n: failed, list: errors.join(t('errors.loadSeparator')) }), { warn: true });
   else render();
   if (keys.length) announce(t('announce.added', { n: keys.length }));
 }
@@ -429,7 +432,7 @@ async function preparePdf(busyText) {
   } catch (err) {
     console.error(err);
     setBusy(false);
-    say(t('errors.pdf', { detail: err.message }), { warn: true });
+    say(t('errors.pdf'), { warn: true });
     return null;
   }
 }

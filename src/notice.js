@@ -8,7 +8,7 @@ import { EPS, overlaps } from './collide.js';
 import { announce } from './live.js';
 import { icon } from './icons.js';
 import { $ } from './util.js';
-import { t } from './copy/index.js';
+import { t, asSentence } from './copy/index.js';
 
 const INFO_MS = 5000;
 const WARN_MS = 9000;
@@ -160,7 +160,7 @@ export function renderNotice() {
   // Los resultados de una acción se anuncian enseguida (los warnings, con
   // prioridad); los problemas que aparecen solos (p. ej. al mover una pieza),
   // con demora para no repetir cada paso.
-  const spoken = action && !busy ? t('notices.withAction', { text, action: action.label }) : text;
+  const spoken = action && !busy ? t('notices.withAction', { text: asSentence(text), action: action.label }) : text;
   if (flash) announce(spoken, { assertive: warn, key: 'notice' });
   else announce(spoken, { key: 'notice', delay: busy ? 250 : 900 });
 }

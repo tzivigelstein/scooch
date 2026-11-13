@@ -1,4 +1,4 @@
-// Textos de la interfaz. Todo lo que se ve o se anuncia sale de acá:
+// Textos de la interfaz. Todo lo que se ve o se anuncia sale de aquí:
 //
 //   t('clave.anidada', { n: 3, name: 'foto.jpg' })
 //
@@ -50,6 +50,9 @@ export function t(key, params = {}) {
   });
 }
 
+/** El texto con punto final (para unir mensajes sueltos al anunciarlos). */
+export const asSentence = (text) => (/[.!?…:]$/.test(text.trim()) ? text.trim() : `${text.trim()}.`);
+
 /** Nombre visible de una tecla o combinación («Mod+Shift+Z» → «Ctrl+Shift+Z»). */
 export const keyLabel = (combo) =>
   combo
@@ -59,7 +62,7 @@ export const keyLabel = (combo) =>
 
 // ---------- HTML ----------
 
-/** Atributo con la clave → dónde va el texto (null: el contenido del elemento). */
+/** Atributo con la clave → dónde va el texto (null: el contenido de la etiqueta). */
 const ATTRIBUTES = {
   'data-i18n': null,
   'data-i18n-label': 'aria-label',
@@ -75,7 +78,7 @@ const parseParams = (json) => (json ? JSON.parse(json) : {});
 
 /**
  * Completa los textos del HTML estático (en Node, desde vite.config.js). Los
- * elementos con data-i18n tienen que venir vacíos: `<span data-i18n="x"></span>`.
+ * etiquetas con data-i18n tienen que venir vacías: `<span data-i18n="x"></span>`.
  */
 export function fillHtml(html) {
   return html.replace(/<([a-z][\w-]*)(\s(?:[^>]*?\s)?data-i18n[^>]*?)(\s*\/?)>(<\/\1>)?/gi, (tag, name, attrs, slash, close) => {
@@ -89,7 +92,7 @@ export function fillHtml(html) {
       if (target === null) text = escapeHtml(t(key, params));
       else extra += ` ${target}="${escapeHtml(t(key, params))}"`;
     }
-    if (text !== null && close === undefined) throw new Error(`data-i18n en un elemento que no está vacío: ${tag}`);
+    if (text !== null && close === undefined) throw new Error(`data-i18n en una etiqueta que no está vacía: ${tag}`);
     return `<${name}${attrs}${extra}${slash}>${text ?? ''}${close ?? ''}`;
   });
 }
