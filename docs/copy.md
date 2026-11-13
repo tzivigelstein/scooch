@@ -12,24 +12,27 @@ Google.
 
 ## Dónde viven los textos
 
-- `src/copy/es.js`: todas las cadenas, agrupadas por área (`bar`, `pieces`,
+- `src/copy/es.ts`: todas las cadenas, agrupadas por área (`bar`, `pieces`,
   `sheet`, `piecebar`, `props`, `notices`, `busy`, `errors`, `announce`,
   `donate`, `shortcuts`, `keys`…).
-- `src/copy/index.js`: `t('area.clave', { n, … })` interpola `{param}`,
+- `src/copy/index.ts`: `t('area.clave', { n, … })` interpola `{param}`,
   formatea los números (coma decimal) y elige el plural con `Intl.PluralRules`
   según `n` (`{ one: '{n} pieza', other: '{n} piezas' }`). `{app}` es siempre
-  el nombre de la app (`APP_NAME`, en `src/config.js`) y `{mod}` la tecla Ctrl
-  (⌘ en Mac). `keyLabel('Mod+Shift+Z')` da el nombre visible de un atajo.
-- `index.html` no tiene textos: cada elemento lleva su clave (`data-i18n` para
-  el contenido; `data-i18n-label`, `-tip`, `-note` y `-content` para
-  `aria-label`, `data-tip`, `data-tip-note` y `content`; `data-i18n-params` con
-  parámetros en JSON). Vite los completa al servir y al compilar, así la
-  página llega con los textos puestos.
+  el nombre de la app (`APP_NAME`, en `src/config.ts`) y `{mod}` la tecla Ctrl
+  (⌘ en Mac). `keyLabel('Mod+Shift+Z')` da el nombre visible de un atajo. Las
+  claves tienen tipo (`CopyKey`): una clave que no existe no compila.
+- Los componentes de React (`src/components/`) toman todos sus textos de
+  `t()`, también los `aria-label` y los tooltips (`data-tip`).
+- `index.html` solo trae los pocos textos que tienen que estar antes de que
+  arranque la app (título, descripción, encabezado, nombre en la pantalla de
+  carga y el aviso sin JavaScript), como marcadores `{{clave}}`: Vite los
+  completa al servir y al compilar (`fillStaticCopy`, desde `vite.config.ts`),
+  así la página llega con los textos puestos.
 - Ningún otro archivo escribe textos de interfaz. Los mensajes de consola y los
   errores internos que nunca ve nadie quedan en el código.
 
-Para sumar otro idioma: un `en.js` con las mismas claves, elegido en
-`src/copy/index.js` (lo que falte se toma del español).
+Para sumar otro idioma: un `en.ts` con las mismas claves, elegido en
+`src/copy/index.ts` (lo que falte se toma del español).
 
 ## Reglas
 
@@ -60,8 +63,9 @@ Para sumar otro idioma: un `en.js` con las mismas claves, elegido en
   una sola frase: «Hay piezas superpuestas».
 - Con dos frases o más, punto en todas: «Se descargó scooch-a4.pdf. Al
   imprimirlo, elige «Tamaño real» o «100 %».»
-- Los mensajes que se juntan en la región viva van sin punto; `live.js`
-  agrega el punto al unirlos para que el lector haga la pausa.
+- Los mensajes que se juntan en la región viva van sin punto; el anunciador
+  (`src/components/feedback/announcer.ts`, con `asSentence`) agrega el punto
+  al unirlos para que el lector haga la pausa.
 - Comillas angulares « » solo para citar opciones de interfaces ajenas (el
   diálogo de impresión del navegador: elige «Tamaño real» o «100 %») y lo que
   escribió o nombró la persona (un proyecto: Se abrió «Tarjetas»; una medida
@@ -98,9 +102,9 @@ Para sumar otro idioma: un `en.js` con las mismas claves, elegido en
 ### Enlaces dentro de una frase
 
 Una frase con un enlace es un solo texto: la parte enlazada se marca con
-`<link>…</link>` y `linkedText(clave, params, crearEnlace)` (en
-`src/copy/index.js`) arma los nodos sin interpretar HTML. Así la frase se
-traduce entera: «Los atajos de 1 tecla se activan en
+`<link>…</link>` y `splitLink(clave, params)` (en `src/copy/index.ts`) la
+separa en antes, enlace y después, que el componente arma sin interpretar
+HTML. Así la frase se traduce entera: «Los atajos de 1 tecla se activan en
 `<link>Preferencias</link>`». Si abre un diálogo (no navega), el enlace es un
 `<button>` con aspecto de enlace (`.link-btn`).
 
@@ -206,4 +210,4 @@ Esc. Las letras y los signos se muestran tal cual.
 - **Medidas en la unidad elegida**: los textos con medidas reciben el número
   ya formateado («{w} × {h} {unit}»), nunca «mm» fijo.
 - **Coma decimal**, como en la mayor parte de Sudamérica (es-419 de Google usa
-  punto). Si se cambia, es solo `meta.numberLocale` en `es.js`.
+  punto). Si se cambia, es solo `meta.numberLocale` en `es.ts`.
