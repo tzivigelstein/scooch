@@ -6,6 +6,7 @@ import { GRID_MIN, GRID_MAX, SECTIONS_STORAGE, CUSTOM_PAPER_STORAGE } from './co
 import { PAPERS, PAPER_GROUPS, CUSTOM_MIN, CUSTOM_MAX, customPaper, validateSide, matchPreset } from './papers.js';
 import { gridPresets } from './units.js';
 import { state, settings, assets, dims, selectedItem, commit, endEdit, render, setGrid, setAllowOverlap, sheetSize } from './store.js';
+import { keepCenterInside } from './sheets.js';
 import { keepCenter, fillSummary, printResolution } from './layout.js';
 import { bindLength, showLength } from './lengthfield.js';
 import { lengthText, sizeText, unitName, unitSymbol } from './measure.js';
@@ -73,8 +74,15 @@ export function initPanels(actions) {
   bindItemNumber(ui.scale, 'scale', toScale);
   bindItemNumber(ui.slider, 'slider', toScale);
   const positive = (mm) => (mm > 0 ? null : t('props.positive'));
-  bindItemLength(ui.posX, 'x', (item) => item.x, (item, mm) => ({ x: mm }));
-  bindItemLength(ui.posY, 'y', (item) => item.y, (item, mm) => ({ y: mm }));
+  // X e Y: puede salirse de la hoja, pero no más de la mitad (el centro queda adentro).
+  const inside = (item, changes) => {
+    const [w, h] = dims(item);
+    const [W, H] = sheetSize();
+    const spot = keepCenterInside({ x: changes.x ?? item.x, y: changes.y ?? item.y, w, h }, W, H);
+    return 'x' in changes ? { x: spot.x } : { y: spot.y };
+  };
+  bindItemLength(ui.posX, 'x', (item) => item.x, (item, mm) => inside(item, { x: mm }));
+  bindItemLength(ui.posY, 'y', (item) => item.y, (item, mm) => inside(item, { y: mm }));
   bindItemLength(ui.width, 'width', (item) => dims(item)[0], (item, mm) => scaleFor(item, mm, 0), positive);
   bindItemLength(ui.height, 'height', (item) => dims(item)[1], (item, mm) => scaleFor(item, mm, 1), positive);
   ui.actual.addEventListener('click', () =>

@@ -7,6 +7,7 @@ import {
   placeIntoSheets,
   spotOnSheet,
   sheetAt,
+  keepCenterInside,
   pieceProblems,
   problemSummary,
 } from '../src/sheets.js';
@@ -164,6 +165,18 @@ describe('sheetAt', () => {
     assert.equal(sheetAt(-50, tops, 297), 0);
     assert.equal(sheetAt(5000, tops, 297), 2);
     assert.equal(sheetAt(5, [], 297), -1);
+  });
+});
+
+describe('keepCenterInside', () => {
+  test('el centro queda dentro de la hoja; lo demás puede salirse', () => {
+    const W = 210;
+    const H = 297;
+    assert.deepEqual(keepCenterInside({ x: 50, y: 60, w: 40, h: 30 }, W, H), { x: 50, y: 60 }, 'adentro: igual');
+    assert.deepEqual(keepCenterInside({ x: 190, y: -10, w: 40, h: 30 }, W, H), { x: 190, y: -10 }, 'se sale menos de la mitad: igual');
+    assert.deepEqual(keepCenterInside({ x: 400, y: 600, w: 40, h: 30 }, W, H), { x: 190, y: 282 }, 'muy afuera abajo a la derecha');
+    assert.deepEqual(keepCenterInside({ x: -300, y: -300, w: 40, h: 30 }, W, H), { x: -20, y: -15 }, 'muy afuera arriba a la izquierda');
+    assert.deepEqual(keepCenterInside({ x: -300, y: 10, w: 500, h: 30 }, W, H), { x: -250, y: 10 }, 'más grande que la hoja: centro en el borde');
   });
 });
 

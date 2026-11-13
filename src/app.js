@@ -33,7 +33,7 @@ import { sizeText as measureSize, lengthText, paperName, stepTexts, unitName } f
 import { readFile, pdfPage, openPdf } from './assets.js';
 import { makePdf, pdfFileName, downloadBytes, printBytes } from './output.js';
 import { arrange, keepCenter, centerOnSheet, fitToSheet, placeNew, fillWithCopies, duplicatePiece, forgetSpill } from './layout.js';
-import { spotOnSheet } from './sheets.js';
+import { spotOnSheet, keepCenterInside } from './sheets.js';
 import { initNotice, renderNotice, say } from './notice.js';
 import { initLive, announce } from './live.js';
 import { hydrateIcons } from './icons.js';
@@ -232,19 +232,27 @@ const pieceActions = {
 function nudge(dx, dy) {
   const item = selectedItem();
   if (!item || state.busy) return;
-  commit(`nudge:${item.id}`);
   let jumped = [];
-  // Redondeo fino (0,0001 mm): los pasos en pulgadas (1/16 in = 1,5875 mm) no se desvían.
-  if (settings.allowOverlap) {
-    item.x = fine(item.x + dx);
-    item.y = fine(item.y + dy);
+  // Si el paso la deja pisando a otra, salta justo al otro lado.
+  let next = settings.allowOverlap ? { x: item.x + dx, y: item.y + dy } : nextFreeInDirection(rectOf(item), othersOf(item), dx, dy);
+  // Puede salirse de la hoja, pero no más de la mitad (el centro queda adentro).
+  const { W, H } = area();
+  const [w, h] = dims(item);
+  const inside = keepCenterInside({ x: next.x, y: next.y, w, h }, W, H);
+  if ((inside.x !== next.x || inside.y !== next.y) && !settings.allowOverlap && overlapsAny({ ...inside, w, h }, othersOf(item))) {
+    next = { x: item.x, y: item.y }; // en el borde, del otro lado hay otra pieza: no se mueve
   } else {
-    // Si el paso la deja pisando a otra, salta justo al otro lado.
-    const next = nextFreeInDirection(rectOf(item), othersOf(item), dx, dy);
-    item.x = fine(next.x);
-    item.y = fine(next.y);
-    jumped = next.jumped;
+    jumped = next.jumped ?? [];
+    next = inside;
   }
+  if (next.x === item.x && next.y === item.y) {
+    focusSheet();
+    return announce(t('announce.position', { x: lengthText(item.x), y: lengthText(item.y) }), { key: 'move', delay: 600 });
+  }
+  commit(`nudge:${item.id}`);
+  // Redondeo fino (0,0001 mm): los pasos en pulgadas (1/16 in = 1,5875 mm) no se desvían.
+  item.x = fine(next.x);
+  item.y = fine(next.y);
   render();
   focusSheet();
   if (jumped.length) announce(t('announce.jumped', { names: jumped.map(nameOf).join(', ') }));

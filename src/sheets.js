@@ -139,6 +139,16 @@ export function spotOnSheet(rect, boxes, { area, margin = 0, gap = 0 }) {
 }
 
 /**
+ * Posición más cercana a (x, y) para una pieza de w × h con el centro dentro
+ * de la hoja W × H: puede salirse hasta la mitad, nunca entera (así su marco
+ * y su barra quedan siempre junto a la hoja). Devuelve {x, y}.
+ */
+export function keepCenterInside({ x, y, w, h }, W, H) {
+  const fit = (v, size, total) => Math.min(Math.max(v, -size / 2), total - size / 2);
+  return { x: fit(x, w, W), y: fit(y, h, H) };
+}
+
+/**
  * A qué hoja pertenece algo cuyo centro está a `y` (en el mismo sistema que
  * `tops`): la que lo contiene o, si cae entre hojas o fuera, la más cercana.
  * `tops`: borde superior de cada hoja, en orden; `height`: alto de las hojas.

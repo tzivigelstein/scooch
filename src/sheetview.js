@@ -9,7 +9,7 @@
 import { DRAG_THRESHOLD, NARROW_QUERY } from './config.js';
 import { state, settings, assets, view, sheetSize, dims, findItem, commit, itemsOn, currentSheet, sheetIndex } from './store.js';
 import { overlapsAny, nearestFree, maxGrowth } from './collide.js';
-import { sheetAt } from './sheets.js';
+import { sheetAt, keepCenterInside } from './sheets.js';
 import { paperTitle, sizeText, lengthText } from './measure.js';
 import { icon } from './icons.js';
 import { $, clamp, round1, tidy, isTyping } from './util.js';
@@ -442,6 +442,9 @@ function placePiecebar(item) {
 let scrollFrame = 0;
 
 function onScroll() {
+  // El lienzo nunca se corre a los costados (algo que sobresale de las hojas,
+  // como el marco de una pieza que se sale, no tiene que descentrarlas).
+  if (ui.stage.scrollLeft) ui.stage.scrollLeft = 0;
   if (scrollFrame) return;
   scrollFrame = requestAnimationFrame(() => {
     scrollFrame = 0;
@@ -618,10 +621,13 @@ function updateGesture() {
     const target = state.sheets[sheetAt(ay + (h * zoom) / 2, tops, H * zoom)].id;
     const box = boxes.get(target);
     // Imán: al múltiplo más cercano de la grilla, que nace en la esquina de la hoja.
+    // Puede salirse de la hoja, pero no más de la mitad (el centro queda adentro).
+    const [W] = sheetSize();
     const step = settings.grid.size;
     const snap = settings.grid.snap ? (v) => tidy(Math.round(v / step) * step) : (v) => v;
-    g.draft.x = snap((ax - box.left) / zoom);
-    g.draft.y = snap((ay - box.top) / zoom);
+    const spot = keepCenterInside({ x: snap((ax - box.left) / zoom), y: snap((ay - box.top) / zoom), w, h }, W, H);
+    g.draft.x = spot.x;
+    g.draft.y = spot.y;
     g.draft.sheet = target;
     if (target !== g.target) {
       pages.get(g.target)?.page.classList.remove('is-drop-target');
@@ -681,9 +687,12 @@ function onPointerUp(e) {
     let { x, y } = g.draft;
     const sheet = g.draft.sheet;
     if (g.blocked) {
-      // Soltada sobre otra: al lugar libre más cercano de esa hoja; si no hay uno cerca, vuelve.
+      // Soltada sobre otra: al lugar libre más cercano de esa hoja (también con el
+      // centro adentro); si no hay uno cerca, vuelve.
       const rect = rectOf(g.draft);
-      const spot = nearestFree(rect, cachedOthers(g, sheet), { maxDistance: Math.max(rect.w, rect.h, 15) });
+      const [W, H] = sheetSize();
+      const bounds = { x: -rect.w / 2, y: -rect.h / 2, w: W + rect.w, h: H + rect.h };
+      const spot = nearestFree(rect, cachedOthers(g, sheet), { maxDistance: Math.max(rect.w, rect.h, 15), bounds });
       animateNext();
       if (spot) {
         x = tidy(spot.x);
