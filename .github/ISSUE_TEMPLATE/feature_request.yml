@@ -1,0 +1,34 @@
+name: Feature request
+description: An idea to make Scooch more useful.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. Please check the open issues first, in case someone already suggested it.
+
+        Scooch runs entirely in the browser, with no accounts and no server that receives files. Ideas that keep it that way are the easiest to take on.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you're trying to do
+      description: The task or the problem, in your own words. For example "I print ID photos for my family and have to line them up by hand".
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help
+      description: How you imagine it working.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do today
+      description: Optional. Workarounds or other tools you use for this.
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: Optional. Sketches or screenshots help, as long as they show nothing private.
