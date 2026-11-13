@@ -390,10 +390,14 @@ export async function openWithUi(id, name) {
 export async function createWithUi() {
   const previous = session.record?.name;
   closeProjects();
+  // Mientras se guarda el actual y se arma el nuevo, nada más cambia el documento.
+  actions.busy(true, '');
   try {
     const record = await newProject();
+    actions.busy(false);
     actions.opened(record, 'new', previous);
   } catch (err) {
+    actions.busy(false);
     actions.failed(null, err);
   }
 }

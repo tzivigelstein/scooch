@@ -110,7 +110,7 @@ function inSheets(text, sheets) {
 
 /** Qué aviso corresponde ahora, en orden de prioridad (null: nada que decir). */
 function currentNotice() {
-  if (state.busy) return { text: status.busyText, busy: true };
+  if (state.busy) return status.busyText ? { text: status.busyText, busy: true } : null;
   if (status.flash) return { ...status.flash, flash: true };
   if (!state.items.length) return null;
   const { cut, pastMargin, overlap } = sheetProblems();
