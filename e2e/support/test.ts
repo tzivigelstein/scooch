@@ -13,7 +13,7 @@ export { expect };
 /** The folder of the files the tests load (images, PDFs). */
 export const FIXTURES = resolve(import.meta.dirname, '../fixtures');
 export const fixture = (name: string) => resolve(FIXTURES, name);
-/** `tile000.png`… (60 × 40 px tiles), `n` of them from `from`. */
+/** `tile000.png`… (531 × 591 px), `n` of them from `from`. */
 export const tiles = (from: number, n: number) => Array.from({ length: n }, (_, i) => `tile${String(from + i).padStart(3, '0')}.png`);
 /** `card00.png`… (business-card-sized images), `n` of them from `from`. */
 export const cards = (from: number, n: number) => Array.from({ length: n }, (_, i) => `card${String(from + i).padStart(2, '0')}.png`);

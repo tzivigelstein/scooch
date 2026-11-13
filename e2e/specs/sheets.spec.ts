@@ -1,0 +1,358 @@
+// Several sheets in the browser: «Acomodar» across sheets, the sheets as named
+// groups, removing a sheet (with and without confirmation, and where the focus
+// goes), dragging a piece to another sheet (the stage scrolls by itself, the
+// target sheet is marked, dropping onto a piece there), which sheet is the
+// current one, and dragging pieces out of the sheets onto a new one (the
+// placeholders, by mouse, touch and zoomed in, and the context menu's
+// keyboard path). What these actions do exactly is in tests/state/sheets.test.ts.
+import { expect, test, cards } from '../support/test.ts';
+import { outsideMargin, overlapping } from '../support/geometry.ts';
+import { counts, holdPiece, lastSheetBottom, pageAt, pieceIds, placeholders, sheetIds, stageBox, toBelowLastSheet } from '../support/sheets.ts';
+
+test('«Acomodar» puts 20 equal cards back on 3 sheets, 9 + 9 + 2, and says so; each sheet is a group named after its visible label', async ({ app, page }) => {
+  await app.addFiles(cards(0, 20));
+  // What doesn't fit goes on to new sheets, without overlaps and inside the margin.
+  expect(await counts(app)).toEqual([9, 9, 2]);
+  let g = await app.geometry();
+  expect(overlapping(g.pieces)).toEqual([]);
+  expect(outsideMargin(g)).toEqual([]);
+
+  await expect(page.locator('#sheets .page-label')).toHaveText(['Hoja 1 de 3', 'Hoja 2 de 3', 'Hoja 3 de 3']);
+  for (const name of ['Hoja 1 de 3, 9 piezas', 'Hoja 2 de 3, 9 piezas', 'Hoja 3 de 3, 2 piezas']) {
+    await expect(page.locator('#sheets').getByRole('group', { name, exact: true })).toBeVisible();
+  }
+
+  // Messed up with Shift+Page Down: three pieces of the first sheet go on.
+  for (let i = 0; i < 3; i++) {
+    await pageAt(page, 0).locator('.piece').first().focus();
+    await page.keyboard.press('Shift+PageDown');
+  }
+  await expect.poll(async () => (await counts(app))[0]).toBe(6);
+
+  await page.locator('#arrange').click();
+  await expect.poll(() => counts(app)).toEqual([9, 9, 2]);
+  expect((await app.notice()).text).toBe('Se acomodaron 20 piezas en 3 hojas');
+  g = await app.geometry();
+  expect(overlapping(g.pieces)).toEqual([]);
+  expect(outsideMargin(g)).toEqual([]);
+
+  // Another paper changes every sheet.
+  await app.openSheet();
+  await page.locator('#paper').selectOption('A5');
+  await expect(page.locator('#paper-label')).toContainText('148 × 210 mm');
+  const boxes = await page.locator('#sheets .sheet-box').evaluateAll((list) => list.map((b) => (b as HTMLElement).style.width + ' × ' + (b as HTMLElement).style.height));
+  expect(boxes).toHaveLength(3);
+  expect(new Set(boxes).size).toBe(1);
+});
+
+test('removing a sheet: an empty one goes at once and its place takes the focus; one with pieces asks first, Esc keeps it, Enter removes it; the last one has no remove button', async ({ app, page }) => {
+  await app.addFiles(cards(0, 12));
+  await page.locator('#add-sheet').click();
+  // The second sheet's pieces go on to the third: it is left empty, in the middle.
+  for (let i = 0; i < 3; i++) {
+    await pageAt(page, 1).locator('.piece').first().focus();
+    await page.keyboard.press('Shift+PageDown');
+  }
+  await expect.poll(() => counts(app)).toEqual([9, 0, 3]);
+  const ids = await sheetIds(app);
+
+  await pageAt(page, 1).locator('.page-remove').focus();
+  await page.keyboard.press('Enter');
+  await expect.poll(() => counts(app)).toEqual([9, 3]);
+  await expect(page.locator('#confirm')).not.toHaveAttribute('open');
+  await app.heard(/Se quitó la hoja 2/);
+  await expect(page.locator(`#sheets .page[data-sheet="${ids[2]}"] .sheet`)).toBeFocused();
+
+  const removeFirst = pageAt(page, 0).locator('.page-remove');
+  await removeFirst.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#confirm')).toHaveAttribute('open', '');
+  await expect(page.locator('#confirm-title')).toHaveText('¿Quitar la hoja 1?');
+  await expect(page.locator('#confirm-body')).toHaveText('Se quita con sus 9 piezas. Puedes deshacerlo.');
+  await expect(page.locator('#confirm-ok')).toBeFocused();
+  await expect(page.locator('#confirm-ok')).toHaveText('Quitar hoja');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#confirm')).not.toHaveAttribute('open');
+  await expect(removeFirst).toBeFocused();
+  expect(await counts(app)).toEqual([9, 3]);
+
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#confirm')).toHaveAttribute('open', '');
+  await page.keyboard.press('Enter');
+  await expect.poll(() => counts(app)).toEqual([3]);
+  await expect(app.pieces()).toHaveCount(3);
+  await expect(page.locator('#sheets .page-remove')).toBeHidden();
+});
+
+test('dragging a piece down to the next sheet: the stage scrolls by itself, that sheet is marked, and the piece moves there, announced, keeping the focus', async ({ app, page }) => {
+  await app.addFiles(cards(0, 12));
+  const [first9] = await pieceIds(app);
+  const piece = pageAt(page, 0).locator('.piece').first();
+  const id = Number(await piece.getAttribute('data-id'));
+  const box = (await piece.boundingBox())!;
+  const stage = await stageBox(page);
+  const x = box.x + box.width / 2;
+  await page.mouse.move(x, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(x, box.y + box.height / 2 + 40, { steps: 5 });
+  await page.mouse.move(x, stage.y + stage.height - 15, { steps: 10 });
+  // Held near the bottom edge until the second sheet shows.
+  const sheet2 = pageAt(page, 1).locator('.sheet');
+  await expect.poll(async () => (await sheet2.boundingBox())!.y, { intervals: [16] }).toBeLessThan(300);
+  expect(await page.locator('#stage').evaluate((el) => el.scrollTop)).toBeGreaterThan(200);
+
+  const s2 = (await sheet2.boundingBox())!;
+  await page.mouse.move(s2.x + s2.width * 0.7, Math.min(stage.y + stage.height - 60, s2.y + s2.height * 0.7), { steps: 8 });
+  await expect(pageAt(page, 1)).toHaveClass(/\bis-drop-target\b/);
+  await page.mouse.up();
+
+  await expect.poll(() => counts(app)).toEqual([8, 4]);
+  const ids = await pieceIds(app);
+  expect(ids[1]).toContain(id);
+  expect(first9).toContain(id);
+  expect(overlapping((await app.geometry()).pieces)).toEqual([]);
+  await app.heard(/Se movió a la hoja 2 de 2/);
+  await expect(app.piece(id)).toBeFocused();
+  await expect(pageAt(page, 1)).toHaveClass(/\bis-current\b/);
+  await expect(pageAt(page, 1)).not.toHaveClass(/\bis-drop-target\b/);
+
+  // The drag is one undo step.
+  await page.keyboard.press('Control+z');
+  await expect.poll(() => counts(app)).toEqual([9, 3]);
+});
+
+test('a piece dropped onto another one on the next sheet shows it is blocked meanwhile, then lands in a free spot of that sheet', async ({ app, page }) => {
+  await app.addFiles(cards(0, 12));
+  const [, last3] = await pieceIds(app);
+  await page.locator('#stage').evaluate((el) => el.scrollTo(0, 0));
+  const piece = pageAt(page, 0).locator('.piece').first();
+  const id = Number(await piece.getAttribute('data-id'));
+  const b = (await piece.boundingBox())!;
+  const stage = await stageBox(page);
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width / 2, stage.y + stage.height - 8, { steps: 8 });
+  // Held at the bottom edge until a piece of the second sheet is well in view.
+  const target = app.piece(last3[0]);
+  await expect
+    .poll(
+      async () => {
+        const t = (await target.boundingBox())!;
+        return t.y + t.height / 2;
+      },
+      { intervals: [16] }
+    )
+    .toBeLessThan(stage.y + stage.height - 150);
+  for (let i = 0; i < 2; i++) {
+    const t = (await target.boundingBox())!;
+    await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2, { steps: 8 });
+  }
+  await expect(page.locator('#frame')).toHaveClass(/\bis-blocked\b/);
+  await page.mouse.up();
+
+  await expect.poll(() => counts(app)).toEqual([8, 4]);
+  expect((await pieceIds(app))[1]).toContain(id);
+  expect(overlapping((await app.geometry()).pieces)).toEqual([]);
+  await expect(page.locator('#frame')).not.toHaveClass(/\bis-blocked\b/);
+});
+
+test('without a selection, the current sheet is the one most in view', async ({ app, page }) => {
+  await app.addFiles(cards(0, 12));
+  await app.pieces().first().focus();
+  await page.keyboard.press('Escape');
+  await expect(pageAt(page, 0)).toHaveClass(/\bis-current\b/);
+  await page.locator('#stage').evaluate((el) => el.scrollTo(0, 99999));
+  await expect(pageAt(page, 1)).toHaveClass(/\bis-current\b/);
+  await expect(pageAt(page, 0)).not.toHaveClass(/\bis-current\b/);
+});
+
+test.describe('dragging pieces out of the sheets onto a new sheet', () => {
+  test.beforeEach(async ({ app }) => {
+    // Two sheets: 9 cards and 3.
+    await app.addFiles(cards(0, 12));
+    expect(await counts(app)).toEqual([9, 3]);
+  });
+
+  test('below the last sheet: a dashed sheet-sized placeholder in the sheets’ column; dropped there, a third sheet with the piece inside the printable area, announced, in one undo step', async ({ app, page }) => {
+    const [first9, last3] = await pieceIds(app);
+
+    await test.step('a drag that stays inside its sheet shows no placeholder', async () => {
+      const from = await holdPiece(app, first9[4]);
+      await page.mouse.move(from.x + 30, from.y + 20, { steps: 4 });
+      const state = await placeholders(page);
+      expect([state.end, state.bar]).toEqual([false, false]);
+      await page.keyboard.press('Escape');
+      await page.mouse.up();
+    });
+
+    const before = await app.sheets();
+    const pagesBefore = (await placeholders(page)).pages;
+    const from = await holdPiece(app, last3[0]);
+    await toBelowLastSheet(page, from.x);
+    await expect.poll(async () => (await placeholders(page)).endActive).toBe(true);
+    const state = await placeholders(page);
+    expect(state).toMatchObject({ end: true, endActive: true, bar: false, hidden: true });
+    expect(Math.abs(state.endRect!.w - state.sheetBox.w)).toBeLessThan(1);
+    expect(Math.abs(state.endRect!.h - state.sheetBox.h)).toBeLessThan(1);
+    expect(Math.abs(state.endRect!.x - state.sheetBox.x)).toBeLessThan(1);
+    // Nothing moved under the pointer.
+    expect(state.pages).toEqual(pagesBefore);
+    await page.mouse.up();
+
+    await expect.poll(() => counts(app)).toEqual([9, 2, 1]);
+    const after = await app.sheets();
+    const moved = after[2].pieces.find((p) => Number(p.id) === last3[0])!;
+    expect(moved.x).toBeGreaterThanOrEqual(10 - 0.01);
+    expect(moved.y).toBeGreaterThanOrEqual(10 - 0.01);
+    expect(moved.x + moved.w).toBeLessThanOrEqual(200.01);
+    expect(moved.y + moved.h).toBeLessThanOrEqual(287.01);
+    await app.heard(/Se creó la hoja 3 y se movió 1 pieza/);
+    expect((await app.notice()).text).toBe('');
+    expect(await placeholders(page)).toMatchObject({ end: false, bar: false });
+
+    await app.undo();
+    await expect.poll(() => app.sheets()).toEqual(before);
+    await app.redo();
+    await expect.poll(() => app.sheets()).toEqual(after);
+  });
+
+  test('between two sheets: a bar shows in the gap (the dashed sheet stays, not active) and the new sheet goes between them', async ({ app, page }) => {
+    const [, last3] = await pieceIds(app);
+    const before = await app.sheets();
+    const from = await holdPiece(app, last3[1]);
+    const gapY = await page.evaluate(() => {
+      const pages = [...document.querySelectorAll('#sheets .page')];
+      const a = pages[0].querySelector('.sheet-box')!.getBoundingClientRect();
+      const b = pages[1].getBoundingClientRect();
+      return (a.bottom + b.top) / 2;
+    });
+    await page.mouse.move(from.x, gapY, { steps: 10 });
+    await expect.poll(async () => (await placeholders(page)).bar).toBe(true);
+    const state = await placeholders(page);
+    expect(state).toMatchObject({ bar: true, end: true, endActive: false });
+    expect(Math.abs(state.barRect!.y - gapY)).toBeLessThan(30);
+    await page.mouse.up();
+
+    await expect.poll(async () => (await app.sheets()).length).toBe(3);
+    const after = await app.sheets();
+    expect([after[0].id, after[2].id]).toEqual([before[0].id, before[1].id]);
+    expect(after[1].pieces.map((p) => Number(p.id))).toEqual([last3[1]]);
+    expect(after[1].label).toBe('Hoja 2 de 3');
+  });
+
+  test('above the first sheet: the bar shows and the new sheet goes first', async ({ app, page }) => {
+    const [first9] = await pieceIds(app);
+    const before = await app.sheets();
+    await page.locator('#stage').evaluate((el) => el.scrollTo(0, 0));
+    const from = await holdPiece(app, first9[0]);
+    const aboveY = await page.evaluate(() => document.querySelector('#sheets .page')!.getBoundingClientRect().top - 2);
+    await page.mouse.move(from.x, Math.max(aboveY, 60), { steps: 10 });
+    await expect.poll(async () => (await placeholders(page)).bar).toBe(true);
+    await page.mouse.up();
+
+    await expect.poll(async () => (await app.sheets()).length).toBe(3);
+    const after = await app.sheets();
+    expect(after[0].pieces.map((p) => Number(p.id))).toEqual([first9[0]]);
+    expect(after[1].id).toBe(before[0].id);
+  });
+
+  test('Esc cancels: the placeholder goes, no new sheet, nothing moved', async ({ app, page }) => {
+    const [, last3] = await pieceIds(app);
+    const before = await app.sheets();
+    const from = await holdPiece(app, last3[2]);
+    await toBelowLastSheet(page, from.x);
+    await expect.poll(async () => (await placeholders(page)).endActive).toBe(true);
+    await page.keyboard.press('Escape');
+    expect((await placeholders(page)).end).toBe(false);
+    await page.mouse.up();
+    expect(await app.sheets()).toEqual(before);
+  });
+
+  test('a group from one sheet keeps its arrangement on the new sheet; the sheet it emptied stays, with a notice whose «Quitar hoja» removes it', async ({ app, page }) => {
+    const [, last3] = await pieceIds(app);
+    await app.selectIds(last3);
+    const offsets = (list: { x: number; y: number }[]) => list.map((p) => [Math.round((p.x - list[0].x) * 100) / 100, Math.round((p.y - list[0].y) * 100) / 100]);
+    const g0 = offsets((await app.sheets())[1].pieces);
+    await page.mouse.move(0, 0);
+    const from = await holdPiece(app, last3[0]);
+    await toBelowLastSheet(page, from.x);
+    await expect.poll(async () => (await placeholders(page)).endActive).toBe(true);
+    await page.mouse.up();
+
+    await expect.poll(() => counts(app)).toEqual([9, 0, 3]);
+    expect(offsets((await app.sheets())[2].pieces)).toEqual(g0);
+    await expect.poll(() => app.notice()).toMatchObject({ text: 'La hoja 2 quedó vacía', action: 'Quitar hoja' });
+    await page.locator('#pill-action').click();
+    await expect.poll(() => counts(app)).toEqual([9, 3]);
+  });
+
+  test('a selection on two sheets shows no placeholder', async ({ app, page }) => {
+    const [first9, last3] = await pieceIds(app);
+    await app.selectIds([first9[8], last3[0]]);
+    const from = await holdPiece(app, last3[0]);
+    // Held at the bottom edge until the last sheet's bottom shows (no room is made past it for
+    // them, so not as far up as for one sheet's pieces)…
+    const stage = await stageBox(page);
+    await page.mouse.move(from.x, stage.y + stage.height - 8, { steps: 6 });
+    await expect.poll(() => lastSheetBottom(page), { intervals: [16] }).toBeLessThan(stage.y + stage.height - 60);
+    // …then below it, outside every sheet.
+    await page.mouse.move(from.x, (await lastSheetBottom(page)) + 30, { steps: 4 });
+    expect(await placeholders(page)).toMatchObject({ end: false, bar: false });
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+  });
+
+  test('by touch: the placeholder shows and dropping creates the sheet (no context menu)', async ({ app, page }) => {
+    const [, last3] = await pieceIds(app);
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x = 0, y = 0) =>
+      cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }] });
+    await page.keyboard.press('Escape');
+    await app.piece(last3[0]).evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    const b = (await app.piece(last3[0]).boundingBox())!;
+    const t0 = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+    await touch('touchStart', t0.x, t0.y);
+    for (let i = 1; i <= 6; i++) await touch('touchMove', t0.x, t0.y + i * 6);
+    await toBelowLastSheet(page, t0.x, (x, y) => touch('touchMove', x, y));
+    await expect.poll(async () => (await placeholders(page)).endActive).toBe(true);
+    await touch('touchEnd');
+
+    await expect.poll(async () => (await app.sheets()).length).toBe(3);
+    expect((await pieceIds(app))[2]).toContain(last3[0]);
+    await expect(page.locator('#context-menu')).toHaveCount(0);
+  });
+
+  test('at 200 %: the placeholder is sheet-sized and in the column, and the drop makes the sheet', async ({ app, page }) => {
+    const [, last3] = await pieceIds(app);
+    await page.locator('#zoom-level').click();
+    await page.locator('#zoom-menu-level-200').click();
+    await expect(page.locator('#zoom-level')).toContainText('200');
+    const from = await holdPiece(app, last3[1]);
+    await toBelowLastSheet(page, from.x);
+    await expect.poll(async () => (await placeholders(page)).endActive).toBe(true);
+    const state = await placeholders(page);
+    expect(Math.abs(state.endRect!.w - state.sheetBox.w)).toBeLessThan(1);
+    expect(Math.abs(state.endRect!.x - state.sheetBox.x)).toBeLessThan(1);
+    await page.mouse.up();
+
+    await expect.poll(async () => (await app.sheets()).length).toBe(3);
+    expect((await pieceIds(app))[2]).toContain(last3[1]);
+  });
+
+  test('from the keyboard, the context menu’s «Mover a una hoja nueva» makes a sheet right after, announced', async ({ app, page }) => {
+    const [, last3] = await pieceIds(app);
+    await app.piece(last3[2]).focus();
+    // Focusing it may scroll the stage, which closes menus: let that scroll happen first.
+    await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+    await page.keyboard.press('Shift+F10');
+    await expect(page.locator('#context-menu')).toBeVisible();
+    await page.keyboard.press('End');
+    await page.keyboard.press('ArrowUp');
+    await expect(page.locator('#context-menu-new-sheet')).toBeFocused();
+    await page.keyboard.press('Enter');
+
+    await expect.poll(async () => (await app.sheets()).length).toBe(3);
+    expect((await pieceIds(app))[2]).toContain(last3[2]);
+    await app.heard(/Se creó la hoja 3 y se movió 1 pieza/);
+  });
+});
