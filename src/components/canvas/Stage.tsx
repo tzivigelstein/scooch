@@ -5,7 +5,9 @@ import { FilePlus, Trash2, Upload } from 'lucide-react';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FocusEvent } from 'react';
 import { t } from '../../copy/index.ts';
 import type { Unit } from '../../core/units.js';
+import { LEFT_DRAWER_QUERY, NARROW_QUERY } from '../../config.ts';
 import { useCanvasGestures } from '../../hooks/useCanvasGestures.ts';
+import { useMediaQuery } from '../../hooks/useMediaQuery.ts';
 import { useShortcut } from '../../hooks/shortcuts.ts';
 import { paperTitle, sizeText } from '../../services/measure.ts';
 import { getAsset } from '../../state/assets.ts';
@@ -156,6 +158,12 @@ export function Stage() {
   const animating = useView((s) => s.animating);
   const pinned = useView((s) => s.pinned);
   const viewSheet = useView((s) => s.sheet);
+  // On medium screens the list opens over the canvas: the sheets move beside it
+  // (refitted), so what the list selects can always be seen.
+  const listOpen = useView((s) => s.drawer === 'pieces');
+  const medium = useMediaQuery(LEFT_DRAWER_QUERY);
+  const narrow = useMediaQuery(NARROW_QUERY);
+  const besideList = listOpen && medium && !narrow;
   const grid = usePrefs((s) => s.grid);
   const unit = usePrefs((s) => s.unit);
   const [layout, setLayout] = useState(0);
@@ -177,7 +185,7 @@ export function Stage() {
     if (next !== getView().zoom) setView({ zoom: next });
     setLayout((n) => n + 1);
   }, []);
-  useLayoutEffect(updateZoom, [W, H, updateZoom]);
+  useLayoutEffect(updateZoom, [W, H, besideList, updateZoom]);
   useEffect(() => {
     const observer = new ResizeObserver(() => {
       if (!isDragging()) updateZoom();
@@ -202,7 +210,7 @@ export function Stage() {
   };
 
   return (
-    <div id="stage" className="stage" ref={stage}>
+    <div id="stage" className={besideList ? 'stage beside-list' : 'stage'} ref={stage}>
       <div id="sheets" className={animating ? 'sheets is-animating' : 'sheets'} data-many={sheets.length > 1 ? '' : undefined} onFocus={onFocus}>
         {sheets.map((sheet, i) => (
           <Page

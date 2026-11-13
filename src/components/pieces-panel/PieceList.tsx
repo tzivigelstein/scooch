@@ -22,6 +22,8 @@ import { focusSheet } from '../../state/actions/focus.ts';
 import { printResolution } from '../../state/actions/layout.ts';
 import { remove } from '../../state/actions/pieces.ts';
 import { focusPiece, select, selectRange, toggleInSelection } from '../../state/actions/selection.ts';
+import { flushUi } from '../../state/flush.ts';
+import { revealPiece, revealPieces } from '../canvas/viewport.ts';
 import { thumbView } from '../canvas/pieceView.ts';
 import { Icon } from '../ui/Icon.tsx';
 
@@ -109,16 +111,39 @@ export function PieceList() {
 
   const order = () => [...list.current!.querySelectorAll<HTMLElement>('[role="option"]')].map((row) => Number(row.dataset.id));
 
+  // What the list selects shows on the canvas too (the focus stays in the list).
+  const reveal = (ids: readonly number[], primary: number) => {
+    flushUi();
+    revealPieces(ids, primary);
+  };
+
   const extendTo = (id: number) => {
     if (busy) return;
     const current = getDocument().selection;
     const from = anchor.current !== null && order().includes(anchor.current) ? anchor.current : (current.at(-1) ?? id);
-    selectRange(rangeBetween(order(), from, id), id);
+    const range = rangeBetween(order(), from, id);
+    selectRange(range, id);
+    reveal(range.filter((other) => !current.includes(other)), id);
   };
 
   const toggle = (id: number) => {
     anchor.current = id;
-    if (!getDocument().busy) toggleInSelection(id);
+    if (!getDocument().busy && toggleInSelection(id)) reveal([id], id);
+  };
+
+  const pick = (id: number) => {
+    anchor.current = id;
+    select(id);
+    reveal([id], id);
+  };
+
+  /** Enter or a double click: the piece on the canvas, with the focus (the overlay list closes). */
+  const goToPiece = (id: number) => {
+    if (!getDocument().selection.includes(id)) select(id);
+    if (isDrawerOpen('pieces')) closeDrawer('pieces', { focus: 'none' });
+    flushUi();
+    revealPiece(id);
+    focusSheet();
   };
 
   // The click puts the focus (after deciding what to select): if it came in
@@ -135,12 +160,14 @@ export function PieceList() {
     focusMode.current = 'move';
     if (e.shiftKey) extendTo(id);
     else if (e.ctrlKey || e.metaKey) toggle(id);
-    else {
-      anchor.current = id;
-      select(id);
-    }
+    else pick(id);
     row.focus();
     focusMode.current = null;
+  };
+
+  const onDoubleClick = (e: MouseEvent) => {
+    const row = (e.target as Element).closest<HTMLElement>('[role="option"]');
+    if (row && !e.shiftKey && !e.ctrlKey && !e.metaKey) goToPiece(Number(row.dataset.id));
   };
 
   const onFocus = (e: FocusEvent) => {
@@ -151,10 +178,7 @@ export function PieceList() {
     focusMode.current = null;
     if (mode === 'move') return;
     if (mode === 'extend') return extendTo(id);
-    if (mode === 'replace') {
-      anchor.current = id;
-      return select(id);
-    }
+    if (mode === 'replace') return pick(id);
     // With Tab or coming back to the list: like focusing the piece on the sheet.
     focusPiece(id);
   };
@@ -183,8 +207,7 @@ export function PieceList() {
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       e.stopPropagation();
-      if (isDrawerOpen('pieces')) closeDrawer('pieces', { focus: 'none' });
-      focusSheet();
+      goToPiece(Number((document.activeElement as HTMLElement).dataset.id));
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault();
       e.stopPropagation();
@@ -228,6 +251,7 @@ export function PieceList() {
       hidden={!items.length}
       onMouseDown={onMouseDown}
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       onFocus={onFocus}
       onKeyDown={onKeyDown}
     >
