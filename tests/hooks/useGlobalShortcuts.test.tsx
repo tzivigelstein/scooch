@@ -1,12 +1,17 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { Undo2 } from 'lucide-react';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { useGlobalShortcuts } from '../../src/hooks/useGlobalShortcuts.ts';
 import { addAsset } from '../../src/state/assets.ts';
-import { getDocument, setDocument, useDocument } from '../../src/state/document.ts';
-import { resetHistory } from '../../src/state/history.ts';
-import { setSingleKeys, setUnit } from '../../src/state/prefs.ts';
-import { setView } from '../../src/state/view.ts';
+import { Button, IconButton } from '../../src/components/ui/Button.tsx';
+import { useDialogs } from '../../src/components/dialogs/dialogs.ts';
+import { getDocument, setDocument, useDocument, type Piece } from '../../src/state/document.ts';
+import { historyDepth, resetHistory } from '../../src/state/history.ts';
+import { getPrefs, setAllowOverlap as setAllowOverlapForTest, setSingleKeys, setUnit } from '../../src/state/prefs.ts';
+import { dims } from '../../src/state/selectors.ts';
+import { getView, setView } from '../../src/state/view.ts';
+import { piece as makePiece, resetState } from '../support/state.ts';
 
 const key = addAsset({
   kind: 'image',
@@ -38,6 +43,14 @@ function Harness() {
         </div>
       </div>
       <input id="text" />
+      <div id="props-panel">
+        <button type="button" id="props-tab-piece">
+          Pieza
+        </button>
+        <button type="button" id="props-tab-sheet">
+          Hoja
+        </button>
+      </div>
       <div id="live-polite" />
       <div id="live-assertive" />
     </div>
@@ -110,5 +123,274 @@ describe('keyboard shortcuts', () => {
     fireEvent.keyDown(piece(), { key: 'Escape' });
     expect(getDocument().selection).toEqual([]);
     expect(document.activeElement).toBe(document.querySelector('.sheet'));
+  });
+});
+
+// ---------- Single keys on a piece and in the app ----------
+// The image above is 50.8 × 25.4 mm; the sheet is A4 portrait (210 × 297 mm)
+// with a 10 mm margin and a 5 mm gap.
+
+/** What the polite live region says once the pending announcements went out. */
+function heard() {
+  act(() => vi.advanceTimersByTime(1000));
+  return (document.getElementById('live-polite')!.textContent ?? '').replace(/ /g, ' ').trim();
+}
+
+const node = (id: number) => document.querySelector<HTMLElement>(`.piece[data-id="${id}"]`)!;
+const find = (id: number) => getDocument().items.find((other) => other.id === id)!;
+const ids = () => getDocument().items.map((other) => other.id);
+const size = (id: number) => dims(find(id)).map((v) => Math.round(v * 1000) / 1000);
+
+/** Pairs of pieces on the same sheet closer than `gap` mm (with 0, overlapping by more than touching). */
+function closerThan(items: readonly Piece[], gap: number, eps = 0.011) {
+  const bad: [number, number][] = [];
+  items.forEach((a, i) =>
+    items.slice(i + 1).forEach((b) => {
+      const [aw, ah] = dims(a);
+      const [bw, bh] = dims(b);
+      const apart = b.x >= a.x + aw + gap - eps || a.x >= b.x + bw + gap - eps || b.y >= a.y + ah + gap - eps || a.y >= b.y + bh + gap - eps;
+      if (a.sheet === b.sheet && !apart) bad.push([a.id, b.id]);
+    })
+  );
+  return bad;
+}
+
+/** Starts again from these pieces (ids 1, 2…) of the image above, nothing selected, and focuses piece 1. */
+function place(positions: readonly [number, number][]) {
+  act(() => resetState({ items: positions.map(([x, y], i) => makePiece(i + 1, key, x, y)) }));
+  node(1).focus();
+}
+
+/** Presses a key (down and up) on whatever has the focus. */
+function press(k: string, init: Partial<KeyboardEventInit> = {}) {
+  const target = document.activeElement ?? document.body;
+  act(() => {
+    fireEvent.keyDown(target, { key: k, ...init });
+    fireEvent.keyUp(target, { key: k, ...init });
+  });
+}
+
+describe('single keys', () => {
+  beforeEach(() => {
+    // The wide layout: no panel collapses.
+    window.matchMedia ??= ((query: string) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    act(() => vi.runAllTimers());
+    vi.useRealTimers();
+  });
+
+  test('A arranges every piece without overlaps, the gap between them; the focus stays on the piece', () => {
+    place([
+      [10, 10],
+      [20, 15],
+      [30, 20],
+    ]);
+    expect(closerThan(getDocument().items, 0)).not.toEqual([]);
+    press('a');
+    expect(closerThan(getDocument().items, 5)).toEqual([]);
+    expect(getView().flash?.text).toBe('Se acomodaron 3 piezas');
+    expect(document.activeElement).toBe(node(1));
+  });
+
+  test('− shrinks the selected piece 1 % from its center (Shift: 10 %), one undo step per press', () => {
+    place([[50, 50]]);
+    const depth = historyDepth().undo;
+    press('-');
+    expect(find(1).scale).toBe(99);
+    expect(getDocument().selection).toEqual([1]);
+    // From its center: 75.4, 62.7 before and after.
+    const [w, h] = dims(find(1));
+    expect(find(1).x + w / 2).toBeCloseTo(75.4, 6);
+    expect(find(1).y + h / 2).toBeCloseTo(62.7, 6);
+    press('_', { shiftKey: true });
+    expect(find(1).scale).toBe(89);
+    expect(historyDepth().undo).toBe(depth + 2);
+    expect(document.activeElement).toBe(node(1));
+  });
+
+  test('R turns the piece 90° when it lands free, Shift+R turns it back; the focus stays on it', () => {
+    place([[50, 50]]);
+    press('r');
+    expect(find(1).r).toBe(90);
+    expect(size(1)).toEqual([25.4, 50.8]);
+    press('R', { shiftKey: true });
+    expect(find(1).r).toBe(0);
+    expect(size(1)).toEqual([50.8, 25.4]);
+    expect(document.activeElement).toBe(node(1));
+  });
+
+  test('R where the turned piece would cover another one: it doesn’t turn, and the notice says why and offers «Permitir superposición»', () => {
+    // Turned around its center, piece 1 would reach y = 88.1 mm; piece 2 starts at y = 80 mm, right below.
+    place([
+      [50, 50],
+      [50, 80],
+    ]);
+    const depth = historyDepth().undo;
+    press('r');
+    expect(find(1)).toMatchObject({ r: 0, x: 50, y: 50 });
+    expect(getView().flash).toMatchObject({ text: 'No se puede girar: las piezas se superpondrían', warn: true, action: { label: 'Permitir superposición' } });
+    expect(historyDepth().undo).toBe(depth);
+    expect(document.activeElement).toBe(node(1));
+  });
+
+  test('D adds a copy without overlapping anything; the copy is selected and takes the focus', () => {
+    place([[50, 50]]);
+    press('d');
+    expect(ids()).toEqual([1, 2]);
+    expect(getDocument().selection).toEqual([2]);
+    expect(closerThan(getDocument().items, 0)).toEqual([]);
+    expect(document.activeElement).toBe(node(2));
+    expect(heard()).toBe('Se duplicó la pieza. Hay 2 piezas.');
+  });
+
+  test('Delete removes the piece; its neighbor on the sheet gets selected and the focus', () => {
+    place([
+      [10, 10],
+      [100, 10],
+    ]);
+    press('Delete');
+    expect(ids()).toEqual([2]);
+    expect(getDocument().selection).toEqual([2]);
+    expect(document.activeElement).toBe(node(2));
+  });
+
+  test('F fits the piece to the printable area (190 mm wide here) and centers it on the sheet', () => {
+    place([[30, 40]]);
+    press('f');
+    expect(size(1)).toEqual([190, 95]);
+    expect(find(1)).toMatchObject({ x: 10, y: 101 });
+    expect(document.activeElement).toBe(node(1));
+    expect(heard()).toBe('Ajustada a la hoja: 190 × 95 mm.');
+  });
+
+  test('C centers the piece on the sheet, keeping its size', () => {
+    place([[30, 40]]);
+    press('c');
+    expect(size(1)).toEqual([50.8, 25.4]);
+    expect(find(1).x).toBeCloseTo((210 - 50.8) / 2, 9);
+    expect(find(1).y).toBeCloseTo((297 - 25.4) / 2, 9);
+    expect(heard()).toBe('Centrada en la hoja.');
+  });
+
+  test('] on a piece that overlaps no other: nothing changes, no undo step, and it says there is no need', () => {
+    place([
+      [10, 10],
+      [100, 10],
+    ]);
+    const depth = historyDepth().undo;
+    press(']');
+    expect(ids()).toEqual([1, 2]);
+    expect(historyDepth().undo).toBe(depth);
+    expect(heard()).toBe('La pieza no se superpone con otras, así que no hace falta traerla al frente.');
+  });
+
+  test('] on a piece under another one brings it to the front, in one undo step', () => {
+    act(() => resetState({ items: [makePiece(1, key, 50, 50), makePiece(2, key, 60, 55)] }));
+    act(() => setAllowOverlapForTest(true));
+    node(1).focus();
+    const depth = historyDepth().undo;
+    press(']');
+    expect(ids()).toEqual([2, 1]);
+    expect(historyDepth().undo).toBe(depth + 1);
+    expect(heard()).toBe('Se trajo la pieza al frente.');
+  });
+
+  test('G shows the grid and hides it again, and says so', () => {
+    place([[50, 50]]);
+    expect(getPrefs().grid.show).toBe(false);
+    press('g');
+    expect(getPrefs().grid.show).toBe(true);
+    expect(heard()).toBe('Grilla visible, cada 1 mm.');
+    press('g');
+    expect(getPrefs().grid.show).toBe(false);
+    expect(heard()).toBe('Grilla oculta.');
+  });
+
+  test('L turns the sheet landscape and back to portrait', () => {
+    place([[50, 50]]);
+    press('l');
+    expect(getDocument().landscape).toBe(true);
+    press('l');
+    expect(getDocument().landscape).toBe(false);
+  });
+
+  test('H focuses the Hoja tab; M the Pieza tab, selecting the focused piece; Esc from a tab goes back to the piece', () => {
+    place([[50, 50]]);
+    press('h');
+    expect(getView().propsTab).toBe('sheet');
+    expect(document.activeElement?.id).toBe('props-tab-sheet');
+    expect(getDocument().selection).toEqual([]);
+    node(1).focus();
+    press('m');
+    expect(getView().propsTab).toBe('piece');
+    expect(document.activeElement?.id).toBe('props-tab-piece');
+    expect(getDocument().selection).toEqual([1]);
+    // On the tab they keep switching.
+    press('h');
+    expect(document.activeElement?.id).toBe('props-tab-sheet');
+    press('m');
+    expect(document.activeElement?.id).toBe('props-tab-piece');
+    press('Escape');
+    expect(document.activeElement).toBe(node(1));
+    expect(getDocument().selection).toEqual([1]);
+  });
+
+  test('turned off, no single key does anything: A, −, +, R, D, F, C, ], G, L, H, M, I, ?', () => {
+    act(() => resetState({ items: [makePiece(1, key, 10, 10), makePiece(2, key, 20, 15)], selection: [1] }));
+    act(() => setSingleKeys(false));
+    node(1).focus();
+    const before = { doc: JSON.stringify(getDocument().items), grid: getPrefs().grid.show, tab: getView().propsTab, depth: historyDepth().undo };
+    for (const k of ['a', '-', '+', 'r', 'd', 'f', 'c', ']', 'g', 'l', 'h', 'm', 'i', '?']) press(k);
+    press('R', { shiftKey: true });
+    expect(JSON.stringify(getDocument().items)).toBe(before.doc);
+    expect(getDocument()).toMatchObject({ landscape: false, selection: [1] });
+    expect(getPrefs().grid.show).toBe(before.grid);
+    expect(getView().propsTab).toBe(before.tab);
+    expect(historyDepth().undo).toBe(before.depth);
+    expect(useDialogs.getState().open).toEqual({});
+    expect(document.activeElement).toBe(node(1));
+  });
+
+  test('turned off, the arrows, Ctrl+Z, Alt+Shift aligning and Delete keep working', () => {
+    place([
+      [50, 50],
+      [120, 50],
+    ]);
+    act(() => setSingleKeys(false));
+    press('ArrowRight');
+    expect(find(1).x).toBe(51);
+    press('z', { ctrlKey: true });
+    expect(find(1).x).toBe(50);
+    press('ArrowLeft', { code: 'ArrowLeft', altKey: true, shiftKey: true });
+    expect(find(1).x).toBe(10);
+    press('Delete');
+    expect(ids()).toEqual([2]);
+  });
+});
+
+describe('aria-keyshortcuts', () => {
+  function Buttons() {
+    return (
+      <>
+        <Button id="arrange" shortcut="arrange">
+          Acomodar
+        </Button>
+        <IconButton id="undo" shortcut="undo" label="Deshacer" icon={Undo2} />
+      </>
+    );
+  }
+
+  test('single-key shortcuts lose aria-keyshortcuts when turned off (the tooltip keeps the key); Ctrl ones keep it', () => {
+    render(<Buttons />);
+    const arrange = screen.getByRole('button', { name: 'Acomodar' });
+    const undo = screen.getByRole('button', { name: 'Deshacer' });
+    expect(arrange.getAttribute('aria-keyshortcuts')).toBe('A');
+    expect(undo.getAttribute('aria-keyshortcuts')).toBe('Control+Z Meta+Z');
+    act(() => setSingleKeys(false));
+    expect(arrange.hasAttribute('aria-keyshortcuts')).toBe(false);
+    expect(arrange.getAttribute('data-kbd')).toBe('A');
+    expect(undo.getAttribute('aria-keyshortcuts')).toBe('Control+Z Meta+Z');
   });
 });
