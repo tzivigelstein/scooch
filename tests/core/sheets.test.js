@@ -12,7 +12,7 @@ import {
   pieceProblems,
   problemSummary,
 } from '../../src/core/sheets.js';
-import { overlaps } from './support.js';
+import { overlaps } from '../support/pack.js';
 
 // A4 con 10 mm de margen y 5 mm de separación.
 const A4 = { W: 210, H: 297 };

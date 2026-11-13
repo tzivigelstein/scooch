@@ -1,24 +1,16 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { CUT_MODES, cutLines } from '../../src/core/cutmarks.js';
-import { prng, shuffled } from './support.js';
+import { TOL, assertWellFormed, entersPiece, grid } from '../support/cutmarks.js';
 
-const TOL = 1e-6;
+// Exact cases of the cut lines. The properties checked over generated cases
+// are in tests/properties/cutmarks.test.js; the work and time budgets, in
+// tests/performance/cutmarks.test.js.
+
 const H = (y, x1, x2) => ({ x1, y1: y, x2, y2: y });
 const V = (x, y1, y2) => ({ x1: x, y1, x2: x, y2 });
 
-/** Grilla n×n de piezas de `size` mm separadas `gap`, desde (x0, y0). */
-function grid(n, size, gap, x0 = 0, y0 = 0) {
-  const out = [];
-  for (let row = 0; row < n; row++) {
-    for (let col = 0; col < n; col++) {
-      out.push({ x: x0 + col * (size + gap), y: y0 + row * (size + gap), w: size, h: size });
-    }
-  }
-  return out;
-}
-
-/** Las líneas de bordes de una grilla, cada una con los mismos tramos, en el orden de salida. */
+/** The edge lines of a grid, each with the same spans, in output order. */
 function expectedGrid(lines, spans) {
   return [
     ...lines.flatMap((y) => spans.map(([a, b]) => H(y, a, b))),
@@ -26,40 +18,8 @@ function expectedGrid(lines, spans) {
   ];
 }
 
-// Propiedades de cualquier resultado: ejes, largo positivo, orden y sin
-// colineales que se pisen o toquen (ya están unidos).
-function assertWellFormed(segments, label = '') {
-  for (const s of segments) {
-    const horizontal = s.y1 === s.y2;
-    assert.ok(horizontal || s.x1 === s.x2, `${label}: no es horizontal ni vertical ${JSON.stringify(s)}`);
-    assert.ok(s.x1 <= s.x2 && s.y1 <= s.y2, `${label}: extremos al revés ${JSON.stringify(s)}`);
-    assert.ok(s.x2 - s.x1 + (s.y2 - s.y1) > TOL, `${label}: largo nulo ${JSON.stringify(s)}`);
-  }
-  const keyed = segments.map((s) => (s.y1 === s.y2 ? ['h', s.y1, s.x1, s.x2] : ['v', s.x1, s.y1, s.y2]));
-  for (let i = 1; i < keyed.length; i++) {
-    const [d0, c0, a0, b0] = keyed[i - 1];
-    const [d1, c1, a1] = keyed[i];
-    const ordered = d0 < d1 || (d0 === d1 && (c0 < c1 - TOL || (Math.abs(c0 - c1) <= TOL && a0 <= a1)));
-    assert.ok(ordered, `${label}: fuera de orden en ${i}`);
-    if (d0 === d1 && Math.abs(c0 - c1) <= TOL) assert.ok(a1 > b0 + TOL, `${label}: colineales sin unir en ${i}`);
-  }
-}
-
-// ¿Algún punto del segmento está estrictamente adentro de la pieza?
-function entersPiece(s, q) {
-  if (s.y1 === s.y2) {
-    if (!(s.y1 > q.y + TOL && s.y1 < q.y + q.h - TOL)) return false;
-    return Math.min(s.x2, q.x + q.w) - Math.max(s.x1, q.x) > TOL;
-  }
-  if (!(s.x1 > q.x + TOL && s.x1 < q.x + q.w - TOL)) return false;
-  return Math.min(s.y2, q.y + q.h) - Math.max(s.y1, q.y) > TOL;
-}
-
-const insideBounds = (s, b) =>
-  s.x1 >= b.x - TOL && s.x2 <= b.x + b.w + TOL && s.y1 >= b.y - TOL && s.y2 <= b.y + b.h + TOL;
-
-describe('modos', () => {
-  test("'none' y modos desconocidos", () => {
+describe('modes', () => {
+  test("'none' and unknown modes", () => {
     assert.deepEqual(CUT_MODES, ['none', 'corners', 'outline']);
     assert.deepEqual(cutLines(grid(2, 10, 5), { mode: 'none' }), []);
     assert.throws(() => cutLines([], { mode: 'cross' }), RangeError);
@@ -67,7 +27,7 @@ describe('modos', () => {
     assert.deepEqual(cutLines([], { mode: 'outline' }), []);
   });
 
-  test('piezas inválidas se ignoran; largo nulo no dibuja; offset negativo cuenta como 0', () => {
+  test('invalid pieces are ignored; zero length draws nothing; a negative offset counts as 0', () => {
     const bad = [
       { x: 0, y: 0, w: 0, h: 10 },
       { x: 0, y: 0, w: 10, h: -1 },
@@ -78,12 +38,12 @@ describe('modos', () => {
     assert.deepEqual(cutLines(one, { length: 0 }), []);
     assert.deepEqual(cutLines(one, { length: -3 }), []);
     assert.deepEqual(cutLines(one, { offset: -2 }), cutLines(one, { offset: 0 }));
-    assert.equal(cutLines(one, { offset: 0 })[0].x2, 10, 'arranca en la esquina');
+    assert.equal(cutLines(one, { offset: 0 })[0].x2, 10, 'starts at the corner');
   });
 });
 
-describe("'corners': casos exactos", () => {
-  test('una pieza: 8 marcas', () => {
+describe("'corners': exact cases", () => {
+  test('one piece: 8 marks', () => {
     const one = [{ x: 10, y: 20, w: 30, h: 40 }];
     assert.deepEqual(cutLines(one), [
       H(20, 4.5, 8.5),
@@ -95,11 +55,11 @@ describe("'corners': casos exactos", () => {
       V(40, 14.5, 18.5),
       V(40, 61.5, 65.5),
     ]);
-    // Largo y separación propios.
+    // Own length and offset.
     assert.deepEqual(cutLines(one, { length: 10, offset: 3 })[0], H(20, -3, 7));
   });
 
-  test('dos pegadas: comparten las marcas del borde común y no se dibujan sobre la vecina', () => {
+  test('two touching pieces share the marks of their common edge, and none is drawn over the neighbor', () => {
     const two = [
       { x: 0, y: 0, w: 10, h: 10 },
       { x: 10, y: 0, w: 10, h: 10 },
@@ -118,20 +78,20 @@ describe("'corners': casos exactos", () => {
     ]);
   });
 
-  test('alineadas en columna: la marca entre ellas se comparte si se pisan', () => {
+  test('aligned in a column: the mark between them is shared when they overlap', () => {
     const column = (gap) => [
       { x: 0, y: 0, w: 10, h: 10 },
       { x: 0, y: 10 + gap, w: 10, h: 10 },
     ];
-    // gap 20 > 2 × (1,5 + 4): marcas separadas.
+    // gap 20 > 2 × (1.5 + 4): separate marks.
     const far = cutLines(column(20)).filter((s) => s.x1 === 0 && s.x2 === 0);
     assert.deepEqual(far, [V(0, -5.5, -1.5), V(0, 11.5, 15.5), V(0, 24.5, 28.5), V(0, 41.5, 45.5)]);
-    // gap 8: las dos marcas se pisan y quedan en una.
+    // gap 8: the two marks overlap and become one.
     const near = cutLines(column(8)).filter((s) => s.x1 === 0 && s.x2 === 0);
     assert.deepEqual(near, [V(0, -5.5, -1.5), V(0, 11.5, 16.5), V(0, 29.5, 33.5)]);
   });
 
-  test('grilla 3×3 con gap mayor que 2 × (offset + length): 72 marcas sueltas', () => {
+  test('a 3×3 grid with a gap larger than 2 × (offset + length): 72 separate marks', () => {
     const segments = cutLines(grid(3, 10, 12));
     assert.equal(segments.length, 72);
     const lines = [0, 10, 22, 32, 44, 54];
@@ -148,7 +108,7 @@ describe("'corners': casos exactos", () => {
     );
   });
 
-  test('grilla 3×3 con gap entre offset + length y el doble: las de enfrente se unen', () => {
+  test('a 3×3 grid with a gap between offset + length and twice that: facing marks join', () => {
     const segments = cutLines(grid(3, 10, 8));
     assert.equal(segments.length, 48);
     assert.deepEqual(
@@ -165,7 +125,7 @@ describe("'corners': casos exactos", () => {
     );
   });
 
-  test('grilla 3×3 con gap menor que offset + length: la marca cruza el espacio entero', () => {
+  test('a 3×3 grid with a gap smaller than offset + length: the mark crosses the whole gap', () => {
     const segments = cutLines(grid(3, 10, 3));
     assert.equal(segments.length, 48);
     assert.deepEqual(
@@ -182,7 +142,7 @@ describe("'corners': casos exactos", () => {
     );
   });
 
-  test('grilla 3×3 con gap menor que offset: solo las marcas de afuera', () => {
+  test('a 3×3 grid with a gap smaller than offset: only the outer marks', () => {
     const segments = cutLines(grid(3, 10, 1));
     assert.equal(segments.length, 24);
     assert.deepEqual(
@@ -197,7 +157,7 @@ describe("'corners': casos exactos", () => {
     );
   });
 
-  test('grilla 3×3 pegada: una marca por línea de corte y lado', () => {
+  test('a touching 3×3 grid: one mark per cut line and side', () => {
     assert.deepEqual(
       cutLines(grid(3, 10, 0)),
       expectedGrid(
@@ -210,28 +170,28 @@ describe("'corners': casos exactos", () => {
     );
   });
 
-  test('pieza contra el borde de la hoja', () => {
+  test('a piece against the edge of the sheet', () => {
     const sheet = { x: 0, y: 0, w: 100, h: 100 };
-    // En la esquina: lo de afuera y lo que corre sobre el borde se descarta.
+    // In the corner: what falls outside and what runs on the edge are dropped.
     assert.deepEqual(cutLines([{ x: 0, y: 0, w: 50, h: 30 }], { bounds: sheet }), [
       H(30, 51.5, 55.5),
       V(50, 31.5, 35.5),
     ]);
-    // Contra el borde derecho y a 2 mm del de arriba: las de arriba se cortan en el borde.
+    // Against the right edge and 2 mm from the top one: the top marks are cut at the edge.
     assert.deepEqual(cutLines([{ x: 60, y: 2, w: 40, h: 20 }], { bounds: sheet }), [
       H(2, 54.5, 58.5),
       H(22, 54.5, 58.5),
       V(60, 0, 0.5),
       V(60, 23.5, 27.5),
     ]);
-    // Bounds desplazados (área útil con margen).
+    // Offset bounds (the printable area, with a margin).
     const area = { x: 10, y: 10, w: 80, h: 80 };
     assert.deepEqual(cutLines([{ x: 10, y: 10, w: 80, h: 80 }], { bounds: area }), []);
   });
 });
 
 describe("'outline'", () => {
-  test('una pieza, dos pegadas y grillas', () => {
+  test('one piece, two touching ones and grids', () => {
     assert.deepEqual(cutLines([{ x: 1, y: 2, w: 3, h: 4 }], { mode: 'outline' }), [
       H(2, 1, 4),
       H(6, 1, 4),
@@ -263,8 +223,8 @@ describe("'outline'", () => {
     );
   });
 
-  test('bordes compartidos en parte', () => {
-    // B más corta, apoyada a la derecha de A: el borde x = 10 queda de 0 a 20.
+  test('partly shared edges', () => {
+    // B, shorter, leaning on the right of A: the edge x = 10 runs from 0 to 20.
     const pieces = [
       { x: 0, y: 0, w: 10, h: 20 },
       { x: 10, y: 5, w: 10, h: 10 },
@@ -273,7 +233,7 @@ describe("'outline'", () => {
     assert.deepEqual(v10, [V(10, 0, 20)]);
   });
 
-  test('recorte a la hoja', () => {
+  test('clipped to the sheet', () => {
     const sheet = { x: 0, y: 0, w: 100, h: 100 };
     assert.deepEqual(cutLines([{ x: 0, y: 0, w: 50, h: 30 }], { mode: 'outline', bounds: sheet }), [
       H(30, 0, 50),
@@ -283,109 +243,6 @@ describe("'outline'", () => {
       H(90, 80, 100),
       V(80, 90, 100),
     ]);
-  });
-});
-
-describe('propiedades (fuzz)', () => {
-  function randomCase(rnd) {
-    const W = 100 + rnd() * 200;
-    const Hh = 100 + rnd() * 250;
-    const n = 1 + Math.floor(rnd() * 25);
-    const integer = rnd() < 0.5; // medidas enteras: más bordes alineados y contactos exactos
-    const num = (v) => (integer ? Math.round(v) : v);
-    const pieces = Array.from({ length: n }, () => ({
-      x: num(-10 + rnd() * W),
-      y: num(-10 + rnd() * Hh),
-      w: Math.max(1, num(1 + rnd() * 60)),
-      h: Math.max(1, num(1 + rnd() * 60)),
-    }));
-    // A veces, una grilla (piezas alineadas, con gaps chicos y grandes).
-    if (rnd() < 0.3)
-      pieces.push(
-        ...grid(1 + Math.floor(rnd() * 4), num(5 + rnd() * 30), num(rnd() * 12), num(rnd() * 50), num(rnd() * 50))
-      );
-    const opts = { length: 1 + rnd() * 8, offset: rnd() * 4 };
-    return { pieces, bounds: { x: 0, y: 0, w: W, h: Hh }, opts };
-  }
-
-  test("'corners': nada adentro de una pieza ni afuera de la hoja", () => {
-    let total = 0;
-    for (let seed = 1; seed <= 150; seed++) {
-      const { pieces, bounds, opts } = randomCase(prng(seed));
-      const label = `semilla ${seed}`;
-      const segments = cutLines(pieces, { ...opts, mode: 'corners', bounds });
-      assertWellFormed(segments, label);
-      total += segments.length;
-      for (const s of segments) {
-        assert.ok(insideBounds(s, bounds), `${label}: afuera ${JSON.stringify(s)}`);
-        for (const q of pieces)
-          assert.ok(!entersPiece(s, q), `${label}: ${JSON.stringify(s)} entra en ${JSON.stringify(q)}`);
-      }
-      // Sin bounds tampoco entra en ninguna, y el orden de la entrada no importa.
-      const free = cutLines(pieces, opts);
-      assertWellFormed(free, `${label} sin bounds`);
-      for (const s of free) for (const q of pieces) assert.ok(!entersPiece(s, q), `${label} sin bounds`);
-      assert.deepEqual(cutLines(shuffled(pieces, prng(seed)), opts), free, `${label}: orden`);
-    }
-    assert.ok(total > 1000, `solo ${total} segmentos`);
-  });
-
-  test("'corners': cada marca sobrevive salvo donde la tapa otra pieza", () => {
-    // Piezas sueltas y separadas: todas las marcas enteras.
-    for (let seed = 1; seed <= 50; seed++) {
-      const rnd = prng(seed * 3);
-      const n = 1 + Math.floor(rnd() * 5);
-      const pieces = Array.from({ length: n }, (_, i) => ({
-        x: i * 100 + rnd() * 10,
-        y: rnd() * 100,
-        w: 5 + rnd() * 30,
-        h: 5 + rnd() * 30,
-      }));
-      const segments = cutLines(pieces);
-      assert.equal(segments.length, 8 * n, `semilla ${seed}`);
-      for (const s of segments) assert.ok(Math.abs(s.x2 - s.x1 + (s.y2 - s.y1) - 4) < 1e-9, `semilla ${seed}: largo`);
-    }
-  });
-
-  test("'outline': cada borde de cada pieza queda cubierto por un solo segmento", () => {
-    for (let seed = 1; seed <= 100; seed++) {
-      const { pieces } = randomCase(prng(seed * 7));
-      const segments = cutLines(pieces, { mode: 'outline' });
-      assertWellFormed(segments, `semilla ${seed}`);
-      const covered = (dir, c, a, b) =>
-        segments.some((s) =>
-          dir === 'h'
-            ? s.y1 === s.y2 && Math.abs(s.y1 - c) <= TOL && s.x1 <= a + TOL && s.x2 >= b - TOL
-            : s.x1 === s.x2 && Math.abs(s.x1 - c) <= TOL && s.y1 <= a + TOL && s.y2 >= b - TOL
-        );
-      // Every edge of a piece that no piece above it overlaps (an overlapped one is checked apart).
-      const overlapped = (q, i) => pieces.slice(i + 1).some((o) => q.x < o.x + o.w - TOL && o.x < q.x + q.w - TOL && q.y < o.y + o.h - TOL && o.y < q.y + q.h - TOL);
-      pieces.forEach((q, i) => {
-        if (overlapped(q, i)) return;
-        assert.ok(covered('h', q.y, q.x, q.x + q.w) && covered('h', q.y + q.h, q.x, q.x + q.w), `semilla ${seed}`);
-        assert.ok(covered('v', q.x, q.y, q.y + q.h) && covered('v', q.x + q.w, q.y, q.y + q.h), `semilla ${seed}`);
-      });
-      // Whatever runs inside a piece is the edge of a piece stacked above it.
-      const onEdge = (s, o) => (s.y1 === s.y2 ? [o.y, o.y + o.h].some((y) => Math.abs(y - s.y1) <= TOL) : [o.x, o.x + o.w].some((x) => Math.abs(x - s.x1) <= TOL));
-      for (const s of segments) {
-        pieces.forEach((q, i) => {
-          if (entersPiece(s, q)) assert.ok(pieces.slice(i + 1).some((o) => onEdge(s, o)), `semilla ${seed}: an outline under a piece above it ${JSON.stringify(s)}`);
-        });
-      }
-      // Ningún segmento sale de la unión de los bordes: el largo total no supera la suma de perímetros.
-      const length = segments.reduce((s, g) => s + (g.x2 - g.x1) + (g.y2 - g.y1), 0);
-      const perimeters = pieces.reduce((s, q) => s + 2 * (q.w + q.h), 0);
-      assert.ok(length <= perimeters + 1e-6, `semilla ${seed}`);
-    }
-  });
-
-  test('rendimiento: 200 piezas en una fracción de segundo', async (t) => {
-    const pieces = grid(14, 12, 2);
-    const t0 = performance.now();
-    const segments = cutLines(pieces);
-    const ms = performance.now() - t0;
-    await t.annotate(`cutLines 196 piezas: ${ms.toFixed(0)} ms, ${segments.length} segmentos`);
-    assert.ok(ms < 300, `tardó ${ms.toFixed(0)} ms`);
   });
 });
 

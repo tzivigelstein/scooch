@@ -14,13 +14,15 @@ import {
   gridPresets,
   unitLabel,
 } from '../../src/core/units.js';
-import { prng } from './support.js';
+
+// Exact cases of the length units. The round trips over generated lengths
+// are in tests/properties/units.test.js.
 
 const NB = '\u00a0';
 const close = (a, b, tol = 1e-9) => Math.abs(a - b) <= tol;
 
-describe('conversión', () => {
-  test('unidades conocidas', () => {
+describe('conversion', () => {
+  test('known units', () => {
     assert.deepEqual(UNITS, ['mm', 'cm', 'in']);
     for (const u of UNITS) assert.equal(isUnit(u), true);
     for (const u of ['m', 'MM', '', null, undefined, 'pt', 'toString', '__proto__']) assert.equal(isUnit(u), false, String(u));
@@ -40,7 +42,7 @@ describe('conversión', () => {
     }
   });
 
-  test('unidad desconocida → RangeError', () => {
+  test('an unknown unit → RangeError', () => {
     for (const fn of [
       () => toMm(1, 'm'),
       () => fromMm(1, 'pt'),
@@ -55,14 +57,14 @@ describe('conversión', () => {
     }
   });
 
-  test('símbolos y decimales', () => {
+  test('symbols and decimals', () => {
     assert.deepEqual(UNITS.map(unitLabel), ['mm', 'cm', 'in']);
     assert.deepEqual(UNITS.map(decimalsFor), [1, 2, 3]);
   });
 });
 
 describe('formatLength', () => {
-  test('casos', () => {
+  test('cases', () => {
     const cases = [
       [210, 'mm', {}, `210${NB}mm`],
       [210.04, 'mm', {}, `210${NB}mm`],
@@ -71,7 +73,7 @@ describe('formatLength', () => {
       [10.5, 'mm', { locale: 'en' }, `10.5${NB}mm`],
       [123.456, 'cm', {}, `12,35${NB}cm`],
       [100, 'cm', {}, `10${NB}cm`],
-      [10.05, 'cm', {}, `1,01${NB}cm`], // 1,005 cm: la mitad sube pese al error binario
+      [10.05, 'cm', {}, `1,01${NB}cm`], // 1.005 cm: the half rounds up despite the binary error
       [25.4, 'in', {}, `1${NB}in`],
       [10, 'in', {}, `0,394${NB}in`],
       [38.1, 'in', { locale: 'en-US' }, `1.5${NB}in`],
@@ -79,24 +81,24 @@ describe('formatLength', () => {
       [297, 'mm', { withUnit: false }, '297'],
       [0, 'mm', {}, `0${NB}mm`],
       [-0, 'cm', {}, `0${NB}cm`],
-      [-0.04, 'mm', {}, `0${NB}mm`], // redondea a cero: sin signo
+      [-0.04, 'mm', {}, `0${NB}mm`], // rounds to zero: no sign
       [-12.5, 'mm', {}, `-12,5${NB}mm`],
       [-0.05, 'mm', {}, `-0,1${NB}mm`],
-      [1e7, 'mm', {}, `10000000${NB}mm`], // sin separador de miles
+      [1e7, 'mm', {}, `10000000${NB}mm`], // no thousands separator
       [12345.6, 'mm', { locale: 'en' }, `12345.6${NB}mm`],
       [12345.6, 'mm', { locale: 'de' }, `12345,6${NB}mm`],
-      [1234.5, 'mm', { locale: 'ar-EG' }, `1234.5${NB}mm`], // dígitos latinos siempre
+      [1234.5, 'mm', { locale: 'ar-EG' }, `1234.5${NB}mm`], // always Latin digits
     ];
     for (const [mm, unit, opts, expected] of cases) {
       assert.equal(formatLength(mm, unit, opts), expected, `${mm} ${unit} ${JSON.stringify(opts)}`);
     }
   });
 
-  test('no finitos y no números → cadena vacía', () => {
+  test('non-finite values and non-numbers → an empty string', () => {
     for (const v of [NaN, Infinity, -Infinity, undefined, null, '10']) assert.equal(formatLength(v, 'mm'), '');
   });
 
-  test('valores enormes no usan notación exponencial', () => {
+  test('huge values do not use exponential notation', () => {
     assert.equal(formatLength(1e21, 'mm', { withUnit: false }), '1000000000000000000000');
     assert.equal(parseLength(formatLength(1e21, 'mm'), 'mm'), 1e21);
     assert.equal(formatLength(Number.MAX_VALUE, 'mm').endsWith(`${NB}mm`), true);
@@ -104,7 +106,7 @@ describe('formatLength', () => {
 });
 
 describe('parseLength', () => {
-  test('tabla de casos válidos', () => {
+  test('a table of valid cases', () => {
     const cases = [
       ['10', 'mm', 10],
       ['10,5', 'mm', 10.5],
@@ -130,7 +132,7 @@ describe('parseLength', () => {
       ['4 pulgadas', 'mm', 101.6],
       ['4"', 'mm', 101.6],
       ['4 "', 'mm', 101.6],
-      ['4”', 'cm', 101.6], // comillas tipográficas del teclado del iPhone
+      ['4”', 'cm', 101.6], // typographic quotes from the iPhone keyboard
       ['4″', 'mm', 101.6],
       ["4''", 'mm', 101.6],
       ['1/2 in', 'mm', 12.7],
@@ -140,21 +142,21 @@ describe('parseLength', () => {
       ['1-1/2"', 'mm', 38.1],
       ['2 3/4 in', 'cm', 69.85],
       ['-3', 'mm', -3],
-      ['−3', 'mm', -3], // signo menos tipográfico
+      ['−3', 'mm', -3], // typographic minus sign
       ['- 3', 'mm', -3],
       ['+3', 'cm', 30],
       ['-1/2', 'in', -12.7],
-      ['10\u00a0mm', 'cm', 10], // lo que devuelve formatLength
-      ['\u200e-5', 'mm', -5], // marca de dirección antes del signo (ar-EG)
+      ['10\u00a0mm', 'cm', 10], // what formatLength returns
+      ['\u200e-5', 'mm', -5], // a direction mark before the sign (ar-EG)
       ['99999999999999999999', 'mm', 1e20],
     ];
     for (const [text, unit, expected] of cases) {
       const got = parseLength(text, unit);
-      assert.ok(got !== null && close(got, expected), `«${text}» (${unit}) → ${got}, se esperaba ${expected}`);
+      assert.ok(got !== null && close(got, expected), `«${text}» (${unit}) → ${got}, expected ${expected}`);
     }
   });
 
-  test('tabla de casos inválidos → null', () => {
+  test('a table of invalid cases → null', () => {
     const cases = [
       '',
       '   ',
@@ -182,7 +184,7 @@ describe('parseLength', () => {
       '0x10',
       '10 20',
       '1/0 in',
-      '1/2 cm', // fracciones solo en pulgadas
+      '1/2 cm', // fractions only in inches
       '1/2 mm',
       '1//2 in',
       '1/2/3 in',
@@ -193,12 +195,12 @@ describe('parseLength', () => {
     for (const text of cases) {
       assert.equal(parseLength(text, 'mm'), null, `«${text}»`);
     }
-    assert.equal(parseLength('1/2', 'mm'), null, 'fracción con unidad global mm');
-    assert.equal(parseLength('1/2', 'cm'), null, 'fracción con unidad global cm');
+    assert.equal(parseLength('1/2', 'mm'), null, 'a fraction with mm as the global unit');
+    assert.equal(parseLength('1/2', 'cm'), null, 'a fraction with cm as the global unit');
     for (const v of [null, undefined, {}, [], true]) assert.equal(parseLength(v, 'mm'), null, String(v));
   });
 
-  test('números (no texto) se toman en la unidad global', () => {
+  test('numbers (not text) are taken in the global unit', () => {
     assert.equal(parseLength(12.5, 'cm'), 125);
     assert.equal(parseLength(0, 'in'), 0);
     assert.equal(Object.is(parseLength(-0, 'mm'), 0), true);
@@ -206,7 +208,7 @@ describe('parseLength', () => {
     assert.equal(parseLength(Infinity, 'mm'), null);
   });
 
-  test('nunca devuelve -0', () => {
+  test('never returns -0', () => {
     for (const text of ['-0', '-0,0', '−0 in', '-0/4']) {
       const v = parseLength(text, 'in');
       assert.equal(Object.is(v, -0), false, text);
@@ -214,44 +216,7 @@ describe('parseLength', () => {
   });
 });
 
-describe('ida y vuelta', () => {
-  const values = [0, 0.04, 0.05, 0.1, 1, 1.5875, 3.175, 10, 12.7, 25.4, 99.95, 101.6, 148, 210, 215.9, 297, 355.6, 1189, 2000];
-  const rnd = prng(2024);
-  for (let i = 0; i < 300; i++) values.push(rnd() * 2000, rnd() * 50, -rnd() * 100);
-
-  test('mm → texto → mm queda dentro de la resolución del formato y es estable', () => {
-    for (const locale of ['es', 'en', 'es-AR', 'de-CH', 'fr', 'sv', 'fi', 'ar-EG', 'hi-IN']) {
-      for (const unit of UNITS) {
-        const half = (0.5 * toMm(1, unit)) / 10 ** decimalsFor(unit);
-        for (const mm of values) {
-          const text = formatLength(mm, unit, { locale });
-          const back = parseLength(text, unit);
-          assert.ok(back !== null, `${locale} ${unit}: no se pudo leer «${text}»`);
-          assert.ok(Math.abs(back - mm) <= half + 1e-9, `${locale} ${unit}: ${mm} → «${text}» → ${back}`);
-          // Formatear lo leído da lo mismo: no hay deriva por más vueltas que dé.
-          assert.equal(formatLength(back, unit, { locale }), text, `${locale} ${unit}: ${mm}`);
-          // Sin símbolo, con la unidad global, también.
-          const bare = formatLength(mm, unit, { locale, withUnit: false });
-          assert.equal(parseLength(bare, unit), back, `${locale} ${unit}: «${bare}»`);
-          // El sufijo pisa a la unidad global.
-          const other = unit === 'mm' ? 'in' : 'mm';
-          assert.equal(parseLength(text, other), back, `${locale} ${unit} leído con ${other}`);
-        }
-      }
-    }
-  });
-
-  test('pasar por otra unidad no acumula error', () => {
-    for (const mm of values.slice(0, 60)) {
-      let v = mm;
-      for (let i = 0; i < 5; i++) v = parseLength(formatLength(v, 'in'), 'in');
-      const once = parseLength(formatLength(mm, 'in'), 'in');
-      assert.equal(v, once, `${mm}`);
-    }
-  });
-});
-
-describe('pasos y grilla', () => {
+describe('steps and grid', () => {
   test('stepFor', () => {
     assert.deepEqual(stepFor('mm'), { value: 1, mm: 1 });
     assert.deepEqual(stepFor('mm', 'fine'), { value: 0.1, mm: 0.1 });
@@ -276,7 +241,7 @@ describe('pasos y grilla', () => {
     for (const text of ['abc', '1..2', '10 kg', '1e3', '1,000.5', 'mm 10', '10 min', '2,5,', null, 42]) {
       assert.equal(isPartialLength(text, 'mm'), false, JSON.stringify(text));
     }
-    // Todo lo que parseLength entiende, también.
+    // Everything parseLength understands, too.
     for (const text of ['10,5', '2.5 cm', '1 1/2 in', '−3 mm']) assert.equal(isPartialLength(text, 'mm'), true, text);
   });
 
@@ -286,7 +251,7 @@ describe('pasos y grilla', () => {
     assert.deepEqual(['fine', 'normal', 'coarse'].map((s) => stepLabel('in', s)), ['1/64', '1/16', '1/2']);
     assert.equal(stepLabel('cm', 'fine', { locale: 'en' }), '0.01');
     assert.equal(stepLabel('mm'), '1');
-    // Lo que se muestra es lo que se lee: vuelve a dar el mismo paso.
+    // What is shown is what is read: it gives the same step back.
     for (const u of ['mm', 'cm', 'in']) {
       for (const size of ['fine', 'normal', 'coarse']) {
         assert.ok(close(parseLength(stepLabel(u, size), u), stepFor(u, size).mm), `${u} ${size}`);
