@@ -53,12 +53,19 @@ import { getPrefs, setAllowOverlap } from '../prefs.ts';
 import {
   area,
   boxes,
+  boxOf,
   currentSheet,
   dims,
   findItem,
+  fromBox,
   groupOptions,
+  imageBoxes,
+  imageBoxOf,
   itemsOn,
+  layoutPad,
+  obstaclesFor,
   othersOnSheet,
+  scaleOptions,
   pieceName,
   pieceSizeText,
   primaryItem,
@@ -81,11 +88,16 @@ const busy = () => getDocument().busy;
 
 // ---------- Apply or explain ----------
 
-/** Applies the positions of a plan and, with `patch(item)`, the rest of the changes. */
-function apply(rects: ReadonlyMap<number, IdRect>, patch: ((item: Piece) => Partial<Item>) | null = null, key: string | null = null) {
+/**
+ * Applies the positions of a plan and, with `patch(item)`, the rest of the
+ * changes. The plan's rects are layout boxes, or with `image` image boxes
+ * (the scale plans).
+ */
+function apply(rects: ReadonlyMap<number, IdRect>, patch: ((item: Piece) => Partial<Item>) | null = null, key: string | null = null, { image = false } = {}) {
   commit(key);
+  const pad = image ? 0 : layoutPad();
   const patches = new Map<number, Partial<Item>>();
-  for (const [id, r] of rects) patches.set(id, { ...patch?.(findItem(id)!), x: r.x, y: r.y });
+  for (const [id, r] of rects) patches.set(id, { ...patch?.(findItem(id)!), ...fromBox(r.x, r.y, pad) });
   patchItems(patches);
 }
 
@@ -112,9 +124,9 @@ function refuse(plan: Pick<Plan, 'reason'>, action: GroupAction, retry: () => vo
 
 // Continuous edit of a field: what is valid applies (one undo step for the
 // whole edit); if it isn't valid when confirmed, it goes back to how it was.
-function editOrRefuse(plan: Plan, patch: ((item: Piece) => Partial<Item>) | null, key: string, final: boolean, action: GroupAction, retry: () => void) {
+function editOrRefuse(plan: Plan, patch: ((item: Piece) => Partial<Item>) | null, key: string, final: boolean, action: GroupAction, retry: () => void, { image = false } = {}) {
   if (plan.ok) {
-    if (plan.changed) apply(plan.rects, patch, key);
+    if (plan.changed) apply(plan.rects, patch, key, { image });
     if (final) endEdit();
     return true;
   }
@@ -226,10 +238,7 @@ export function center({ focus = false }: FocusOption = {}) {
 }
 
 /** Does the piece overlap another one on its sheet? («Traer al frente» only makes sense then.) */
-export const overlapsOthers = (item: Piece) => {
-  const [w, h] = dims(item);
-  return overlapsAny({ x: item.x, y: item.y, w, h }, othersOnSheet(item.sheet, item.id));
-};
+export const overlapsOthers = (item: Piece) => overlapsAny(boxOf(item), othersOnSheet(item.sheet, item.id));
 
 export function bringToFront({ focus = false }: FocusOption = {}) {
   if (isGroup()) return singleOnly();
@@ -290,7 +299,7 @@ export function remove({ focus = true, inList = false, announced = '' } = {}) {
 // ---------- Move with the arrows ----------
 
 function announcePosition(sheet: number) {
-  const box = groupBounds(boxes(), ids()).get(sheet);
+  const box = groupBounds(imageBoxes(), ids()).get(sheet);
   if (box) announce(t('announce.position', { x: lengthText(box.x), y: lengthText(box.y) }), { key: 'move', delay: 600 });
 }
 
@@ -319,8 +328,7 @@ export function scaleBy(delta: number) {
   let scale = clamp(round1(item.scale + delta), 1, 1000);
   if (delta > 0 && !getPrefs().allowOverlap) {
     // Growing stops when touching another piece (rounded down to 0.1 % so it doesn't go past it).
-    const [w, h] = dims(item);
-    const growth = maxGrowth({ x: item.x, y: item.y, w, h }, othersOnSheet(item.sheet, item.id), 'center');
+    const growth = maxGrowth(imageBoxOf(item), obstaclesFor(item.sheet, item.id), 'center');
     if (Number.isFinite(growth)) scale = Math.min(scale, Math.max(item.scale, Math.floor(item.scale * growth * 10) / 10));
     if (scale <= item.scale) {
       focusSheet();
@@ -336,10 +344,10 @@ export function scaleBy(delta: number) {
 
 function scaleSelectionBy(delta: number) {
   const primary = primaryItem()!;
-  const result = planScaleBy(boxes(), ids(), scales(), primary.scale, delta, groupOptions());
+  const result = planScaleBy(imageBoxes(), ids(), scales(), primary.scale, delta, scaleOptions());
   if (!result) return announce(t(delta > 0 ? 'announce.noRoomGroup' : 'announce.noSmallerGroup'), { key: 'scale' });
-  apply(result.plan.rects, (item) => ({ scale: item.scale * result.k }), `scale-key:${getDocument().selection.join(',')}`);
-  const box = groupBounds(boxes(), ids()).get(primary.sheet)!;
+  apply(result.plan.rects, (item) => ({ scale: item.scale * result.k }), `scale-key:${getDocument().selection.join(',')}`, { image: true });
+  const box = groupBounds(imageBoxes(), ids()).get(primary.sheet)!;
   announce(t('announce.groupScaled', { n: getDocument().selection.length, size: sizeText(box.w, box.h) }), { key: 'scale', delay: 600 });
 }
 
@@ -453,7 +461,8 @@ export function setLengthField(field: LengthField, mm: number, { final = false }
  */
 function moveGroupTo(axis: Axis, mm: number, { final = false } = {}) {
   const key = `group-${axis}`;
-  const plan = planMoveTo(boxes(), ids(), primaryItem()!.sheet, axis, mm, groupOptions());
+  // The field shows the images' box; the plan moves the layout boxes (a cut margin out).
+  const plan = planMoveTo(boxes(), ids(), primaryItem()!.sheet, axis, mm - layoutPad(), groupOptions());
   // Already there (also the «change» that arrives when leaving the field): nothing to do.
   if (!plan) {
     if (final) endEdit();
@@ -469,12 +478,12 @@ function moveGroupTo(axis: Axis, mm: number, { final = false } = {}) {
  */
 function resizeGroupTo(axis: 'w' | 'h', mm: number, { final = false } = {}) {
   const key = `group-${axis}`;
-  const result = planResizeTo(boxes(), ids(), primaryItem()!.sheet, axis, mm, scales(), groupOptions());
+  const result = planResizeTo(imageBoxes(), ids(), primaryItem()!.sheet, axis, mm, scales(), scaleOptions());
   if (!result) {
     if (final) endEdit();
     return;
   }
-  editOrRefuse(result.plan, (item) => ({ scale: item.scale * result.k }), key, final, 'scale', () => resizeGroupTo(axis, mm, { final: true }));
+  editOrRefuse(result.plan, (item) => ({ scale: item.scale * result.k }), key, final, 'scale', () => resizeGroupTo(axis, mm, { final: true }), { image: true });
 }
 
 /**
@@ -483,8 +492,8 @@ function resizeGroupTo(axis: 'w' | 'h', mm: number, { final = false } = {}) {
  */
 export function setSelectionScale(value: number, { final = false, key = 'group-scale' as string | null } = {}) {
   const current = new Map(selectedItems().map((item) => [item.id, item.scale]));
-  const { plan, scale } = planCommonScale(boxes(), ids(), current, value, groupOptions());
-  return editOrRefuse(plan, () => ({ scale }), key ?? '', final, 'scale', () => setSelectionScale(value, { final: true, key }));
+  const { plan, scale } = planCommonScale(imageBoxes(), ids(), current, value, scaleOptions());
+  return editOrRefuse(plan, () => ({ scale }), key ?? '', final, 'scale', () => setSelectionScale(value, { final: true, key }), { image: true });
 }
 
 /**

@@ -6,13 +6,13 @@ import { memo } from 'react';
 import { cutLines, cutStyle } from '../../core/cutmarks.js';
 import type { Cuts } from '../../core/types.ts';
 import type { Piece } from '../../state/document.ts';
-import { boxOf } from '../../state/selectors.ts';
+import { imageBoxOf } from '../../state/selectors.ts';
 
 const MM_PER_PT = 25.4 / 72;
 
 export const CutLayer = memo(function CutLayer({ items, cuts, W, H, zoom }: { items: readonly Piece[]; cuts: Readonly<Cuts>; W: number; H: number; zoom: number }) {
   if (cuts.mode === 'none' || !items.length) return null;
-  const lines = cutLines(items.map(boxOf), { ...cuts, bounds: { x: 0, y: 0, w: W, h: H } });
+  const lines = cutLines(items.map(imageBoxOf), { ...cuts, bounds: { x: 0, y: 0, w: W, h: H } });
   if (!lines.length) return null;
   const style = cutStyle(cuts);
   const width = Math.max(style.width * MM_PER_PT, 1 / ((window.devicePixelRatio || 1) * zoom));

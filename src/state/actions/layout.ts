@@ -15,18 +15,22 @@ import { getAsset } from '../assets.ts';
 import { getDocument, newItem, newItemId, newSheetId, setDocument, type Piece } from '../document.ts';
 import { commit } from '../history.ts';
 import { getPrefs } from '../prefs.ts';
-import { area, boxOf, currentSheet, dims, findItem, itemsOn, pieceName, selectedItem, sheetIndex } from '../selectors.ts';
+import { area, boxOf, boxWith, currentSheet, dims, findItem, itemsOn, layoutPad, pieceName, selectedItem, sheetIndex } from '../selectors.ts';
 import { animateNext } from '../view.ts';
 import { say } from './notify.ts';
 import { setSelection } from './selection.ts';
 
 const packOptions = () => ({ gap: getDocument().gap, rotate: getDocument().rotate });
 
-const rects = (items: readonly Piece[], k = 1) =>
-  items.map((item) => {
+// What the packers place: each piece's layout box (with the cut margin around
+// it), its image scaled by `k`.
+const rects = (items: readonly Piece[], k = 1) => {
+  const pad = layoutPad();
+  return items.map((item) => {
     const [w, h] = dims(item);
-    return { id: item.id, w: w * k, h: h * k };
+    return { id: item.id, w: w * k + 2 * pad, h: h * k + 2 * pad };
   });
+};
 
 // ---------- Geometry of one piece ----------
 
@@ -45,11 +49,12 @@ export function centeredOnSheet(item: Piece) {
   return { x: (W - w) / 2, y: (H - h) / 2 };
 }
 
-/** The largest size inside the printable area (or the sheet, without room), centered. */
+/** The largest size inside the printable area (or the sheet, without room), centered; with its cut margin. */
 export function fittedToSheet(item: Piece): Item {
   const { W, H, aw, ah } = area();
   const [w, h] = dims(item);
-  const factor = aw > 0 && ah > 0 ? Math.min(aw / w, ah / h) : Math.min(W / w, H / h);
+  const pad = layoutPad();
+  const factor = aw > 2 * pad && ah > 2 * pad ? Math.min((aw - 2 * pad) / w, (ah - 2 * pad) / h) : Math.min(W / w, H / h);
   const scaled = { ...item, scale: clamp(item.scale * factor, 1, 1000) };
   return { ...scaled, ...centeredOnSheet(scaled) };
 }
@@ -78,17 +83,19 @@ function layoutSignature() {
     margin,
     gap,
     rotate,
+    layoutPad(),
     sheets.map((sheet) => sheet.id),
     items.map((item) => [item.id, item.asset, item.sheet, item.scale, item.r, item.x, item.y]),
   ]);
 }
 
-/** Applies an arrangeSheets plan: new sheets, positions and rotations. */
+/** Applies an arrangeSheets plan (layout boxes): new sheets, positions and rotations. */
 function applyPlan(plan: Pick<ArrangePlan, 'sheets' | 'placements'>) {
+  const pad = layoutPad();
   const items = getDocument().items.map((item) => {
     const p = plan.placements.get(item.id);
     if (!p) return item;
-    return { ...item, sheet: p.sheet, x: tidy(p.x), y: tidy(p.y), r: p.rotated ? (((item.r + 90) % 360) as Item['r']) : item.r };
+    return { ...item, sheet: p.sheet, x: tidy(p.x + pad), y: tidy(p.y + pad), r: p.rotated ? (((item.r + 90) % 360) as Item['r']) : item.r };
   });
   setDocument({ sheets: plan.sheets.map((id) => ({ id })), items });
   lastArranged = layoutSignature();
@@ -208,7 +215,8 @@ export function placeInto(fresh: Item[], from: number, { rotate = getDocument().
   const { m, aw, ah } = area();
   if (aw <= 0 || ah <= 0) return fresh.map((item) => item.id);
   const { items, sheets, gap } = getDocument();
-  const plan = placeIntoSheets(rects(fresh), items.map(boxOf), sheets.map((sheet) => sheet.id), {
+  const pad = layoutPad();
+  const plan = placeIntoSheets(rects(fresh), items.map((item) => boxWith(item, pad)), sheets.map((sheet) => sheet.id), {
     from,
     area: { w: aw, h: ah },
     margin: m,
@@ -219,8 +227,8 @@ export function placeInto(fresh: Item[], from: number, { rotate = getDocument().
   for (const p of plan.placements) {
     const item = fresh.find((f) => f.id === p.id)!;
     item.sheet = p.sheet;
-    item.x = tidy(p.x);
-    item.y = tidy(p.y);
+    item.x = tidy(p.x + pad);
+    item.y = tidy(p.y + pad);
     if (p.rotated) item.r = ((item.r + 90) % 360) as Item['r'];
   }
   if (plan.sheets.length && sheets.length === 1) spilled = true;
@@ -305,15 +313,16 @@ export function settle(changed: readonly Item[]): number[] {
   let items = getDocument().items.map((item) => next.get(item.id) ?? item);
   const moved: number[] = [];
   const homeless = new Set<number>();
+  const pad = layoutPad();
   if (!getPrefs().allowOverlap) {
     for (const item of next.values()) {
-      const rect = boxOf(item);
-      const others = items.filter((other) => other.sheet === item.sheet && other.id !== item.id && !homeless.has(other.id)).map(boxOf);
+      const rect = boxWith(item, pad);
+      const others = items.filter((other) => other.sheet === item.sheet && other.id !== item.id && !homeless.has(other.id)).map((other) => boxWith(other, pad));
       if (!overlapsAny(rect, others)) continue;
       const spot = freeSpotNear(rect, others, { W, H, margin: m });
       if (spot) {
-        item.x = tidy(spot.x);
-        item.y = tidy(spot.y);
+        item.x = tidy(spot.x + pad);
+        item.y = tidy(spot.y + pad);
         moved.push(item.id);
       } else homeless.add(item.id);
       items = items.map((other) => (other.id === item.id ? item : other));
@@ -355,7 +364,9 @@ export function printResolution(item: Piece): Resolution {
 export function fillPlan(item: Piece) {
   const { aw, ah } = area();
   const { gap: g, rotate } = getDocument();
-  const [w, h] = dims(item);
+  // Each copy takes its layout box: the image and, with a positive cut margin, the margin around it.
+  const pad = layoutPad();
+  const [w, h] = dims(item).map((v) => v + 2 * pad);
   const grid = (cw: number, ch: number) => {
     const cols = Math.max(0, Math.floor((aw + g + 1e-6) / (cw + g)));
     const rows = Math.max(0, Math.floor((ah + g + 1e-6) / (ch + g)));
@@ -395,13 +406,14 @@ export function fillWithCopies() {
   const y0 = (H - (plan.rows * plan.h + (plan.rows - 1) * g)) / 2;
   const r = (plan.rotated ? (item.r + 90) % 360 : item.r) as Item['r'];
   const sheet = item.sheet;
+  const pad = layoutPad();
 
   commit();
   const copies: Item[] = [];
   for (let row = 0; row < plan.rows; row++) {
     for (let col = 0; col < plan.cols; col++) {
-      const x = tidy(x0 + col * (plan.w + g));
-      const y = tidy(y0 + row * (plan.h + g));
+      const x = tidy(x0 + col * (plan.w + g) + pad);
+      const y = tidy(y0 + row * (plan.h + g) + pad);
       copies.push(newItem(item.asset, { sheet, scale: item.scale, r, x, y, crop: item.crop ?? null }));
     }
   }

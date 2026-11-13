@@ -28,7 +28,22 @@ import { flushUi } from '../state/flush.ts';
 import { gestureStore } from '../state/gesture.ts';
 import { commit } from '../state/history.ts';
 import { getPrefs } from '../state/prefs.ts';
-import { boxes, currentSheet, dims, findItem, groupOptions, othersOnSheet, selectedItems, sheetIndex, sheetSize } from '../state/selectors.ts';
+import {
+  boxes,
+  boxOf,
+  currentSheet,
+  dims,
+  findItem,
+  fromBox,
+  groupOptions,
+  imageBoxes,
+  obstaclesFor,
+  othersOnSheet,
+  scaleOptions,
+  selectedItems,
+  sheetIndex,
+  sheetSize,
+} from '../state/selectors.ts';
 import { animateNext, getView, setView } from '../state/view.ts';
 import { focusSheetNode, pieceNode } from '../state/actions/focus.ts';
 import { say } from '../state/actions/notify.ts';
@@ -247,7 +262,7 @@ function startResize(e: PointerEvent, handle: HTMLElement) {
       frame,
       items,
       // Possible factors: scale limits, centers on the sheet and, without overlaps, not over others.
-      range: scaleBounds(boxes(), new Set(selection), items.map((item) => item.scale), 'top-left', groupOptions()),
+      range: scaleBounds(imageBoxes(), new Set(selection), items.map((item) => item.scale), 'top-left', scaleOptions()),
       drafts: new Map(items.map((item) => [item.id, { ...item }])),
       k: 1,
     });
@@ -265,7 +280,7 @@ function startResize(e: PointerEvent, handle: HTMLElement) {
     ...pointer(e),
     size: dims(item),
     // Without overlaps, the handle stops when touching another piece.
-    growth: !getPrefs().allowOverlap ? maxGrowth(rectOf(item), othersOnSheet(item.sheet, item.id), 'top-left') : Infinity,
+    growth: !getPrefs().allowOverlap ? maxGrowth(rectOf(item), obstaclesFor(item.sheet, item.id), 'top-left') : Infinity,
     draft: { ...item },
   });
 }
@@ -387,7 +402,7 @@ function updateMove(g: MoveGesture, px: number, dy: number) {
   g.draft = { ...g.draft, x: spot.x, y: spot.y, sheet: target };
   markTarget(g, target);
   // Moving is free, but it shows when dropping there wouldn't be valid.
-  setBlocked(g, !getPrefs().allowOverlap && overlapsAny({ x: g.draft.x, y: g.draft.y, w, h }, cachedOthers(g, target)), [g.node]);
+  setBlocked(g, !getPrefs().allowOverlap && overlapsAny(boxOf(g.draft), cachedOthers(g, target)), [g.node]);
   paintDraft(g.node, g.draft, box);
   preview([g.draft]);
 }
@@ -408,7 +423,7 @@ function updateGroupMove(g: GroupMoveGesture, px: number, dy: number) {
   const { plan } = g.drag;
   for (const item of g.items) {
     const r = plan.rects.get(item.id)!;
-    const draft = { ...g.drafts.get(item.id)!, x: r.x, y: r.y, sheet: target ?? item.sheet };
+    const draft = { ...g.drafts.get(item.id)!, ...fromBox(r.x, r.y), sheet: target ?? item.sheet };
     g.drafts.set(item.id, draft);
     paintDraft(pieceNode(item.id), draft, sheetBoxes().get(draft.sheet));
   }
@@ -561,7 +576,7 @@ function endPieceGesture(g: MoveGesture | ResizeGesture, done: boolean, hadFocus
       // Dropped on another piece: like a group of one, to the nearest free spot
       // of that sheet (center inside, and on the grid with «Imán»); if there is
       // none nearby, it goes back.
-      const box = { id: g.item.id, sheet, ...rectOf(g.draft) };
+      const box = { ...boxOf(g.draft), sheet };
       const drop = planDrop(
         { plan: { ok: false, reason: 'overlap', rects: new Map([[box.id, box]]), changed: true }, boxes: [...cachedOthers(g, sheet), box] },
         new Set([box.id]),
@@ -570,8 +585,7 @@ function endPieceGesture(g: MoveGesture | ResizeGesture, done: boolean, hadFocus
       animateNext();
       const spot = drop.rects?.get(box.id);
       if (spot) {
-        x = spot.x;
-        y = spot.y;
+        ({ x, y } = fromBox(spot.x, spot.y));
         result = 'moved-aside';
       } else {
         result = 'reverted';
@@ -626,20 +640,21 @@ function dropGroup(drag: Drag, target: number | null) {
   const ids = new Set(getDocument().selection);
   const { result, rects } = planDrop(drag, ids, groupOptions());
   if (!rects) return result;
-  const changed = [...rects].some(([id, r]) => {
+  const at = new Map([...rects].map(([id, r]) => [id, fromBox(r.x, r.y)]));
+  const changed = [...at].some(([id, p]) => {
     const item = findItem(id)!;
-    return r.x !== item.x || r.y !== item.y || (target !== null && item.sheet !== target);
+    return p.x !== item.x || p.y !== item.y || (target !== null && item.sheet !== target);
   });
   if (!changed) return null;
   commit();
-  patchItems(new Map([...rects].map(([id, r]) => [id, { x: r.x, y: r.y, ...(target !== null ? { sheet: target } : {}) }])));
+  patchItems(new Map([...at].map(([id, p]) => [id, { ...p, ...(target !== null ? { sheet: target } : {}) }])));
   if (target !== null) setView({ sheet: target });
   return result;
 }
 
 /** Applies a factor already bounded (the handle), from each part's top left corner. */
 function applyGroupScale(k: number) {
-  const plan = planScale(boxes(), new Set(getDocument().selection), k, 'top-left', groupOptions());
+  const plan = planScale(imageBoxes(), new Set(getDocument().selection), k, 'top-left', scaleOptions());
   if (!plan.ok || !plan.changed) return false;
   commit();
   patchItems(new Map([...plan.rects].map(([id, r]) => [id, { x: r.x, y: r.y, scale: findItem(id)!.scale * k }])));

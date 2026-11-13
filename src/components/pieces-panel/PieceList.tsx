@@ -97,6 +97,7 @@ export function PieceList() {
   const paper = useDocument((s) => s.paper);
   const landscape = useDocument((s) => s.landscape);
   const margin = useDocument((s) => s.margin);
+  const cuts = useDocument((s) => s.cuts);
   const allowOverlap = usePrefs((s) => s.allowOverlap);
   const unit = usePrefs((s) => s.unit);
   // From where Shift extends the selection (the last one picked by hand) and
@@ -105,7 +106,7 @@ export function PieceList() {
   const focusMode = useRef<FocusMode>(null);
   const lastScrolled = useRef<number | null>(null);
 
-  const problems = problemsById({ items, paper, landscape, margin });
+  const problems = problemsById({ items, paper, landscape, margin, cuts });
   const primary = selection.at(-1);
   const tabStop = items.some((item) => item.id === primary) ? primary : items[0]?.id;
 

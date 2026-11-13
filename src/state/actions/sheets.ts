@@ -14,7 +14,7 @@ import { flushUi } from '../flush.ts';
 import { getDocument, newSheet, patchItems, setDocument } from '../document.ts';
 import { commit, endEdit } from '../history.ts';
 import { loadCustomPaper, saveCustomPaper, setGrid, getPrefs } from '../prefs.ts';
-import { area, boxOf, currentSheet, itemsOn, selectedItem, selectedItems, sheetIndex, sheetSize } from '../selectors.ts';
+import { area, boxOf, currentSheet, itemsOn, layoutPad, selectedItem, selectedItems, sheetIndex, sheetSize } from '../selectors.ts';
 import { animateNext, setView } from '../view.ts';
 import { revealPanel } from './drawers.ts';
 import { focusSheet, pieceNode, sheetNode } from './focus.ts';
@@ -137,7 +137,9 @@ export function sendToSheet(dir: 1 | -1) {
     setDocument({ sheets });
     spot = aw > 0 && ah > 0 ? spotOnSheet(rect, [], opts) : null;
   }
-  const patch: Partial<Item> = { sheet: sheet.id, ...(spot ? { x: tidy(spot.x), y: tidy(spot.y) } : {}) };
+  // The spot is for the layout box (with the cut margin around the image).
+  const pad = layoutPad();
+  const patch: Partial<Item> = { sheet: sheet.id, ...(spot ? { x: tidy(spot.x + pad), y: tidy(spot.y + pad) } : {}) };
   patchItems(new Map([[item.id, patch]]));
   setView({ sheet: sheet.id });
   animateNext();

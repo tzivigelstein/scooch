@@ -8,7 +8,7 @@ import { slug } from '../core/util.ts';
 import { t } from '../copy/index.ts';
 import { getAsset } from '../state/assets.ts';
 import { getDocument, type Piece } from '../state/document.ts';
-import { boxOf, itemsOn, sheetSize } from '../state/selectors.ts';
+import { imageBoxOf, itemsOn, sheetSize } from '../state/selectors.ts';
 import { paperName, paperSlug } from './measure.ts';
 import { buildPdf } from './pdf.ts';
 
@@ -24,7 +24,7 @@ export function makePdf() {
     .filter((items) => items.length)
     .map((items) => ({
       pieces: items.map(piece),
-      lines: cutLines(items.map(boxOf), { ...cuts, bounds: { x: 0, y: 0, w: W, h: H } }),
+      lines: cutLines(items.map(imageBoxOf), { ...cuts, bounds: { x: 0, y: 0, w: W, h: H } }),
     }));
   return buildPdf({ width: W, height: H, pages, title: t('print.pdfTitle', { paper: paperName() }), creator: APP_NAME, cutStyle: cutStyle(cuts) });
 }
