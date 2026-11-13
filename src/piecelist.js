@@ -20,7 +20,7 @@ const BADGES = [
   { key: 'lowRes', icon: 'triangle-alert' },
 ];
 
-const rows = new Map(); // id de pieza → <li role="option">
+const rows = new Map(); // id de pieza → <div role="option">
 const groups = new Map(); // id de hoja → {group, head, title, count, items}
 let ui = {};
 let handlers = {};
@@ -82,7 +82,7 @@ export function focusList() {
 }
 
 function createRow(item) {
-  const row = document.createElement('li');
+  const row = document.createElement('div');
   row.setAttribute('role', 'option');
   row.className = 'piece-row';
   row.dataset.id = item.id;
@@ -138,9 +138,9 @@ function updateRow(row, item, problems = {}) {
   }
 }
 
-// Grupo de una hoja: <li role="group"> con su encabezado y una lista interna.
+// Grupo de una hoja: role="group" con su encabezado y sus filas.
 function createGroup(id) {
-  const group = document.createElement('li');
+  const group = document.createElement('div');
   group.setAttribute('role', 'group');
   group.className = 'list-group';
   const head = document.createElement('div');
@@ -152,8 +152,7 @@ function createGroup(id) {
   const count = document.createElement('span');
   count.className = 'group-count';
   head.append(title, count);
-  const items = document.createElement('ul');
-  items.setAttribute('role', 'none');
+  const items = document.createElement('div');
   items.className = 'group-items';
   group.setAttribute('aria-labelledby', head.id);
   group.append(head, items);
