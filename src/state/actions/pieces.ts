@@ -141,16 +141,13 @@ export interface FocusOption {
 
 // ---------- Rotate ----------
 
-/** Rotates 90° (`dir` > 0: clockwise): a piece around its center, a group around its box. */
+/**
+ * Rotates 90° (`dir` > 0: clockwise) around the selection's box: a piece
+ * around its center. Like any group, it doesn't apply if it would overlap
+ * another piece (unless allowed) and stays with its center on the sheet.
+ */
 export function rotate(dir: 1 | -1, { focus = false }: FocusOption = {}) {
-  if (!isGroup()) {
-    editSelected((item) => withCenterKept(item, { r: ((item.r + (dir > 0 ? 90 : 270)) % 360) as Item['r'] }), {
-      focus,
-      message: (item) => t('announce.rotated', { deg: item.r, size: pieceSizeText(item) }),
-    });
-    return;
-  }
-  if (busy()) return;
+  if (!getDocument().selection.length || busy()) return;
   rotateSelection(dir);
   if (focus) focusSheet();
 }
@@ -159,6 +156,8 @@ function rotateSelection(dir: 1 | -1) {
   const { plan, dr } = planRotate(boxes(), ids(), dir, groupOptions());
   if (!plan.ok) return refuse(plan, 'rotate', () => rotateSelection(dir));
   apply(plan.rects, (item) => ({ r: ((item.r + dr) % 360) as Item['r'] }));
+  const item = selectedItem();
+  if (item) return announce(t('announce.rotated', { deg: item.r, size: pieceSizeText(item) }));
   animateNext();
   announce(t('announce.groupRotated', { n: plan.rects.size, dir: t(dir > 0 ? 'announce.toRight' : 'announce.toLeft') }));
 }

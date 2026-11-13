@@ -65,7 +65,10 @@ const { open, makeChecker, helpers, overlaps, FIX, path, norm } = require('../li
   check('− achica', (await pos()).w < after.w);
   const r0 = (await pos()).rot;
   await k.press('r');
-  check('R gira 90°', (await pos()).rot === (r0 + 90) % 360 && (await act()).piece === first);
+  // Like a group, it turns only if it doesn't land on another piece (otherwise the notice says so).
+  const turned = (await pos()).rot === (r0 + 90) % 360;
+  const refusal = await h.geom();
+  check('R gira 90° (o, si quedaría encima de otra, no gira y lo explica)', (turned || (/No se puede girar/.test(refusal.notice) && refusal.action === 'Permitir superposición')) && (await act()).piece === first, refusal.notice);
   await k.press('Shift+R');
   check('Shift+R vuelve', (await pos()).rot === r0);
   await k.press('d');
