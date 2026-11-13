@@ -4,7 +4,7 @@ import { addAsset, assetEntries, getAsset, replaceAssets } from '../../src/state
 import { getDocument, resetIds, setDocument, type Piece } from '../../src/state/document.ts';
 import { historyDepth, redo, resetHistory, undo } from '../../src/state/history.ts';
 import { setAllowOverlap } from '../../src/state/prefs.ts';
-import { setView } from '../../src/state/view.ts';
+import { getView, setView } from '../../src/state/view.ts';
 import { copySelection, cutSelection, hasClip, pastePieces } from '../../src/state/actions/clipboard.ts';
 import { duplicate } from '../../src/state/actions/pieces.ts';
 
@@ -81,6 +81,15 @@ describe('clipboard', () => {
     pastePieces();
     expect(getDocument().items.at(-1)!.asset).toBe(pasted.asset);
     expect(assetEntries().length).toBe(2);
+  });
+
+  test('at the 200-piece cap, pasting says no more pieces fit (not «0 piezas más») and adds nothing', () => {
+    setDocument({ items: [piece(1, key, 10, 10)], selection: [1] });
+    copySelection();
+    setDocument({ items: Array.from({ length: 200 }, (_, i) => piece(i + 1, key, 10, 10)), selection: [] });
+    expect(pastePieces()).toBe(false);
+    expect(getView().flash).toMatchObject({ text: 'Se admiten hasta 200 piezas en total, así que ya no entran más piezas', warn: true });
+    expect(getDocument().items).toHaveLength(200);
   });
 });
 

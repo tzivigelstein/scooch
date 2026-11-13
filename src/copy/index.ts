@@ -7,7 +7,9 @@
 // - `{app}` is always the app name (APP_NAME, in config.ts) and `{mod}` the
 //   main modifier key (Ctrl, or ⌘ on a Mac).
 // - A value can be a plural object ({ one, other, … }) picked with
-//   Intl.PluralRules from params.n.
+//   Intl.PluralRules from params.n; an optional `zero` is used for n = 0
+//   (Spanish has no zero category of its own: «ya no entran más» instead of
+//   «solo entran 0»).
 //
 // Another language: a sibling file with the same keys (en.ts) chosen in
 // `messages`; missing keys fall back to Spanish.
@@ -19,7 +21,7 @@ import { APP_NAME } from '../config.ts';
 import es from './es.ts';
 
 type Messages = typeof es;
-type Plural = { one: string; other: string };
+type Plural = { zero?: string; one: string; other: string };
 type Leaf = string | Plural;
 type Paths<T, P extends string = ''> = {
   [K in keyof T & string]: T[K] extends Leaf ? `${P}${K}` : Paths<T[K], `${P}${K}.`>;
@@ -59,7 +61,7 @@ export function t(key: CopyKey, params: CopyParams = {}): string {
   let value = find(key);
   if (value && typeof value === 'object') {
     const count = typeof params.n === 'number' ? params.n : Number(params.n ?? 0);
-    value = value[pluralRules.select(count)] ?? value.other;
+    value = (count === 0 ? value.zero : undefined) ?? value[pluralRules.select(count)] ?? value.other;
   }
   if (typeof value !== 'string') throw new Error(`Missing text «${key}»`);
   return value.replace(/\{(\w+)\}/g, (match, name: string) => {

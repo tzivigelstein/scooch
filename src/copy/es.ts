@@ -545,10 +545,12 @@ const es = {
     maxReached: 'se admiten hasta {max} piezas en total ({n} sin agregar)',
     maxPieces: 'Se admiten hasta {max} piezas en total. Quita alguna para duplicar esta.',
     maxCopies: {
+      zero: 'Se admiten hasta {max} piezas en total, así que ya no entran más copias',
       one: 'Se admiten hasta {max} piezas en total, así que solo entra 1 copia más de cada una',
       other: 'Se admiten hasta {max} piezas en total, así que solo entran {n} copias más de cada una',
     },
     maxPaste: {
+      zero: 'Se admiten hasta {max} piezas en total, así que ya no entran más piezas',
       one: 'Se admiten hasta {max} piezas en total, así que solo entra 1 pieza más',
       other: 'Se admiten hasta {max} piezas en total, así que solo entran {n} piezas más',
     },
