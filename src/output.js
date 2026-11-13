@@ -3,13 +3,13 @@
 // oculto; si el navegador no lo permite, abre el PDF en otra pestaña (o, si
 // eso también está bloqueado, lo descarga).
 
-import { APP_NAME } from './config.js';
+import { APP_NAME } from './config.ts';
 import { state, assets, sheetSize, itemsOn, boxOf } from './store.js';
 import { cutLines } from './core/cutmarks.js';
 import { paperName, paperSlug } from './measure.js';
 import { buildPdf } from './export.js';
 import { slug } from './util.js';
-import { t } from './copy/index.js';
+import { t } from './copy/index.ts';
 
 export const pdfFileName = () => `${slug(APP_NAME, t('print.fallbackName'))}-${paperSlug()}.pdf`;
 

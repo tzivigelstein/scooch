@@ -10,7 +10,7 @@ import { confirmAction } from './confirm.js';
 import { announce } from './live.js';
 import { icon } from './icons.js';
 import { $ } from './util.js';
-import { t, numberLocale } from './copy/index.js';
+import { t, numberLocale } from './copy/index.ts';
 
 let ui = {};
 let actions = {};

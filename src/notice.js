@@ -8,7 +8,7 @@ import { pieceProblems, problemSummary } from './core/sheets.js';
 import { announce, cancelAnnounce } from './live.js';
 import { icon } from './icons.js';
 import { $ } from './util.js';
-import { t, asSentence, formatList } from './copy/index.js';
+import { t, asSentence, formatList } from './copy/index.ts';
 
 const INFO_MS = 5000;
 const WARN_MS = 9000;

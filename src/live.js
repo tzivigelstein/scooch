@@ -2,7 +2,7 @@
 // el inicio en el DOM (#live-polite y #live-assertive).
 
 import { $ } from './util.js';
-import { asSentence } from './copy/index.js';
+import { asSentence } from './copy/index.ts';
 
 const regions = { polite: null, assertive: null };
 const pending = { polite: [], assertive: [] };

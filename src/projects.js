@@ -14,7 +14,7 @@
 // vieja, «Editar aquí» lo vuelve a pedir y lo recarga. Si una pestaña no
 // contesta (congelada), se espera 3 s: igual ya había guardado al ocultarse.
 
-import { LAST_PROJECT_STORAGE, JOURNAL_STORAGE } from './config.js';
+import { LAST_PROJECT_STORAGE, JOURNAL_STORAGE } from './config.ts';
 import { openIdbStorage } from './idbstorage.js';
 import {
   newProjectId,
@@ -35,7 +35,7 @@ import { state, assets, render, replaceDocument, docState, sheetSize, itemsOn } 
 import { restoreAssets, assetBlob } from './assets.js';
 import { cssParams } from './core/crop.js';
 import { storageGet, storageSet, storageRemove } from './util.js';
-import { t } from './copy/index.js';
+import { t } from './copy/index.ts';
 
 const SAVE_DELAY = 1000;
 const THUMB_WIDTH = 220;

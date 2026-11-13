@@ -3,7 +3,7 @@
 // Se abren con su botón, cierran con Esc, con su botón de cerrar, al hacer
 // click afuera o cuando el foco se va; al cerrar, el foco vuelve a quien los abrió.
 
-import { NARROW_QUERY, LEFT_DRAWER_QUERY } from './config.js';
+import { NARROW_QUERY, LEFT_DRAWER_QUERY } from './config.ts';
 import { $ } from './util.js';
 
 const FOCUSABLE =

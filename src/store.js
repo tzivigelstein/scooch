@@ -5,7 +5,7 @@
 // con el mismo papel, orientación y margen; cada pieza pertenece a una hoja
 // (`sheet`, el id) y sus x/y son relativas a esa hoja.
 
-import { MAX_UNDO, GRID_STORAGE, GRID_DEFAULTS, GRID_MIN, GRID_MAX, PIECES_STORAGE, UNIT_STORAGE } from './config.js';
+import { MAX_UNDO, GRID_STORAGE, GRID_DEFAULTS, GRID_MIN, GRID_MAX, PIECES_STORAGE, UNIT_STORAGE } from './config.ts';
 import { sizeOf } from './core/papers.js';
 import { isUnit } from './core/units.js';
 import { nextIds, DEFAULT_CUTS } from './core/projectdoc.js';

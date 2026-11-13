@@ -7,7 +7,7 @@
 // de pdf.js (`pdf`) se abre recién si hace falta otra página.
 
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import { t } from './copy/index.js';
+import { t } from './copy/index.ts';
 
 export const MAX_FILE_BYTES = 40 * 1024 * 1024;
 export const DEFAULT_DPI = 300;

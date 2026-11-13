@@ -4,7 +4,7 @@
 
 import { pack, fitScale } from './core/pack.js';
 import { arrangeSheets, samePlan, placeIntoSheets } from './core/sheets.js';
-import { CROWD_LIMIT, MAX_ITEMS } from './config.js';
+import { CROWD_LIMIT, MAX_ITEMS } from './config.ts';
 import {
   state,
   settings,
@@ -29,7 +29,7 @@ import { pieceSize, isIdentity } from './core/crop.js';
 import { say } from './notice.js';
 import { animateNext } from './sheetview.js';
 import { clamp, tidy } from './util.js';
-import { t, formatList } from './copy/index.js';
+import { t, formatList } from './copy/index.ts';
 
 const packOptions = () => ({ gap: state.gap, rotate: settings.rotate });
 

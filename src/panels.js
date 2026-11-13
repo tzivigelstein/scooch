@@ -4,7 +4,7 @@
 // abiertas. Las longitudes se muestran y se cargan en la unidad elegida
 // (lengthfield.js).
 
-import { GRID_MIN, GRID_MAX, SECTIONS_STORAGE, CUSTOM_PAPER_STORAGE, MAX_ITEMS } from './config.js';
+import { GRID_MIN, GRID_MAX, SECTIONS_STORAGE, CUSTOM_PAPER_STORAGE, MAX_ITEMS } from './config.ts';
 import { PAPERS, PAPER_GROUPS, CUSTOM_MIN, CUSTOM_MAX, customPaper, validateSide, matchPreset } from './core/papers.js';
 import { gridPresets } from './core/units.js';
 import {
@@ -43,7 +43,7 @@ import { lengthText, sizeText, unitName, unitSymbol } from './measure.js';
 import { announce } from './live.js';
 import { icon } from './icons.js';
 import { $, clamp, num, storageGet, storageSet } from './util.js';
-import { t, numberLocale } from './copy/index.js';
+import { t, numberLocale } from './copy/index.ts';
 
 let ui = {};
 

@@ -2,7 +2,7 @@
 // donar con la misma facilidad, no hay cuentas regresivas ni culpa, y la
 // exportación pedida sigue siempre, se cierre como se cierre.
 
-import { DONATE_URL, DONATE_EVERY, DONATE_STORAGE } from './config.js';
+import { DONATE_URL, DONATE_EVERY, DONATE_STORAGE } from './config.ts';
 import { $, storageGet, storageSet } from './util.js';
 
 let ui = {};

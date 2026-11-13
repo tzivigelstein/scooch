@@ -8,7 +8,7 @@
 // dibujó); durante un arrastre se mueven únicamente las piezas arrastradas y
 // los marcos, y el scroll solo reubica la barra y marca la hoja actual.
 
-import { DRAG_THRESHOLD, NARROW_QUERY } from './config.js';
+import { DRAG_THRESHOLD, NARROW_QUERY } from './config.ts';
 import {
   state,
   settings,
@@ -32,7 +32,7 @@ import { sheetAt, keepCenterInside } from './core/sheets.js';
 import { paperTitle, sizeText, lengthText } from './measure.js';
 import { icon } from './icons.js';
 import { $, clamp, round1, tidy, isTyping } from './util.js';
-import { t } from './copy/index.js';
+import { t } from './copy/index.ts';
 import { pickSpot, clip } from './core/placement.js';
 import { cssParams } from './core/crop.js';
 

@@ -2,7 +2,7 @@
 // (WCAG 2.1.4). Son ajustes de este navegador: se guardan en localStorage y
 // no entran en el historial ni en el proyecto.
 
-import { SINGLE_KEYS_STORAGE } from './config.js';
+import { SINGLE_KEYS_STORAGE } from './config.ts';
 import { settings, setUnit } from './store.js';
 import { setupDialog } from './dialogs.js';
 import { $, storageGet, storageSet } from './util.js';

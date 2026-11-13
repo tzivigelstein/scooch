@@ -20,7 +20,7 @@
 // - Con el imán, alinear, distribuir y arrastrar dejan el bloque en la grilla
 //   (en el eje que cambió), sin cambiar las distancias internas.
 
-import { MAX_ITEMS } from './config.js';
+import { MAX_ITEMS } from './config.ts';
 import {
   state,
   settings,
@@ -71,7 +71,7 @@ import { say } from './notice.js';
 import { announce } from './live.js';
 import { animateNext } from './sheetview.js';
 import { fine } from './util.js';
-import { t } from './copy/index.js';
+import { t } from './copy/index.ts';
 
 /** Preferencias de la sección (vista, fuera del historial). */
 export const groupPrefs = { alignTo: 'selection', distribute: 'gap' };

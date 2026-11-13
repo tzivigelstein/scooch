@@ -8,7 +8,7 @@ import { parseLength, isPartialLength, stepFor } from './core/units.js';
 import { settings } from './store.js';
 import { lengthValue, lengthText } from './measure.js';
 import { announce } from './live.js';
-import { t, asSentence } from './copy/index.js';
+import { t, asSentence } from './copy/index.ts';
 
 /**
  * `value()`: el valor actual en mm (el del documento o la preferencia).

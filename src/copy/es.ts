@@ -1,11 +1,11 @@
-// Textos en español latinoamericano neutro. Reglas y glosario: docs/copy.md.
-// Uso: src/copy/index.js. « » es un espacio que no se parte entre línea y
-// línea (entre número y unidad, y dentro de las medidas).
+// UI texts in neutral Latin American Spanish. Rules and glossary: docs/copy.md.
+// Used through src/copy/index.ts. « » is a no-break space (between a number
+// and its unit, and inside measurements).
 
-export default {
+const es = {
   meta: {
     lang: 'es',
-    // Coma decimal y sin punto de miles en números de 4 cifras («1189 mm»).
+    // Decimal comma and no thousands separator in 4-digit numbers («1189 mm»).
     numberLocale: 'es',
   },
 
@@ -20,7 +20,7 @@ export default {
     close: 'Cerrar',
   },
 
-  // Medidas: {value}, {w} y {h} ya vienen formateados en la unidad elegida
+  // Lengths: {value}, {w} and {h} come already formatted in the chosen unit
   units: {
     mm: 'mm',
     cm: 'cm',
@@ -30,15 +30,15 @@ export default {
     length: '{value} {unit}',
     size: '{w} × {h} {unit}',
     scale: '{n} %',
-    // Al salir de un campo de medida con algo que no se entiende
+    // Leaving a length field with something that can't be read
     invalid: '«{text}» no es una medida válida. Se mantiene {value}.',
-    // Lo mismo, cuando se entiende pero no vale ({text} ya termina en punto)
+    // The same when it can be read but isn't valid ({text} already ends with a period)
     invalidValue: '{text} Se mantiene {value}.',
-    // Mientras se escribe algo que no puede ser una medida
+    // While typing something that can't become a length
     unreadable: 'Escribe una medida con números, por ejemplo 2,5 o 1/2 in',
   },
 
-  // Nombres visibles de las teclas (las letras y signos se muestran tal cual)
+  // Visible key names (letters and symbols are shown as they are)
   keys: {
     Mod: 'Ctrl',
     ModMac: '⌘',
@@ -62,7 +62,7 @@ export default {
     Click: 'clic',
   },
 
-  // Barra superior
+  // Top bar
   bar: {
     add: 'Agregar',
     addTip: 'Agregar imágenes o PDF',
@@ -77,7 +77,7 @@ export default {
     printNote: 'En el diálogo de impresión, elige «Tamaño real» o «100 %»',
   },
 
-  // Panel «Piezas» y nombres de las piezas
+  // «Piezas» panel and piece names
   pieces: {
     title: 'Piezas',
     close: 'Cerrar el panel de piezas',
@@ -89,7 +89,7 @@ export default {
     listHint:
       'Usa las flechas arriba y abajo para seleccionar una pieza (con Shift, varias seguidas; con {mod}, solo mover el foco), Shift+Espacio para agregar la enfocada a la selección o quitarla, Enter para ir a ella en la hoja y Supr para quitar las seleccionadas',
     count: { one: '{n} pieza', other: '{n} piezas' },
-    // Encabezados de la lista con varias hojas
+    // List headings with several sheets
     groupTitle: 'Hoja {i}',
     groupEmpty: 'Vacía',
     clear: 'Quitar todas',
@@ -105,10 +105,10 @@ export default {
     },
   },
 
-  // La hoja en pantalla
+  // The sheet on screen
   sheet: {
     numbered: 'Hoja {i} de {total}',
-    // Nombre de cada hoja para lectores de pantalla ({label}: «Hoja 2 de 3»)
+    // Each sheet's name for screen readers ({label}: «Hoja 2 de 3»)
     groupLabel: { one: '{label}, {n} pieza', other: '{label}, {n} piezas' },
     groupEmpty: '{label}, vacía',
     emptyHint: 'Hoja vacía',
@@ -123,7 +123,7 @@ export default {
     private: 'Tus archivos no salen del navegador',
   },
 
-  // Papeles: nombres visibles de los ids de src/papers.js
+  // Papers: visible names of the ids in src/core/papers.js
   papers: {
     groups: { 'iso-a': 'Serie A', 'iso-b': 'Serie B', us: 'América', photo: 'Fotográfico' },
     names: {
@@ -163,17 +163,17 @@ export default {
     },
   },
 
-  // Nombre accesible de cada pieza en la hoja
+  // Accessible name of each piece on the sheet
   piece: {
     roleDescription: 'pieza',
     a11y: '{name}{page}, {size}, a {x} del borde izquierdo y {y} del superior{turned}',
     a11yPage: ' (página {page})',
     a11yTurned: ', girada {deg}°',
-    // Con varias elegidas (o la selección fijada), al final del nombre de cada elegida
+    // With several selected (or a pinned selection), at the end of each selected one's name
     a11ySelected: ', seleccionada',
   },
 
-  // Barra flotante de la pieza seleccionada
+  // Floating toolbar of the selected piece
   piecebar: {
     label: 'Acciones de la pieza',
     labelFor: 'Acciones de {name}',
@@ -192,13 +192,13 @@ export default {
       'Flechas: mover (Shift: {coarse}; Alt: {fine}). Enter: barra de acciones. Shift+Espacio: agregar a la selección o quitar. Supr: quitar.',
   },
 
-  // Botones de los paneles en pantallas angostas
+  // Panel buttons on narrow screens
   dock: {
     pieces: 'Piezas',
     props: 'Propiedades',
   },
 
-  // Panel «Propiedades»
+  // «Propiedades» panel
   props: {
     title: 'Propiedades',
     close: 'Cerrar el panel de propiedades',
@@ -240,7 +240,7 @@ export default {
     fillTooMany: 'Entrarían {n} copias y el máximo es {max}: agranda la pieza',
     remove: 'Quitar de la hoja',
     removeMany: { one: 'Quitar 1 pieza', other: 'Quitar {n} piezas' },
-    // Copias y «Seleccionar iguales»
+    // Copies and «Seleccionar iguales»
     duplicate: 'Duplicar',
     duplicateTimes: 'Duplicar ×{n}',
     duplicateGroup: 'Duplicar',
@@ -251,11 +251,11 @@ export default {
     duplicateMax: { one: 'Como mucho, 1 copia de cada pieza (máximo de {max} piezas)', other: 'Como mucho, {n} copias de cada pieza (máximo de {max} piezas)' },
     selectSame: 'Seleccionar iguales',
     selectSameTip: 'Seleccionar las piezas del mismo archivo',
-    // Con varias elegidas
+    // With several selected
     groupOnSheet: 'En la hoja {i}',
     groupOnSheets: 'En {n} hojas. Medidas de la hoja {i}.',
     mixed: 'Mixta',
-    // Alinear y distribuir
+    // Align and distribute
     align: 'Alinear',
     alignTo: 'Alinear a',
     alignToSelection: 'Selección',
@@ -311,10 +311,10 @@ export default {
     snapHint: 'Al arrastrar, las piezas se ajustan a la grilla',
   },
 
-  // Píldora de avisos
+  // Notice pill
   notices: {
     close: 'Cerrar aviso',
-    // Para lectores de pantalla, cuando el aviso tiene un botón ({text} ya termina en punto)
+    // For screen readers, when the notice has a button ({text} already ends with a period)
     withAction: '{text} Botón {action} disponible en el aviso',
     cut: {
       one: '1 pieza se sale de la hoja y se corta al imprimir',
@@ -325,7 +325,7 @@ export default {
       other: '{n} piezas pasan el margen y puede que la impresora no imprima esos bordes',
     },
     overlap: 'Hay piezas superpuestas',
-    // Con varias hojas: «Hoja 2: hay piezas superpuestas», «Hojas 1 y 3: 2 piezas se salen…»
+    // With several sheets: «Hoja 2: hay piezas superpuestas», «Hojas 1 y 3: 2 piezas se salen…»
     overlapIn: 'hay piezas superpuestas',
     inSheets: { one: 'Hoja {list}: {text}', other: 'Hojas {list}: {text}' },
     arranged: { one: 'Se acomodó 1 pieza', other: 'Se acomodaron {n} piezas' },
@@ -334,7 +334,7 @@ export default {
       one: '{names} no entra en la hoja ni sola, así que quedó donde estaba',
       other: '{n} piezas no entran en la hoja ni solas, así que quedaron donde estaban: {names}',
     },
-    // Dos avisos en uno ({first} y {second} van sin punto)
+    // Two notices in one ({first} and {second} without a period)
     twoSentences: '{first}. {second}.',
     shrinkToOne: 'Reducir al {pct} % para usar 1 hoja',
     fitted: { one: 'Se ajustó 1 pieza a la hoja', other: 'Se ajustaron {n} piezas a la hoja' },
@@ -353,7 +353,7 @@ export default {
     revertedGroup: 'No había espacio libre ahí, así que las piezas volvieron a su lugar',
     duplicatedTimes: { one: 'Se agregó 1 copia en la hoja {i}', other: 'Se agregaron {n} copias en la hoja {i}' },
     duplicatedTimesSheets: { one: 'Se agregó 1 copia en {sheets} hojas', other: 'Se agregaron {n} copias en {sheets} hojas' },
-    // Operación de grupo que no se aplicó ({action}: groupActions)
+    // A group operation that wasn't applied ({action}: groupActions)
     wouldOverlap: 'No se puede {action}: las piezas se superpondrían',
     wouldLeave: 'No se puede {action}: alguna pieza quedaría fuera de la hoja',
     groupActions: {
@@ -366,7 +366,7 @@ export default {
     },
     scaleLimit: 'No se puede cambiar el tamaño: la escala de cada pieza va de 1 % a 1000 %',
     downloaded: 'Se descargó {file}. Al imprimirlo, elige «Tamaño real» o «100 %».',
-    // Proyectos
+    // Projects
     saveFailed: 'No se pudo guardar el proyecto. Vuelve a intentarlo.',
     quota: 'No hay espacio para guardar el proyecto. Elimina proyectos que no uses y vuelve a intentarlo.',
     openFailed: 'No se pudo abrir «{name}» porque sus datos están dañados',
@@ -384,7 +384,7 @@ export default {
     printDownload: 'Se descargó {file}. Ábrelo e imprímelo con «Tamaño real» o «100 %» y el papel {paper}.',
   },
 
-  // Mientras se carga o se crea algo (en la píldora)
+  // While something loads or is created (in the pill)
   busy: {
     loading: 'Cargando…',
     loadingFile: 'Cargando {name}…',
@@ -395,7 +395,7 @@ export default {
     openingProject: 'Abriendo el proyecto…',
   },
 
-  // Errores: qué pasó y cómo resolverlo
+  // Errors: what happened and how to fix it
   errors: {
     load: {
       one: 'No se pudo agregar 1 archivo: {list}',
@@ -415,7 +415,7 @@ export default {
     marginTooBig: 'El margen no deja espacio para las piezas. Reduce el margen.',
     neverFits: 'Las piezas no entran ni reduciéndolas. Quita algunas o elige una hoja más grande.',
     shrinkFailed: 'No se pudieron acomodar las piezas ni reduciéndolas. Quita algunas e inténtalo de nuevo.',
-    // Por archivo (van después de «nombre: »)
+    // Per file (they follow «name: »)
     file: {
       tooHeavy: 'pesa más de 40 MB; prueba con un archivo más pequeño',
       noSize: 'la imagen no tiene ancho ni alto definidos; guárdala como PNG o JPG',
@@ -427,7 +427,7 @@ export default {
     },
   },
 
-  // Solo para lectores de pantalla (región viva)
+  // Screen readers only (live region)
   announce: {
     rotated: 'Girada {deg}°: {size}',
     duplicated: { one: 'Se duplicó la pieza. Hay {n} pieza.', other: 'Se duplicó la pieza. Hay {n} piezas.' },
@@ -473,7 +473,7 @@ export default {
     projectDeleted: 'Se eliminó «{name}»',
     projectSaved: 'Se guardó el proyecto',
     deselected: 'Ninguna pieza seleccionada',
-    // Selección múltiple
+    // Multiple selection
     selectedCount: { one: '1 pieza seleccionada', other: '{n} piezas seleccionadas' },
     selectionPinned: '1 pieza seleccionada. Ve a otra con Tab y agrégala con Shift+Espacio',
     selectedSheet: { one: 'Se seleccionó 1 pieza de la hoja {i}', other: 'Se seleccionaron las {n} piezas de la hoja {i}' },
@@ -523,7 +523,7 @@ export default {
     fallbackName: 'hoja',
   },
 
-  // Modal de donación (al primer Imprimir o Descargar PDF)
+  // Donation dialog (on the first Print or Download PDF)
   donate: {
     close: 'Cerrar y seguir sin aportar',
     title: '¿Te ahorró tiempo y papel?',
@@ -541,7 +541,7 @@ export default {
     thanks: 'Gracias por usar {app}, con o sin aporte',
   },
 
-  // Proyectos guardados en el navegador
+  // Projects saved in the browser
   projects: {
     title: 'Proyectos',
     untitled: 'Sin título',
@@ -592,7 +592,7 @@ export default {
     local: 'Los proyectos se guardan solo en este navegador',
   },
 
-  // Confirmaciones breves
+  // Short confirmations
   confirm: {
     cancel: 'Cancelar',
     removeSheetTitle: '¿Quitar la hoja {i}?',
@@ -603,12 +603,12 @@ export default {
     removeSheet: 'Quitar hoja',
   },
 
-  // Diálogo «Preferencias» (ajustes de este navegador)
+  // «Preferencias» dialog (settings of this browser)
   prefs: {
     title: 'Preferencias',
     units: 'Unidades',
     unitsHint: 'Para mostrar y escribir medidas. No cambia el documento ni el PDF.',
-    // Después del símbolo visible («mm»), para lectores de pantalla
+    // After the visible symbol («mm»), for screen readers
     unitNames: { mm: ', milímetros', cm: ', centímetros', in: ', pulgadas' },
     unitChanged: 'Medidas en {unit}',
     keyboard: 'Teclado',
@@ -617,10 +617,10 @@ export default {
       'Desactívalos si usas control por voz o si se activan sin querer. Los atajos con {mod}, las flechas y Supr sobre una pieza siguen funcionando.',
   },
 
-  // Diálogo «Atajos de teclado»
+  // «Atajos de teclado» dialog
   shortcuts: {
     title: 'Atajos de teclado',
-    // La parte entre <link> y </link> es un botón que abre Preferencias (linkedText).
+    // The part between <link> and </link> is a button that opens Preferencias (see splitLink).
     singleKeysNote: 'Los atajos de 1 tecla se activan en <link>Preferencias</link>',
     caption: 'Atajos de teclado',
     key: 'Tecla',
@@ -665,3 +665,5 @@ export default {
     },
   },
 };
+
+export default es;

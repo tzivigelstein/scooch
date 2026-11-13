@@ -2,8 +2,8 @@
 // exportar un PDF listo para imprimir. Este módulo arma la interfaz y conecta
 // las acciones; el estado vive en store.js y las hojas en sheetview.js.
 
-import { MAX_ITEMS } from './config.js';
-import { t, applyCopy, keyLabel } from './copy/index.js';
+import { MAX_ITEMS } from './config.ts';
+import { t, applyCopy, keyLabel } from './copy/index.ts';
 import {
   state,
   settings,

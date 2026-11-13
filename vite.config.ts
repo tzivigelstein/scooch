@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
-import { fillHtml } from './src/copy/index.js';
+import { fillHtml } from './src/copy/index.ts';
 
 // The node_modules package a module belongs to («pdf-lib», «@scope/x»).
 const packageOf = (id: string | null | undefined) => id?.match(/node_modules[\\/]((?:@[^\\/]+[\\/])?[^\\/]+)[\\/]/)?.[1].replace('\\', '/');
