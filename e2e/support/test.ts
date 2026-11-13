@@ -266,7 +266,13 @@ export const test = base.extend<Fixtures>({
         if (m.type() === 'error' || (strict && m.type() === 'warning')) errors.push(m.text());
       });
       page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
-      page.on('requestfailed', (r) => errors.push(`requestfailed: ${r.url()}`));
+      page.on('requestfailed', (r) => {
+        const reason = r.failure()?.errorText ?? '';
+        // A request the page cancelled (a lazy chunk still prefetching when a
+        // test navigates again) is no error; HTTP errors are caught below.
+        if (/ERR_ABORTED|NS_BINDING_ABORTED|cancelled/i.test(reason)) return;
+        errors.push(`requestfailed: ${r.url()} (${reason})`);
+      });
       page.on('response', (r) => {
         if (r.status() >= 400) errors.push(`HTTP ${r.status()}: ${r.url()}`);
       });

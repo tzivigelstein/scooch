@@ -50,8 +50,8 @@ test.describe('before the app mounts', () => {
     const theme = THEMES[scheme];
 
     test.describe(`${scheme} theme, without JavaScript`, () => {
-      // Without JavaScript the browser cancels the module preloads.
-      test.use({ javaScriptEnabled: false, colorScheme: scheme, allowErrors: [/^requestfailed: .*\/assets\/[\w-]+\.js$/] });
+      // Without JavaScript the browser blocks the module preloads (reason «csp»).
+      test.use({ javaScriptEnabled: false, colorScheme: scheme, allowErrors: [/^requestfailed: .*\/assets\/[\w-]+\.js \(csp\)$/] });
 
       test('the app’s background and text, a hidden fallback heading, the message in the app’s font and no boot screen', async ({ page }) => {
         await page.goto('./');
