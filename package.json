@@ -11,11 +11,14 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "e2e": "node e2e/run.mjs"
+    "e2e": "node e2e/run.mjs",
+    "typecheck": "tsc"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@playwright/test": "1.60.0",
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2",
     "vite": "8.3.8",
     "vitest": "5.0.5"
   },
