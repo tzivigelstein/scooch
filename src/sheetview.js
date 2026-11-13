@@ -6,6 +6,7 @@ import { state, settings, assets, sheetSize, dims, findItem, commit, paperName }
 import { overlapsAny, nearestFree, maxGrowth } from './collide.js';
 import { $, clamp, round1, tidy, isTyping } from './util.js';
 import { t } from './copy/index.js';
+import { pickSpot, clip } from './placement.js';
 
 const nodes = new Map(); // id → nodo de la pieza
 let ui = {};
@@ -206,33 +207,60 @@ function renderSelection(draft = null) {
   placePiecebar(item);
 }
 
-/** Arriba de la pieza; si no hay lugar, abajo; nunca fuera del lienzo. */
+/**
+ * Barra de la pieza: prueba arriba, abajo (centrada o alineada con un borde de la
+ * pieza) y fuera de la hoja a cada costado, y se queda con la posición que tapa
+ * menos piezas; a igualdad, en ese orden. Nunca sale del lienzo ni queda debajo
+ * de un panel abierto encima del lienzo.
+ */
 function placePiecebar(item) {
   const bar = ui.piecebar;
   const canvas = ui.canvas.getBoundingClientRect();
   const box = ui.sheetBox.getBoundingClientRect();
-  const [w, h] = dims(item);
-  const x = box.left - canvas.left + item.x * zoom;
-  const y = box.top - canvas.top + item.y * zoom;
-  const pw = w * zoom;
-  const ph = h * zoom;
-  const bw = bar.offsetWidth;
-  const bh = bar.offsetHeight;
+  const sheet = { x: box.left - canvas.left, y: box.top - canvas.top, w: box.width, h: box.height };
+  const onCanvas = (it) => {
+    const [w, h] = dims(it);
+    return { x: sheet.x + it.x * zoom, y: sheet.y + it.y * zoom, w: w * zoom, h: h * zoom };
+  };
+  const piece = onCanvas(item);
+  const w = bar.offsetWidth;
+  const h = bar.offsetHeight;
   const gap = 12;
   const edge = 8;
-  let top = y - bh - gap;
-  let side = 'above';
-  if (top < edge) {
-    top = y + ph + gap + 6; // deja lugar para el tirador
-    side = 'below';
-    if (top + bh > canvas.height - edge) {
-      top = clamp(y - bh - gap, edge, canvas.height - bh - edge);
-      side = 'over';
-    }
-  }
-  const left = clamp(x + pw / 2 - bw / 2, edge, canvas.width - bw - edge);
-  bar.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
-  bar.dataset.side = side;
+  // Zona disponible: el lienzo, menos el panel de piezas si está abierto encima (desde la
+  // izquierda). Con offset*: la posición final, aunque el panel todavía esté entrando animado.
+  const panels = [...document.querySelectorAll('.panel.is-open')].map((panel) => ({
+    x: panel.offsetLeft - ui.canvas.offsetLeft,
+    y: panel.offsetTop - ui.canvas.offsetTop,
+    w: panel.offsetWidth,
+    h: panel.offsetHeight,
+  }));
+  const minX = Math.max(edge, ...panels.filter((r) => r.x <= edge).map((r) => r.x + r.w + edge));
+  const bounds = { x: minX, y: edge, w: canvas.width - edge - minX, h: canvas.height - 2 * edge };
+  const inX = (x) => clamp(x, bounds.x, Math.max(bounds.x, bounds.x + bounds.w - w));
+  const above = piece.y - h - gap;
+  const below = piece.y + piece.h + gap + 6; // deja lugar para el tirador
+  const beside = clamp(piece.y, edge, canvas.height - h - edge);
+  const xs = [piece.x + piece.w / 2 - w / 2, piece.x, piece.x + piece.w - w];
+  const candidates = [
+    ...xs.map((x) => ({ side: 'above', x: inX(x), y: above, w, h })),
+    ...xs.map((x) => ({ side: 'below', x: inX(x), y: below, w, h })),
+    { side: 'left', x: sheet.x - w - gap, y: beside, w, h },
+    { side: 'right', x: sheet.x + sheet.w + gap, y: beside, w, h },
+  ];
+  // Lo que se ve de las otras piezas (la hoja recorta lo que se sale).
+  const covers = state.items
+    .filter((other) => other.id !== item.id)
+    .map((other) => clip(onCanvas(other), sheet))
+    .filter(Boolean);
+  // Si no entra en ningún lado, encima de la pieza, dentro del lienzo.
+  const spot = pickSpot(candidates, { bounds, covers, blocked: panels }) ?? {
+    side: 'over',
+    x: inX(xs[0]),
+    y: clamp(above, edge, canvas.height - h - edge),
+  };
+  bar.style.transform = `translate(${Math.round(spot.x)}px, ${Math.round(spot.y)}px)`;
+  bar.dataset.side = spot.side;
 }
 
 // ---------- Gestos con el puntero ----------
