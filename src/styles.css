@@ -2635,6 +2635,27 @@ input.project-title-input {
     grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--right-w);
   }
 
+  /* Barra superior más compacta: la marca sin nombre, el nombre del proyecto
+     más corto y el estado del guardado solo con su ícono (el texto sigue
+     para lectores de pantalla y en el tooltip). */
+  .topbar {
+    gap: 12px;
+  }
+
+  .brand-name,
+  .project-status-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .project-name {
+    max-width: 150px;
+  }
+
   .rail {
     display: flex;
     flex-direction: column;
@@ -2677,6 +2698,61 @@ input.project-title-input {
 @media (max-width: 799.98px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Dos filas: arriba la marca y el proyecto; abajo las acciones. */
+  .topbar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: 46px 48px;
+    align-items: center;
+    height: auto;
+    column-gap: 4px;
+    row-gap: 0;
+  }
+
+  .brand {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .project-group {
+    grid-row: 1;
+    grid-column: 2 / -1;
+    justify-content: space-between;
+    border-bottom: 0;
+  }
+
+  .project {
+    flex: 1 1 auto;
+  }
+
+  .project-name {
+    max-width: none;
+    flex: 0 1 auto;
+  }
+
+  input.project-name-input {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .project-status-text {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .bar-group {
+    grid-row: 2;
+    grid-column: 1 / 3;
+  }
+
+  .bar-group.end {
+    grid-column: 3;
+    margin-left: 0;
   }
 
   .rail {
@@ -2784,8 +2860,12 @@ input.project-title-input {
 
   .panel select,
   .panel input[type="number"],
+  .panel input[type="text"],
   .chip-btn,
-  .action-row .icon-btn {
+  .action-row .icon-btn,
+  .project-name,
+  input.project-name-input,
+  .add-sheet {
     height: 40px;
   }
 
