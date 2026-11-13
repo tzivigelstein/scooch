@@ -1,4 +1,4 @@
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { CUT_MODES, cutLines } from '../src/cutmarks.js';
 import { prng, shuffled } from './support.js';
@@ -369,12 +369,12 @@ describe('propiedades (fuzz)', () => {
     }
   });
 
-  test('rendimiento: 200 piezas en una fracción de segundo', (t) => {
+  test('rendimiento: 200 piezas en una fracción de segundo', async (t) => {
     const pieces = grid(14, 12, 2);
     const t0 = performance.now();
     const segments = cutLines(pieces);
     const ms = performance.now() - t0;
-    t.diagnostic(`cutLines 196 piezas: ${ms.toFixed(0)} ms, ${segments.length} segmentos`);
+    await t.annotate(`cutLines 196 piezas: ${ms.toFixed(0)} ms, ${segments.length} segmentos`);
     assert.ok(ms < 300, `tardó ${ms.toFixed(0)} ms`);
   });
 });

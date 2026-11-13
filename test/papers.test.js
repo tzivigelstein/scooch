@@ -1,4 +1,4 @@
-import { describe as suite, test } from 'node:test';
+import { describe as suite, test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
   PAPER_GROUPS,

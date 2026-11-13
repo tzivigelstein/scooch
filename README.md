@@ -16,7 +16,8 @@ yarn install      # dependencias
 yarn dev          # servidor de desarrollo con recarga en caliente
 yarn build        # build de producción en dist/
 yarn preview      # sirve dist/ para probar el build
-yarn test         # pruebas unitarias (node --test)
+yarn test         # pruebas unitarias (Vitest)
+yarn e2e          # pruebas de navegador (Playwright, ver e2e/run.mjs)
 ```
 
 ## Proyectos y privacidad

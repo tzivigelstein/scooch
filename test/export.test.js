@@ -1,4 +1,4 @@
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { deflateSync } from 'node:zlib';
 import { PDFDocument, PDFName, PDFRawStream, decodePDFRawStream, degrees, rgb } from 'pdf-lib';

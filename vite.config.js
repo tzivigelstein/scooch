@@ -13,6 +13,10 @@ export default defineConfig({
       transformIndexHtml: (html) => fillHtml(html),
     },
   ],
+  test: {
+    // Some suites fuzz thousands of layouts; node:test had no per-test limit.
+    testTimeout: 60_000,
+  },
   build: {
     rolldownOptions: {
       output: {

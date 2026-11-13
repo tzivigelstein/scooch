@@ -1,4 +1,4 @@
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { pack, fitScale, score, fixedCandidates } from '../src/pack.js';
 import { TOL, prng, shuffled, assertValid } from './support.js';
@@ -320,7 +320,7 @@ describe('fuzz', () => {
     assert.ok(ok >= 291, `entraron ${ok} de 300`);
   });
 
-  test('fitScale: k siempre empaqueta y 0.999·k casi siempre', (t) => {
+  test('fitScale: k siempre empaqueta y 0.999·k casi siempre', async (t) => {
     let smallerFails = 0;
     let scaledCases = 0;
     const CASES = 300;
@@ -346,7 +346,7 @@ describe('fuzz', () => {
     // La heurística no es monótona: en layouts muy apretados, achicar un poco
     // cambia las decisiones y a veces deja de entrar (pasaba igual antes de los
     // cambios). Tiene que ser raro; lo garantizado es k exacto.
-    t.diagnostic(`0.999·k no entró en ${smallerFails} de ${scaledCases} casos`);
+    await t.annotate(`0.999·k no entró en ${smallerFails} de ${scaledCases} casos`);
     assert.ok(smallerFails <= scaledCases * 0.05, `0.999·k falló ${smallerFails} de ${scaledCases}`);
   });
 });
@@ -518,38 +518,38 @@ describe('pack: elige la mejor', () => {
 });
 
 describe('rendimiento', () => {
-  test('pack con 60 piezas en un A4 en menos de 300 ms', (t) => {
+  test('pack con 60 piezas en un A4 en menos de 300 ms', async (t) => {
     const rnd = prng(60);
     const rects = Array.from({ length: 60 }, (_, i) => ({ id: i, w: 5 + rnd() * 25, h: 5 + rnd() * 25 }));
     const opts = { gap: 3, obstacles: [{ x: 40, y: 60, w: 60, h: 40 }] };
     const t0 = performance.now();
     const res = pack(rects, 190, 277, opts);
     const ms = performance.now() - t0;
-    t.diagnostic(`pack 60 piezas: ${ms.toFixed(0)} ms`);
+    await t.annotate(`pack 60 piezas: ${ms.toFixed(0)} ms`);
     assertValid(rects, 190, 277, res, opts);
     assert.ok(ms < 300, `tardó ${ms.toFixed(0)} ms`);
   });
 
-  test('pack con 200 piezas en menos de 1,5 s', (t) => {
+  test('pack con 200 piezas en menos de 1,5 s', async (t) => {
     const rnd = prng(42);
     const rects = Array.from({ length: 200 }, (_, i) => ({ id: i, w: 5 + rnd() * 40, h: 5 + rnd() * 40 }));
     const opts = { gap: 3, obstacles: [{ x: 100, y: 100, w: 200, h: 150 }] };
     const t0 = performance.now();
     const res = pack(rects, 1000, 700, opts);
     const ms = performance.now() - t0;
-    t.diagnostic(`pack 200 piezas: ${ms.toFixed(0)} ms`);
+    await t.annotate(`pack 200 piezas: ${ms.toFixed(0)} ms`);
     assertValid(rects, 1000, 700, res, opts);
     assert.ok(ms < 1500, `tardó ${ms.toFixed(0)} ms`);
   });
 
-  test('fitScale con 100 piezas en pocos segundos', (t) => {
+  test('fitScale con 100 piezas en pocos segundos', async (t) => {
     const rnd = prng(7);
     const rects = Array.from({ length: 100 }, (_, i) => ({ id: i, w: 20 + rnd() * 60, h: 20 + rnd() * 60 }));
     const opts = { gap: 3, obstacles: [{ x: 50, y: 50, w: 100, h: 80 }] };
     const t0 = performance.now();
     const k = fitScale(rects, 320, 450, opts);
     const ms = performance.now() - t0;
-    t.diagnostic(`fitScale 100 piezas: ${ms.toFixed(0)} ms (k=${k.toFixed(4)})`);
+    await t.annotate(`fitScale 100 piezas: ${ms.toFixed(0)} ms (k=${k.toFixed(4)})`);
     assert.ok(k > 0 && k < 1);
     const s = scaled(rects, k);
     assertValid(s, 320, 450, pack(s, 320, 450, opts), opts);

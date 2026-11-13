@@ -1,4 +1,4 @@
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { pack, packSheets, packInto, score } from '../src/pack.js';
 import { prng, shuffled, assertValid } from './support.js';
@@ -363,29 +363,29 @@ describe('packInto', () => {
 });
 
 describe('rendimiento (varias hojas)', () => {
-  test('packSheets con 60 piezas en menos de 500 ms', (t) => {
+  test('packSheets con 60 piezas en menos de 500 ms', async (t) => {
     const rects = randomPieces(prng(60), 60, 70);
     const t0 = performance.now();
     const res = packSheets(rects, W, H, { gap: 3 });
     const ms = performance.now() - t0;
-    t.diagnostic(`packSheets 60 piezas: ${ms.toFixed(0)} ms, ${res.sheets.length} hojas`);
+    await t.annotate(`packSheets 60 piezas: ${ms.toFixed(0)} ms, ${res.sheets.length} hojas`);
     assertSheets(rects, W, H, res, { gap: 3 });
     assert.ok(ms < 500, `tardó ${ms.toFixed(0)} ms`);
   });
 
-  test('packSheets con 200 piezas en menos de 2 s', (t) => {
+  test('packSheets con 200 piezas en menos de 2 s', async (t) => {
     for (const maxSide of [25, 80]) {
       const rects = randomPieces(prng(200 + maxSide), 200, maxSide);
       const t0 = performance.now();
       const res = packSheets(rects, W, H, { gap: 3 });
       const ms = performance.now() - t0;
-      t.diagnostic(`packSheets 200 piezas (hasta ${maxSide + 5} mm): ${ms.toFixed(0)} ms, ${res.sheets.length} hojas`);
+      await t.annotate(`packSheets 200 piezas (hasta ${maxSide + 5} mm): ${ms.toFixed(0)} ms, ${res.sheets.length} hojas`);
       assertSheets(rects, W, H, res, { gap: 3 });
       assert.ok(ms < 2000, `tardó ${ms.toFixed(0)} ms`);
     }
   });
 
-  test('packInto con 60 piezas nuevas sobre 3 hojas ocupadas en menos de 500 ms', (t) => {
+  test('packInto con 60 piezas nuevas sobre 3 hojas ocupadas en menos de 500 ms', async (t) => {
     const rnd = prng(61);
     const sheets = Array.from({ length: 3 }, () =>
       Array.from({ length: 6 }, () => ({ x: rnd() * 150, y: rnd() * 230, w: 10 + rnd() * 40, h: 10 + rnd() * 40 }))
@@ -394,7 +394,7 @@ describe('rendimiento (varias hojas)', () => {
     const t0 = performance.now();
     const res = packInto(rects, W, H, { gap: 3, sheets });
     const ms = performance.now() - t0;
-    t.diagnostic(`packInto 60 piezas: ${ms.toFixed(0)} ms`);
+    await t.annotate(`packInto 60 piezas: ${ms.toFixed(0)} ms`);
     assertInto(rects, W, H, sheets, res, { gap: 3 });
     assert.ok(ms < 500, `tardó ${ms.toFixed(0)} ms`);
   });

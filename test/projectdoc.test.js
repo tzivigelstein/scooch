@@ -1,4 +1,4 @@
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { DOC_VERSION, DEFAULT_CUTS, ProjectError, serialize, fileKeys, counts, nextIds, migrate, validate, deserialize } from '../src/projectdoc.js';
 
