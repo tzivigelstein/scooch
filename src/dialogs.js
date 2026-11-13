@@ -21,10 +21,14 @@ export function setupDialog(dialog, { close = [], fallback = () => null } = {}) 
     // Quién lo abrió, por apertura: «close» llega de forma asíncrona y uno
     // atrasado de una apertura anterior no tiene que pisar a este.
     const id = ++session;
+    const before = document.activeElement; // el navegador le devuelve el foco al cerrar
     dialog.addEventListener('close', function onClose() {
       if (dialog.open) return; // atrasado: sigue esperando su propio cierre
       dialog.removeEventListener('close', onClose);
       if (id !== session) return;
+      // «close» llega después: si mientras tanto el foco ya se movió a otro lado, se respeta.
+      const active = document.activeElement;
+      if (active && active !== document.body && active !== before && !dialog.contains(active)) return;
       const usable = (el) => el?.isConnected && el !== document.body && !el.closest('[hidden]') && !el.disabled;
       const target = [returnTo, fallback()].find(usable);
       // Si ya se abrió otro diálogo (p. ej. «Preferencias» desde los atajos), el foco es de ese.
