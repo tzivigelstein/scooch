@@ -165,7 +165,7 @@ export function NoticePill() {
       <button type="button" id="pill-action" className="pill-action" hidden={!action} onClick={() => currentAction.current?.run()}>
         {action ? action.label : ''}
       </button>
-      <button type="button" id="pill-close" className="pill-close" aria-label={t('notices.close')} hidden={!flash} onClick={dismiss}>
+      <button type="button" id="pill-close" className="pill-close" aria-label={t('notices.close')} data-tip={t('notices.close')} hidden={!flash} onClick={dismiss}>
         <Icon icon={X} />
       </button>
     </div>

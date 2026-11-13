@@ -1,6 +1,9 @@
-// Renaming a project in place: the card keeps its size and thumbnail; the top
-// bar the same way.
+// Renaming a project in place (the card keeps its size and thumbnail; the top
+// bar the same way), tooltips inside dialogs, and every icon-only button with
+// an accessible name and a tooltip.
 const { open, makeChecker, addFiles, norm, OUT, path } = require('../lib/sheets.cjs');
+
+const DONATE = 'https://www.patreon.com/ejemplo';
 
 const rect = (loc) => loc.evaluate((el) => {
   const r = el.getBoundingClientRect();
@@ -9,8 +12,19 @@ const rect = (loc) => loc.evaluate((el) => {
 const sameRect = (a, b) => ['x', 'y', 'w', 'h'].every((k) => Math.abs(a[k] - b[k]) < 0.5);
 const intersects = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
+// Buttons whose only content is an icon: they need a name and a tooltip.
+const ICON_ONLY = () =>
+  [...document.querySelectorAll('button')]
+    .filter((b) => {
+      if (b.closest('[hidden], dialog:not([open])') || !b.getClientRects().length) return false;
+      const copy = b.cloneNode(true);
+      copy.querySelectorAll('.sr-only, svg').forEach((n) => n.remove());
+      return !copy.textContent.trim();
+    })
+    .map((b) => ({ id: b.id || `${b.className} ${b.dataset.act ?? b.dataset.action ?? b.dataset.align ?? b.dataset.distribute ?? ''}`.trim(), name: b.getAttribute('aria-label') ?? '', tip: b.dataset.tip ?? '' }));
+
 (async () => {
-  const { check, report } = makeChecker('Proyectos: cambiar el nombre en el lugar');
+  const { check, report } = makeChecker('Proyectos: cambiar el nombre en el lugar, tooltips y botones de ícono');
   const errors = [];
   for (const [colorScheme, width, height] of [['light', 1440, 900], ['dark', 1440, 900], ['light', 390, 844], ['dark', 390, 844]]) {
     const tag = `${colorScheme} ${width}`;
@@ -60,6 +74,57 @@ const intersects = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b
       await p.waitForFunction(() => document.querySelector('.project-card.is-current .project-title')?.textContent === 'Tarjetas 2');
       check(`${tag}: al salir del campo se guarda`, true);
 
+      // Tooltips inside the dialog: on hover and right away with the keyboard, above the dialog.
+      const tool = card.locator('[data-act="duplicate"]');
+      await tool.hover();
+      await p.waitForSelector('#projects #tooltip:not([hidden])');
+      const onTop = await p.evaluate(() => {
+        const tip = document.getElementById('tooltip');
+        const r = tip.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return { text: tip.textContent, top: tip.contains(hit), inside: r.left >= 0 && r.right <= innerWidth && r.top >= 0 };
+      });
+      check(`${tag}: las acciones de la tarjeta tienen tooltip, visible encima del diálogo`, onTop.text === 'Duplicar' && onTop.top && onTop.inside, JSON.stringify(onTop));
+      await p.mouse.move(2, 2);
+      await p.locator('#projects-close').focus();
+      await k.press('Shift+Tab');
+      await k.press('Tab');
+      check(`${tag}: con el teclado, el tooltip aparece enseguida (cerrar)`, (await p.evaluate(() => document.querySelector('#projects #tooltip:not([hidden])')?.textContent)) === 'Cerrar');
+
+      // Every icon-only button, in the main window and in each dialog.
+      const missing = [];
+      const audit = async (where) => {
+        for (const b of await p.evaluate(ICON_ONLY)) if (!b.name.trim() || !b.tip.trim()) missing.push(`${where}: ${b.id} (${b.name ? '' : 'sin nombre '}${b.tip ? '' : 'sin tooltip'})`);
+      };
+      await audit('proyectos');
+      await k.press('Escape');
+      await k.press('Escape');
+      await p.locator('#sheets .piece').first().click();
+      await audit('principal');
+      // (On narrow screens the shortcuts button hides: «?» opens it everywhere.)
+      await p.locator('#sheets .piece').first().focus();
+      await k.press('?');
+      await p.waitForSelector('#shortcuts[open] #shortcuts-rows tr');
+      await audit('atajos');
+      await p.click('#shortcuts-prefs');
+      await p.waitForSelector('#prefs[open] #single-keys');
+      await audit('preferencias');
+      await k.press('Escape');
+      await p.click('#add-sheet');
+      await p.locator('#sheets .piece').first().click();
+      await k.press('Shift+PageDown');
+      await p.evaluate(() => document.querySelectorAll('.page-remove')[1].click());
+      if (await p.locator('#confirm[open]').count()) {
+        await audit('confirmación');
+        await k.press('Escape');
+      }
+      await p.goto(`${s.page.url().split('?')[0]}?donar=${encodeURIComponent(DONATE)}`);
+      await p.waitForFunction(() => !document.body.classList.contains('is-loading'));
+      await p.click('#export');
+      await p.waitForSelector('#donate[open] #donate-close');
+      await audit('donación');
+      await k.press('Escape');
+      check(`${tag}: todos los botones de solo ícono tienen nombre accesible y tooltip`, missing.length === 0, missing.join(' · '));
       errors.push(...s.errors);
     } catch (err) {
       check(`${tag}: sin excepciones`, false, err.stack);

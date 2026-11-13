@@ -24,7 +24,7 @@ export default function DonateDialog() {
           <Icon icon={Heart} />
         </span>
       </div>
-      <button type="button" id="donate-close" className="icon-btn donate-close" aria-label={t('donate.close')} onClick={() => finishDonation('close')}>
+      <button type="button" id="donate-close" className="icon-btn donate-close" aria-label={t('donate.close')} data-tip={t('donate.close')} onClick={() => finishDonation('close')}>
         <Icon icon={X} />
       </button>
       <div className="donate-content">

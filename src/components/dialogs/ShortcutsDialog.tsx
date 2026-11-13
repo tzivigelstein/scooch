@@ -24,7 +24,7 @@ export default function ShortcutsDialog() {
         <h2 id="shortcuts-title" className="dialog-title">
           {t('shortcuts.title')}
         </h2>
-        <IconButton id="shortcuts-close" icon={X} label={t('app.close')} onClick={close} />
+        <IconButton id="shortcuts-close" icon={X} label={t('app.close')} tip={t('app.close')} onClick={close} />
       </div>
       <div className="dialog-body">
         <p id="shortcuts-note" className="dialog-note">

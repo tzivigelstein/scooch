@@ -4,6 +4,7 @@
 // them without moving the focus (WCAG 1.4.13).
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { clamp } from '../../core/util.ts';
 import { usePrefs } from '../../state/prefs.ts';
 
@@ -133,9 +134,20 @@ export function Tooltip() {
     const left = clamp(r.left + r.width / 2 - w / 2, 6, vw - w - 6);
     el.style.left = `${Math.round(left)}px`;
     el.style.top = `${Math.round(top)}px`;
+    // Inside a dialog that is still animating in (a transform), fixed
+    // positioning is relative to the dialog: corrected by what it moved.
+    const placed = el.getBoundingClientRect();
+    const dx = placed.left - Math.round(left);
+    const dy = placed.top - Math.round(top);
+    if (dx || dy) {
+      el.style.left = `${Math.round(left - dx)}px`;
+      el.style.top = `${Math.round(top - dy)}px`;
+    }
   }, [shown]);
 
-  return (
+  // A modal dialog sits in the top layer: its tooltips go inside it, or they'd be underneath.
+  const host = shown?.el.closest('dialog[open]') ?? null;
+  const element = (
     <div ref={tip} id="tooltip" className="tooltip" role="tooltip" hidden={!shown}>
       {shown && (
         <>
@@ -150,4 +162,5 @@ export function Tooltip() {
       )}
     </div>
   );
+  return host ? createPortal(element, host) : element;
 }

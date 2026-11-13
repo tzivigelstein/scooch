@@ -22,7 +22,7 @@ export default function PrefsDialog() {
         <h2 id="prefs-title" className="dialog-title">
           {t('prefs.title')}
         </h2>
-        <IconButton id="prefs-close" icon={X} label={t('app.close')} onClick={close} />
+        <IconButton id="prefs-close" icon={X} label={t('app.close')} tip={t('app.close')} onClick={close} />
       </div>
       <div className="dialog-body">
         <div className="pref-section" role="group" aria-labelledby="prefs-units-title">

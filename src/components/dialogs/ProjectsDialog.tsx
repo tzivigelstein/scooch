@@ -244,7 +244,7 @@ export default function ProjectsDialog() {
         <h2 id="projects-title" className="dialog-title">
           {t('projects.title')}
         </h2>
-        <IconButton id="projects-close" icon={X} label={t('app.close')} onClick={close} />
+        <IconButton id="projects-close" icon={X} label={t('app.close')} tip={t('app.close')} onClick={close} />
       </div>
       <div className="dialog-body">
         <div className="projects-top">
