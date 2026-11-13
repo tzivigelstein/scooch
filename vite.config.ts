@@ -24,7 +24,11 @@ export default defineConfig({
       output: {
         // Lazy chunks of dependencies (pdf.js, pdf-lib) are named after their package;
         // otherwise pdf-lib would come out as «es-[hash].js» after its source folder.
-        chunkFileNames: (chunk) => `assets/${packageOf(chunk.facadeModuleId)?.replace('/', '-') ?? '[name]'}-[hash].js`,
+        // The chunk the entry shares with the lazy dialogs (texts, React's shared
+        // part, storage) has no entry module: «shared» says what it is, instead of
+        // the name of whichever module the bundler picks.
+        chunkFileNames: (chunk) =>
+          `assets/${packageOf(chunk.facadeModuleId)?.replace('/', '-') ?? (chunk.facadeModuleId || chunk.name === 'rolldown-runtime' ? '[name]' : 'shared')}-[hash].js`,
       },
     },
   },
