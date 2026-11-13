@@ -1,4 +1,4 @@
-/* Inter variable, autoalojada (con unicode-range: el navegador baja solo los subsets que usa). */
+/* Inter variable, self-hosted (with unicode-range: the browser downloads only the subsets it uses). */
 @import "@fontsource-variable/inter";
 
 /* ---------- Tokens ---------- */
@@ -43,7 +43,7 @@
   --tip-bg: #14161b;
   --tip-text: #ffffff;
 
-  /* La hoja siempre es blanca: lo que va encima usa colores fijos. */
+  /* The sheet is always white: what goes on it uses fixed colors. */
   --grid-minor: rgb(0 72 180 / 0.09);
   --grid-major: rgb(0 72 180 / 0.22);
   --sel: #0066ff;
@@ -58,8 +58,8 @@
   --radius: 0.625rem;
   --radius-sm: 0.5rem;
   --topbar-h: 3.5rem;
-  /* Paneles: como siempre hasta 1600 px de ancho; desde ahí crecen con la
-     pantalla (además de la escala de la interfaz, ver html) hasta un tope. */
+  /* Panels: as always up to 1600 px wide; from there they grow with the
+     screen (besides the interface scale, see html) up to a cap. */
   --left-w: clamp(14.25rem, calc(14.25rem + (100vw - 1600px) * 0.05), 22rem);
   --right-w: clamp(18rem, calc(18rem + (100vw - 1600px) * 0.06), 27rem);
   --rail-w: 3.25rem;
@@ -127,11 +127,11 @@ body {
   margin: 0;
 }
 
-/* Escala de la interfaz: el tamaño de letra del navegador (100 %) hasta 1600 px
-   de ancho; desde ahí crece de a poco hasta 1,25 × hacia los 2800 px. Todo lo
-   de la interfaz está en rem, así crece con esto (la hoja tiene su propio zoom).
-   Para cambiarlo: el divisor (300: cuántos px de ancho por cada px de letra) y
-   el tope (125 %). */
+/* Interface scale: the browser's font size (100 %) up to 1600 px wide; from
+   there it grows little by little up to 1.25 × towards 2800 px. Everything in
+   the interface is in rem, so it grows with this (the sheet has its own zoom).
+   To change it: the divisor (300: how many px of width per px of font) and
+   the cap (125 %). */
 html {
   font-size: clamp(100%, calc(100% + (100vw - 1600px) / 300), 125%);
 }
@@ -232,9 +232,9 @@ kbd {
   white-space: nowrap;
 }
 
-/* ---------- Botones ---------- */
+/* ---------- Buttons ---------- */
 
-/* Herramienta de solo ícono. */
+/* Icon-only tool. */
 .tool,
 .icon-btn {
   position: relative;
@@ -261,7 +261,7 @@ kbd {
   background: var(--pressed);
 }
 
-/* Abierto o encendido: fondo y borde de acento, no solo color. */
+/* Open or on: accent background and border, not just color. */
 .tool.is-open,
 .icon-btn.is-open,
 .tool[aria-pressed="true"],
@@ -324,7 +324,7 @@ kbd {
   background: var(--pressed);
 }
 
-/* Acomodar: la función central, destacada sin competir con Imprimir. */
+/* Arrange: the central action, highlighted without competing with Print. */
 .btn.accent {
   background: var(--accent-soft);
   color: var(--accent-strong);
@@ -395,7 +395,7 @@ kbd {
   opacity: 0.45;
 }
 
-/* ---------- Barra superior ---------- */
+/* ---------- Top bar ---------- */
 
 .topbar {
   flex: none;
@@ -457,7 +457,7 @@ kbd {
   flex: none;
 }
 
-/* Proyecto abierto: nombre editable, estado del guardado y «Proyectos». */
+/* Open project: editable name, save status and «Proyectos». */
 .project-group {
   display: flex;
   align-items: center;
@@ -538,15 +538,15 @@ input.project-name-input {
   white-space: nowrap;
 }
 
-/* Mientras se restaura el proyecto al abrir la app, el lienzo y la lista no se
-   muestran (sin el parpadeo de la hoja vacía). */
+/* While the project is restored when the app opens, the canvas and the list
+   are hidden (no flash of the empty sheet). */
 .is-loading #sheets,
 .is-loading #piece-list,
 .is-loading #list-empty {
   visibility: hidden;
 }
 
-/* ---------- Área de trabajo: panel · lienzo · panel ---------- */
+/* ---------- Workspace: panel · canvas · panel ---------- */
 
 .workspace {
   flex: 1;
@@ -629,7 +629,7 @@ input.project-name-input {
   line-height: 1.45;
 }
 
-/* Zona para agregar (panel de piezas) */
+/* Add zone (pieces panel) */
 .addzone {
   display: flex;
   align-items: center;
@@ -672,7 +672,7 @@ input.project-name-input {
   font-size: 0.75rem;
 }
 
-/* Lista de piezas (listbox) */
+/* Pieces list (listbox) */
 .piece-list {
   flex: 1;
   min-height: 0;
@@ -682,7 +682,7 @@ input.project-name-input {
   list-style: none;
 }
 
-/* Con varias hojas: un grupo por hoja, con encabezado fijo arriba al hacer scroll. */
+/* With several sheets: one group per sheet, with a header that sticks to the top on scroll. */
 .list-group {
   margin: 0;
   padding: 0;
@@ -738,7 +738,7 @@ input.project-name-input {
   outline-offset: -0.125rem;
 }
 
-/* Fila elegida: barra lateral + fondo + negrita (no solo color). */
+/* Selected row: side bar + background + bold (not just color). */
 .piece-row[aria-selected="true"] {
   background: var(--accent-soft);
 }
@@ -852,7 +852,7 @@ input.project-name-input {
   font-variant-numeric: tabular-nums;
 }
 
-/* Secciones del panel de propiedades */
+/* Properties panel sections */
 .prop-section {
   padding: 0.875rem 1rem 1rem;
   border-bottom: 1px solid var(--line);
@@ -917,7 +917,7 @@ input.project-name-input {
   font-weight: 600;
 }
 
-/* Campos */
+/* Fields */
 
 .field {
   display: grid;
@@ -974,7 +974,7 @@ input[type="text"]:hover:not(:disabled) {
   border-color: var(--text);
 }
 
-/* Campos compactos sin flechitas (las flechas del teclado siguen subiendo y bajando el valor). */
+/* Compact fields without spinners (the arrow keys still step the value up and down). */
 input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
@@ -1000,7 +1000,7 @@ input:disabled {
   cursor: not-allowed;
 }
 
-/* Medida que no vale: borde y mensaje (no solo color: el mensaje lo dice). */
+/* Invalid measurement: border and message (not just color: the message says it). */
 input[aria-invalid="true"],
 input[aria-invalid="true"]:hover:not(:disabled) {
   border-color: var(--danger);
@@ -1041,7 +1041,7 @@ input[aria-invalid="true"]:hover:not(:disabled) {
   gap: 0.5rem;
 }
 
-/* Campo numérico compacto: etiqueta/ícono adentro a la izquierda, unidad a la derecha. */
+/* Compact number field: label/icon inside on the left, unit on the right. */
 .num-field {
   position: relative;
   display: flex;
@@ -1136,7 +1136,7 @@ input[type="range"] {
   font-weight: 600;
 }
 
-/* Resolución de impresión (no solo color: ícono + texto) */
+/* Print resolution (not just color: icon + text) */
 .quality-icon {
   display: grid;
   flex: none;
@@ -1158,7 +1158,7 @@ input[type="range"] {
   color: var(--muted);
 }
 
-/* Alinear y distribuir */
+/* Align and distribute */
 .arrange-tools {
   display: grid;
   gap: 0.5rem;
@@ -1173,7 +1173,7 @@ input[type="range"] {
   min-width: 0;
 }
 
-/* El control ocupa lo que queda de la fila; si no entra al lado del título, la fila entera. */
+/* The control takes the rest of the row; if it doesn't fit next to the title, the whole row. */
 .tools-head > .segmented {
   flex: 1 1 8rem;
 }
@@ -1206,7 +1206,7 @@ input[type="range"] {
   font-size: 0.75rem;
 }
 
-/* Duplicar ×N y «Seleccionar iguales» */
+/* Duplicate ×N and «Seleccionar iguales» */
 .copy-row {
   display: flex;
   flex-wrap: wrap;
@@ -1240,7 +1240,7 @@ input[type="range"] {
   height: 1rem;
 }
 
-/* Rellenar con copias (plegado) */
+/* Fill with copies (collapsed) */
 .fill-details {
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1338,7 +1338,7 @@ input[type="range"] {
   height: 1rem;
 }
 
-/* Controles segmentados (radios) */
+/* Segmented controls (radios) */
 .segmented {
   display: grid;
   grid-auto-flow: column;
@@ -1422,7 +1422,7 @@ input[type="range"] {
   align-items: center;
 }
 
-/* Interruptores */
+/* Switches */
 .switch-row {
   display: flex;
   align-items: center;
@@ -1504,7 +1504,7 @@ input[role="switch"]:checked::before {
   transform: translateX(1rem);
 }
 
-/* ---------- Lienzo y hoja ---------- */
+/* ---------- Canvas and sheet ---------- */
 
 .canvas {
   min-width: 0;
@@ -1527,8 +1527,8 @@ input[role="switch"]:checked::before {
   scrollbar-gutter: stable;
 }
 
-/* Las hojas, una debajo de otra. Con pocas, quedan centradas en el alto (los
-   márgenes automáticos de flex no recortan cuando hay scroll). */
+/* The sheets, one below the other. With few, they stay vertically centered
+   (flex auto margins don't clip when there is scroll). */
 .sheets {
   position: relative;
   flex: none;
@@ -1563,7 +1563,7 @@ input[role="switch"]:checked::before {
   transition: color var(--fast) var(--ease);
 }
 
-/* Hoja actual: etiqueta en acento y un borde sutil alrededor de la hoja. */
+/* Current sheet: accent label and a subtle border around the sheet. */
 .sheets[data-many] .page.is-current .page-label {
   color: var(--accent-strong);
 }
@@ -1572,7 +1572,7 @@ input[role="switch"]:checked::before {
   box-shadow: var(--sheet-shadow), 0 0 0 0.125rem color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
-/* Quitar hoja: aparece al pasar o enfocar (y en la hoja actual); con el dedo, siempre. */
+/* Remove sheet: shows on hover or focus (and on the current sheet); with touch, always. */
 .page-remove {
   opacity: 0;
   color: var(--muted);
@@ -1595,7 +1595,7 @@ input[role="switch"]:checked::before {
   }
 }
 
-/* Arrastrando una pieza hacia otra hoja: la de destino se marca (no solo color: borde punteado). */
+/* Dragging a piece to another sheet: the target is marked (not just color: dashed border). */
 .page.is-drop-target .sheet {
   outline: 0.125rem dashed var(--accent);
   outline-offset: 0.25rem;
@@ -1606,7 +1606,7 @@ input[role="switch"]:checked::before {
   flex: none;
 }
 
-/* La pieza que se arrastra viaja por encima de todas las hojas, sin recorte. */
+/* The dragged piece travels above every sheet, unclipped. */
 .drag-layer {
   position: absolute;
   inset: 0;
@@ -1678,10 +1678,10 @@ input[role="switch"]:checked::before {
   color: #1a1d23;
   border-radius: 0.125rem;
   box-shadow: var(--sheet-shadow);
-  /* Recorta lo que se sale, pero sin ser un contenedor con scroll: con
-     «hidden», al enfocar (o mudar enfocada) una pieza que se sale, el navegador
-     corría el contenido de la hoja para mostrarla y las piezas, la grilla y el
-     margen quedaban desfasados del marco. */
+  /* Clips what sticks out, but without being a scroll container: with
+     «hidden», focusing (or moving while focused) a piece that sticks out made
+     the browser scroll the sheet's content to show it, and the pieces, the
+     grid and the margin ended up offset from the frame. */
   overflow: hidden;
   overflow: clip;
 }
@@ -1719,7 +1719,7 @@ input[role="switch"]:checked::before {
   letter-spacing: 0.01em;
 }
 
-/* Hoja vacía: zona grande para soltar (colores fijos: la hoja siempre es blanca). */
+/* Empty sheet: a large drop zone (fixed colors: the sheet is always white). */
 .dropzone {
   position: absolute;
   inset: clamp(0.625rem, 6%, 2.25rem);
@@ -1776,7 +1776,7 @@ input[role="switch"]:checked::before {
   color: #555c69;
 }
 
-/* Piezas */
+/* Pieces */
 
 .piece {
   position: absolute;
@@ -1787,7 +1787,7 @@ input[role="switch"]:checked::before {
 }
 
 .piece:focus-visible {
-  /* El marco de selección muestra el foco; esto queda para el modo de alto contraste. */
+  /* The selection frame shows focus; this stays for high-contrast mode. */
   outline: 0.125rem solid transparent;
 }
 
@@ -1808,14 +1808,14 @@ input[role="switch"]:checked::before {
   cursor: grabbing;
 }
 
-/* Arrastrando sobre otra pieza: soltar ahí no vale (punteado + transparencia, no solo color). */
+/* Dragging over another piece: dropping there isn't allowed (dashed + transparency, not just color). */
 .piece.is-blocked {
   opacity: 0.55;
   cursor: not-allowed;
 }
 
-/* Marco de la pieza seleccionada: fuera del recorte de la hoja. Doble anillo
-   claro/oscuro para que se vea sobre la hoja blanca y sobre cualquier imagen. */
+/* Frame of the selected piece: outside the sheet's clipping. A light/dark
+   double ring so it shows on the white sheet and on any image. */
 .frame {
   position: absolute;
   pointer-events: none;
@@ -1857,7 +1857,7 @@ input[role="switch"]:checked::before {
 }
 
 .handle::after {
-  /* Área de toque más grande que el punto visible. */
+  /* Touch area larger than the visible dot. */
   content: "";
   position: absolute;
   inset: -0.5rem;
@@ -1871,8 +1871,8 @@ input[role="switch"]:checked::before {
   display: none;
 }
 
-/* Varias elegidas: cada una con un anillo adentro (la hoja no lo recorta) y,
-   alrededor de las de cada hoja, un marco punteado con su tirador. */
+/* Several selected: each with an inner ring (the sheet doesn't clip it) and,
+   around those of each sheet, a dashed frame with its handle. */
 .piece.is-grouped::after,
 .piece.is-marked::after,
 .piece:focus-visible:not(.is-selected)::after {
@@ -1887,12 +1887,12 @@ input[role="switch"]:checked::before {
   box-shadow: inset 0 0 0 0.125rem #fff, inset 0 0 0 0.3125rem var(--sel-strong), inset 0 0 0 0.375rem rgb(255 255 255 / 0.9);
 }
 
-/* Lo que va a quedar elegido con el recuadro (más tenue que lo elegido). */
+/* What the marquee is about to select (fainter than the selection). */
 .piece.is-marked:not(.is-grouped)::after {
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.9), inset 0 0 0 0.125rem var(--sel);
 }
 
-/* Enfocada sin estar elegida (la selección está fijada): anillo punteado. */
+/* Focused without being selected (the selection is pinned): dashed ring. */
 .piece:focus-visible:not(.is-selected)::after {
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.95);
   outline: 0.125rem dashed var(--sel-strong);
@@ -1920,7 +1920,7 @@ input[role="switch"]:checked::before {
   display: none;
 }
 
-/* Recuadro para elegir varias. */
+/* Marquee to select several. */
 .marquee {
   position: absolute;
   z-index: 6;
@@ -1930,7 +1930,7 @@ input[role="switch"]:checked::before {
   background: rgb(0 102 255 / 0.1);
 }
 
-/* Animación al reacomodar */
+/* Animation when rearranging */
 .sheets.is-animating .sheet-box,
 .sheets.is-animating .frame,
 .sheets.is-animating .piece {
@@ -1943,7 +1943,7 @@ input[role="switch"]:checked::before {
   transition: transform 180ms var(--ease), width 180ms var(--ease), height 180ms var(--ease);
 }
 
-/* Barra flotante de la pieza (mínima) */
+/* Floating piece toolbar (minimal) */
 .piecebar {
   position: absolute;
   left: 0;
@@ -1985,7 +1985,7 @@ input[role="switch"]:checked::before {
   flex: none;
 }
 
-/* Botones de los paneles en pantallas angostas */
+/* Panel buttons on narrow screens */
 .dock {
   display: none;
 }
@@ -2025,7 +2025,7 @@ input[role="switch"]:checked::before {
   display: none;
 }
 
-/* ---------- Píldora de avisos ---------- */
+/* ---------- Notice pill ---------- */
 
 .pill {
   position: absolute;
@@ -2194,7 +2194,7 @@ input[role="switch"]:checked::before {
   font-size: 0.75rem;
 }
 
-/* ---------- Diálogo de atajos ---------- */
+/* ---------- Shortcuts dialog ---------- */
 
 .dialog {
   width: min(37.5rem, calc(100vw - 1.5rem));
@@ -2315,14 +2315,14 @@ input[role="switch"]:checked::before {
   color: var(--muted);
 }
 
-/* Texto de apoyo dentro de un diálogo (puede llevar un enlace). */
+/* Supporting text inside a dialog (may carry a link). */
 .dialog-note {
   margin: 0;
   color: var(--muted);
   font-size: 0.8125rem;
 }
 
-/* Enlace dentro de una frase: un botón (abre algo, no navega) con aspecto de enlace. */
+/* Link inside a sentence: a button (opens something, doesn't navigate) that looks like a link. */
 .link-btn {
   display: inline;
   padding: 0;
@@ -2339,7 +2339,7 @@ input[role="switch"]:checked::before {
   text-decoration-thickness: 0.125rem;
 }
 
-/* ---------- Proyectos ---------- */
+/* ---------- Projects ---------- */
 
 .dialog.projects {
   width: min(47.5rem, calc(100vw - 1.5rem));
@@ -2509,7 +2509,7 @@ input.project-title-input {
   height: 1rem;
 }
 
-/* En pantallas angostas, dos columnas de tarjetas más bajas. */
+/* On narrow screens, two columns of shorter cards. */
 @media (max-width: 559.98px) {
   .project-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2542,7 +2542,7 @@ input.project-title-input {
   }
 }
 
-/* Botones al pie de un diálogo breve (confirmar). */
+/* Buttons at the foot of a short dialog (confirm). */
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -2569,13 +2569,13 @@ input.project-title-input {
   filter: brightness(1.08);
 }
 
-/* ---------- Preferencias ---------- */
+/* ---------- Preferences ---------- */
 
 .dialog.prefs {
   width: min(28.75rem, calc(100vw - 1.5rem));
 }
 
-/* Cada sección: título y contenido, sin tarjeta; un separador entre secciones. */
+/* Each section: title and content, no card; a divider between sections. */
 .pref-section {
   display: grid;
   gap: 0.5rem;
@@ -2606,7 +2606,7 @@ input.project-title-input {
   font-size: 0.84375rem;
 }
 
-/* ---------- Modal de donación ---------- */
+/* ---------- Donation dialog ---------- */
 
 .donate {
   width: min(27.5rem, calc(100vw - 1.5rem));
@@ -2856,16 +2856,16 @@ input.project-title-input {
   font-size: 0.78125rem;
 }
 
-/* ---------- Pantallas medianas: el panel de piezas se pliega ---------- */
+/* ---------- Medium screens: the pieces panel collapses ---------- */
 
 @media (max-width: 1099.98px) {
   .workspace {
     grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--right-w);
   }
 
-  /* Barra superior más compacta: la marca sin nombre, el nombre del proyecto
-     más corto y el estado del guardado solo con su ícono (el texto sigue
-     para lectores de pantalla y en el tooltip). */
+  /* A more compact top bar: the brand without its name, a shorter project
+     name and the save status with just its icon (the text stays for screen
+     readers and in the tooltip). */
   .topbar {
     gap: 0.75rem;
   }
@@ -2921,14 +2921,14 @@ input.project-title-input {
   }
 }
 
-/* ---------- Pantallas angostas: sin columnas ---------- */
+/* ---------- Narrow screens: no columns ---------- */
 
 @media (max-width: 799.98px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* Dos filas: arriba la marca y el proyecto; abajo las acciones. */
+  /* Two rows: the brand and the project on top; the actions below. */
   .topbar {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -3038,7 +3038,7 @@ input.project-title-input {
     width: min(20rem, 88vw);
   }
 
-  /* Propiedades como hoja inferior */
+  /* Properties as a bottom sheet */
   .panel-right.is-drawer {
     position: fixed;
     left: 0;
@@ -3165,7 +3165,7 @@ input.project-title-input {
     pointer-events: auto;
   }
 
-  /* La barra de la pieza, anclada abajo: justo encima de «Piezas» y «Propiedades». */
+  /* The piece toolbar, anchored at the bottom: right above «Piezas» and «Propiedades». */
   .piecebar {
     left: 50%;
     top: auto;
@@ -3180,7 +3180,7 @@ input.project-title-input {
     font-size: 0.8125rem;
   }
 
-  /* Con la barra de la pieza a la vista, el aviso va encima de ella. */
+  /* With the piece toolbar visible, the notice goes above it. */
   .canvas:has(.piecebar:not([hidden])) .pill {
     bottom: calc(7.875rem + env(safe-area-inset-bottom));
   }
@@ -3194,7 +3194,7 @@ input.project-title-input {
     width: 46%;
   }
 
-  /* Donación como hoja inferior a ancho completo */
+  /* Donation as a full-width bottom sheet */
   .donate {
     width: 100%;
     max-width: none;
@@ -3236,7 +3236,7 @@ input.project-title-input {
 }
 
 @media (max-width: 399.98px) {
-  /* Teléfonos: los atajos de teclado no aplican sin teclado (siguen con «?»). */
+  /* Phones: keyboard shortcuts don't apply without a keyboard (still reachable with «?»). */
   #help {
     display: none;
   }
@@ -3255,9 +3255,9 @@ input.project-title-input {
   }
 }
 
-/* ---------- Impresión ---------- */
+/* ---------- Printing ---------- */
 
-/* Marco oculto (fuera de pantalla, no display:none) donde se carga el PDF para imprimirlo. */
+/* Hidden frame (off screen, not display:none) where the PDF loads to be printed. */
 .print-frame {
   position: fixed;
   left: -625rem;
@@ -3272,7 +3272,7 @@ input.project-title-input {
   display: none;
 }
 
-/* Si se imprime la página desde el menú del navegador, no sale la interfaz. */
+/* If the page is printed from the browser's menu, the interface doesn't print. */
 @media print {
   body {
     display: block;
@@ -3292,11 +3292,11 @@ input.project-title-input {
   }
 }
 
-/* ---------- Preferencias del sistema ---------- */
+/* ---------- System preferences ---------- */
 
 @media (prefers-reduced-motion: reduce) {
-  /* Sin movimiento: ni transiciones (tampoco las de 0,01 ms, que dejarían
-     todo un cuadro atrasado) ni animaciones. */
+  /* No motion: neither transitions (not even 0.01 ms ones, which would leave
+     everything a frame behind) nor animations. */
   *,
   *::before,
   *::after {
