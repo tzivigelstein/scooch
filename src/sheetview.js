@@ -537,7 +537,11 @@ function onPointerDown(e) {
   handlers.select(item.id);
   node.focus({ preventScroll: true });
   // La captura va en #sheets, que no se mueve: la pieza puede cambiar de hoja.
-  ui.sheets.setPointerCapture(e.pointerId);
+  try {
+    ui.sheets.setPointerCapture(e.pointerId);
+  } catch {
+    // Puntero que ya no está activo (o evento sintético): el gesto sigue sin captura.
+  }
   measureBoxes();
   gesture = {
     item,
