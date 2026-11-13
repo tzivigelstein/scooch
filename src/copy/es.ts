@@ -399,6 +399,7 @@ const es = {
     uncropped: 'Se quitó el recorte',
     uncroppedMany: { one: 'Se quitó el recorte de 1 pieza', other: 'Se quitó el recorte de {n} piezas' },
     movedAside: { one: '1 pieza se movió a un lugar libre para no superponerse', other: '{n} piezas se movieron a lugares libres para no superponerse' },
+    pageCropDropped: 'La página {page} tiene otro tamaño, así que se quitó el recorte',
     sizeOutOfRange: { one: '{names} no se puede llevar a ese tamaño: su escala pasaría de 1 % a 1000 %', other: '{n} piezas no se pueden llevar a ese tamaño: su escala pasaría de 1 % a 1000 %' },
     downloaded: 'Se descargó {file}. Al imprimirlo, elige «Tamaño real» o «100 %».',
     // Projects

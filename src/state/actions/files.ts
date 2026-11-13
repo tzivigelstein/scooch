@@ -12,6 +12,9 @@ import { setView } from '../view.ts';
 import { say } from './notify.ts';
 import { placeNew } from './layout.ts';
 
+/** Two PDF pages this close (mm) have the same size: a crop carries over. */
+const PAGE_SIZE_TOLERANCE = 0.05;
+
 /** Something is loading (actions wait and the pill says what). */
 export function setBusy(on: boolean, text = '') {
   setDocument({ busy: on });
@@ -76,9 +79,14 @@ export async function changePage(n: number) {
     }
     let key = assetEntries().find(([, a]) => a.kind === 'pdf' && a.src === asset.src && a.page === n)?.[0];
     key ??= addAsset(await pdfPage({ name: asset.name, src: asset.src, pdf: asset.pdf!, bytes: asset.bytes }, n));
+    // The crop stays when the new page has the same size; otherwise it would frame something else.
+    const page = getAsset(key);
+    const sameSize = Math.abs(page.w - asset.w) < PAGE_SIZE_TOLERANCE && Math.abs(page.h - asset.h) < PAGE_SIZE_TOLERANCE;
+    const dropCrop = !!item.crop && !sameSize;
     commit();
-    patchItems(new Map([[item.id, { asset: key }]]));
+    patchItems(new Map([[item.id, dropCrop ? { asset: key, crop: null } : { asset: key }]]));
     setBusy(false);
+    if (dropCrop) say(t('notices.pageCropDropped', { page: n }));
   } catch (err) {
     console.error(err);
     setBusy(false);
