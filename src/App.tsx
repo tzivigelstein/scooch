@@ -1,7 +1,7 @@
 // The app: top bar, pieces panel, sheets and properties, with the dialogs
 // loaded when first needed.
 
-import { useEffect, useRef, type DragEvent } from 'react';
+import { Suspense, useEffect, useRef, type DragEvent } from 'react';
 import { LEFT_DRAWER_QUERY, NARROW_QUERY } from './config.ts';
 import { t } from './copy/index.ts';
 import { Dock, Rail } from './components/canvas/Dock.tsx';
@@ -10,6 +10,7 @@ import { Stage } from './components/canvas/Stage.tsx';
 import { Dialogs } from './components/dialogs/Dialogs.tsx';
 import { preloadDialogs } from './components/dialogs/lazy.ts';
 import { preloadCrop } from './components/canvas/cropMode.ts';
+import { ContextMenuContent, preloadContextMenu, useContextMenu } from './components/canvas/contextMenu.ts';
 import { LiveRegions } from './components/feedback/LiveRegions.tsx';
 import { NoticePill } from './components/feedback/NoticePill.tsx';
 import { Tooltip } from './components/feedback/Tooltip.tsx';
@@ -37,6 +38,16 @@ function PieceHint() {
       {t(singleKeys ? 'piecebar.hint' : 'piecebar.hintNoKeys', stepTexts())}
     </p>
   );
+}
+
+/** The context menu, once someone opens it (it loads then). */
+function ContextMenuHost() {
+  const open = useContextMenu((s) => s.request !== null);
+  return open ? (
+    <Suspense fallback={null}>
+      <ContextMenuContent />
+    </Suspense>
+  ) : null;
 }
 
 function FocusRescue() {
@@ -126,6 +137,7 @@ export function App() {
     idle(() => {
       preloadDialogs();
       preloadCrop();
+      preloadContextMenu();
     });
     return () => {
       stopFollowing();
@@ -167,6 +179,7 @@ export function App() {
       </div>
       <p className="print-only">{t('app.printOnly')}</p>
       <Dialogs />
+      <ContextMenuHost />
       <FocusRescue />
     </>
   );

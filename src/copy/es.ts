@@ -65,6 +65,7 @@ const es = {
     Plus: '+',
     Minus: '−',
     Click: 'clic',
+    ContextMenu: 'Menú',
   },
 
   // Top bar
@@ -390,6 +391,35 @@ const es = {
     gapFixed: 'Se cambió la separación a {value}. Acomoda las piezas para aplicarla.',
   },
 
+  // Context menus (pieces, an empty sheet) and their shortcuts; disabled items say why
+  menu: {
+    piece: 'Acciones de la pieza',
+    pieces: 'Acciones de {n} piezas',
+    sheet: 'Acciones de la hoja {i}',
+    rotateLeft: 'Girar a la izquierda',
+    rotateRight: 'Girar a la derecha',
+    duplicate: 'Duplicar',
+    copy: 'Copiar',
+    cut: 'Cortar',
+    paste: 'Pegar',
+    front: 'Traer al frente',
+    crop: 'Recortar',
+    selectSame: 'Seleccionar iguales',
+    newSheet: 'Mover a una hoja nueva',
+    remove: 'Quitar',
+    selectSheet: 'Seleccionar todo en esta hoja',
+    arrange: 'Acomodar',
+    addSheet: 'Agregar hoja',
+    reasons: {
+      paste: 'Primero copia piezas. Para pegar una imagen copiada en otra app, usa {mod}+V.',
+      single: 'Disponible con una sola pieza seleccionada',
+      front: 'Disponible cuando se superpone con otra pieza',
+      oneSheet: 'Disponible cuando las piezas están en una misma hoja',
+      emptySheet: 'La hoja está vacía',
+      noPieces: 'Todavía no hay piezas',
+    },
+  },
+
   // Notice pill
   notices: {
     close: 'Cerrar aviso',
@@ -450,6 +480,7 @@ const es = {
     uncropped: 'Se quitó el recorte',
     uncroppedMany: { one: 'Se quitó el recorte de 1 pieza', other: 'Se quitó el recorte de {n} piezas' },
     movedAside: { one: '1 pieza se movió a un lugar libre para no superponerse', other: '{n} piezas se movieron a lugares libres para no superponerse' },
+    sheetEmptied: 'La hoja {i} quedó vacía',
     pageCropDropped: 'La página {page} tiene otro tamaño, así que se quitó el recorte',
     sizeOutOfRange: { one: '{names} no se puede llevar a ese tamaño: su escala pasaría de 1 % a 1000 %', other: '{n} piezas no se pueden llevar a ese tamaño: su escala pasaría de 1 % a 1000 %' },
     downloaded: 'Se descargó {file}. Al imprimirlo, elige «Tamaño real» o «100 %».',
@@ -553,6 +584,7 @@ const es = {
     sheetRemoved: { one: 'Se quitó la hoja {i} con 1 pieza', other: 'Se quitó la hoja {i} con {n} piezas' },
     sheetRemovedEmpty: 'Se quitó la hoja {i}',
     movedToSheet: 'Se movió a la hoja {i} de {total}',
+    movedToNewSheet: { one: 'Se creó la hoja {i} y se movió 1 pieza', other: 'Se creó la hoja {i} y se movieron {n} piezas' },
     firstSheet: 'Es la primera hoja',
     lastSheet: 'Es la última hoja',
     needSelection: 'Primero selecciona una pieza',
@@ -736,6 +768,7 @@ const es = {
       rotate: 'Girar 90° a la derecha o a la izquierda',
       duplicate: 'Duplicar la pieza',
       duplicateMod: 'Duplicar la selección (siempre, también con los atajos de 1 tecla desactivados)',
+      menu: 'Abrir el menú de la pieza o de la hoja (también con clic derecho o manteniendo presionado)',
       clipboard: 'Copiar, cortar o pegar piezas. Si copiaste una imagen en otra app, la pega como pieza nueva.',
       fit: 'Ajustar a la hoja',
       center: 'Centrar en la hoja',

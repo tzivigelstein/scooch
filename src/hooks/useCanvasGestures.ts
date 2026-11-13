@@ -34,6 +34,7 @@ import { focusSheetNode, pieceNode } from '../state/actions/focus.ts';
 import { say } from '../state/actions/notify.ts';
 import { makePrimary, select, selectTouched, toggleInSelection } from '../state/actions/selection.ts';
 import { startCrop } from '../components/canvas/cropMode.ts';
+import { openContextMenuAt, openContextMenuFromKeyboard } from '../components/canvas/contextMenu.ts';
 import { isTyping } from './dom.ts';
 
 interface Pointer {
@@ -184,6 +185,7 @@ function begin(next: Gesture) {
 
 function onPointerDown(e: PointerEvent) {
   if (getDocument().busy || e.button !== 0 || gesture) return;
+  if (e.pointerType === 'touch') startLongPress(e);
   const target = e.target as Element;
   if (target.closest('.dropzone, .page-head, .sheets-foot')) return;
   const additive = e.shiftKey || e.ctrlKey || e.metaKey;
@@ -309,6 +311,7 @@ function cachedOthers(g: MoveGesture, sheetId: number) {
 }
 
 function onPointerMove(e: PointerEvent) {
+  if (longPress && e.pointerId === longPress.pointerId && Math.hypot(e.clientX - longPress.x, e.clientY - longPress.y) > DRAG_THRESHOLD * 3) cancelLongPress();
   const g = gesture;
   if (!g || e.pointerId !== g.pointerId) return;
   g.lastX = e.clientX;
@@ -518,6 +521,7 @@ function startAutoScroll() {
 }
 
 function onPointerUp(e: PointerEvent) {
+  if (longPress && e.pointerId === longPress.pointerId) cancelLongPress();
   const g = gesture;
   if (!g || e.pointerId !== g.pointerId) return;
   finish(e.type === 'pointerup' ? e : null);
@@ -688,6 +692,39 @@ function onScroll() {
   });
 }
 
+// ---------- Context menu: right click, the keyboard's (see the shortcuts) and a long press ----------
+
+const LONG_PRESS_MS = 550;
+let longPress: { timer: ReturnType<typeof setTimeout>; x: number; y: number; pointerId: number; fired: boolean } | null = null;
+
+function onContextMenu(e: MouseEvent) {
+  e.preventDefault();
+  if (getView().cropping !== null) return;
+  // From the keyboard (Menu key) the event has no position: next to what has the focus.
+  const fromKeyboard = (e as PointerEvent).pointerType === '' || (e.clientX === 0 && e.clientY === 0);
+  const active = document.activeElement;
+  if (fromKeyboard && active instanceof HTMLElement && active.closest('#sheets')) return openContextMenuFromKeyboard(active);
+  openContextMenuAt(e.target as Element, e.clientX, e.clientY);
+}
+
+function startLongPress(e: PointerEvent) {
+  cancelLongPress();
+  const target = e.target as Element;
+  const timer = setTimeout(() => {
+    if (!longPress) return;
+    longPress.fired = true;
+    // The press becomes the menu: whatever gesture it started is cancelled.
+    if (gesture) finish(null);
+    openContextMenuAt(target, longPress.x, longPress.y);
+  }, LONG_PRESS_MS);
+  longPress = { timer, x: e.clientX, y: e.clientY, pointerId: e.pointerId, fired: false };
+}
+
+function cancelLongPress() {
+  if (longPress) clearTimeout(longPress.timer);
+  longPress = null;
+}
+
 // A double click on a piece: crop mode. (With the pointer captured by #sheets
 // the event targets it, so the piece is the one under the pointer.)
 function onDoubleClick(e: MouseEvent) {
@@ -701,6 +738,7 @@ export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const node = stage.current!;
     node.addEventListener('dblclick', onDoubleClick);
+    node.addEventListener('contextmenu', onContextMenu);
     node.addEventListener('pointerdown', onPointerDown);
     node.addEventListener('pointermove', onPointerMove);
     node.addEventListener('pointerup', onPointerUp);
@@ -708,6 +746,7 @@ export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
     node.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       node.removeEventListener('dblclick', onDoubleClick);
+      node.removeEventListener('contextmenu', onContextMenu);
       node.removeEventListener('pointerdown', onPointerDown);
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);

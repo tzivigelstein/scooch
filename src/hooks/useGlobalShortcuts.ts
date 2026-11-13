@@ -21,6 +21,7 @@ import { focusList, focusSheet, pieceNode, sheetNode } from '../state/actions/fo
 import { exportPdf, printPdf } from '../state/actions/output.ts';
 import { showPropsTab } from '../state/actions/panels.ts';
 import { startCrop } from '../components/canvas/cropMode.ts';
+import { openContextMenuFromKeyboard } from '../components/canvas/contextMenu.ts';
 import {
   alignSelection,
   bringToFront,
@@ -167,6 +168,13 @@ function onKeyDown(e: KeyboardEvent) {
 
   if (key === 'Escape') {
     if (escape(target)) e.preventDefault();
+    return;
+  }
+
+  // Shift+F10 or the Menu key on a piece or a sheet: its context menu.
+  if ((key === 'ContextMenu' || (key === 'F10' && e.shiftKey)) && !mod && !e.altKey && target.closest('#sheets') && !typing) {
+    e.preventDefault();
+    openContextMenuFromKeyboard(target);
     return;
   }
   if (typing || mod) return;

@@ -4,7 +4,7 @@
 import { t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
 import { confirmAction } from '../../components/dialogs/confirm.ts';
-import { revealPiece, revealSheet } from '../../components/canvas/viewport.ts';
+import { revealPiece, revealPieces, revealSheet } from '../../components/canvas/viewport.ts';
 import { customPaper } from '../../core/papers.js';
 import { spotOnSheet } from '../../core/sheets.js';
 import type { Cuts, Item, Paper, PaperId } from '../../core/types.ts';
@@ -14,7 +14,7 @@ import { flushUi } from '../flush.ts';
 import { getDocument, newSheet, patchItems, setDocument } from '../document.ts';
 import { commit, endEdit } from '../history.ts';
 import { loadCustomPaper, saveCustomPaper, setGrid, getPrefs } from '../prefs.ts';
-import { area, boxOf, currentSheet, itemsOn, selectedItem, sheetIndex, sheetSize } from '../selectors.ts';
+import { area, boxOf, currentSheet, itemsOn, selectedItem, selectedItems, sheetIndex, sheetSize } from '../selectors.ts';
 import { animateNext, setView } from '../view.ts';
 import { revealPanel } from './drawers.ts';
 import { focusSheet, pieceNode, sheetNode } from './focus.ts';
@@ -144,6 +144,46 @@ export function sendToSheet(dir: 1 | -1) {
   focusSheet();
   revealPiece(item.id);
   announce(t('announce.movedToSheet', { i: sheetIndex(sheet.id) + 1, total: getDocument().sheets.length }));
+}
+
+/** Can the selection move to a new sheet? (all of it on one sheet) */
+export const canMoveToNewSheet = () => {
+  const items = selectedItems();
+  return items.length > 0 && items.every((item) => item.sheet === items[0].sheet);
+};
+
+/** A sheet left without pieces by a move: kept, with a notice that offers to remove it. */
+export function sheetEmptied(id: number) {
+  const i = sheetIndex(id);
+  if (i < 0 || itemsOn(id).length || getDocument().sheets.length < 2) return;
+  say(t('notices.sheetEmptied', { i: i + 1 }), { action: { label: t('sheet.remove'), run: () => void removeSheet(id) } });
+}
+
+/**
+ * «Mover a una hoja nueva»: the selection (all on one sheet) goes to a new
+ * sheet right after its own, keeping where it was on the sheet. One undo step.
+ */
+export function moveToNewSheet() {
+  if (busy()) return;
+  const items = selectedItems();
+  if (!items.length) return announce(t('announce.needSelection'));
+  if (!canMoveToNewSheet()) return announce(t('menu.reasons.oneSheet'));
+  const from = items[0].sheet;
+  commit();
+  const sheet = newSheet();
+  const sheets = [...getDocument().sheets];
+  sheets.splice(sheetIndex(from) + 1, 0, sheet);
+  setDocument({ sheets });
+  patchItems(new Map(items.map((item) => [item.id, { sheet: sheet.id }])));
+  setView({ sheet: sheet.id });
+  animateNext();
+  focusSheet();
+  revealPieces(
+    items.map((item) => item.id),
+    getDocument().selection.at(-1)!
+  );
+  announce(t('announce.movedToNewSheet', { n: items.length, i: sheetIndex(sheet.id) + 1 }));
+  sheetEmptied(from);
 }
 
 /** «Quitar todas»: removes the pieces of every sheet and leaves one empty sheet. */
