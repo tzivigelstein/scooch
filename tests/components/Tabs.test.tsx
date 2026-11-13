@@ -1,0 +1,121 @@
+// @vitest-environment jsdom
+// The «Propiedades» tabs (ui/Tabs.tsx inside PropertiesPanel): the tablist and
+// its two tabs wired to their panels, one tab stop, the arrows, Home and End,
+// the shortcut each tab shows, and what each panel shows. (Which tab follows
+// the selection is in tests/state/follow-selection.test.ts; M and H with the
+// real focus, and the drawer and the bottom sheet, in
+// e2e/specs/panels-and-tabs.spec.ts.)
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { PropertiesPanel } from '../../src/components/properties-panel/PropertiesPanel.tsx';
+import { usePrefs } from '../../src/state/prefs.ts';
+import { getView } from '../../src/state/view.ts';
+import { showPropsTab } from '../../src/state/actions/panels.ts';
+import { fakeImage, piece, resetState } from '../support/state.ts';
+
+beforeAll(() => {
+  URL.revokeObjectURL ??= () => {};
+  // The wide layout: the panel is a column, not a drawer.
+  window.matchMedia ??= ((query: string) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
+});
+
+beforeEach(() => {
+  const key = fakeImage({ name: 'tall.png' });
+  resetState({ items: [piece(1, key, 10, 10), piece(2, key, 80, 10)] });
+  render(<PropertiesPanel />);
+});
+
+afterEach(cleanup);
+
+const tab = (name: 'piece' | 'sheet') => document.getElementById(`props-tab-${name}`)!;
+const panel = (name: 'piece' | 'sheet') => document.getElementById(`props-${name}`)!;
+
+describe('the «Propiedades» tabs', () => {
+  test('a tablist named «Propiedades» with two tabs, Pieza and Hoja, each wired to its panel', () => {
+    const list = screen.getByRole('tablist', { name: 'Propiedades' });
+    const tabs = within(list).getAllByRole('tab');
+    expect(tabs.map((t) => t.textContent)).toEqual(['Pieza', 'Hoja']);
+    for (const t of tabs) {
+      const controlled = document.getElementById(t.getAttribute('aria-controls')!)!;
+      expect(controlled.getAttribute('role')).toBe('tabpanel');
+      expect(controlled.getAttribute('aria-labelledby')).toBe(t.id);
+    }
+    expect(tabs.map((t) => t.getAttribute('aria-controls'))).toEqual(['props-piece', 'props-sheet']);
+  });
+
+  test('the selected tab is the only tab stop and only its panel shows', () => {
+    expect(tab('sheet').getAttribute('aria-selected')).toBe('true');
+    expect(tab('piece').getAttribute('aria-selected')).toBe('false');
+    expect([tab('piece').tabIndex, tab('sheet').tabIndex]).toEqual([-1, 0]);
+    expect([panel('piece').hidden, panel('sheet').hidden]).toEqual([true, false]);
+    act(() => showPropsTab('piece'));
+    expect(tab('piece').getAttribute('aria-selected')).toBe('true');
+    expect([tab('piece').tabIndex, tab('sheet').tabIndex]).toEqual([0, -1]);
+    expect([panel('piece').hidden, panel('sheet').hidden]).toEqual([false, true]);
+  });
+
+  test('← and → move between the tabs and wrap, Home and End go to the ends; each shows its tab with the focus on it', async () => {
+    const user = userEvent.setup();
+    tab('sheet').focus();
+    await user.keyboard('{ArrowLeft}');
+    expect(getView().propsTab).toBe('piece');
+    expect(document.activeElement).toBe(tab('piece'));
+    await user.keyboard('{ArrowLeft}');
+    expect(getView().propsTab).toBe('sheet');
+    expect(document.activeElement).toBe(tab('sheet'));
+    await user.keyboard('{ArrowRight}');
+    expect(getView().propsTab).toBe('piece');
+    await user.keyboard('{End}');
+    expect(getView().propsTab).toBe('sheet');
+    expect(document.activeElement).toBe(tab('sheet'));
+    await user.keyboard('{Home}');
+    expect(getView().propsTab).toBe('piece');
+    expect(document.activeElement).toBe(tab('piece'));
+    // With Ctrl the arrows are someone else's.
+    await user.keyboard('{Control>}{ArrowRight}{/Control}');
+    expect(getView().propsTab).toBe('piece');
+  });
+
+  test('a click shows its tab', () => {
+    fireEvent.click(tab('piece'));
+    expect(getView().propsTab).toBe('piece');
+    expect(panel('piece').hidden).toBe(false);
+  });
+
+  test('the tabs show their shortcut (M, H) in the tooltip and in aria-keyshortcuts, which goes when single keys are off', () => {
+    expect(tab('piece').dataset.tip).toBe('Propiedades de la selección');
+    expect(tab('piece').dataset.kbd).toBe('M');
+    expect(tab('piece').getAttribute('aria-keyshortcuts')).toBe('M');
+    expect(tab('sheet').dataset.kbd).toBe('H');
+    expect(tab('sheet').getAttribute('aria-keyshortcuts')).toBe('H');
+    act(() => usePrefs.setState({ singleKeys: false }));
+    expect(tab('piece').hasAttribute('aria-keyshortcuts')).toBe(false);
+    expect(tab('sheet').hasAttribute('aria-keyshortcuts')).toBe(false);
+  });
+});
+
+describe('what each tab shows', () => {
+  test('Hoja says its settings apply to every sheet', () => {
+    expect(panel('sheet').querySelector('.tab-note')!.textContent).toBe('Se aplica a todas las hojas');
+  });
+
+  test('Pieza with nothing selected shows only the hint', () => {
+    act(() => showPropsTab('piece'));
+    const hint = document.getElementById('piece-empty')!;
+    expect(hint.hidden).toBe(false);
+    expect(hint.textContent).not.toBe('');
+    const shown = [...panel('piece').querySelectorAll<HTMLElement>('*')].filter((el) => !el.closest('[hidden]'));
+    expect(shown.filter((el) => !el.closest('#piece-empty') && el.id !== 'section-piece')).toEqual([]);
+  });
+
+  test('a collapsed section stays collapsed across tab switches', () => {
+    const toggle = () => document.querySelector('[aria-controls="section-arrange"]')!;
+    fireEvent.click(toggle());
+    expect(toggle().getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(tab('piece'));
+    fireEvent.click(tab('sheet'));
+    expect(toggle().getAttribute('aria-expanded')).toBe('false');
+    expect(document.getElementById('section-arrange')!.hidden).toBe(true);
+  });
+});
