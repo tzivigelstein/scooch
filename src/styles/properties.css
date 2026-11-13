@@ -483,3 +483,11 @@ input[type="range"] {
   width: 1rem;
   height: 1rem;
 }
+
+/* Standard photo size and crop */
+.photo-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.5rem;
+}

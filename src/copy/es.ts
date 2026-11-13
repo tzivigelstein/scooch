@@ -311,6 +311,34 @@ const es = {
     snapHint: 'Al arrastrar, las piezas se ajustan a la grilla',
   },
 
+  // Crop and standard photo sizes (ids in src/core/crop.js)
+  crop: {
+    size: 'Tamaño',
+    sizeLabel: 'Tamaño de la pieza',
+    sizeTip: 'Recorta la pieza a un tamaño de foto estándar, sin deformarla',
+    original: 'Original',
+    custom: 'Recorte libre',
+    mixed: 'Mixto',
+    option: '{name} · {size}',
+    groups: { print: 'Fotos', id: 'Documentos', instant: 'Otros' },
+    names: {
+      '9x13': '9 × 13',
+      '10x15': '10 × 15',
+      '13x18': '13 × 18',
+      '15x20': '15 × 20',
+      '20x25': '20 × 25',
+      '20x30': '20 × 30',
+      '10x10': '10 × 10',
+      'id-4x4': 'Carné 4 × 4',
+      'passport-35x45': 'Pasaporte 3,5 × 4,5',
+      'visa-5x5': 'Visa 5 × 5',
+      instant: 'Instantánea',
+    },
+    start: 'Recortar',
+    startTip: 'Elegir qué parte de la imagen se ve',
+    startSingle: 'Recortar: disponible con una sola pieza seleccionada',
+  },
+
   // Notice pill
   notices: {
     close: 'Cerrar aviso',
@@ -365,6 +393,13 @@ const es = {
       size: 'aplicar ese tamaño',
     },
     scaleLimit: 'No se puede cambiar el tamaño: la escala de cada pieza va de 1 % a 1000 %',
+    // Standard photo sizes ({name}: crop.names; {size} already formatted)
+    sized: 'Se recortó a {name}: {size}',
+    sizedMany: { one: 'Se recortó 1 pieza a {name}', other: 'Se recortaron {n} piezas a {name}' },
+    uncropped: 'Se quitó el recorte',
+    uncroppedMany: { one: 'Se quitó el recorte de 1 pieza', other: 'Se quitó el recorte de {n} piezas' },
+    movedAside: { one: '1 pieza se movió a un lugar libre para no superponerse', other: '{n} piezas se movieron a lugares libres para no superponerse' },
+    sizeOutOfRange: { one: '{names} no se puede llevar a ese tamaño: su escala pasaría de 1 % a 1000 %', other: '{n} piezas no se pueden llevar a ese tamaño: su escala pasaría de 1 % a 1000 %' },
     downloaded: 'Se descargó {file}. Al imprimirlo, elige «Tamaño real» o «100 %».',
     // Projects
     saveFailed: 'No se pudo guardar el proyecto. Vuelve a intentarlo.',

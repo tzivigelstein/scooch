@@ -29,19 +29,21 @@ import {
 } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import type { AlignMode } from '../../core/align.js';
+import { PHOTO_SIZES } from '../../core/crop.js';
 import { common, SCALE_RANGE } from '../../core/group.js';
 import { clamp, num } from '../../core/util.ts';
 import { t, type CopyKey } from '../../copy/index.ts';
 import { MAX_ITEMS } from '../../config.ts';
 import { useNativeEvents } from '../../hooks/useNativeEvents.ts';
 import type { ShortcutName } from '../../hooks/shortcuts.ts';
-import { lengthText, unitName, unitSymbol } from '../../services/measure.ts';
+import { lengthText, sizeText, unitName, unitSymbol } from '../../services/measure.ts';
 import { getAsset } from '../../state/assets.ts';
 import { getDocument, useDocument, type Piece } from '../../state/document.ts';
 import { gestureStore } from '../../state/gesture.ts';
 import { usePrefs } from '../../state/prefs.ts';
 import { dims, sheetIndex } from '../../state/selectors.ts';
 import { setView, useView } from '../../state/view.ts';
+import { applyPhotoSize, photoSizeName, selectionPhotoSize } from '../../state/actions/crop.ts';
 import { changePage } from '../../state/actions/files.ts';
 import { fillSummary, fillWithCopies, printResolution } from '../../state/actions/layout.ts';
 import {
@@ -94,6 +96,8 @@ function resolution(item: Piece) {
   const text = res.vector ? t('props.resolution.vector') : note ? t('props.resolution.withNote', { text: printsAt, note: t(`props.resolution.${note}`) }) : printsAt;
   return { level, text };
 }
+
+const PHOTO_GROUPS = ['print', 'id', 'instant'] as const;
 
 const ALIGN_BUTTONS: readonly { mode: AlignMode; key: CopyKey; icon: LucideIcon; shortcut: ShortcutName }[] = [
   { mode: 'left', key: 'props.alignLeft', icon: AlignStartVertical, shortcut: 'alignLeft' },
@@ -243,6 +247,7 @@ export function PieceSection() {
   const summary = single ? fillSummary(single) : null;
   const describe = (ids: string) => (single ? ids : undefined);
   const unit = unitSymbol();
+  const photoValue = n ? selectionPhotoSize(list) : 'original';
 
   return (
     <div className="prop-section" id="section-piece">
@@ -329,6 +334,36 @@ export function PieceSection() {
             <span>{t('props.rotatedNote')}</span>
           </span>
         </p>
+        <div className="photo-row">
+          <label className="field">
+            <span className="field-label">{t('crop.size')}</span>
+            <select
+              id="photo-size"
+              aria-label={t('crop.sizeLabel')}
+              data-tip={t('crop.sizeTip')}
+              value={photoValue}
+              disabled={busyOff(busy, '#photo-size')}
+              onChange={(e) => applyPhotoSize(e.target.value)}
+            >
+              <option value="mixed" hidden disabled>
+                {t('crop.mixed')}
+              </option>
+              <option value="original">{t('crop.original')}</option>
+              <option value="custom" hidden disabled>
+                {t('crop.custom')}
+              </option>
+              {PHOTO_GROUPS.map((groupId) => (
+                <optgroup key={groupId} label={t(`crop.groups.${groupId}`)}>
+                  {PHOTO_SIZES.filter((size) => size.group === groupId).map((size) => (
+                    <option key={size.id} value={size.id}>
+                      {t('crop.option', { name: photoSizeName(size.id), size: sizeText(size.w, size.h) })}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+        </div>
         <div className="action-row" role="group" aria-label={t('props.quick')}>
           <button type="button" id="actual" className="chip-btn" aria-label={t('props.actualLabel')} data-tip={t('props.actualTip')} disabled={busyOff(busy, '#actual')} onClick={actualSize}>
             {t('props.actual')}
