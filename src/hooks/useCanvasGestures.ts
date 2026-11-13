@@ -12,7 +12,7 @@
 import { useEffect, type RefObject } from 'react';
 import { DRAG_THRESHOLD } from '../config.ts';
 import { bounds, scaleGroup } from '../core/align.js';
-import { maxGrowth, nearestFree, overlapsAny } from '../core/collide.js';
+import { maxGrowth, overlapsAny } from '../core/collide.js';
 import { planDrag, planDrop, planScale, scaleBounds, touchedBy, type Drag } from '../core/group.js';
 import { keepCenterInside, sheetAt } from '../core/sheets.js';
 import type { Box, Rect } from '../core/types.ts';
@@ -553,16 +553,20 @@ function endPieceGesture(g: MoveGesture | ResizeGesture, done: boolean, hadFocus
     let { x, y } = g.draft;
     const sheet = g.draft.sheet ?? g.item.sheet;
     if (g.kind === 'move' && g.blocked) {
-      // Dropped on another piece: to the nearest free spot of that sheet (with
-      // its center inside too); if there is none nearby, it goes back.
-      const rect = rectOf(g.draft);
-      const [W, H] = sheetSize();
-      const area = { x: -rect.w / 2, y: -rect.h / 2, w: W + rect.w, h: H + rect.h };
-      const spot = nearestFree(rect, cachedOthers(g, sheet), { maxDistance: Math.max(rect.w, rect.h, 15), bounds: area });
+      // Dropped on another piece: like a group of one, to the nearest free spot
+      // of that sheet (center inside, and on the grid with «Imán»); if there is
+      // none nearby, it goes back.
+      const box = { id: g.item.id, sheet, ...rectOf(g.draft) };
+      const drop = planDrop(
+        { plan: { ok: false, reason: 'overlap', rects: new Map([[box.id, box]]), changed: true }, boxes: [...cachedOthers(g, sheet), box] },
+        new Set([box.id]),
+        groupOptions()
+      );
       animateNext();
+      const spot = drop.rects?.get(box.id);
       if (spot) {
-        x = tidy(spot.x);
-        y = tidy(spot.y);
+        x = spot.x;
+        y = spot.y;
         result = 'moved-aside';
       } else {
         result = 'reverted';
