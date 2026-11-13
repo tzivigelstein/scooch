@@ -248,6 +248,17 @@
                 <p id="distribute-note" class="tools-note"></p>
               </div>
             </div>
+            <!-- Copias de las elegidas y «Seleccionar iguales» -->
+            <div class="copy-row">
+              <div class="dup-group" role="group" data-i18n-label="props.duplicateGroup">
+                <button type="button" id="dup-many" class="chip-btn icon-chip"><span data-icon="copy-plus"></span><span id="dup-many-text" data-i18n="props.duplicate"></span></button>
+                <label class="num-field prefixed dup-count">
+                  <span class="num-prefix" aria-hidden="true" data-i18n="props.times"></span>
+                  <input id="dup-count" type="number" min="1" step="1" value="1" inputmode="numeric" data-i18n-label="props.duplicateCount" data-i18n-tip="props.duplicateCount" />
+                </label>
+              </div>
+              <button type="button" id="select-same" class="chip-btn icon-chip" data-i18n-tip="props.selectSameTip" data-kbd="I" data-aks="I" data-single><span data-icon="images"></span><span data-i18n="props.selectSame"></span></button>
+            </div>
             <label id="page-row" class="field" hidden>
               <span class="field-label" data-i18n="props.page"></span>
               <select id="page"></select>

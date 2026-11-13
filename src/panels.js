@@ -4,7 +4,7 @@
 // abiertas. Las longitudes se muestran y se cargan en la unidad elegida
 // (lengthfield.js).
 
-import { GRID_MIN, GRID_MAX, SECTIONS_STORAGE, CUSTOM_PAPER_STORAGE } from './config.js';
+import { GRID_MIN, GRID_MAX, SECTIONS_STORAGE, CUSTOM_PAPER_STORAGE, MAX_ITEMS } from './config.js';
 import { PAPERS, PAPER_GROUPS, CUSTOM_MIN, CUSTOM_MAX, customPaper, validateSide, matchPreset } from './papers.js';
 import { gridPresets } from './units.js';
 import {
@@ -35,6 +35,7 @@ import {
   moveGroupTo,
   resizeGroupTo,
   setSelectionScale,
+  maxCopies,
 } from './groupactions.js';
 import { keepCenterInside } from './sheets.js';
 import { keepCenter, fillSummary, printResolution } from './layout.js';
@@ -84,6 +85,10 @@ export function initPanels(actions) {
     distributeMode: $('distribute-mode'),
     distributeButtons: [...document.querySelectorAll('#distribute-row [data-distribute]')],
     distributeNote: $('distribute-note'),
+    dupMany: $('dup-many'),
+    dupManyText: $('dup-many-text'),
+    dupCount: $('dup-count'),
+    selectSame: $('select-same'),
     // Hoja
     paper: $('paper'),
     customPaper: $('custom-paper'),
@@ -159,6 +164,18 @@ export function initPanels(actions) {
     groupPrefs.distribute = e.target.value;
     render();
   });
+  // Duplicar ×N (la cantidad es una preferencia de la vista) y «Seleccionar iguales».
+  const copies = () => Math.max(1, Math.floor(parseFloat(ui.dupCount.value) || 1));
+  ui.dupCount.addEventListener('input', () => renderCopies());
+  ui.dupCount.addEventListener('change', () => {
+    ui.dupCount.value = String(Math.min(copies(), Math.max(1, maxCopies())));
+    renderCopies();
+  });
+  ui.dupCount.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') ui.dupMany.click();
+  });
+  ui.dupMany.addEventListener('click', () => actions.duplicateTimes(copies()));
+  ui.selectSame.addEventListener('click', () => actions.selectSame());
   ui.fit.addEventListener('click', () => actions.fit());
   ui.center.addEventListener('click', () => actions.center());
   ui.front.addEventListener('click', () => {
@@ -565,6 +582,20 @@ export function renderPanels(drafts = null) {
   else renderSingle(list[0], !!drafts);
   if (drafts) return;
   renderArrangeTools(n);
+  renderCopies();
+}
+
+// «Duplicar ×N»: el texto dice cuántas; el máximo depende de cuántas piezas hay.
+function renderCopies() {
+  const max = Math.max(1, maxCopies());
+  ui.dupCount.max = String(max);
+  const n = Math.min(Math.max(1, Math.floor(parseFloat(ui.dupCount.value) || 1)), max);
+  const text = n > 1 ? t('props.duplicateTimes', { n }) : t('props.duplicate');
+  if (ui.dupManyText.textContent !== text) ui.dupManyText.textContent = text;
+  ui.dupMany.setAttribute('aria-label', t('props.duplicateLabel', { n }));
+  ui.dupMany.dataset.tip = t('props.duplicateTip', { n });
+  ui.dupMany.dataset.tipNote = t('props.duplicateMax', { n: maxCopies(), max: MAX_ITEMS });
+  for (const el of [ui.dupMany, ui.dupCount, ui.selectSame]) setDisabled(el, state.busy);
 }
 
 // Con varias: dónde están, la caja del grupo, la escala común (o «Mixta»).

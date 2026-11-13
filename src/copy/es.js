@@ -240,6 +240,17 @@ export default {
     fillTooMany: 'Entrarían {n} copias y el máximo es {max}: agranda la pieza',
     remove: 'Quitar de la hoja',
     removeMany: { one: 'Quitar 1 pieza', other: 'Quitar {n} piezas' },
+    // Copias y «Seleccionar iguales»
+    duplicate: 'Duplicar',
+    duplicateTimes: 'Duplicar ×{n}',
+    duplicateGroup: 'Duplicar',
+    times: '×',
+    duplicateCount: 'Copias de cada pieza',
+    duplicateLabel: { one: 'Duplicar: 1 copia de cada pieza seleccionada', other: 'Duplicar: {n} copias de cada pieza seleccionada' },
+    duplicateTip: { one: 'Agrega 1 copia de cada pieza en los huecos libres', other: 'Agrega {n} copias de cada pieza en los huecos libres' },
+    duplicateMax: { one: 'Como mucho, 1 copia de cada pieza (máximo de {max} piezas)', other: 'Como mucho, {n} copias de cada pieza (máximo de {max} piezas)' },
+    selectSame: 'Seleccionar iguales',
+    selectSameTip: 'Seleccionar las piezas del mismo archivo',
     // Con varias elegidas
     groupOnSheet: 'En la hoja {i}',
     groupOnSheets: 'En {n} hojas. Medidas de la hoja {i}.',
@@ -340,6 +351,8 @@ export default {
     filledSheet: { one: 'Se rellenó la hoja {i} con 1 copia', other: 'Se rellenó la hoja {i} con {n} copias' },
     reverted: 'No había espacio libre ahí, así que la pieza volvió a su lugar',
     revertedGroup: 'No había espacio libre ahí, así que las piezas volvieron a su lugar',
+    duplicatedTimes: { one: 'Se agregó 1 copia en la hoja {i}', other: 'Se agregaron {n} copias en la hoja {i}' },
+    duplicatedTimesSheets: { one: 'Se agregó 1 copia en {sheets} hojas', other: 'Se agregaron {n} copias en {sheets} hojas' },
     // Operación de grupo que no se aplicó ({action}: groupActions)
     wouldOverlap: 'No se puede {action}: las piezas se superpondrían',
     wouldLeave: 'No se puede {action}: alguna pieza quedaría fuera de la hoja',
@@ -500,6 +513,8 @@ export default {
     distributedGap: { one: 'Se distribuyó 1 pieza {dir}, a {gap}', other: 'Se distribuyeron {n} piezas {dir}, a {gap} una de otra' },
     distributedEven: { one: 'Se repartió 1 pieza parejo {dir}', other: 'Se repartieron {n} piezas parejo {dir}' },
     distributedAlready: 'Las piezas ya estaban distribuidas',
+    selectedSame: { one: 'Se seleccionó 1 pieza: no hay otras del mismo archivo', other: 'Se seleccionaron {n} piezas del mismo archivo' },
+    selectedSameSheets: { one: 'Se seleccionó 1 pieza del mismo archivo', other: 'Se seleccionaron {n} piezas del mismo archivo, en {sheets} hojas' },
   },
 
   print: {
@@ -631,6 +646,7 @@ export default {
       alignEnds: 'Alinear arriba o abajo',
       alignCenter: 'Centrar en horizontal o en vertical',
       distribute: 'Distribuir en horizontal o en vertical',
+      selectSame: 'Seleccionar las piezas del mismo archivo',
       pages: 'En las hojas, ir a la hoja anterior o a la siguiente',
       sendPage: 'Mover la pieza a la hoja anterior o a la siguiente (si no hay lugar, a una hoja nueva)',
       remove: 'Quitar la pieza',

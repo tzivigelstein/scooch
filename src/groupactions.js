@@ -62,6 +62,8 @@ import {
   selectAllTarget,
   neighborAfterRemoval,
   copiesAllowed,
+  sameSource,
+  withPrimaryLast,
 } from './group.js';
 import { duplicatePieces } from './layout.js';
 import { lengthText, sizeText } from './measure.js';
@@ -183,6 +185,22 @@ export function selectAll() {
   setSelection(selection, { pinned: true });
   render();
   announce(everything ? t('announce.selectedAll', { n: selection.length }) : t('announce.selectedSheet', { n: selection.length, i: sheetOf(sheet) }));
+}
+
+/**
+ * «Seleccionar iguales»: todas las piezas del documento que vienen del mismo
+ * archivo de origen que alguna de las elegidas (ver group.sameSource: las
+ * páginas de un mismo PDF cuentan como iguales; el recorte, la escala, el giro
+ * y la página no importan).
+ */
+export function selectSame() {
+  if (!state.selection.length) return announce(t('announce.needSelection'));
+  const items = state.items.map((item) => ({ id: item.id, src: assets.get(item.asset).src }));
+  const same = sameSource(items, ids());
+  setSelection(withPrimaryLast(same, state.selection.at(-1)), { pinned: true });
+  render();
+  const sheets = new Set(selectedItems().map((item) => item.sheet)).size;
+  announce(sheets > 1 ? t('announce.selectedSameSheets', { n: same.length, sheets }) : t('announce.selectedSame', { n: same.length }));
 }
 
 // ---------- Mover ----------

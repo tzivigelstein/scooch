@@ -1171,6 +1171,39 @@ input[type="range"] {
   font-size: 12px;
 }
 
+/* Duplicar ×N y «Seleccionar iguales» */
+.copy-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.dup-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dup-count {
+  width: 64px;
+}
+
+.num-field.dup-count input {
+  padding-right: 6px;
+  padding-left: 22px;
+}
+
+.icon-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-chip .icon {
+  width: 16px;
+  height: 16px;
+}
 
 /* Rellenar con copias (plegado) */
 .fill-details {

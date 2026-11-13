@@ -67,6 +67,7 @@ import { initKeyboard } from './keyboard.js';
 import {
   toggleInSelection,
   announceCount,
+  selectSame,
   selectTouched,
   selectAll,
   nudgeGroup,
@@ -295,11 +296,18 @@ const pieceActions = {
   },
 };
 
-/** Duplica las elegidas (D y la barra: 1 copia de cada una). */
+/**
+ * Duplica las elegidas `times` veces (D y la barra: 1 de cada una; «Duplicar
+ * ×N» en el panel, con un aviso de cuántas y en qué hojas).
+ */
 function duplicateMany(times, { focus = false } = {}) {
   const result = duplicateSelection(times);
   if (!result) return;
   const n = result.copies.length;
+  if (times > 1) {
+    const i = sheetNumber(result.copies[0].sheet);
+    return say(result.sheets > 1 ? t('notices.duplicatedTimesSheets', { n, sheets: result.sheets }) : t('notices.duplicatedTimes', { n, i }));
+  }
   render();
   if (focus) focusSheet();
   announce(
@@ -931,6 +939,12 @@ function wire() {
     center: () => pieceActions.center({ focus: false }),
     front: () => pieceActions.front({ focus: false }),
     remove: ({ viaKeyboard }) => pieceActions.remove({ focus: viaKeyboard }),
+    duplicateTimes: (n) => {
+      if (state.busy || !state.selection.length) return;
+      if (n === 1 && !isGroup()) return pieceActions.duplicate({ focus: false });
+      duplicateMany(n);
+    },
+    selectSame: () => !state.busy && selectSame(),
   });
   initPieceList({
     select,
@@ -1021,6 +1035,7 @@ function wire() {
     sendToSheet,
     rotate: (dir) => pieceActions.rotate({ focus: true }, dir),
     duplicate: withFocus(pieceActions.duplicate),
+    selectSame: () => !state.busy && selectSame(),
     fit: withFocus(pieceActions.fit),
     center: withFocus(pieceActions.center),
     front: withFocus(pieceActions.front),

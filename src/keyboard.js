@@ -12,7 +12,7 @@ const NUDGES = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], Arrow
 const ALIGNS = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'top', ArrowDown: 'bottom', KeyH: 'centerX', KeyV: 'centerY' };
 const DISTRIBUTES = { KeyX: 'x', KeyY: 'y' };
 // Teclas solas que actúan sobre la selección (ver pieceKeys).
-const PIECE_KEYS = new Set(['r', 'd', 'f', 'c', ']', 'm']);
+const PIECE_KEYS = new Set(['r', 'd', 'f', 'c', ']', 'm', 'i']);
 const GROWS = new Set(['+', '=', '*']);
 const SHRINKS = new Set(['-', '_', '−']);
 
@@ -152,6 +152,7 @@ function onKeyDown(e, a) {
   const pieceKeys = {
     r: () => a.rotate(e.shiftKey ? -1 : 1),
     d: a.duplicate,
+    i: a.selectSame,
     f: a.fit,
     c: a.center,
     ']': a.front,

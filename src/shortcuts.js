@@ -15,6 +15,7 @@ const ROWS = [
   [['Plus', 'Minus'], 'scale', true],
   [['R', 'Shift+R'], 'rotate', true],
   [['D'], 'duplicate', true],
+  [['I'], 'selectSame', true],
   [['F'], 'fit', true],
   [['C'], 'center', true],
   [[']'], 'front', true],
