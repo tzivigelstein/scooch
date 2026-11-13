@@ -14,7 +14,6 @@ import {
   dims,
   selectedItem,
   selectedItems,
-  primaryItem,
   sheetIndex,
   commit,
   endEdit,
