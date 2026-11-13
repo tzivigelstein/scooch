@@ -31,9 +31,10 @@ export function ZoomControl() {
         data-tip={t('zoom.levelTip')}
         onClick={(e) => {
           if (open) return useZoomMenu.setState({ at: null });
-          // Above the control at the bottom of the canvas, below it at the top (narrow screens).
-          const r = e.currentTarget.getBoundingClientRect();
-          const at = { x: Math.round(r.left), y: Math.round(r.top > window.innerHeight / 2 ? r.top : r.bottom) };
+          // Lined up with the control's right edge: above it at the bottom of the canvas, below it at the top (narrow screens).
+          const r = e.currentTarget.closest('.zoom-control')!.getBoundingClientRect();
+          const above = r.top > window.innerHeight / 2;
+          const at = { x: Math.round(r.right), y: Math.round(above ? r.top - 4 : r.bottom + 4), end: true, above };
           whenLoaded(ZoomMenuContent, () => useZoomMenu.setState({ at }));
         }}
       >

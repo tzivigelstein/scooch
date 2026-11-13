@@ -2,8 +2,9 @@
 
 import { create } from 'zustand';
 import { lazyContent } from '../lazy.ts';
+import type { MenuPlace } from '../ui/Menu.tsx';
 
-export const useZoomMenu = create<{ at: { x: number; y: number } | null }>()(() => ({ at: null }));
+export const useZoomMenu = create<{ at: MenuPlace | null }>()(() => ({ at: null }));
 export const ZoomMenuContent = lazyContent(() => import('./ZoomMenu.tsx'));
 
 export function closeZoomMenu() {

@@ -30,7 +30,19 @@ export interface MenuEntry {
 const EDGE = 8;
 const fold = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-export function Menu({ id, label, entries, at, onClose }: { id: string; label: string; entries: readonly MenuEntry[]; at: { x: number; y: number }; onClose: () => void }) {
+/**
+ * Where a menu opens: at window point (x, y), by default below it and to its
+ * right; `end`: to its left (ending at x); `above`: above it. It flips when
+ * that doesn't fit and always stays inside the window.
+ */
+export interface MenuPlace {
+  x: number;
+  y: number;
+  end?: boolean;
+  above?: boolean;
+}
+
+export function Menu({ id, label, entries, at, onClose }: { id: string; label: string; entries: readonly MenuEntry[]; at: MenuPlace; onClose: () => void }) {
   const menu = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(() => Math.max(0, entries.findIndex((entry) => !entry.disabled)));
   const typed = useRef({ text: '', at: 0 });
@@ -39,17 +51,19 @@ export function Menu({ id, label, entries, at, onClose }: { id: string; label: s
     close.current = onClose;
   });
 
-  // Inside the viewport: below and to the right of the point when it fits, otherwise flipped.
+  // Inside the viewport: on the side asked for when it fits, otherwise flipped.
   useLayoutEffect(() => {
     const el = menu.current!;
     const { offsetWidth: w, offsetHeight: h } = el;
     const vw = document.documentElement.clientWidth;
     const vh = document.documentElement.clientHeight;
-    const left = at.x + w > vw - EDGE ? Math.max(EDGE, at.x - w) : at.x;
-    const top = at.y + h > vh - EDGE ? Math.max(EDGE, Math.min(at.y - h, vh - EDGE - h)) : at.y;
-    el.style.left = `${Math.round(Math.min(left, vw - EDGE - w))}px`;
-    el.style.top = `${Math.round(top)}px`;
-  }, [at.x, at.y]);
+    const right = at.x + w <= vw - EDGE;
+    const left = at.end ? (at.x - w >= EDGE || !right ? at.x - w : at.x) : right ? at.x : at.x - w;
+    const below = at.y + h <= vh - EDGE;
+    const top = at.above ? (at.y - h >= EDGE || !below ? at.y - h : at.y) : below ? at.y : at.y - h;
+    el.style.left = `${Math.round(Math.max(EDGE, Math.min(left, vw - EDGE - w)))}px`;
+    el.style.top = `${Math.round(Math.max(EDGE, Math.min(top, vh - EDGE - h)))}px`;
+  }, [at.x, at.y, at.end, at.above]);
 
   useEffect(() => {
     menu.current?.querySelectorAll<HTMLElement>('[role="menuitem"]')[active]?.focus({ preventScroll: true });
@@ -144,6 +158,7 @@ export function Menu({ id, label, entries, at, onClose }: { id: string; label: s
         </div>
       ))}
     </div>,
-    document.body
+    // Inside the main landmark (the canvas), where every menu of the app belongs.
+    document.querySelector('main') ?? document.body
   );
 }
