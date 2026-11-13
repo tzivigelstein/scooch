@@ -32,18 +32,19 @@ const isMac = () =>
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgentData?.platform ?? navigator.platform ?? '');
 
 const lookup = (source, key) => key.split('.').reduce((node, part) => node?.[part], source);
+const find = (key) => lookup(messages, key) ?? lookup(fallback, key);
 
 /** ¿Existe la clave? (p. ej. nombres de papel que solo algunos idiomas traducen). */
-export const hasText = (key) => lookup(messages, key) !== undefined || lookup(fallback, key) !== undefined;
+export const hasText = (key) => find(key) !== undefined;
 
 /** Texto de la clave, con parámetros interpolados y el plural que corresponda. */
 export function t(key, params = {}) {
-  let value = lookup(messages, key) ?? lookup(fallback, key);
+  let value = find(key);
   if (value && typeof value === 'object') value = value[pluralRules.select(params.n ?? 0)] ?? value.other;
   if (typeof value !== 'string') throw new Error(`Falta el texto «${key}»`);
   return value.replace(/\{(\w+)\}/g, (match, name) => {
     if (name === 'app') return APP_NAME;
-    if (name === 'mod') return lookup(messages, isMac() ? 'keys.ModMac' : 'keys.Mod');
+    if (name === 'mod') return find(isMac() ? 'keys.ModMac' : 'keys.Mod');
     if (!(name in params)) return match;
     const param = params[name];
     return typeof param === 'number' ? formatNumber(param) : String(param);
@@ -57,7 +58,7 @@ export const asSentence = (text) => (/[.!?…:]$/.test(text.trim()) ? text.trim(
 export const keyLabel = (combo) =>
   combo
     .split('+')
-    .map((part) => (part === 'Mod' ? t('keys.' + (isMac() ? 'ModMac' : 'Mod')) : hasText('keys.' + part) ? t('keys.' + part) : part))
+    .map((part) => find(`keys.${part === 'Mod' && isMac() ? 'ModMac' : part}`) ?? part)
     .join('+');
 
 // ---------- HTML ----------
