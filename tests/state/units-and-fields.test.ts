@@ -16,7 +16,7 @@ import { makePdf } from '../../src/services/export.ts';
 import { lengthValue, paperTitle, sizeText } from '../../src/services/measure.ts';
 import { addAsset } from '../../src/state/assets.ts';
 import { getDocument, setDocument, useDocument } from '../../src/state/document.ts';
-import { historyDepth, redo, undo } from '../../src/state/history.ts';
+import { cancelEdit, historyDepth, redo, undo } from '../../src/state/history.ts';
 import { getPrefs, setGrid, setUnit } from '../../src/state/prefs.ts';
 import { sheetProblems, sheetSize } from '../../src/state/selectors.ts';
 import { printResolution } from '../../src/state/actions/layout.ts';
@@ -309,5 +309,22 @@ describe('custom paper sides (setPaperSide)', () => {
     choosePaper('custom');
     expect(sheetSize()).toEqual([111, 297]);
     expect(sheetLabel()).toBe('Personalizado · 111 × 297 mm');
+  });
+
+  test('the last custom paper is remembered only when a side is confirmed: not what is typed meanwhile, nor an edit undone with Esc', () => {
+    choosePaper('custom');
+    setPaperSide('w', 111, { final: true });
+    const saved = () => JSON.parse(localStorage.getItem('scooch:custom-paper')!);
+    for (const mm of [29, 297]) setPaperSide('h', mm);
+    expect(sheetSize()).toEqual([111, 297]);
+    expect(saved(), 'typing previews on the sheet only').toEqual({ w: 111, h: 297 });
+    setPaperSide('h', 29);
+    // Esc in the field: the edit is canceled (see NumberField's revert).
+    expect(cancelEdit('paper:custom')).toBe(true);
+    expect(sheetSize()).toEqual([111, 297]);
+    expect(saved()).toEqual({ w: 111, h: 297 });
+    setPaperSide('h', 250);
+    setPaperSide('h', 250, { final: true });
+    expect(saved()).toEqual({ w: 111, h: 250 });
   });
 });

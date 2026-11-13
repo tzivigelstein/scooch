@@ -258,10 +258,12 @@ export function setPaperSide(side: 'w' | 'h', mm: number, { final = false } = {}
   if (changed) {
     commit('paper:custom');
     setDocument({ paper: next.paper as Paper, landscape: next.landscape });
-    saveCustomPaper(w, h);
   }
   if (final) {
     endEdit();
+    // Remembered only when confirmed: what is typed meanwhile is a preview, and Esc takes it back.
+    const [width, height] = sheetSize();
+    saveCustomPaper(width, height);
     if (changed) sheetChanged();
   }
 }
