@@ -266,6 +266,26 @@ describe('grupos', () => {
     }
   });
 
+  test('nearestFreeOffset con paso: solo múltiplos del paso', () => {
+    const rects = [r(10, 10, 10, 10, 'a')];
+    const others = [r(17.3, 10, 10, 10, 'x')];
+    // Sin paso: 2,7 mm a la izquierda; con paso de 1 mm, 3 mm.
+    const free = nearestFreeOffset([{ rects, others }]);
+    assert.ok(Math.abs(free.dx + 2.7) < 1e-9 && free.dy === 0, JSON.stringify(free));
+    const res = nearestFreeOffset([{ rects, others }], { step: 1 });
+    assert.ok(Math.abs(res.dx + 3) < 1e-9 && res.dy === 0, JSON.stringify(res));
+    const rnd = prng(23);
+    for (let n = 0; n < 100; n++) {
+      const group = [r(rnd() * 100, rnd() * 100, 5 + rnd() * 20, 5 + rnd() * 20, 'g')];
+      const obstacles = Array.from({ length: 1 + Math.floor(rnd() * 5) }, (_, i) => r(rnd() * 120, rnd() * 120, 5 + rnd() * 20, 5 + rnd() * 20, `o${i}`));
+      const step = [1, 3.175, 5][n % 3];
+      const off = nearestFreeOffset([{ rects: group, others: obstacles }], { step });
+      if (!off) continue;
+      for (const v of [off.dx, off.dy]) assert.ok(Math.abs(v / step - Math.round(v / step)) < 1e-6, `caso ${n}: ${v}`);
+      assert.equal(overlapsAny(r(group[0].x + off.dx, group[0].y + off.dy, group[0].w, group[0].h), obstacles), false, `caso ${n}`);
+    }
+  });
+
   test('groupScaleRange: el factor exacto en que toca a otra, al agrandar y al reducir', () => {
     const rects = [r(0, 0, 10, 10, 'a'), r(20, 0, 10, 10, 'b')];
     // Desde la esquina (0, 0): «b» toca a «x» (x = 45) cuando 30k = 45.

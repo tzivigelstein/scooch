@@ -59,6 +59,7 @@ export default {
     PageDown: 'Av Pág',
     Plus: '+',
     Minus: '−',
+    Click: 'clic',
   },
 
   // Barra superior
@@ -85,7 +86,8 @@ export default {
     empty: 'Todavía no hay piezas',
     emptyTip:
       'Agrega imágenes (JPG, PNG, WebP…) o PDF. Cada página es una pieza que puedes mover, girar y cambiar de tamaño.',
-    listHint: 'Usa las flechas arriba y abajo para elegir una pieza, Enter para ir a ella en la hoja y Supr para quitarla',
+    listHint:
+      'Usa las flechas arriba y abajo para seleccionar una pieza (con Shift, varias seguidas; con {mod}, solo mover el foco), Shift+Espacio para agregar la enfocada a la selección o quitarla, Enter para ir a ella en la hoja y Supr para quitar las seleccionadas',
     count: { one: '{n} pieza', other: '{n} piezas' },
     // Encabezados de la lista con varias hojas
     groupTitle: 'Hoja {i}',
@@ -167,12 +169,15 @@ export default {
     a11y: '{name}{page}, {size}, a {x} del borde izquierdo y {y} del superior{turned}',
     a11yPage: ' (página {page})',
     a11yTurned: ', girada {deg}°',
+    // Con varias elegidas (o la selección fijada), al final del nombre de cada elegida
+    a11ySelected: ', seleccionada',
   },
 
   // Barra flotante de la pieza seleccionada
   piecebar: {
     label: 'Acciones de la pieza',
     labelFor: 'Acciones de {name}',
+    labelGroup: 'Acciones de {n} piezas',
     rotateLeft: 'Girar 90° a la izquierda',
     rotateLeftTip: 'Girar a la izquierda',
     rotateRight: 'Girar 90° a la derecha',
@@ -182,8 +187,9 @@ export default {
     removeTip: 'Quitar de la hoja',
     hint:
       'Flechas: mover (Shift: {coarse}; Alt: {fine}). Más y menos: agrandar o reducir. R y Shift+R: girar. ' +
-      'D: duplicar. M: editar las medidas. Enter: barra de acciones. Supr: quitar.',
-    hintNoKeys: 'Flechas: mover (Shift: {coarse}; Alt: {fine}). Enter: barra de acciones. Supr: quitar.',
+      'D: duplicar. M: editar las medidas. Enter: barra de acciones. Shift+Espacio: agregar a la selección o quitar. Supr: quitar.',
+    hintNoKeys:
+      'Flechas: mover (Shift: {coarse}; Alt: {fine}). Enter: barra de acciones. Shift+Espacio: agregar a la selección o quitar. Supr: quitar.',
   },
 
   // Botones de los paneles en pantallas angostas
@@ -233,6 +239,36 @@ export default {
     fillNoFit: 'No entra en la hoja: reduce la pieza',
     fillTooMany: 'Entrarían {n} copias y el máximo es {max}: agranda la pieza',
     remove: 'Quitar de la hoja',
+    removeMany: { one: 'Quitar 1 pieza', other: 'Quitar {n} piezas' },
+    // Con varias elegidas
+    groupOnSheet: 'En la hoja {i}',
+    groupOnSheets: 'En {n} hojas. Medidas de la hoja {i}.',
+    mixed: 'Mixta',
+    // Alinear y distribuir
+    align: 'Alinear',
+    alignTo: 'Alinear a',
+    alignToSelection: 'Selección',
+    alignToSheet: 'Hoja',
+    alignSheetNote: 'Alinear al área útil de la hoja',
+    alignSheetTip: 'Contra el área útil de la hoja (dentro del margen)',
+    alignSelectionTip: 'Contra la caja de la selección',
+    alignLeft: 'Alinear a la izquierda',
+    alignCenterX: 'Centrar en horizontal',
+    alignRight: 'Alinear a la derecha',
+    alignTop: 'Alinear arriba',
+    alignCenterY: 'Centrar en vertical',
+    alignBottom: 'Alinear abajo',
+    distribute: 'Distribuir',
+    distributeBy: 'Distribuir con',
+    distributeGap: 'Separación',
+    distributeEven: 'Repartir parejo',
+    distributeX: 'Distribuir en horizontal',
+    distributeY: 'Distribuir en vertical',
+    distributeGapTip: '{gap} entre piezas, la «Separación» de Distribución',
+    distributeEvenTip: 'El mismo espacio entre piezas, de la primera a la última',
+    distributeGapNote: 'A {gap}',
+    distributeNeedTwo: 'Selecciona 2 piezas o más de una misma hoja para distribuir',
+    distributeNeedThree: 'Selecciona 3 piezas o más de una misma hoja para repartir parejo',
     resolution: {
       vector: 'Vectorial: nítida a cualquier tamaño',
       printsAt: 'Se imprime a {ppp} ppp',
@@ -303,6 +339,19 @@ export default {
     filled: { one: 'Se rellenó la hoja con 1 copia', other: 'Se rellenó la hoja con {n} copias' },
     filledSheet: { one: 'Se rellenó la hoja {i} con 1 copia', other: 'Se rellenó la hoja {i} con {n} copias' },
     reverted: 'No había espacio libre ahí, así que la pieza volvió a su lugar',
+    revertedGroup: 'No había espacio libre ahí, así que las piezas volvieron a su lugar',
+    // Operación de grupo que no se aplicó ({action}: groupActions)
+    wouldOverlap: 'No se puede {action}: las piezas se superpondrían',
+    wouldLeave: 'No se puede {action}: alguna pieza quedaría fuera de la hoja',
+    groupActions: {
+      align: 'alinear',
+      distribute: 'distribuir',
+      rotate: 'girar',
+      scale: 'cambiar el tamaño',
+      move: 'mover',
+      size: 'aplicar ese tamaño',
+    },
+    scaleLimit: 'No se puede cambiar el tamaño: la escala de cada pieza va de 1 % a 1000 %',
     downloaded: 'Se descargó {file}. Al imprimirlo, elige «Tamaño real» o «100 %».',
     // Proyectos
     saveFailed: 'No se pudo guardar el proyecto. Vuelve a intentarlo.',
@@ -344,6 +393,10 @@ export default {
     unnamedFile: 'Archivo sin nombre',
     maxReached: 'se admiten hasta {max} piezas en total ({n} sin agregar)',
     maxPieces: 'Se admiten hasta {max} piezas en total. Quita alguna para duplicar esta.',
+    maxCopies: {
+      one: 'Se admiten hasta {max} piezas en total, así que solo entra 1 copia más de cada una',
+      other: 'Se admiten hasta {max} piezas en total, así que solo entran {n} copias más de cada una',
+    },
     page: 'No se pudo cargar la página {page}. Inténtalo de nuevo.',
     pdf: 'No se pudo crear el PDF. Inténtalo de nuevo.',
     marginTooBig: 'El margen no deja espacio para las piezas. Reduce el margen.',
@@ -407,6 +460,46 @@ export default {
     projectDeleted: 'Se eliminó «{name}»',
     projectSaved: 'Se guardó el proyecto',
     deselected: 'Ninguna pieza seleccionada',
+    // Selección múltiple
+    selectedCount: { one: '1 pieza seleccionada', other: '{n} piezas seleccionadas' },
+    selectionPinned: '1 pieza seleccionada. Ve a otra con Tab y agrégala con Shift+Espacio',
+    selectedSheet: { one: 'Se seleccionó 1 pieza de la hoja {i}', other: 'Se seleccionaron las {n} piezas de la hoja {i}' },
+    selectedAll: { one: 'Se seleccionó 1 pieza', other: 'Se seleccionaron las {n} piezas de todas las hojas' },
+    noPieces: 'No hay piezas para seleccionar',
+    singleOnly: 'Disponible con una sola pieza seleccionada',
+    groupRotated: { one: 'Se giró 1 pieza 90° {dir}', other: 'Se giraron {n} piezas 90° {dir}' },
+    toRight: 'a la derecha',
+    toLeft: 'a la izquierda',
+    groupScaled: { one: 'Se cambió el tamaño de 1 pieza: {size}', other: 'Se cambió el tamaño de {n} piezas: {size}' },
+    noRoomGroup: 'No hay más espacio para agrandarlas',
+    noSmallerGroup: 'No se pueden reducir más',
+    actualSizeGroup: { one: '1 pieza a tamaño real', other: '{n} piezas a tamaño real' },
+    duplicatedMany: {
+      one: 'Se duplicó 1 pieza. Hay {total} piezas.',
+      other: 'Se agregaron {n} copias. Hay {total} piezas.',
+    },
+    duplicatedManySheets: {
+      one: 'Se agregó 1 copia en {sheets} hojas. Hay {total} piezas.',
+      other: 'Se agregaron {n} copias en {sheets} hojas. Hay {total} piezas.',
+    },
+    removedMany: { one: 'Se quitó 1 pieza', other: 'Se quitaron {n} piezas' },
+    removedManyLast: { one: 'Se quitó 1 pieza. La hoja está vacía.', other: 'Se quitaron {n} piezas. La hoja está vacía.' },
+    alignHow: {
+      left: 'a la izquierda',
+      centerX: 'al centro en horizontal',
+      right: 'a la derecha',
+      top: 'arriba',
+      centerY: 'al centro en vertical',
+      bottom: 'abajo',
+    },
+    aligned: { one: 'Se alineó 1 pieza {how}', other: 'Se alinearon {n} piezas {how}' },
+    alignedSheet: { one: 'Se alineó 1 pieza {how} del área útil', other: 'Se alinearon {n} piezas {how} del área útil' },
+    alignedAlready: { one: 'La pieza ya estaba alineada', other: 'Las piezas ya estaban alineadas' },
+    horizontally: 'en horizontal',
+    vertically: 'en vertical',
+    distributedGap: { one: 'Se distribuyó 1 pieza {dir}, a {gap}', other: 'Se distribuyeron {n} piezas {dir}, a {gap} una de otra' },
+    distributedEven: { one: 'Se repartió 1 pieza parejo {dir}', other: 'Se repartieron {n} piezas parejo {dir}' },
+    distributedAlready: 'Las piezas ya estaban distribuidas',
   },
 
   print: {
@@ -531,6 +624,13 @@ export default {
       center: 'Centrar en la hoja',
       front: 'Traer al frente',
       toolbar: 'Sobre una pieza, ir a su barra de acciones',
+      toggleSelect: 'Sobre una pieza, agregarla a la selección o quitarla',
+      clickSelect: 'Agregar una pieza a la selección o quitarla (arrastrar en un lugar vacío elige con un recuadro)',
+      selectAll: 'Seleccionar las piezas de la hoja actual; otra vez, las de todas las hojas',
+      alignSides: 'Alinear a la izquierda o a la derecha (con 1 pieza, al área útil)',
+      alignEnds: 'Alinear arriba o abajo',
+      alignCenter: 'Centrar en horizontal o en vertical',
+      distribute: 'Distribuir en horizontal o en vertical',
       pages: 'En las hojas, ir a la hoja anterior o a la siguiente',
       sendPage: 'Mover la pieza a la hoja anterior o a la siguiente (si no hay lugar, a una hoja nueva)',
       remove: 'Quitar la pieza',

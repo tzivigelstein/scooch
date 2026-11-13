@@ -218,6 +218,18 @@ export function commit(key = null) {
 
 export const endEdit = () => (editKey = null);
 
+/**
+ * Anula la edición continua en curso con esa clave: vuelve a como estaba antes
+ * de empezarla, sin dejarla para rehacer (p. ej. si al confirmar un campo el
+ * valor no vale). Devuelve false si no había nada que anular.
+ */
+export function cancelEdit(key) {
+  if (!key || key !== editKey || !undoStack.length) return false;
+  editKey = null;
+  restore(undoStack.pop());
+  return true;
+}
+
 function restore(snap) {
   state.sheets = snap.sheets.map((sheet) => ({ ...sheet }));
   state.items = snap.items.map((item) => ({ ...item }));

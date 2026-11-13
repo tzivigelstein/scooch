@@ -14,6 +14,8 @@ import {
   selectedItem,
   primaryItem,
   setSelection,
+  isSelected,
+  findItem,
   addAsset,
   commit,
   endEdit,
@@ -62,6 +64,23 @@ import { initDonate, shouldAskDonation, askDonation, isDonationOpen } from './do
 import { initProjects, documentChanged, retry as retrySave, saveAsNew } from './projects.js';
 import { initProjectsUi, renderProjectBar, openProjects, listChanged, removeWithUi, takeOverWithUi } from './projectsui.js';
 import { initKeyboard } from './keyboard.js';
+import {
+  toggleInSelection,
+  announceCount,
+  selectTouched,
+  selectAll,
+  nudgeGroup,
+  rotateSelection,
+  scaleSelectionBy,
+  alignSelection,
+  distributeSelection,
+  duplicateSelection,
+  removeSelection,
+  planDrag,
+  dropGroup,
+  groupScaleBounds,
+  applyScale,
+} from './groupactions.js';
 import { $, clamp, round1, tidy, fine } from './util.js';
 
 const ui = {};
@@ -100,6 +119,8 @@ function renderTopbar() {
   off(ui.undo, busy || !canUndo());
   off(ui.redo, busy || !canRedo());
   off(ui.clear, busy || empty);
+  const n = state.selection.length;
+  if (n > 1) return ui.piecebar.setAttribute('aria-label', t('piecebar.labelGroup', { n }));
   const item = selectedItem();
   if (!item) return;
   ui.piecebar.setAttribute('aria-label', t('piecebar.labelFor', { name: assets.get(item.asset).name }));
@@ -139,14 +160,45 @@ function rescueFocus() {
 
 // ---------- Selección y edición ----------
 
+/** Elige solo esa pieza (o ninguna, con null). */
 function select(id) {
   const ids = id === null ? [] : [id];
-  if (state.selection.length === ids.length && state.selection.every((v, i) => v === ids[i])) return;
+  if (!view.pinned && state.selection.length === ids.length && state.selection.every((v, i) => v === ids[i])) return;
   setSelection(ids);
   const item = primaryItem();
   if (item) view.sheet = item.sheet;
   render();
 }
+
+/** La pieza, que ya está elegida, pasa a ser la principal (la de la barra y la hoja actual). */
+function makePrimary(id) {
+  if (state.selection.at(-1) === id || !isSelected(id)) return;
+  state.selection = [...state.selection.filter((other) => other !== id), id];
+  view.sheet = findItem(id).sheet;
+  render();
+}
+
+/**
+ * Se enfocó una pieza (Tab, clic, la lista…): si está elegida pasa a ser la
+ * principal; si no, la selección la sigue, salvo que esté fijada o haya varias
+ * elegidas (así se puede ir con Tab a otra y agregarla con Shift+Espacio).
+ */
+function focusPiece(id) {
+  if (isSelected(id)) return makePrimary(id);
+  if (view.pinned || state.selection.length > 1) return;
+  select(id);
+}
+
+/** Antes de actuar con el teclado sobre una pieza enfocada que no está elegida, se elige solo esa. */
+function adopt(target) {
+  const node = target?.closest?.('.piece');
+  if (node && !isSelected(Number(node.dataset.id))) select(Number(node.dataset.id));
+}
+
+const isGroup = () => state.selection.length > 1;
+
+// Lo que solo tiene sentido con una pieza: con varias, se explica.
+const singleOnly = () => announce(t('announce.singleOnly'));
 
 const sizeText = (item) => {
   const [w, h] = dims(item);
@@ -169,13 +221,21 @@ function editSelected(change, { focus = false, announce: message = null } = {}) 
 }
 
 const pieceActions = {
-  rotate: (opts = {}, dir = 1) =>
+  rotate: (opts = {}, dir = 1) => {
+    if (isGroup()) {
+      if (state.busy) return;
+      rotateSelection(dir);
+      if (opts.focus) focusSheet();
+      return;
+    }
     editSelected((item) => keepCenter(item, () => (item.r = (item.r + (dir > 0 ? 90 : 270)) % 360)), {
       ...opts,
       announce: (item) => t('announce.rotated', { deg: item.r, size: sizeText(item) }),
-    }),
+    });
+  },
   /** La copia va al primer hueco libre desde la hoja de la original (o a una hoja nueva). */
   duplicate: (opts = {}) => {
+    if (isGroup()) return duplicateMany(1, opts);
     if (state.items.length >= MAX_ITEMS) return say(t('errors.maxPieces', { max: MAX_ITEMS }), { warn: true });
     let moved = false;
     editSelected(
@@ -195,9 +255,10 @@ const pieceActions = {
     );
   },
   fit: (opts = {}) =>
-    editSelected(fitToSheet, { ...opts, announce: (item) => t('announce.fitted', { size: sizeText(item) }) }),
-  center: (opts = {}) => editSelected(centerOnSheet, { ...opts, announce: t('announce.centered') }),
+    isGroup() ? singleOnly() : editSelected(fitToSheet, { ...opts, announce: (item) => t('announce.fitted', { size: sizeText(item) }) }),
+  center: (opts = {}) => (isGroup() ? singleOnly() : editSelected(centerOnSheet, { ...opts, announce: t('announce.centered') })),
   front: (opts = {}) => {
+    if (isGroup()) return singleOnly();
     const item = selectedItem();
     if (!item) return;
     if (!overlapsOthers(item)) return announce(t('announce.frontNotNeeded'));
@@ -213,6 +274,7 @@ const pieceActions = {
    * la hoja, o en la lista si se quitó desde ahí); con el mouse, se deselecciona.
    */
   remove: ({ focus = true, inList = false } = {}) => {
+    if (isGroup()) return removeMany({ focus, inList });
     const item = selectedItem();
     if (!item || state.busy) return;
     const sameSheet = itemsOn(item.sheet);
@@ -233,7 +295,37 @@ const pieceActions = {
   },
 };
 
+/** Duplica las elegidas (D y la barra: 1 copia de cada una). */
+function duplicateMany(times, { focus = false } = {}) {
+  const result = duplicateSelection(times);
+  if (!result) return;
+  const n = result.copies.length;
+  render();
+  if (focus) focusSheet();
+  announce(
+    result.sheets > 1 || result.copies[0].sheet !== currentSheet()
+      ? t('announce.duplicatedManySheets', { n, sheets: result.sheets, total: state.items.length })
+      : t('announce.duplicatedMany', { n, total: state.items.length })
+  );
+}
+
+function removeMany({ focus = true, inList = false } = {}) {
+  const result = removeSelection({ focus });
+  if (!result) return;
+  render();
+  if (inList && focusList()) {
+    // el foco sigue en la lista
+  } else if (focus) focusSheet();
+  else sheetNode(result.sheet)?.focus({ preventScroll: true });
+  announce(t(state.items.length ? 'announce.removedMany' : 'announce.removedManyLast', { n: result.n }));
+}
+
 function nudge(dx, dy) {
+  if (isGroup()) {
+    if (state.busy) return;
+    nudgeGroup(dx, dy);
+    return focusSheet();
+  }
   const item = selectedItem();
   if (!item || state.busy) return;
   let jumped = [];
@@ -264,6 +356,11 @@ function nudge(dx, dy) {
 }
 
 function scaleBy(delta) {
+  if (isGroup()) {
+    if (state.busy) return;
+    scaleSelectionBy(delta);
+    return focusSheet();
+  }
   const item = selectedItem();
   if (!item || state.busy) return;
   let scale = clamp(round1(item.scale + delta), 1, 1000);
@@ -416,6 +513,7 @@ function gotoSheet(dir) {
  * nueva justo al lado. Si no entra ni sola en una hoja, conserva su posición.
  */
 function sendToSheet(dir) {
+  if (isGroup()) return singleOnly();
   const item = selectedItem();
   if (!item || state.busy) return;
   const index = sheetIndex(item.sheet);
@@ -478,7 +576,7 @@ function fill() {
 
 /** M: al primer campo de la sección Pieza (X). */
 function focusPieceFields() {
-  if (!selectedItem()) return announce(t('announce.needSelection'));
+  if (!state.selection.length) return announce(t('announce.needSelection'));
   revealPanel('props');
   const field = firstPieceField();
   field?.focus({ preventScroll: false });
@@ -799,18 +897,26 @@ function wire() {
   initTooltips({ showShortcut: (el) => el.dataset.single === undefined || settings.singleKeys });
   initSheetView({
     select,
+    focusPiece,
+    makePrimary,
+    toggle: (id) => toggleInSelection(id),
+    selectArea: selectTouched,
+    planDrag,
+    dropGroup,
+    groupScaleBounds,
+    applyGroupScale: (k) => applyScale(k, 'top-left'),
     background: (sheetId) => {
       if (sheetId !== null) view.sheet = sheetId;
       if (!state.selection.length) return render();
       select(null);
       sheetNode(currentSheet())?.focus({ preventScroll: true });
     },
-    commitGesture: (result, { sheetChanged, item }) => {
-      if (result === 'reverted') say(t('notices.reverted'));
+    commitGesture: (result, { sheetChanged, item, group }) => {
+      if (result === 'reverted') say(t(group ? 'notices.revertedGroup' : 'notices.reverted'));
       else render();
       if (sheetChanged) announce(t('announce.movedToSheet', { i: sheetNumber(item.sheet), total: state.sheets.length }));
     },
-    preview: (draft) => renderPanels(draft),
+    preview: (drafts) => renderPanels(drafts),
     removeSheet,
     addSheet,
   });
@@ -828,6 +934,15 @@ function wire() {
   });
   initPieceList({
     select,
+    focusPiece,
+    toggle: (id) => !state.busy && toggleInSelection(id),
+    setRange: (ids, primary) => {
+      if (state.busy) return;
+      setSelection([...ids.filter((id) => id !== primary), primary], { pinned: ids.length > 1 });
+      view.sheet = findItem(primary).sheet;
+      render();
+      announceCount();
+    },
     toSheet: () => {
       if (isDrawerOpen('pieces')) closeDrawer('pieces', { focus: 'none' });
       focusSheet();
@@ -887,7 +1002,18 @@ function wire() {
     toggleGrid: () => setGridVisible(!settings.grid.show),
     help: openShortcuts,
     openProjects,
-    hasSelection: () => !!selectedItem() && !state.busy,
+    hasSelection: () => state.selection.length > 0 && !state.busy,
+    adopt,
+    selectAll: () => !state.busy && selectAll(),
+    toggleFocused: (id) => !state.busy && toggleInSelection(id, { pinFirst: true }),
+    align: (mode) => {
+      if (!state.selection.length) return announce(t('announce.needSelection'));
+      alignSelection(mode);
+    },
+    distribute: (axis) => {
+      if (!state.selection.length) return announce(t('announce.needSelection'));
+      distributeSelection(axis);
+    },
     endEdit,
     nudge,
     scaleBy,

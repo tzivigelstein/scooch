@@ -1,6 +1,35 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { subgroups, planGroup, groupBounds, common, sameSource, touchedBy, rangeBetween } from '../src/group.js';
+import {
+  subgroups,
+  planGroup,
+  groupBounds,
+  containScaleRange,
+  common,
+  sameSource,
+  touchedBy,
+  rangeBetween,
+  planNudge,
+  planMoveTo,
+  scaleBounds,
+  planScaleBy,
+  planResizeTo,
+  planCommonScale,
+  planRotate,
+  planAlign,
+  distributeNeeds,
+  canDistribute,
+  planDistribute,
+  planDrag,
+  planDrop,
+  toggled,
+  touchedSelection,
+  selectAllTarget,
+  withPrimaryLast,
+  neighborAfterRemoval,
+  copiesAllowed,
+  scaleLimits,
+} from '../src/group.js';
 import { align, distribute, moveBy, rotateGroup, scaleGroup, bounds } from '../src/align.js';
 import { overlaps } from '../src/collide.js';
 import { prng } from './support.js';
@@ -153,6 +182,34 @@ describe('planGroup', () => {
   });
 });
 
+describe('containScaleRange', () => {
+  test('el factor en que un centro llega al borde', () => {
+    const rects = [b(1, 1, 100, 100, 20, 20), b(2, 1, 150, 100, 20, 20)];
+    // Desde (100, 100): el centro de «2» (160) llega a 210 con k = 110 / 60.
+    const range = containScaleRange(rects, { x: 100, y: 100 }, 210, 297);
+    assert.ok(Math.abs(range.max - 110 / 60) < 1e-12);
+    assert.equal(range.min, 0);
+    // Ancla fuera de la hoja (a la izquierda): reducir lleva los centros hacia afuera.
+    const left = containScaleRange([b(1, 1, -10, 0, 40, 10)], { x: -10, y: 0 }, 210, 297);
+    assert.ok(Math.abs(left.min - 0.5) < 1e-12, String(left.min));
+    // Dentro del rango, todos los centros quedan en la hoja (fuzz).
+    const rnd = prng(3);
+    for (let n = 0; n < 200; n++) {
+      const list = Array.from({ length: 1 + Math.floor(rnd() * 4) }, (_, i) => b(i, 1, rnd() * 200 - 10, rnd() * 290 - 10, 1 + rnd() * 30, 1 + rnd() * 30));
+      const anchor = { x: rnd() * 210, y: rnd() * 297 };
+      const { min, max } = containScaleRange(list, anchor, 210, 297);
+      if (min > max) continue;
+      for (const k of [Math.max(min, 1e-3), Math.min(max, 10)]) {
+        for (const r of scaleGroup(list, k, anchor).rects) {
+          const cx = r.x + r.w / 2;
+          const cy = r.y + r.h / 2;
+          assert.ok(cx >= -1e-6 && cx <= 210 + 1e-6 && cy >= -1e-6 && cy <= 297 + 1e-6, `caso ${n}`);
+        }
+      }
+    }
+  });
+});
+
 describe('ayudas de la selección', () => {
   test('common', () => {
     assert.equal(common([50, 50, 50]), 50);
@@ -191,5 +248,112 @@ describe('ayudas de la selección', () => {
     assert.deepEqual(rangeBetween(order, 9, 8), [8, 1, 9]);
     assert.deepEqual(rangeBetween(order, 4, 8), [8]);
     assert.deepEqual(rangeBetween(order, 3, 4), []);
+  });
+});
+
+describe('planes de cada operación', () => {
+  const opts = { W: 210, H: 297, allowOverlap: false, round: (v) => Math.round(v * 1e4) / 1e4, snapStep: 0 };
+  // Dos elegidas en fila y una tercera abajo, en la hoja 1.
+  const row = [b(1, 1, 20, 20, 40, 30), b(2, 1, 80, 20, 40, 30), b(3, 1, 20, 100, 40, 30)];
+  const two = new Set([1, 2]);
+
+  test('planNudge: salta lo que estorba y anuncia a quién', () => {
+    const { plan, jumped } = planNudge(row, new Set([1]), 0, 60, opts);
+    assert.equal(plan.ok, true);
+    assert.equal(plan.rects.get(1).y, 130, 'del otro lado de la 3');
+    assert.deepEqual(jumped.map((r) => r.id), [3]);
+    assert.equal(planNudge(row, new Set([1]), 0, 60, { ...opts, allowOverlap: true }).plan.rects.get(1).y, 80);
+  });
+
+  test('planMoveTo: la caja de la hoja indicada; null si ya está', () => {
+    assert.equal(planMoveTo(row, two, 1, 'x', 20, opts), null);
+    const plan = planMoveTo(row, two, 1, 'x', 50, opts);
+    assert.deepEqual([plan.rects.get(1).x, plan.rects.get(2).x], [50, 110]);
+    assert.equal(planMoveTo(row, two, 1, 'x', -500, opts).reason, 'outside', 'los campos no acotan: rechazan');
+  });
+
+  test('scaleBounds y planScaleBy: límites de escala, de hoja y de superposición', () => {
+    const near = [b(1, 1, 20, 20, 40, 30), b(2, 1, 80, 20, 40, 30), b(3, 1, 130, 20, 40, 30)];
+    const range = scaleBounds(near, two, [100, 100], 'center', opts);
+    assert.ok(Math.abs(range.max - (60 + 0.01) / 50) < 1e-12, String(range.max));
+    const grow = planScaleBy(near, two, [100, 100], 100, 50, opts);
+    assert.ok(Math.abs(grow.k - range.max) < 1e-12, 'se frena al tocar a la 3');
+    assert.equal(planScaleBy(near, two, [990, 500], 990, 50, { ...opts, allowOverlap: true }).k, 1000 / 990, 'ninguna pasa de 1000 %');
+    assert.equal(planScaleBy(near, two, [1, 50], 1, -1, opts), null, 'ya está en 1 %: no se reduce');
+  });
+
+  test('planResizeTo: proporcional desde la esquina; límite y nada que hacer', () => {
+    const { plan, k } = planResizeTo(row, two, 1, 'w', 50, [100, 100], opts);
+    assert.equal(k, 0.5);
+    assert.deepEqual(plan.rects.get(2), { id: 2, x: 50, y: 20, w: 20, h: 15 });
+    assert.equal(planResizeTo(row, two, 1, 'w', 100, [100, 100], opts), null);
+    assert.equal(planResizeTo(row, two, 1, 'w', 100000, [100, 100], opts).plan.reason, 'limit');
+  });
+
+  test('planCommonScale: cada una desde su centro', () => {
+    const { plan, scale } = planCommonScale(row, two, new Map([[1, 100], [2, 50]]), 50, opts);
+    assert.equal(scale, 50);
+    assert.deepEqual(plan.rects.get(1), { id: 1, x: 30, y: 27.5, w: 20, h: 15 });
+    assert.deepEqual(plan.rects.get(2), { id: 2, x: 80, y: 20, w: 40, h: 30 }, 'ya estaba al 50 %');
+    assert.equal(planCommonScale(row, two, new Map([[1, 100], [2, 100]]), 5000, opts).scale, 1000);
+  });
+
+  test('planRotate: sentido y superposición', () => {
+    const { plan, dr } = planRotate(row, two, -1, opts);
+    assert.equal(dr, 270);
+    assert.equal(plan.ok, true);
+    assert.equal(planRotate([...row, b(9, 1, 55, 0, 10, 10)], two, 1, opts).plan.ok, false);
+  });
+
+  test('planAlign: contra la selección o el área útil; con imán, hacia adentro', () => {
+    const area = { x: 10, y: 10, w: 190, h: 277 };
+    assert.deepEqual([...planAlign(row, two, 'bottom', opts).rects.values()].map((r) => r.y), [20, 20]);
+    const right = planAlign(row, new Set([1]), 'right', { ...opts, area, snapStep: 3 });
+    assert.equal(right.rects.get(1).x, 159, 'derecha: 160 → hacia adentro, 159 (múltiplo de 3)');
+    const left = planAlign(row, new Set([1]), 'left', { ...opts, area, snapStep: 3 });
+    assert.equal(left.rects.get(1).x, 12, 'izquierda: 10 → hacia adentro, 12');
+    const center = planAlign(row, new Set([1]), 'centerX', { ...opts, area, snapStep: 3 });
+    assert.equal(center.rects.get(1).x, 84, 'centro: 85 → el más cercano, 84');
+    assert.throws(() => planAlign(row, two, 'middle', opts), RangeError);
+  });
+
+  test('distribuir: cuántas hacen falta y resultado', () => {
+    assert.equal(distributeNeeds('gap'), 2);
+    assert.equal(distributeNeeds('even'), 3);
+    assert.equal(canDistribute(row, two, 'gap'), true);
+    assert.equal(canDistribute(row, two, 'even'), false);
+    const plan = planDistribute(row, two, 'x', { ...opts, gap: 5 });
+    assert.deepEqual([plan.rects.get(1).x, plan.rects.get(2).x], [20, 65]);
+    const three = [b(1, 1, 10, 10, 10, 10), b(2, 1, 30, 10, 10, 10), b(3, 1, 100, 10, 10, 10)];
+    const even = planDistribute(three, new Set([1, 2, 3]), 'x', { ...opts, mode: 'even' });
+    assert.deepEqual([1, 2, 3].map((id) => even.rects.get(id).x), [10, 55, 100]);
+  });
+
+  test('planDrag y planDrop: a otra hoja; sobre otra, al lugar libre en la grilla', () => {
+    const sheets = [b(1, 1, 20, 20, 40, 30), b(2, 1, 80, 20, 40, 30), b(5, 2, 20, 20, 40, 30)];
+    const moved = planDrag(sheets, two, 0, 0, { ...opts, target: 2, offsetY: 3 });
+    assert.equal(moved.plan.ok, false, 'en la hoja 2 pisaría a la 5');
+    assert.equal(moved.boxes.find((x) => x.id === 1).sheet, 2);
+    const drop = planDrop(moved, two, { ...opts, snapStep: 1 });
+    assert.equal(drop.result, 'moved-aside');
+    for (const r of drop.rects.values()) assert.equal(Number.isInteger(r.x) && Number.isInteger(r.y - 3), true, JSON.stringify(r));
+    const free = planDrag(sheets, two, 5, 0, opts);
+    assert.deepEqual(planDrop(free, two, opts).result, 'moved');
+  });
+
+  test('selección: alternar, recuadro, Ctrl+A, vecina al quitar y copias posibles', () => {
+    assert.deepEqual(toggled([1, 2], 3), { selection: [1, 2, 3], on: true });
+    assert.deepEqual(toggled([1, 2, 3], 2), { selection: [1, 3], on: false });
+    assert.deepEqual(touchedSelection([1, 2], [2, 5], true), [1, 2, 5]);
+    assert.deepEqual(touchedSelection([1, 2], [5], false), [5]);
+    assert.deepEqual(selectAllTarget([2], [1, 2, 3], [1, 2, 3, 4]), { selection: [1, 3, 2], everything: false });
+    assert.deepEqual(selectAllTarget([3, 1, 2], [1, 2, 3], [1, 2, 3, 4]), { selection: [1, 3, 4, 2], everything: true });
+    assert.deepEqual(withPrimaryLast([1, 2, 3], 2), [1, 3, 2]);
+    assert.equal(neighborAfterRemoval([1, 2, 3, 4], 2, new Set([2, 3])), 4);
+    assert.equal(neighborAfterRemoval([1, 2, 3], 3, new Set([2, 3])), 1);
+    assert.equal(neighborAfterRemoval([2], 2, new Set([2])), null);
+    assert.equal(copiesAllowed(190, 3, 200), 3);
+    assert.equal(copiesAllowed(200, 3, 200), 0);
+    assert.deepEqual(scaleLimits([50, 200]), { min: 1 / 50, max: 5 });
   });
 });

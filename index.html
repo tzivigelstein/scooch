@@ -102,7 +102,7 @@
           <p data-i18n="pieces.empty"></p>
           <p class="panel-tip" data-i18n="pieces.emptyTip"></p>
         </div>
-        <div id="piece-list" class="piece-list" role="listbox" aria-labelledby="pieces-title" aria-describedby="list-hint" hidden></div>
+        <div id="piece-list" class="piece-list" role="listbox" aria-multiselectable="true" aria-labelledby="pieces-title" aria-describedby="list-hint" hidden></div>
         <p id="list-hint" class="sr-only" data-i18n="pieces.listHint"></p>
         <div class="panel-foot">
           <span id="piece-total" class="foot-count" data-i18n="pieces.count" data-i18n-params='{"n":0}'></span>
@@ -169,9 +169,9 @@
           </button>
         </div>
 
-        <!-- 1. Pieza (solo con selección) -->
+        <!-- 1. Pieza (solo con selección; con varias, «N piezas») -->
         <div class="prop-section" id="section-piece">
-          <h2 class="section-title static" data-i18n="props.piece"></h2>
+          <h2 id="piece-title" class="section-title static" data-i18n="props.piece"></h2>
           <p id="piece-empty" class="panel-empty" data-i18n="props.empty"></p>
           <div id="piece-props" class="section-body" hidden>
             <p id="piece-name" class="piece-name"></p>
@@ -216,6 +216,37 @@
               <button type="button" id="piece-fit" class="icon-btn" data-i18n-label="props.fit" data-i18n-tip="props.fit" data-kbd="F" data-aks="F" data-single><span data-icon="maximize-2"></span></button>
               <button type="button" id="piece-center" class="icon-btn" data-i18n-label="props.center" data-i18n-tip="props.center" data-kbd="C" data-aks="C" data-single><span data-icon="crosshair"></span></button>
               <button type="button" id="piece-front" class="icon-btn" data-i18n-label="props.front" data-i18n-tip="props.front" data-kbd="]" data-aks="]" data-single><span data-icon="bring-to-front"></span></button>
+            </div>
+            <!-- Alinear y distribuir (con una pieza, contra el área útil) -->
+            <div class="arrange-tools">
+              <p id="align-sheet-note" class="tools-note field-label" data-i18n="props.alignSheetNote" hidden></p>
+              <fieldset id="align-to-field" class="tools-head">
+                <legend class="field-label" data-i18n="props.alignTo"></legend>
+                <div id="align-to" class="segmented chips small">
+                  <label class="seg"><input type="radio" name="align-to" value="selection" checked /><span data-i18n="props.alignToSelection"></span></label>
+                  <label class="seg"><input type="radio" name="align-to" value="sheet" /><span data-i18n="props.alignToSheet"></span></label>
+                </div>
+              </fieldset>
+              <div id="align-row" class="tool-row" role="group" data-i18n-label="props.align">
+                <button type="button" class="icon-btn" data-align="left" data-i18n-label="props.alignLeft" data-i18n-tip="props.alignLeft" data-kbd="Alt+Shift+ArrowLeft" data-aks="Alt+Shift+ArrowLeft"><span data-icon="align-start-vertical"></span></button>
+                <button type="button" class="icon-btn" data-align="centerX" data-i18n-label="props.alignCenterX" data-i18n-tip="props.alignCenterX" data-kbd="Alt+Shift+H" data-aks="Alt+Shift+H"><span data-icon="align-center-vertical"></span></button>
+                <button type="button" class="icon-btn" data-align="right" data-i18n-label="props.alignRight" data-i18n-tip="props.alignRight" data-kbd="Alt+Shift+ArrowRight" data-aks="Alt+Shift+ArrowRight"><span data-icon="align-end-vertical"></span></button>
+                <button type="button" class="icon-btn" data-align="top" data-i18n-label="props.alignTop" data-i18n-tip="props.alignTop" data-kbd="Alt+Shift+ArrowUp" data-aks="Alt+Shift+ArrowUp"><span data-icon="align-start-horizontal"></span></button>
+                <button type="button" class="icon-btn" data-align="centerY" data-i18n-label="props.alignCenterY" data-i18n-tip="props.alignCenterY" data-kbd="Alt+Shift+V" data-aks="Alt+Shift+V"><span data-icon="align-center-horizontal"></span></button>
+                <button type="button" class="icon-btn" data-align="bottom" data-i18n-label="props.alignBottom" data-i18n-tip="props.alignBottom" data-kbd="Alt+Shift+ArrowDown" data-aks="Alt+Shift+ArrowDown"><span data-icon="align-end-horizontal"></span></button>
+              </div>
+              <fieldset class="tools-head">
+                <legend class="field-label" data-i18n="props.distributeBy"></legend>
+                <div id="distribute-mode" class="segmented chips small">
+                  <label class="seg"><input type="radio" name="distribute-mode" value="gap" checked /><span data-i18n="props.distributeGap"></span></label>
+                  <label class="seg"><input type="radio" name="distribute-mode" value="even" /><span data-i18n="props.distributeEven"></span></label>
+                </div>
+              </fieldset>
+              <div id="distribute-row" class="tool-row" role="group" data-i18n-label="props.distribute">
+                <button type="button" class="icon-btn" data-distribute="x" data-i18n-label="props.distributeX" data-i18n-tip="props.distributeX" data-kbd="Alt+Shift+X" data-aks="Alt+Shift+X"><span data-icon="align-horizontal-space-between"></span></button>
+                <button type="button" class="icon-btn" data-distribute="y" data-i18n-label="props.distributeY" data-i18n-tip="props.distributeY" data-kbd="Alt+Shift+Y" data-aks="Alt+Shift+Y"><span data-icon="align-vertical-space-between"></span></button>
+                <p id="distribute-note" class="tools-note"></p>
+              </div>
             </div>
             <label id="page-row" class="field" hidden>
               <span class="field-label" data-i18n="props.page"></span>

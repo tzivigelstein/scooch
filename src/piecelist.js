@@ -1,10 +1,14 @@
 // Panel «Piezas»: zona para agregar y lista de piezas (listbox de selección
-// única, con foco itinerante: una sola parada de Tab y flechas para recorrer).
-// Con varias hojas, las piezas se agrupan por hoja (role="group" con su
-// encabezado y contador); las flechas pasan de un grupo al siguiente.
-// La selección de la lista y la de la hoja son la misma.
+// múltiple, con foco itinerante: una sola parada de Tab y flechas para
+// recorrer). Las flechas eligen la pieza enfocada; con Shift extienden la
+// selección desde la última elegida (como Shift+clic); con Ctrl/Cmd solo
+// mueven el foco, y Ctrl+Espacio (o Shift+Espacio) agrega o quita la enfocada
+// (como Ctrl/Cmd+clic). Con varias hojas, las piezas se agrupan por hoja
+// (role="group" con su encabezado y contador); las flechas pasan de un grupo
+// al siguiente. La selección de la lista y la de la hoja son la misma.
 
 import { state, assets, dims, settings, isSelected } from './store.js';
+import { rangeBetween } from './group.js';
 import { problemsById } from './notice.js';
 import { printResolution } from './layout.js';
 import { icon } from './icons.js';
@@ -24,38 +28,89 @@ const rows = new Map(); // id de pieza → <div role="option">
 const groups = new Map(); // id de hoja → {group, head, title, count, items}
 let ui = {};
 let handlers = {};
+let anchor = null; // desde dónde se extiende la selección con Shift (la última elegida a mano)
+let focusMode = null; // qué hace el próximo foco de una fila: 'replace', 'extend', 'move' o null
 
 /**
- * `select(id)`: selecciona (sin mover el foco). `toSheet()`: foco a la pieza en
- * la hoja. `remove()`: quita la seleccionada (la selección pasa a la vecina).
+ * `select(id)`: elige solo esa (sin mover el foco). `toggle(id)`: la agrega o
+ * la quita. `setRange(ids, primary)`: elige esas (la principal, al final).
+ * `focusPiece(id)`: se enfocó una fila (como enfocar la pieza en la hoja).
+ * `toSheet()`: foco a la pieza en la hoja. `remove()`: quita las elegidas.
  */
 export function initPieceList(h) {
   handlers = h;
   ui = { list: $('piece-list'), empty: $('list-empty'), total: $('piece-total'), dockCount: $('dock-count') };
+  // El foco lo pone el clic (después de decidir qué elegir): si llegara antes, en
+  // el mousedown, elegiría solo esa y Shift o Ctrl + clic no podrían sumar.
+  ui.list.addEventListener('mousedown', (e) => {
+    if (e.target.closest('[role="option"]')) e.preventDefault();
+  });
   ui.list.addEventListener('click', (e) => {
     const row = e.target.closest('[role="option"]');
     if (!row) return;
-    handlers.select(Number(row.dataset.id));
+    const id = Number(row.dataset.id);
+    focusMode = 'move';
+    if (e.shiftKey) extendTo(id);
+    else if (e.ctrlKey || e.metaKey) toggle(id);
+    else {
+      anchor = id;
+      handlers.select(id);
+    }
     row.focus();
+    focusMode = null;
   });
-  // Enfocar una fila la selecciona (como en la hoja).
   ui.list.addEventListener('focusin', (e) => {
     const row = e.target.closest('[role="option"]');
-    if (row) handlers.select(Number(row.dataset.id));
+    if (!row) return;
+    const id = Number(row.dataset.id);
+    const mode = focusMode;
+    focusMode = null;
+    if (mode === 'move') return;
+    if (mode === 'extend') return extendTo(id);
+    if (mode === 'replace') {
+      anchor = id;
+      return handlers.select(id);
+    }
+    // Con Tab o al volver a la lista: como enfocar la pieza en la hoja.
+    handlers.focusPiece(id);
   });
   ui.list.addEventListener('keydown', onKeyDown);
 }
 
+const order = () => [...ui.list.querySelectorAll('[role="option"]')].map((row) => Number(row.dataset.id));
+
+function extendTo(id) {
+  const from = anchor !== null && rows.has(anchor) ? anchor : (state.selection.at(-1) ?? id);
+  const ids = rangeBetween(order(), from, id);
+  handlers.setRange(ids, id);
+}
+
+function toggle(id) {
+  anchor = id;
+  handlers.toggle(id);
+}
+
 function onKeyDown(e) {
-  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.altKey) return;
   const options = [...ui.list.querySelectorAll('[role="option"]')];
   const i = options.indexOf(document.activeElement);
   if (i < 0) return;
+  const mod = e.ctrlKey || e.metaKey;
   const move = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: options.length - 1, PageDown: i + 8, PageUp: i - 8 }[e.key];
   if (move !== undefined) {
     e.preventDefault();
     e.stopPropagation();
-    options[Math.max(0, Math.min(options.length - 1, move))].focus();
+    const target = options[Math.max(0, Math.min(options.length - 1, move))];
+    if (target === document.activeElement) return;
+    focusMode = e.shiftKey ? 'extend' : mod ? 'move' : 'replace';
+    target.focus();
+    focusMode = null;
+  } else if (e.key === ' ' && (mod || e.shiftKey)) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.repeat) toggle(Number(document.activeElement.dataset.id));
+  } else if (mod) {
+    return;
   } else if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
     e.stopPropagation();

@@ -1,15 +1,46 @@
-// Panel «Propiedades»: sección Pieza (solo con selección) y secciones
-// plegables Hoja, Distribución y Grilla, que recuerdan si están abiertas.
-// Las longitudes se muestran y se cargan en la unidad elegida (lengthfield.js).
+// Panel «Propiedades»: sección Pieza (solo con selección; con varias, «N
+// piezas», con la caja del grupo, la escala común y alinear y distribuir) y
+// secciones plegables Hoja, Distribución y Grilla, que recuerdan si están
+// abiertas. Las longitudes se muestran y se cargan en la unidad elegida
+// (lengthfield.js).
 
 import { GRID_MIN, GRID_MAX, SECTIONS_STORAGE, CUSTOM_PAPER_STORAGE } from './config.js';
 import { PAPERS, PAPER_GROUPS, CUSTOM_MIN, CUSTOM_MAX, customPaper, validateSide, matchPreset } from './papers.js';
 import { gridPresets } from './units.js';
-import { state, settings, assets, dims, selectedItem, commit, endEdit, render, setGrid, setAllowOverlap, sheetSize } from './store.js';
+import {
+  state,
+  settings,
+  assets,
+  dims,
+  selectedItem,
+  selectedItems,
+  primaryItem,
+  sheetIndex,
+  commit,
+  endEdit,
+  render,
+  setGrid,
+  setAllowOverlap,
+  sheetSize,
+} from './store.js';
+import { bounds } from './align.js';
+import { common } from './group.js';
+import {
+  groupPrefs,
+  alignsToSheet,
+  alignSelection,
+  distributeSelection,
+  canDistribute,
+  distributeNeeds,
+  moveGroupTo,
+  resizeGroupTo,
+  setSelectionScale,
+} from './groupactions.js';
 import { keepCenterInside } from './sheets.js';
 import { keepCenter, fillSummary, printResolution } from './layout.js';
 import { bindLength, showLength } from './lengthfield.js';
 import { lengthText, sizeText, unitName, unitSymbol } from './measure.js';
+import { announce } from './live.js';
 import { icon } from './icons.js';
 import { $, clamp, num, storageGet, storageSet } from './util.js';
 import { t, numberLocale } from './copy/index.js';
@@ -19,6 +50,7 @@ let ui = {};
 export function initPanels(actions) {
   ui = {
     // Pieza
+    pieceTitle: $('piece-title'),
     pieceEmpty: $('piece-empty'),
     pieceProps: $('piece-props'),
     pieceName: $('piece-name'),
@@ -44,6 +76,14 @@ export function initPanels(actions) {
     fillWarning: $('fill-warning'),
     fill: $('fill'),
     remove: $('piece-remove'),
+    removeText: $('piece-remove').querySelector('[data-i18n]'),
+    alignTo: $('align-to'),
+    alignToField: $('align-to-field'),
+    alignSheetNote: $('align-sheet-note'),
+    alignButtons: [...document.querySelectorAll('#align-row [data-align]')],
+    distributeMode: $('distribute-mode'),
+    distributeButtons: [...document.querySelectorAll('#distribute-row [data-distribute]')],
+    distributeNote: $('distribute-note'),
     // Hoja
     paper: $('paper'),
     customPaper: $('custom-paper'),
@@ -81,15 +121,44 @@ export function initPanels(actions) {
     const spot = keepCenterInside({ x: changes.x ?? item.x, y: changes.y ?? item.y, w, h }, W, H);
     return 'x' in changes ? { x: spot.x } : { y: spot.y };
   };
-  bindItemLength(ui.posX, 'x', (item) => item.x, (item, mm) => inside(item, { x: mm }));
-  bindItemLength(ui.posY, 'y', (item) => item.y, (item, mm) => inside(item, { y: mm }));
-  bindItemLength(ui.width, 'width', (item) => dims(item)[0], (item, mm) => scaleFor(item, mm, 0), positive);
-  bindItemLength(ui.height, 'height', (item) => dims(item)[1], (item, mm) => scaleFor(item, mm, 1), positive);
-  ui.actual.addEventListener('click', () =>
+  // Con varias, los mismos campos son los de la caja del grupo (en la hoja de la principal).
+  const group = {
+    x: { get: (box) => box.x, set: (mm, opts) => moveGroupTo('x', mm, opts) },
+    y: { get: (box) => box.y, set: (mm, opts) => moveGroupTo('y', mm, opts) },
+    width: { get: (box) => box.w, set: (mm, opts) => resizeGroupTo('w', mm, opts) },
+    height: { get: (box) => box.h, set: (mm, opts) => resizeGroupTo('h', mm, opts) },
+  };
+  bindItemLength(ui.posX, 'x', (item) => item.x, (item, mm) => inside(item, { x: mm }), undefined, group.x);
+  bindItemLength(ui.posY, 'y', (item) => item.y, (item, mm) => inside(item, { y: mm }), undefined, group.y);
+  bindItemLength(ui.width, 'width', (item) => dims(item)[0], (item, mm) => scaleFor(item, mm, 0), positive, group.width);
+  bindItemLength(ui.height, 'height', (item) => dims(item)[1], (item, mm) => scaleFor(item, mm, 1), positive, group.height);
+  ui.actual.addEventListener('click', () => {
+    if (selectedItems().length > 1) {
+      if (state.busy) return;
+      if (setSelectionScale(100, { final: true, key: null })) announce(t('announce.actualSizeGroup', { n: state.selection.length }));
+      return;
+    }
     actions.editSelected((item) => keepCenter(item, () => (item.scale = 100)), {
       announce: (item) => t('announce.actualSize', { size: itemSize(item) }),
-    })
-  );
+    });
+  });
+  // Alinear y distribuir
+  for (const button of ui.alignButtons) button.addEventListener('click', () => !state.busy && alignSelection(button.dataset.align));
+  for (const button of ui.distributeButtons) {
+    button.addEventListener('click', () => {
+      if (state.busy) return;
+      if (button.getAttribute('aria-disabled') === 'true') return announce(button.dataset.tipNote);
+      distributeSelection(button.dataset.distribute);
+    });
+  }
+  ui.alignTo.addEventListener('change', (e) => {
+    groupPrefs.alignTo = e.target.value;
+    render();
+  });
+  ui.distributeMode.addEventListener('change', (e) => {
+    groupPrefs.distribute = e.target.value;
+    render();
+  });
   ui.fit.addEventListener('click', () => actions.fit());
   ui.center.addEventListener('click', () => actions.center());
   ui.front.addEventListener('click', () => {
@@ -249,12 +318,20 @@ const itemSize = (item) => {
   return sizeText(w, h);
 };
 
-/** Input numérico de la pieza (escala): `patch(item, valor)` devuelve los cambios o null si no vale. */
+const isGroup = () => state.selection.length > 1;
+
+/**
+ * Input numérico de la pieza (escala): `patch(item, valor)` devuelve los
+ * cambios o null si no vale. Con varias, la escala pasa a todas (cada una
+ * desde su centro); si al confirmar no vale, vuelve a como estaba.
+ */
 function bindItemNumber(input, name, patch) {
   input.addEventListener('input', () => {
-    const item = selectedItem();
     const value = parseFloat(input.value);
-    if (!item || state.busy || !Number.isFinite(value)) return;
+    if (state.busy || !Number.isFinite(value) || !(value > 0)) return;
+    if (isGroup()) return setSelectionScale(value, { key: `group-${name}` });
+    const item = selectedItem();
+    if (!item) return;
     const changes = patch(item, value);
     if (!changes) return;
     commit(`${name}:${item.id}`);
@@ -262,6 +339,10 @@ function bindItemNumber(input, name, patch) {
     render();
   });
   input.addEventListener('change', () => {
+    const value = parseFloat(input.value);
+    if (isGroup() && !state.busy && Number.isFinite(value) && value > 0) {
+      return setSelectionScale(value, { key: `group-${name}`, final: true });
+    }
     endEdit();
     render();
   });
@@ -270,16 +351,22 @@ function bindItemNumber(input, name, patch) {
 // ¿Cambiaría algo? (Confirmar dos veces lo mismo no agrega pasos de deshacer.)
 const differs = (target, changes) => Object.entries(changes).some(([key, value]) => target[key] !== value);
 
-/** Longitud de la pieza: `get(item)` en mm y `patch(item, mm)` con los cambios (o null). */
-function bindItemLength(input, name, get, patch, check) {
+/**
+ * Longitud de la pieza: `get(item)` en mm y `patch(item, mm)` con los cambios
+ * (o null). Con varias, `group.get(caja)` y `group.set(mm, {final})` (la caja
+ * del grupo en la hoja de la principal).
+ */
+function bindItemLength(input, name, get, patch, check, group) {
   bindLength(input, {
     value: () => {
+      if (isGroup()) return group.get(primaryBox());
       const item = selectedItem();
       return item ? get(item) : null;
     },
     check,
-    busy: () => state.busy || !selectedItem(),
+    busy: () => state.busy || !state.selection.length,
     apply: (mm, { final }) => {
+      if (isGroup()) return group.set(mm, { final });
       const item = selectedItem();
       const changes = item && patch(item, mm);
       if (changes && differs(item, changes)) {
@@ -432,6 +519,20 @@ function renderPaper() {
   for (const field of [ui.paperW, ui.paperH]) describePaperField(field);
 }
 
+// Caja de las elegidas en la hoja de la principal (o de `list`, durante un gesto).
+function primaryBox(list = selectedItems()) {
+  const primaryId = state.selection.at(-1);
+  const primary = list.find((item) => item.id === primaryId) ?? list.at(-1);
+  return bounds(
+    list
+      .filter((item) => item.sheet === primary.sheet)
+      .map((item) => {
+        const [w, h] = dims(item);
+        return { x: item.x, y: item.y, w, h };
+      })
+  );
+}
+
 // ---------- Render ----------
 
 // Mientras se carga algo, los controles se deshabilitan, salvo el que tiene el
@@ -446,18 +547,99 @@ function setValue(input, value) {
 }
 
 /**
- * Redibuja el panel. Con `draft` (una copia del item durante un arrastre),
- * solo actualiza los valores de la pieza, en vivo.
+ * Redibuja el panel. Con `drafts` (copias de las piezas durante un gesto),
+ * solo actualiza los valores de la sección Pieza, en vivo.
  */
-export function renderPanels(draft = null) {
+export function renderPanels(drafts = null) {
   if (shownUnit !== settings.unit) applyUnit();
-  const item = draft ?? selectedItem();
-  if (!draft) renderSettings();
-  ui.pieceEmpty.hidden = !!item;
-  ui.pieceProps.hidden = !item;
-  if (!item) return;
+  const list = drafts ?? selectedItems();
+  if (!drafts) renderSettings();
+  const n = list.length;
+  ui.pieceEmpty.hidden = n > 0;
+  ui.pieceProps.hidden = n === 0;
+  const title = n > 1 ? t('pieces.count', { n }) : t('props.piece');
+  if (ui.pieceTitle.textContent !== title) ui.pieceTitle.textContent = title;
+  if (!n) return;
+  ui.pieceProps.classList.toggle('is-group', n > 1);
+  if (n > 1) renderGroup(list, !!drafts);
+  else renderSingle(list[0], !!drafts);
+  if (drafts) return;
+  renderArrangeTools(n);
+}
+
+// Con varias: dónde están, la caja del grupo, la escala común (o «Mixta»).
+function renderGroup(list, live) {
+  const busy = state.busy;
+  for (const el of [ui.scale, ui.slider, ui.width, ui.height, ui.posX, ui.posY, ui.actual]) setDisabled(el, busy);
+  const primaryId = state.selection.at(-1);
+  const primary = list.find((item) => item.id === primaryId) ?? list.at(-1);
+  const sheets = new Set(list.map((item) => item.sheet));
+  const where =
+    sheets.size > 1
+      ? t('props.groupOnSheets', { n: sheets.size, i: sheetIndex(primary.sheet) + 1 })
+      : t('props.groupOnSheet', { i: sheetIndex(primary.sheet) + 1 });
+  if (ui.pieceName.textContent !== where) ui.pieceName.textContent = where;
+  ui.pieceName.dataset.tip = where;
+  const box = primaryBox(list);
+  showLength(ui.posX, box.x);
+  showLength(ui.posY, box.y);
+  showLength(ui.width, box.w);
+  showLength(ui.height, box.h);
+  const scale = common(list.map((item) => item.scale), 0.05);
+  setValue(ui.scale, scale === null ? '' : num(scale));
+  ui.scale.placeholder = scale === null ? t('props.mixed') : '';
+  setValue(ui.slider, String(clamp(scale ?? primary.scale, 1, 200)));
+  ui.slider.setAttribute('aria-valuetext', scale === null ? t('props.mixed') : t('units.scale', { n: scale }));
+  for (const input of [ui.scale, ui.slider, ui.width, ui.height]) input.removeAttribute('aria-describedby');
+  ui.resolutionNote.hidden = true;
+  ui.rotationNote.hidden = true;
+  if (live) return;
+  for (const el of [ui.fit, ui.center, ui.front, ui.pageRow, ui.fillDetails]) el.hidden = true;
+  const removeText = t('props.removeMany', { n: list.length });
+  if (ui.removeText.textContent !== removeText) ui.removeText.textContent = removeText;
+}
+
+// Alinear (con una, contra el área útil) y distribuir (deshabilitado, y
+// explicado, si no hay suficientes en ninguna hoja).
+function renderArrangeTools(n) {
+  const toSheet = alignsToSheet();
+  ui.alignToField.hidden = n < 2;
+  ui.alignSheetNote.hidden = n > 1;
+  for (const radio of ui.alignTo.querySelectorAll('input')) radio.checked = radio.value === groupPrefs.alignTo;
+  for (const button of ui.alignButtons) {
+    const label = t(`props.align${button.dataset.align[0].toUpperCase()}${button.dataset.align.slice(1)}`);
+    button.dataset.tipNote = toSheet ? t('props.alignSheetTip') : t('props.alignSelectionTip');
+    if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
+    setDisabled(button, state.busy);
+  }
+  for (const radio of ui.distributeMode.querySelectorAll('input')) radio.checked = radio.value === groupPrefs.distribute;
+  const enabled = canDistribute();
+  const need = distributeNeeds();
+  const gap = lengthText(state.gap);
+  const why = need === 2 ? t('props.distributeNeedTwo') : t('props.distributeNeedThree');
+  for (const button of ui.distributeButtons) {
+    const label = t(button.dataset.distribute === 'x' ? 'props.distributeX' : 'props.distributeY');
+    button.setAttribute('aria-disabled', String(!enabled));
+    button.dataset.tip = label;
+    button.dataset.tipNote = enabled ? (groupPrefs.distribute === 'gap' ? t('props.distributeGapTip', { gap }) : t('props.distributeEvenTip')) : why;
+    setDisabled(button, state.busy);
+  }
+  const note = groupPrefs.distribute === 'gap' ? t('props.distributeGapNote', { gap }) : '';
+  if (ui.distributeNote.textContent !== note) ui.distributeNote.textContent = note;
+}
+
+// Con una: lo de siempre.
+function renderSingle(item, live) {
+  const draft = live;
   const asset = assets.get(item.asset);
   const busy = state.busy;
+  if (!live) {
+    for (const el of [ui.fit, ui.center, ui.front, ui.fillDetails]) el.hidden = false;
+    ui.scale.placeholder = '';
+    const removeText = t('props.remove');
+    if (ui.removeText.textContent !== removeText) ui.removeText.textContent = removeText;
+  }
+  ui.resolutionNote.hidden = false;
   for (const el of [ui.scale, ui.slider, ui.width, ui.height, ui.posX, ui.posY, ui.actual, ui.page, ui.fill]) {
     setDisabled(el, busy);
   }

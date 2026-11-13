@@ -139,9 +139,12 @@ export function nextFreeForGroup(layers, dx, dy) {
  * Candidatos: 0 y los corrimientos que apoyan una pieza del grupo contra un
  * borde de otra (o su centro contra el borde de la hoja), combinados en x e y
  * (como `nearestFree`). `maxDistance` descarta los lejanos. No compara las del
- * grupo entre sí (se mueven juntas). Devuelve {dx, dy} o null.
+ * grupo entre sí (se mueven juntas). Con `step` (> 0), solo corrimientos que
+ * son múltiplos del paso (el bloque sigue en la grilla del imán): cada
+ * candidato se redondea al múltiplo de abajo y al de arriba. Devuelve {dx, dy}
+ * o null.
  */
-export function nearestFreeOffset(layers, { maxDistance = Infinity } = {}) {
+export function nearestFreeOffset(layers, { maxDistance = Infinity, step = 0 } = {}) {
   const xs = new Set([0]);
   const ys = new Set([0]);
   for (const { rects, others, bounds } of layers) {
@@ -160,7 +163,16 @@ export function nearestFreeOffset(layers, { maxDistance = Infinity } = {}) {
       }
     }
   }
-  const near = (values) => [...values].filter((v) => Math.abs(v) <= maxDistance + 1e-9);
+  const onGrid = (values) => {
+    if (!(step > 0)) return values;
+    const out = new Set();
+    for (const v of values) {
+      out.add(Math.floor(v / step + 1e-9) * step);
+      out.add(Math.ceil(v / step - 1e-9) * step);
+    }
+    return out;
+  };
+  const near = (values) => [...onGrid(values)].filter((v) => Math.abs(v) <= maxDistance + 1e-9);
   const candidates = [];
   for (const dx of near(xs)) {
     for (const dy of near(ys)) {

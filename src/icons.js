@@ -6,6 +6,14 @@
 // <span data-icon="nombre">, con los nombres oficiales de Lucide.
 
 import {
+  AlignCenterHorizontal,
+  AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignHorizontalSpaceBetween,
+  AlignStartHorizontal,
+  AlignStartVertical,
+  AlignVerticalSpaceBetween,
   BringToFront,
   Check,
   ChevronDown,
@@ -54,6 +62,14 @@ import {
 } from 'lucide';
 
 const ICONS = {
+  'align-center-horizontal': AlignCenterHorizontal,
+  'align-center-vertical': AlignCenterVertical,
+  'align-end-horizontal': AlignEndHorizontal,
+  'align-end-vertical': AlignEndVertical,
+  'align-horizontal-space-between': AlignHorizontalSpaceBetween,
+  'align-start-horizontal': AlignStartHorizontal,
+  'align-start-vertical': AlignStartVertical,
+  'align-vertical-space-between': AlignVerticalSpaceBetween,
   'bring-to-front': BringToFront,
   'check': Check,
   'chevron-down': ChevronDown,

@@ -1,14 +1,33 @@
 // Las hojas en pantalla, una debajo de otra (como páginas): tamaño (zoom),
-// piezas, marco de selección con su tirador, barra de la pieza, hoja actual y
-// gestos con el puntero (también para pasar una pieza de una hoja a otra).
+// piezas, marco de selección con su tirador (uno por hoja con varias
+// elegidas), barra de la pieza, hoja actual y gestos con el puntero: mover y
+// escalar una pieza o el grupo (también de una hoja a otra) y elegir con un
+// recuadro.
 //
 // Rendimiento: render solo toca lo que cambió (cada nodo recuerda con qué se
-// dibujó); durante un arrastre se mueve únicamente la pieza arrastrada y el
-// marco, y el scroll solo reubica la barra y marca la hoja actual.
+// dibujó); durante un arrastre se mueven únicamente las piezas arrastradas y
+// los marcos, y el scroll solo reubica la barra y marca la hoja actual.
 
 import { DRAG_THRESHOLD, NARROW_QUERY } from './config.js';
-import { state, settings, assets, view, sheetSize, dims, findItem, commit, itemsOn, currentSheet, sheetIndex, isSelected, selectedItem, primaryItem } from './store.js';
+import {
+  state,
+  settings,
+  assets,
+  view,
+  sheetSize,
+  dims,
+  findItem,
+  commit,
+  itemsOn,
+  currentSheet,
+  sheetIndex,
+  isSelected,
+  selectedItems,
+  primaryItem,
+} from './store.js';
 import { overlapsAny, nearestFree, maxGrowth } from './collide.js';
+import { bounds, scaleGroup } from './align.js';
+import { touchedBy } from './group.js';
 import { sheetAt, keepCenterInside } from './sheets.js';
 import { paperTitle, sizeText, lengthText } from './measure.js';
 import { icon } from './icons.js';
@@ -18,6 +37,7 @@ import { pickSpot, clip } from './placement.js';
 
 const nodes = new Map(); // id de pieza → nodo
 const pages = new Map(); // id de hoja → {page, label, remove, box, sheet, grid, safe, hint}
+const groupFrames = new Map(); // id de hoja → {frame, handle}: marcos de la selección múltiple
 let boxes = new Map(); // id de hoja → {left, top} de su caja dentro de #sheets
 let ui = {};
 let handlers = {};
@@ -31,10 +51,15 @@ export const isDragging = () => !!gesture?.moved;
 export const sheetNode = (id) => pages.get(id)?.sheet ?? null;
 
 /**
- * `handlers.select(id)`: selecciona (sin mover el foco).
+ * `handlers.select(id)`: selecciona solo esa (sin mover el foco).
+ * `handlers.focusPiece(id)`: se enfocó una pieza (la selección la sigue si no está fijada).
+ * `handlers.toggle(id)`: Shift o Ctrl + clic; devuelve si quedó elegida.
+ * `handlers.makePrimary(id)`: la pieza (ya elegida) pasa a ser la principal.
+ * `handlers.selectArea(ids, additive)`: lo que tocó el recuadro.
  * `handlers.background(sheetId)`: click en una hoja vacía o alrededor (null).
- * `handlers.commitGesture(result, {sheetChanged, item})`: después de mover/escalar.
- * `handlers.preview(draft)`: durante el gesto, con la copia del item (valores en vivo).
+ * `handlers.commitGesture(result, {sheetChanged, item, group})`: después de mover/escalar.
+ * `handlers.preview(drafts)`: durante el gesto, con copias de las piezas (valores en vivo).
+ * `handlers.planDrag`, `dropGroup`, `groupScaleBounds`, `applyGroupScale`: el grupo (groupactions.js).
  * `handlers.removeSheet(id, {viaKeyboard})` y `handlers.addSheet()`.
  * `handlers.currentChanged()`: la hoja actual cambió por el scroll o el foco.
  */
@@ -54,16 +79,22 @@ export function initSheetView(h) {
     piecebar: $('piecebar'),
     pieceSize: $('piece-size'),
     narrow: window.matchMedia(NARROW_QUERY),
+    marquee: document.createElement('div'),
   };
+  ui.marquee.className = 'marquee';
+  ui.marquee.hidden = true;
+  ui.marquee.setAttribute('aria-hidden', 'true');
+  ui.sheets.append(ui.marquee);
   ui.stage.addEventListener('pointerdown', onPointerDown);
   ui.stage.addEventListener('pointermove', onPointerMove);
   ui.stage.addEventListener('pointerup', onPointerUp);
   ui.stage.addEventListener('pointercancel', onPointerUp);
   ui.stage.addEventListener('scroll', onScroll, { passive: true });
-  // Enfocar una pieza la selecciona; enfocar algo de una hoja la vuelve la actual.
+  // Enfocar una pieza la selecciona (salvo que la selección esté fijada);
+  // enfocar algo de una hoja la vuelve la actual.
   ui.sheets.addEventListener('focusin', (e) => {
     const node = e.target.closest('.piece');
-    if (node) return handlers.select(Number(node.dataset.id));
+    if (node) return handlers.focusPiece(Number(node.dataset.id));
     const page = e.target.closest('.page');
     if (page) setViewSheet(Number(page.dataset.sheet));
   });
@@ -322,11 +353,15 @@ function updatePiece(node, item, offset = null) {
   const left = (offset?.left ?? 0) + item.x * zoom;
   const top = (offset?.top ?? 0) + item.y * zoom;
   const selected = isSelected(item.id);
-  const key = `${left}|${top}|${w}|${h}|${zoom}|${item.r}|${asset.url}|${selected}|${settings.unit}|${asset.name}|${asset.page}`;
+  const grouped = selected && state.selection.length > 1;
+  // Con varias elegidas (o la selección fijada), el nombre dice si está elegida.
+  const marked = selected && (grouped || view.pinned);
+  const key = `${left}|${top}|${w}|${h}|${zoom}|${item.r}|${asset.url}|${selected}|${grouped}|${marked}|${settings.unit}|${asset.name}|${asset.page}`;
   if (node.dataset.key === key) return;
   node.dataset.key = key;
   node.classList.toggle('is-selected', selected);
-  const label = pieceLabel(item);
+  node.classList.toggle('is-grouped', grouped);
+  const label = pieceLabel(item) + (marked ? t('piece.a11ySelected') : '');
   if (node.getAttribute('aria-label') !== label) node.setAttribute('aria-label', label);
   Object.assign(node.style, { left: `${left}px`, top: `${top}px`, width: `${w * zoom}px`, height: `${h * zoom}px` });
   const img = node.firstChild;
@@ -344,23 +379,90 @@ export function rectOf(item) {
   return { id: item.id, x: item.x, y: item.y, w, h };
 }
 
-// ---------- Selección: marco, tirador y barra de la pieza ----------
+// ---------- Selección: marcos, tirador y barra de la pieza ----------
 
-function renderSelection(draft = null) {
-  const item = draft ?? selectedItem();
-  const box = item && boxes.get(item.sheet);
+/**
+ * Lo que marca la selección: con una pieza, su marco (#frame); con varias, un
+ * marco alrededor de las elegidas de cada hoja, cada uno con su tirador. La
+ * barra va junto a la pieza o junto al marco de la hoja de la principal.
+ * `drafts`: Map id → copia de la pieza durante un gesto (valores en vivo).
+ */
+function renderSelection(drafts = null) {
+  const list = drafts ? [...drafts.values()] : selectedItems();
+  const group = list.length > 1;
+  const single = !group ? list[0] : null;
+  const box = single && boxes.get(single.sheet);
   ui.frame.hidden = !box;
-  ui.piecebar.hidden = !box;
-  if (!box) return;
-  const [w, h] = dims(item);
-  Object.assign(ui.frame.style, {
-    left: `${box.left + item.x * zoom}px`,
-    top: `${box.top + item.y * zoom}px`,
-    width: `${w * zoom}px`,
-    height: `${h * zoom}px`,
-  });
-  ui.pieceSize.textContent = sizeText(w, h);
-  if (!gesture?.moved) placePiecebar(item);
+  if (box) {
+    const [w, h] = dims(single);
+    Object.assign(ui.frame.style, {
+      left: `${box.left + single.x * zoom}px`,
+      top: `${box.top + single.y * zoom}px`,
+      width: `${w * zoom}px`,
+      height: `${h * zoom}px`,
+    });
+  }
+  const bySheet = group ? groupBoxes(list) : new Map();
+  for (const [id, f] of groupFrames) {
+    if (bySheet.has(id) && pages.has(id)) continue;
+    f.frame.remove();
+    groupFrames.delete(id);
+  }
+  for (const [sheetId, b] of bySheet) {
+    const offset = boxes.get(sheetId);
+    if (!offset) continue;
+    Object.assign(frameFor(sheetId).frame.style, {
+      left: `${offset.left + b.x * zoom}px`,
+      top: `${offset.top + b.y * zoom}px`,
+      width: `${b.w * zoom}px`,
+      height: `${b.h * zoom}px`,
+    });
+  }
+  const target = selectionTarget(list, bySheet);
+  ui.piecebar.hidden = !target;
+  if (!target) return;
+  ui.pieceSize.textContent = group ? t('pieces.count', { n: list.length }) : sizeText(target.w, target.h);
+  if (!gesture?.moved) placePiecebar(target);
+}
+
+/** Caja de las elegidas de cada hoja (en mm, en su hoja): Map hoja → {x, y, w, h}. */
+function groupBoxes(list) {
+  const bySheet = new Map();
+  for (const item of list) {
+    if (!bySheet.has(item.sheet)) bySheet.set(item.sheet, []);
+    bySheet.get(item.sheet).push(rectOf(item));
+  }
+  return new Map([...bySheet].map(([id, rects]) => [id, bounds(rects)]));
+}
+
+function frameFor(sheetId) {
+  let f = groupFrames.get(sheetId);
+  if (!f) {
+    const frame = document.createElement('div');
+    frame.className = 'group-frame';
+    frame.setAttribute('aria-hidden', 'true');
+    const handle = document.createElement('span');
+    handle.className = 'handle';
+    handle.dataset.sheet = sheetId;
+    frame.append(handle);
+    ui.sheets.insertBefore(frame, ui.frame);
+    f = { frame, handle };
+    groupFrames.set(sheetId, f);
+  }
+  return f;
+}
+
+/**
+ * Dónde va la barra: {sheet, x, y, w, h, ids} con la pieza elegida o, con
+ * varias, la caja de las elegidas en la hoja de la principal. null sin selección.
+ */
+function selectionTarget(list = selectedItems(), bySheet = list.length > 1 ? groupBoxes(list) : null) {
+  if (!list.length) return null;
+  const primaryId = state.selection.at(-1);
+  const primary = list.find((item) => item.id === primaryId) ?? list.at(-1);
+  if (!boxes.get(primary.sheet)) return null;
+  const rect = list.length > 1 ? bySheet.get(primary.sheet) : rectOf(primary);
+  return { sheet: primary.sheet, x: rect.x, y: rect.y, w: rect.w, h: rect.h, ids: new Set(list.map((item) => item.id)) };
 }
 
 /**
@@ -371,7 +473,7 @@ function renderSelection(draft = null) {
  * lienzo ni queda debajo de un panel abierto encima del lienzo. Si la pieza quedó
  * fuera de la vista (por el scroll), la barra se oculta hasta que vuelva.
  */
-function placePiecebar(item) {
+function placePiecebar(target) {
   const bar = ui.piecebar;
   if (ui.narrow.matches) {
     bar.style.transform = '';
@@ -379,17 +481,14 @@ function placePiecebar(item) {
     bar.classList.remove('is-offscreen');
     return;
   }
-  const page = pages.get(item.sheet);
+  const page = pages.get(target.sheet);
   if (!page) return;
   const canvas = ui.canvas.getBoundingClientRect();
   const stage = ui.stage.getBoundingClientRect();
   const box = page.box.getBoundingClientRect();
   const sheet = { x: box.left - canvas.left, y: box.top - canvas.top, w: box.width, h: box.height };
-  const onCanvas = (it) => {
-    const [w, h] = dims(it);
-    return { x: sheet.x + it.x * zoom, y: sheet.y + it.y * zoom, w: w * zoom, h: h * zoom };
-  };
-  const piece = onCanvas(item);
+  const onCanvas = (r) => ({ x: sheet.x + r.x * zoom, y: sheet.y + r.y * zoom, w: r.w * zoom, h: r.h * zoom });
+  const piece = onCanvas(target);
   const visible = { x: stage.left - canvas.left, y: stage.top - canvas.top, w: stage.width, h: stage.height };
   const offscreen = !clip(piece, visible) && !bar.contains(document.activeElement);
   bar.classList.toggle('is-offscreen', offscreen);
@@ -422,9 +521,9 @@ function placePiecebar(item) {
   // Lo que se ve de las otras piezas de la hoja (la hoja recorta lo que se sale)
   // y el encabezado de la hoja (con su botón para quitarla).
   const head = page.page.firstChild.getBoundingClientRect();
-  const covers = itemsOn(item.sheet)
-    .filter((other) => other.id !== item.id)
-    .map((other) => clip(onCanvas(other), sheet))
+  const covers = itemsOn(target.sheet)
+    .filter((other) => !target.ids.has(other.id))
+    .map((other) => clip(onCanvas(rectOf(other)), sheet))
     .filter(Boolean)
     .concat({ x: head.left - canvas.left, y: head.top - canvas.top, w: head.width, h: head.height });
   // Si no entra en ningún lado, encima de la pieza, dentro del lienzo.
@@ -449,11 +548,11 @@ function onScroll() {
   scrollFrame = requestAnimationFrame(() => {
     scrollFrame = 0;
     if (gesture?.moved) return;
-    const item = primaryItem();
-    if (!item) {
+    const target = selectionTarget();
+    if (!target) {
       const id = visibleSheet();
       if (id !== null) setViewSheet(id);
-    } else placePiecebar(item);
+    } else placePiecebar(target);
   });
 }
 
@@ -521,48 +620,137 @@ export function revealSheet(id) {
 }
 
 // ---------- Gestos con el puntero ----------
+//
+// Sobre una pieza: la elige y la arrastra (si ya estaba entre varias
+// elegidas, arrastra el grupo; un clic sin mover deja elegida solo esa). Con
+// Shift o Ctrl/Cmd, la agrega o la quita. Sobre un tirador: escala la pieza o
+// el grupo. En un lugar vacío: recuadro para elegir (un clic, sin arrastrar,
+// anula la selección).
 
-function onPointerDown(e) {
-  if (state.busy || e.button !== 0) return;
-  if (e.target.closest('.dropzone, .page-head, .sheets-foot')) return;
-  const onHandle = !!e.target.closest('.handle');
-  const node = onHandle ? nodes.get(primaryItem()?.id) : e.target.closest('.piece');
-  if (!node) {
-    const page = e.target.closest('.page');
-    return handlers.background(page ? Number(page.dataset.sheet) : null);
-  }
-  const item = findItem(Number(node.dataset.id));
-  if (!item) return;
-  e.preventDefault(); // evita selección de texto (y por eso el foco se mueve a mano)
-  if (isTyping(document.activeElement)) document.activeElement.blur();
-  handlers.select(item.id);
-  node.focus({ preventScroll: true });
-  // La captura va en #sheets, que no se mueve: la pieza puede cambiar de hoja.
+function capture(e) {
+  // La captura va en #sheets, que no se mueve: las piezas pueden cambiar de hoja.
   try {
     ui.sheets.setPointerCapture(e.pointerId);
   } catch {
     // Puntero que ya no está activo (o evento sintético): el gesto sigue sin captura.
   }
+}
+
+const pointer = (e) => ({ pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, lastX: e.clientX, lastY: e.clientY, scroll0: ui.stage.scrollTop });
+
+function onPointerDown(e) {
+  if (state.busy || e.button !== 0) return;
+  if (e.target.closest('.dropzone, .page-head, .sheets-foot')) return;
+  const additive = e.shiftKey || e.ctrlKey || e.metaKey;
+  const handle = e.target.closest('.handle');
+  if (handle) return startResize(e, handle);
+  const node = e.target.closest('.piece');
+  if (!node) return startMarquee(e, additive);
+  const item = findItem(Number(node.dataset.id));
+  if (!item) return;
+  e.preventDefault(); // evita selección de texto (y por eso el foco se mueve a mano)
+  if (isTyping(document.activeElement)) document.activeElement.blur();
+  let collapse = false;
+  if (additive) {
+    if (!handlers.toggle(item.id)) return node.focus({ preventScroll: true });
+  } else if (isSelected(item.id) && state.selection.length > 1) {
+    collapse = true;
+    handlers.makePrimary(item.id);
+  } else {
+    handlers.select(item.id);
+  }
+  node.focus({ preventScroll: true });
+  capture(e);
   measureBoxes();
+  if (state.selection.length > 1) return startGroupMove(e, item, collapse);
   gesture = {
+    kind: 'move',
     item,
     node,
-    pointerId: e.pointerId,
-    resize: onHandle,
-    startX: e.clientX,
-    startY: e.clientY,
-    lastX: e.clientX,
-    lastY: e.clientY,
-    scroll0: ui.stage.scrollTop,
+    ...pointer(e),
     size: dims(item),
     others: new Map(), // id de hoja → rectángulos de las otras piezas de esa hoja
-    // Sin superposición, el tirador frena al tocar a otra pieza.
-    growth: onHandle && !settings.allowOverlap ? maxGrowth(rectOf(item), othersOn(item.sheet, item), 'top-left') : Infinity,
     draft: { ...item },
     moved: false,
     blocked: false,
     target: item.sheet,
   };
+}
+
+function startResize(e, handle) {
+  e.preventDefault();
+  if (isTyping(document.activeElement)) document.activeElement.blur();
+  measureBoxes();
+  if (state.selection.length > 1) {
+    const sheet = Number(handle.dataset.sheet);
+    const items = selectedItems();
+    const frame = groupBoxes(items).get(sheet);
+    if (!frame) return;
+    capture(e);
+    pieceNode(state.selection.at(-1))?.focus({ preventScroll: true });
+    gesture = {
+      kind: 'group-resize',
+      ...pointer(e),
+      frame,
+      items,
+      // Factores posibles: límites de escala, centros en la hoja y, sin superposición, sin pisar a otras.
+      range: handlers.groupScaleBounds('top-left'),
+      drafts: new Map(items.map((item) => [item.id, { ...item }])),
+      k: 1,
+      moved: false,
+    };
+    return;
+  }
+  const item = primaryItem();
+  const node = item && nodes.get(item.id);
+  if (!node) return;
+  node.focus({ preventScroll: true });
+  capture(e);
+  gesture = {
+    kind: 'resize',
+    item,
+    node,
+    ...pointer(e),
+    size: dims(item),
+    // Sin superposición, el tirador frena al tocar a otra pieza.
+    growth: !settings.allowOverlap ? maxGrowth(rectOf(item), othersOn(item.sheet, item), 'top-left') : Infinity,
+    draft: { ...item },
+    moved: false,
+  };
+}
+
+function startGroupMove(e, item, collapse) {
+  const items = selectedItems();
+  const sheets = new Set(items.map((other) => other.sheet));
+  gesture = {
+    kind: 'group-move',
+    item,
+    items,
+    ...pointer(e),
+    collapse,
+    // En una sola hoja, el grupo puede pasar a otra; en varias, cada parte queda en la suya.
+    oneSheet: sheets.size === 1 ? item.sheet : null,
+    box: bounds(items.map(rectOf)),
+    drafts: new Map(items.map((other) => [other.id, { ...other }])),
+    drag: null,
+    moved: false,
+    blocked: false,
+    target: item.sheet,
+  };
+}
+
+function startMarquee(e, additive) {
+  const page = e.target.closest('.page');
+  capture(e);
+  measureBoxes();
+  const origin = toSheets(e.clientX, e.clientY);
+  gesture = { kind: 'marquee', ...pointer(e), origin, additive, sheetId: page ? Number(page.dataset.sheet) : null, touched: [], moved: false };
+}
+
+// De coordenadas de la ventana a las de #sheets (las de los marcos y la capa de arrastre).
+function toSheets(clientX, clientY) {
+  const r = ui.sheets.getBoundingClientRect();
+  return { x: clientX - r.left, y: clientY - r.top };
 }
 
 function othersOn(sheetId, item) {
@@ -589,60 +777,156 @@ function updateGesture() {
   const px = g.lastX - g.startX;
   const py = g.lastY - g.startY;
   if (!g.moved && Math.hypot(px, py) < DRAG_THRESHOLD) return;
-  if (!g.moved) {
+  const first = !g.moved;
+  g.moved = true;
+  if (g.kind === 'marquee') return updateMarquee(g, first);
+  if (first) {
     ui.canvas.classList.add('is-dragging');
-    // Para moverla entre hojas, la pieza viaja en una capa sin recorte.
-    if (!g.resize) place(ui.dragLayer, g.node, null);
+    // Para moverlas entre hojas, las piezas viajan en una capa sin recorte.
+    if (g.kind === 'move') place(ui.dragLayer, g.node, null);
+    if (g.kind === 'group-move') for (const item of g.items) place(ui.dragLayer, nodes.get(item.id), null);
     startAutoScroll();
   }
-  g.moved = true;
   const dy = py + (ui.stage.scrollTop - g.scroll0);
-  if (g.resize) {
-    // Proyección del arrastre sobre la diagonal: escala proporcional.
-    const [w, h] = g.size;
-    const factor = ((w + px / zoom) * w + (h + dy / zoom) * h) / (w * w + h * h);
-    let scale = clamp(round1(g.item.scale * factor), 1, 1000);
-    if (scale > g.item.scale && Number.isFinite(g.growth)) {
-      // Hacia abajo a 0,1 % para no pasarse del contacto.
-      scale = Math.min(scale, Math.max(g.item.scale, Math.floor(g.item.scale * g.growth * 10) / 10));
-    }
-    g.draft.scale = scale;
-    updatePiece(g.node, g.draft);
-  } else {
-    // Dónde queda la pieza en #sheets y a qué hoja pertenece (la que contiene su centro).
-    const [, H] = sheetSize();
-    const start = boxes.get(g.item.sheet);
-    const ax = start.left + g.item.x * zoom + px;
-    const ay = start.top + g.item.y * zoom + dy;
-    const [w, h] = g.size;
-    const tops = state.sheets.map((s) => boxes.get(s.id).top);
-    const target = state.sheets[sheetAt(ay + (h * zoom) / 2, tops, H * zoom)].id;
-    const box = boxes.get(target);
-    // Imán: al múltiplo más cercano de la grilla, que nace en la esquina de la hoja.
-    // Puede salirse de la hoja, pero no más de la mitad (el centro queda adentro).
-    const [W] = sheetSize();
-    const step = settings.grid.size;
-    const snap = settings.grid.snap ? (v) => tidy(Math.round(v / step) * step) : (v) => v;
-    const spot = keepCenterInside({ x: snap((ax - box.left) / zoom), y: snap((ay - box.top) / zoom), w, h }, W, H);
-    g.draft.x = spot.x;
-    g.draft.y = spot.y;
-    g.draft.sheet = target;
-    if (target !== g.target) {
-      pages.get(g.target)?.page.classList.remove('is-drop-target');
-      g.target = target;
-    }
-    pages.get(target).page.classList.toggle('is-drop-target', target !== g.item.sheet);
-    // Movimiento libre, pero se marca cuando soltar ahí no valdría.
-    const blocked = !settings.allowOverlap && overlapsAny({ x: g.draft.x, y: g.draft.y, w, h }, cachedOthers(g, target));
-    if (blocked !== g.blocked) {
-      g.blocked = blocked;
-      g.node.classList.toggle('is-blocked', blocked);
-      ui.frame.classList.toggle('is-blocked', blocked);
-    }
-    updatePiece(g.node, g.draft, box);
+  if (g.kind === 'resize') updateResize(g, px, dy);
+  else if (g.kind === 'move') updateMove(g, px, dy);
+  else if (g.kind === 'group-resize') updateGroupResize(g, px, dy);
+  else updateGroupMove(g, px, dy);
+}
+
+function updateResize(g, px, dy) {
+  // Proyección del arrastre sobre la diagonal: escala proporcional.
+  const [w, h] = g.size;
+  const factor = ((w + px / zoom) * w + (h + dy / zoom) * h) / (w * w + h * h);
+  let scale = clamp(round1(g.item.scale * factor), 1, 1000);
+  if (scale > g.item.scale && Number.isFinite(g.growth)) {
+    // Hacia abajo a 0,1 % para no pasarse del contacto.
+    scale = Math.min(scale, Math.max(g.item.scale, Math.floor(g.item.scale * g.growth * 10) / 10));
   }
-  renderSelection(g.draft);
-  handlers.preview?.(g.draft);
+  g.draft.scale = scale;
+  updatePiece(g.node, g.draft);
+  renderSelection(new Map([[g.item.id, g.draft]]));
+  handlers.preview?.([g.draft]);
+}
+
+function updateMove(g, px, dy) {
+  // Dónde queda la pieza en #sheets y a qué hoja pertenece (la que contiene su centro).
+  const [W, H] = sheetSize();
+  const start = boxes.get(g.item.sheet);
+  const ax = start.left + g.item.x * zoom + px;
+  const ay = start.top + g.item.y * zoom + dy;
+  const [w, h] = g.size;
+  const target = sheetUnder(ay + (h * zoom) / 2);
+  const box = boxes.get(target);
+  // Imán: al múltiplo más cercano de la grilla, que nace en la esquina de la hoja.
+  // Puede salirse de la hoja, pero no más de la mitad (el centro queda adentro).
+  const step = settings.grid.size;
+  const snap = settings.grid.snap ? (v) => tidy(Math.round(v / step) * step) : (v) => v;
+  const spot = keepCenterInside({ x: snap((ax - box.left) / zoom), y: snap((ay - box.top) / zoom), w, h }, W, H);
+  g.draft.x = spot.x;
+  g.draft.y = spot.y;
+  g.draft.sheet = target;
+  markTarget(g, target);
+  // Movimiento libre, pero se marca cuando soltar ahí no valdría.
+  setBlocked(g, !settings.allowOverlap && overlapsAny({ x: g.draft.x, y: g.draft.y, w, h }, cachedOthers(g, target)), [g.node]);
+  updatePiece(g.node, g.draft, box);
+  renderSelection(new Map([[g.item.id, g.draft]]));
+  handlers.preview?.([g.draft]);
+}
+
+function updateGroupMove(g, px, dy) {
+  let target = null;
+  let offsetY = 0;
+  if (g.oneSheet !== null) {
+    // La hoja que contiene el centro de la caja del grupo.
+    const start = boxes.get(g.oneSheet);
+    target = sheetUnder(start.top + (g.box.y + g.box.h / 2) * zoom + dy);
+    offsetY = (start.top - boxes.get(target).top) / zoom;
+    markTarget(g, target);
+  }
+  g.drag = handlers.planDrag(px / zoom, dy / zoom, target, offsetY);
+  g.dropTarget = target;
+  const { plan } = g.drag;
+  for (const item of g.items) {
+    const draft = g.drafts.get(item.id);
+    const r = plan.rects.get(item.id);
+    draft.x = r.x;
+    draft.y = r.y;
+    draft.sheet = target ?? item.sheet;
+    updatePiece(nodes.get(item.id), draft, boxes.get(draft.sheet));
+  }
+  setBlocked(g, !plan.ok, g.items.map((item) => nodes.get(item.id)));
+  renderSelection(g.drafts);
+  handlers.preview?.([...g.drafts.values()]);
+}
+
+function updateGroupResize(g, px, dy) {
+  const { w, h } = g.frame;
+  const wanted = ((w + px / zoom) * w + (h + dy / zoom) * h) / (w * w + h * h);
+  const k = g.range.min <= g.range.max ? Math.min(Math.max(wanted, g.range.min), g.range.max) : 1;
+  g.k = k;
+  // Cada parte desde la esquina superior izquierda de su caja, en su hoja.
+  const bySheet = new Map();
+  for (const item of g.items) {
+    if (!bySheet.has(item.sheet)) bySheet.set(item.sheet, []);
+    bySheet.get(item.sheet).push(item);
+  }
+  for (const list of bySheet.values()) {
+    const scaled = scaleGroup(list.map(rectOf), k, 'top-left').rects;
+    list.forEach((item, i) => {
+      const draft = g.drafts.get(item.id);
+      draft.scale = item.scale * k;
+      draft.x = scaled[i].x;
+      draft.y = scaled[i].y;
+      updatePiece(nodes.get(item.id), draft);
+    });
+  }
+  renderSelection(g.drafts);
+  handlers.preview?.([...g.drafts.values()]);
+}
+
+function updateMarquee(g, first) {
+  if (first) {
+    ui.marquee.hidden = false;
+    startAutoScroll();
+  }
+  const now = toSheets(g.lastX, g.lastY);
+  const area = { x: Math.min(g.origin.x, now.x), y: Math.min(g.origin.y, now.y), w: Math.abs(now.x - g.origin.x), h: Math.abs(now.y - g.origin.y) };
+  Object.assign(ui.marquee.style, { left: `${area.x}px`, top: `${area.y}px`, width: `${area.w}px`, height: `${area.h}px` });
+  const placed = state.items
+    .filter((item) => boxes.has(item.sheet))
+    .map((item) => {
+      const r = rectOf(item);
+      const box = boxes.get(item.sheet);
+      return { id: item.id, x: box.left + r.x * zoom, y: box.top + r.y * zoom, w: r.w * zoom, h: r.h * zoom };
+    });
+  g.touched = touchedBy(area, placed);
+  const marked = new Set(g.touched);
+  for (const [id, node] of nodes) node.classList.toggle('is-marked', marked.has(id));
+}
+
+// La hoja que contiene la altura `y` (en #sheets) o la más cercana.
+function sheetUnder(y) {
+  const [, H] = sheetSize();
+  const tops = state.sheets.map((s) => boxes.get(s.id).top);
+  return state.sheets[sheetAt(y, tops, H * zoom)].id;
+}
+
+function markTarget(g, target) {
+  if (target !== g.target) {
+    pages.get(g.target)?.page.classList.remove('is-drop-target');
+    g.target = target;
+  }
+  const origin = g.oneSheet ?? g.item?.sheet;
+  pages.get(target)?.page.classList.toggle('is-drop-target', target !== origin);
+}
+
+function setBlocked(g, blocked, pieceNodes) {
+  if (blocked === g.blocked) return;
+  g.blocked = blocked;
+  for (const node of pieceNodes) node?.classList.toggle('is-blocked', blocked);
+  ui.frame.classList.toggle('is-blocked', blocked);
+  for (const f of groupFrames.values()) f.frame.classList.toggle('is-blocked', blocked);
 }
 
 // Mientras se arrastra cerca del borde de arriba o de abajo del lienzo, se hace
@@ -676,14 +960,18 @@ function onPointerUp(e) {
   gesture = null;
   cancelAnimationFrame(autoFrame);
   ui.canvas.classList.remove('is-dragging');
-  g.node.classList.remove('is-blocked');
   ui.frame.classList.remove('is-blocked');
+  for (const f of groupFrames.values()) f.frame.classList.remove('is-blocked');
   pages.get(g.target)?.page.classList.remove('is-drop-target');
+  const done = e.type === 'pointerup';
+  if (g.kind === 'marquee') return endMarquee(g, done);
+  if (g.kind === 'group-move' || g.kind === 'group-resize') return endGroupGesture(g, done);
+  g.node.classList.remove('is-blocked');
   let result = null;
   let sheetChanged = false;
-  if (g.moved && e.type === 'pointerup' && findItem(g.item.id) === g.item) {
+  if (g.moved && done && findItem(g.item.id) === g.item) {
     let { x, y } = g.draft;
-    const sheet = g.draft.sheet;
+    const sheet = g.draft.sheet ?? g.item.sheet;
     if (g.blocked) {
       // Soltada sobre otra: al lugar libre más cercano de esa hoja (también con el
       // centro adentro); si no hay uno cerca, vuelve.
@@ -714,4 +1002,34 @@ function onPointerUp(e) {
   handlers.commitGesture(result, { sheetChanged, item: g.item });
   // Si el navegador le quitó el foco al moverla de capa, vuelve.
   if (hadFocus && g.node.isConnected && document.activeElement !== g.node) g.node.focus({ preventScroll: true });
+}
+
+function endGroupGesture(g, done) {
+  const focused = pieceNode(state.selection.at(-1));
+  const hadFocus = !!focused && (document.activeElement === focused || document.activeElement === document.body);
+  for (const item of g.items) nodes.get(item.id)?.classList.remove('is-blocked');
+  let result = null;
+  let sheetChanged = false;
+  const alive = g.items.every((item) => findItem(item.id) === item);
+  if (!g.moved) {
+    // Clic sin arrastrar sobre una de varias elegidas: queda elegida solo esa.
+    if (g.collapse && done) return handlers.select(g.item.id);
+  } else if (done && alive && g.kind === 'group-move' && g.drag) {
+    const before = g.item.sheet;
+    if (!g.drag.plan.ok) animateNext();
+    result = handlers.dropGroup(g.drag, g.dropTarget ?? null);
+    sheetChanged = result !== 'reverted' && result !== null && g.item.sheet !== before;
+  } else if (done && alive && g.kind === 'group-resize' && Math.abs(g.k - 1) > 1e-9) {
+    result = handlers.applyGroupScale(g.k) ? 'scaled' : null;
+  }
+  handlers.commitGesture(result, { sheetChanged, item: g.item, group: true });
+  if (hadFocus && focused?.isConnected && document.activeElement !== focused) focused.focus({ preventScroll: true });
+}
+
+function endMarquee(g, done) {
+  ui.marquee.hidden = true;
+  for (const node of nodes.values()) node.classList.remove('is-marked');
+  if (!done) return;
+  if (g.moved) return handlers.selectArea(g.touched, g.additive);
+  if (!g.additive) handlers.background(g.sheetId);
 }

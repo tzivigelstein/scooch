@@ -210,7 +210,7 @@ export function shrinkAndArrange(factor, exact) {
  * `rotate`: si se pueden girar para que entren mejor. Agrega las hojas nuevas
  * al documento y devuelve los ids que no entran ni solos en una hoja vacía.
  */
-function placeInto(fresh, from, { rotate = settings.rotate } = {}) {
+export function placeInto(fresh, from, { rotate = settings.rotate } = {}) {
   const { m, aw, ah } = area();
   if (aw <= 0 || ah <= 0) return fresh.map((item) => item.id);
   const plan = placeIntoSheets(rects(fresh), state.items.map(boxOf), state.sheets.map((sheet) => sheet.id), {
@@ -262,21 +262,36 @@ export function placeNew(keys) {
 }
 
 /**
- * Copia de una pieza, igual (sin girar), en el primer hueco libre desde su
- * hoja; si no entra ni sola, 5 mm abajo a la derecha (queda superpuesta y
- * avisada). Devuelve la copia, ya agregada.
+ * `times` copias de cada una de `items`, iguales (sin girar, con su recorte),
+ * en los huecos libres desde la hoja `from` (índice; por omisión la de la
+ * primera), siguiendo en las siguientes y en hojas nuevas, sin mover nada.
+ * Las que no entran ni solas van 5 mm abajo a la derecha de su original
+ * (quedan superpuestas y avisadas). Devuelve las copias, ya agregadas.
  */
-export function duplicatePiece(item) {
-  const copy = { ...item, id: newId() };
-  const unplaced = placeInto([copy], sheetIndex(item.sheet), { rotate: false });
-  if (unplaced.length) {
+export function duplicatePieces(items, times = 1, from = sheetIndex(items[0].sheet)) {
+  const copies = [];
+  const original = new Map();
+  for (let i = 0; i < times; i++) {
+    for (const item of items) {
+      const copy = { ...item, id: newId() };
+      original.set(copy.id, item);
+      copies.push(copy);
+    }
+  }
+  const unplaced = new Set(placeInto(copies, from, { rotate: false }));
+  for (const copy of copies) {
+    if (!unplaced.has(copy.id)) continue;
+    const item = original.get(copy.id);
     copy.sheet = item.sheet;
     copy.x = item.x + 5;
     copy.y = item.y + 5;
   }
-  state.items.push(copy);
-  return copy;
+  state.items.push(...copies);
+  return copies;
 }
+
+/** Una copia de una pieza (ver duplicatePieces). */
+export const duplicatePiece = (item) => duplicatePieces([item])[0];
 
 // ---------- Resolución de impresión ----------
 
