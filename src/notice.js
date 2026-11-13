@@ -5,7 +5,7 @@
 
 import { state, settings, status, area, dims, render } from './store.js';
 import { EPS, overlaps } from './collide.js';
-import { announce } from './live.js';
+import { announce, cancelAnnounce } from './live.js';
 import { icon } from './icons.js';
 import { $ } from './util.js';
 import { t, asSentence } from './copy/index.js';
@@ -144,7 +144,11 @@ export function renderNotice() {
   signature = next;
 
   ui.pill.hidden = !notice;
-  if (!notice) return stopTimer();
+  if (!notice) {
+    // Si un problema se resolvió antes de anunciarse, ya no se anuncia.
+    cancelAnnounce('notice');
+    return stopTimer();
+  }
   ui.pill.dataset.tone = warn ? 'warning' : busy ? 'busy' : 'info';
   ui.icon.innerHTML = icon(warn ? 'triangle-alert' : busy ? 'loader-circle' : 'circle-check', 'icon pill-glyph');
   ui.text.textContent = text;

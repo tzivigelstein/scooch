@@ -39,6 +39,12 @@ export function announce(text, { assertive = false, key = null, delay = 0 } = {}
   queue(channel, text);
 }
 
+/** Descarta un anuncio con demora que todavía no salió (p. ej. un problema que ya se resolvió). */
+export function cancelAnnounce(key) {
+  clearTimeout(keyed.get(key));
+  keyed.delete(key);
+}
+
 function queue(channel, text) {
   if (!pending[channel].includes(text)) pending[channel].push(text);
   clearTimeout(flushTimer);
