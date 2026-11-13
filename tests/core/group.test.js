@@ -29,6 +29,7 @@ import {
   neighborAfterRemoval,
   copiesAllowed,
   scaleLimits,
+  planScale,
 } from '../../src/core/group.js';
 import { align, distribute, moveBy, rotateGroup, scaleGroup, bounds } from '../../src/core/align.js';
 import { overlaps } from '../../src/core/collide.js';
@@ -355,5 +356,29 @@ describe('planes de cada operación', () => {
     assert.equal(copiesAllowed(190, 3, 200), 3);
     assert.equal(copiesAllowed(200, 3, 200), 0);
     assert.deepEqual(scaleLimits([50, 200]), { min: 1 / 50, max: 5 });
+  });
+});
+
+describe('scale plans with a cut margin (pad)', () => {
+  // Two 20 × 20 images 10 mm apart; with a 3 mm margin their cut boxes are 4 mm apart.
+  const boxes = [
+    { id: 1, sheet: 1, x: 20, y: 20, w: 20, h: 20 },
+    { id: 2, sheet: 1, x: 50, y: 20, w: 20, h: 20 },
+  ];
+  const opts = { W: 210, H: 297, allowOverlap: false, pad: 3 };
+
+  test('scaleBounds stops where the cut boxes would touch', () => {
+    const { max } = scaleBounds(boxes, new Set([1]), [100], 'top-left', opts);
+    // Image 1 grows from (20, 20): its cut box reaches 50 − 3 when 20 + 20k + 3 = 47.
+    assert.ok(Math.abs(max - 1.2) < 1e-3, String(max)); // touching (EPS) is not overlapping
+    const without = scaleBounds(boxes, new Set([1]), [100], 'top-left', { ...opts, pad: 0 });
+    assert.ok(Math.abs(without.max - 1.5) < 1e-3, String(without.max));
+  });
+
+  test('planScale refuses what would make the cut boxes overlap, and transforms the images', () => {
+    assert.equal(planScale(boxes, new Set([1]), 1.3, 'top-left', opts).reason, 'overlap');
+    const plan = planScale(boxes, new Set([1]), 1.15, 'top-left', opts);
+    assert.ok(plan.ok);
+    assert.deepEqual(plan.rects.get(1), { id: 1, x: 20, y: 20, w: 23, h: 23 });
   });
 });

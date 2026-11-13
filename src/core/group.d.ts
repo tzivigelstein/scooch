@@ -34,6 +34,8 @@ export interface PlanGroupOptions {
   allowOverlap?: boolean;
   rigid?: boolean;
   round?: (v: number) => number;
+  /** The boxes are images that take this much more on every side (the cut margin) when checking overlaps. */
+  pad?: number;
 }
 
 export function planGroup<I extends RectId>(
@@ -61,6 +63,8 @@ export interface GroupOptions {
   allowOverlap?: boolean;
   round?: (v: number) => number;
   snapStep?: number | null;
+  /** For the scale plans: the boxes are images that take this much more on every side (the cut margin). */
+  pad?: number;
 }
 
 export type ScaleAnchor = 'center' | 'top-left';

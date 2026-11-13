@@ -74,7 +74,9 @@ function containShift(lo, hi, step) {
  * la hoja del problema; `changed`, si algo se movió o cambió de medida.
  */
 export function planGroup(boxes, ids, transform, options = {}) {
-  const { W, H, snap = null, contain = 'clamp', allowOverlap = false, rigid = false, round = (v) => v } = options;
+  const { W, H, snap = null, contain = 'clamp', allowOverlap = false, rigid = false, round = (v) => v, pad = 0 } = options;
+  // With `pad`, `boxes` are images and each one takes `pad` more on every side (the cut margin).
+  const grown = (list) => (pad > 0 ? list.map((r) => ({ ...r, x: r.x - pad, y: r.y - pad, w: r.w + 2 * pad, h: r.h + 2 * pad })) : list);
   const rects = new Map();
   let failure = null;
   let changed = false;
@@ -95,7 +97,7 @@ export function planGroup(boxes, ids, transform, options = {}) {
       }
     }
     next = next.map((r) => ({ ...r, x: round(r.x), y: round(r.y) }));
-    if (!failure && !validate(next, others, { allowOverlap, internal: !rigid })) failure = { reason: 'overlap', sheet };
+    if (!failure && !validate(grown(next), grown(others), { allowOverlap, internal: !rigid })) failure = { reason: 'overlap', sheet };
     next.forEach((r, i) => {
       const before = group[i];
       if (r.x !== before.x || r.y !== before.y || Math.abs(r.w - before.w) > 1e-9 || Math.abs(r.h - before.h) > 1e-9) changed = true;
@@ -194,7 +196,7 @@ export function rangeBetween(order, from, to) {
 /** Escala de cada pieza, en %. */
 export const SCALE_RANGE = Object.freeze({ min: 1, max: 1000 });
 
-const base = ({ W, H, allowOverlap = false, round = (v) => v }) => ({ W, H, allowOverlap, round });
+const base = ({ W, H, allowOverlap = false, round = (v) => v, pad = 0 }) => ({ W, H, allowOverlap, round, pad });
 
 // Dos medidas a menos de esto (mm) son la misma (más que el redondeo de las posiciones).
 const SAME_LENGTH = 1e-3;
@@ -253,7 +255,10 @@ export function scaleBounds(boxes, ids, scales, anchor, opts) {
     min = Math.max(min, inside.min);
     max = Math.min(max, inside.max);
     if (!opts.allowOverlap) {
-      const free = groupScaleRange(rects, others, point);
+      // Two images `pad` apart on each side don't overlap when one doesn't reach the other grown by 2 · pad.
+      const pad = opts.pad ?? 0;
+      const near = pad > 0 ? others.map((o) => ({ ...o, x: o.x - 2 * pad, y: o.y - 2 * pad, w: o.w + 4 * pad, h: o.h + 4 * pad })) : others;
+      const free = groupScaleRange(rects, near, point);
       min = Math.max(min, free.min);
       max = Math.min(max, free.max);
     }
