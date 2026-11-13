@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { memoryStorage } from '../../src/core/projectstore.js';
 import type { ProjectDoc, ProjectStorage } from '../../src/core/types.ts';
 import { storedProject } from '../support/projects.ts';
-import { FakeBroadcastChannel } from '../support/tabs.ts';
+import { FakeBroadcastChannel, FakeLockManager } from '../support/tabs.ts';
 
 // The storage the service opens instead of IndexedDB (set by each test).
 const opened = vi.hoisted(() => ({ storage: null as ProjectStorage | null, legacyFails: false }));
@@ -262,6 +262,68 @@ describe('two tabs', () => {
     b.nudge(1, 0);
     await b.projects.flush();
     expect((await storage.get('p1'))!).toMatchObject({ name: 'Desde la otra pestaña', doc: { items: [{ x: 12 }] } });
+  });
+});
+
+describe('two tabs, with Web Locks', () => {
+  let locks: FakeLockManager;
+  beforeEach(() => {
+    FakeBroadcastChannel.reset();
+    vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel);
+    locks = new FakeLockManager();
+    Object.defineProperty(navigator, 'locks', { value: locks, configurable: true });
+  });
+  afterEach(() => {
+    delete (navigator as { locks?: unknown }).locks;
+  });
+
+  test('opening a project no other tab has doesn’t wait for any answer', async () => {
+    const storage = memoryStorage();
+    await storedProject(storage, 'p1', 'Uno', 11, 1000);
+    await storedProject(storage, 'p2', 'Dos', 22, 2000);
+    localStorage.setItem('scooch:last-project', 'p1');
+    const app = await start(storage);
+    expect(locks.heldNames()).toEqual(['scooch-projects:p1']);
+    let opened = false;
+    const opening = app.projects.openProject('p2').then(() => (opened = true));
+    // No time passes: only what is already queued runs.
+    await vi.advanceTimersByTimeAsync(0);
+    expect(opened).toBe(true);
+    await opening;
+    expect(app.x()).toBe(22);
+    expect(locks.heldNames(), 'the lock of the project it saves now, only').toEqual(['scooch-projects:p2']);
+  });
+
+  test('a second tab takes the project from the first one, which saves what was pending and stops saving', async () => {
+    vi.useRealTimers();
+    const storage = memoryStorage();
+    await storedProject(storage, 'p1', 'Uno', 11, 1000);
+    localStorage.setItem('scooch:last-project', 'p1');
+    const a = await start(storage);
+    a.setDocument({ selection: [1] });
+    a.nudge(4, 0);
+    expect(a.status()).toBe('pending');
+    const b = await start(storage);
+    expect(a.status()).toBe('readonly');
+    expect(a.notices).toContain('takenOver');
+    expect(b.status()).toBe('saved');
+    expect(b.x(), 'what the first one had pending').toBe(15);
+    expect(locks.heldNames()).toEqual(['scooch-projects:p1']);
+  });
+
+  test('a tab holding the project that doesn’t answer (frozen) loses it after a while, and stops saving when it wakes up', async () => {
+    const storage = memoryStorage();
+    await storedProject(storage, 'p1', 'Uno', 11, 1000);
+    localStorage.setItem('scooch:last-project', 'p1');
+    // The frozen tab: it holds the project's lock and never answers.
+    let frozenLost = false;
+    void locks.request('scooch-projects:p1', () => new Promise(() => {})).catch(() => (frozenLost = true));
+    let app: Awaited<ReturnType<typeof start>> | undefined;
+    void start(storage).then((started) => (app = started));
+    await vi.waitFor(() => expect(app).toBeDefined(), { interval: 250, timeout: 10_000 });
+    expect(app!.status()).toBe('saved');
+    expect(app!.x()).toBe(11);
+    expect(frozenLost).toBe(true);
   });
 });
 

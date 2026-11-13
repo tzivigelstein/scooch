@@ -436,6 +436,33 @@ test.describe('two tabs', () => {
   });
 });
 
+test.describe('two tabs at once', () => {
+  test('two tabs opening the same project at the same moment: exactly one saves it, and what the other does never reaches it', async ({ page: a, app, context }, testInfo) => {
+    await app.addFiles(['card07.png']);
+    await saved(a);
+    const b = await context.newPage();
+    const c = await context.newPage();
+    const appB = new App(b, testInfo);
+    const appC = new App(c, testInfo);
+    // Both reload into the last project at once (like a browser restoring its tabs).
+    await Promise.all([appB.open(), appC.open()]);
+    const readonly = async (page: Page) => (await status(page).textContent()) === 'Sin guardar';
+    await expect.poll(async () => [await readonly(a), await readonly(b), await readonly(c)].filter(Boolean).length, { message: 'every tab but one stopped saving' }).toBe(2);
+    const tabs = [a, b, c];
+    const flags = await Promise.all(tabs.map(readonly));
+    const saver = tabs[flags.indexOf(false)];
+    const other = tabs[flags.indexOf(true)];
+    const first = (page: Page) => page.locator('#sheets .piece').first();
+    await first(other).focus();
+    await other.keyboard.press('ArrowRight');
+    await first(saver).focus();
+    await saver.keyboard.press('ArrowDown');
+    await saved(saver);
+    const stored = await storedRecord(saver);
+    expect({ x: stored?.doc.items[0].x, y: stored?.doc.items[0].y }, 'the saving tab’s move, not the other’s').toEqual({ x: 10, y: 11 });
+  });
+});
+
 test.describe('when storage fails', () => {
   test('without IndexedDB the app works and says so once; adding and downloading still work, and «Proyectos» explains it', async ({ page }, testInfo) => {
     await page.addInitScript(() => Object.defineProperty(window, 'indexedDB', { value: undefined, configurable: true }));

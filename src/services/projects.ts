@@ -6,13 +6,12 @@
 // away when the tab gets hidden (visibilitychange / pagehide). Only missing
 // binaries are written. Nothing leaves the browser.
 //
-// Several tabs (the simplest safe solution): a project has one tab that saves
-// it. Opening it in another tab «asks» the tab that had it through a
-// BroadcastChannel: that one saves what is pending, stops saving and says so
-// («Este proyecto se abrió en otra pestaña»); only then the new one reads it
-// from storage, so it never overwrites changes without knowing. From the old
-// tab, «Editar aquí» asks for it again and reloads it. If a tab doesn't
-// answer (frozen), it waits 3 s: it saved when it got hidden anyway.
+// Several tabs: a project has one tab that saves it (see «Several tabs»
+// below). Opening it in another tab asks the tab that had it: that one saves
+// what is pending, stops saving and says so («Este proyecto se abrió en otra
+// pestaña»); only then the new one reads it from storage, so it never
+// overwrites changes without knowing. From the old tab, «Editar aquí» asks
+// for it again and reloads it.
 
 import { JOURNAL_PREFIX, JOURNAL_STORAGE, LAST_PROJECT_STORAGE, TABS_CHANNEL } from '../config.ts';
 import { DEFAULT_CUTS, ProjectError, fileKeys, nextIds, serialize } from '../core/projectdoc.js';
@@ -247,7 +246,9 @@ async function startNew({ remember = true } = {}) {
   replacing = true;
   try {
     replaceDocument(doc);
-    const record = await createProject(session.storage!, { id: newProjectId(), name: untitled(), now: now(), doc });
+    const id = newProjectId();
+    await claimNew(id);
+    const record = await createProject(session.storage!, { id, name: untitled(), now: now(), doc });
     adopt(record, new Map(), { remember });
   } finally {
     replacing = false;
@@ -457,6 +458,7 @@ export async function openProject(id: string, { remember = true } = {}) {
   await flush();
   const previous = session.status;
   setStatus('loading');
+  Object.assign(opening, { id, asked: false, lost: false });
   try {
     await claim(id);
     const stored = await loadProject(session.storage!, id, migrationContext());
@@ -474,8 +476,17 @@ export async function openProject(id: string, { remember = true } = {}) {
       session.savedSig = JSON.stringify(doc);
       documentChanged();
     } else clearJournal(id);
+    const { asked, lost } = opening;
+    opening.id = null;
+    // Another tab asked for it, or took it, while it opened here.
+    if (lost || asked) {
+      if (session.status === 'pending') await flush();
+      stopSaving();
+      if (asked) post({ type: 'released', project: id });
+    }
     return record;
   } catch (err) {
+    opening.id = null;
     setStatus(previous === 'loading' ? 'saved' : previous);
     throw err;
   }
@@ -580,7 +591,9 @@ export const takeOver = () => openProject(session.record!.id);
 
 /** Saves what is on screen as a new project (e.g. it was deleted in another tab). */
 export async function saveAsNew() {
-  const record = await createProject(session.storage!, { id: newProjectId(), name: session.record?.name ?? untitled(), now: now() });
+  const id = newProjectId();
+  await claimNew(id);
+  const record = await createProject(session.storage!, { id, name: session.record?.name ?? untitled(), now: now() });
   session.record = record;
   session.stored = new Map();
   session.savedSig = '';
@@ -594,6 +607,7 @@ export async function saveAsNew() {
 // can save what it shows as a new project).
 function deletedElsewhere() {
   clearTimeout(timer);
+  releaseLock();
   session.stored = new Map();
   setStatus('readonly');
   hooks.notify('deletedElsewhere');
@@ -615,6 +629,16 @@ function scheduleGarbage() {
 }
 
 // ---------- Several tabs ----------
+//
+// A project is saved by one tab only. Where the browser has Web Locks, that
+// tab holds the project's lock («scooch-projects:<id>») while it saves it:
+// opening a project nobody holds takes its lock at once, without asking
+// anyone. When another tab holds it, this one asks through the channel
+// («claim»); that tab saves what is pending, stops saving, lets the lock go
+// and says so («released»). A tab that doesn't answer within 3 s (frozen)
+// has its lock taken; when it wakes up it learns it lost it and stops
+// saving. Without Web Locks, the tab that opens a project asks and waits a
+// moment for an answer every time.
 
 interface TabMessage {
   type: 'claim' | 'busy' | 'released' | 'changed' | 'renamed' | 'deleted';
@@ -625,9 +649,98 @@ interface TabMessage {
 
 const post = (message: Omit<TabMessage, 'tab'>) => channel?.postMessage({ ...message, tab });
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/** How long a tab that has the project is waited for. */
+const ANSWER_TIMEOUT = 3000;
 
-// Asks for a project: the tabs that had it open save and let it go.
+const lockManager = () => (typeof navigator !== 'undefined' ? navigator.locks : undefined);
+const lockName = (id: string) => `${TABS_CHANNEL}:${id}`;
+/** The lock this tab holds (the project it saves), and how to let it go. */
+let held: { id: string; release: () => void } | null = null;
+/** The project being opened here, and whether another tab asked for it meanwhile. */
+const opening = { id: null as string | null, asked: false, lost: false };
+
+/**
+ * Takes the project's lock and holds it until releaseLock(): `ifAvailable`
+ * (false when another tab has it), `wait` for it or `steal` it.
+ */
+function holdLock(id: string, how: 'ifAvailable' | 'wait' | 'steal'): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    let granted = false;
+    const options = how === 'ifAvailable' ? { ifAvailable: true } : how === 'steal' ? { steal: true } : {};
+    lockManager()!
+      .request(lockName(id), options, (lock) => {
+        if (!lock) return resolve(false);
+        granted = true;
+        return new Promise<void>((release) => {
+          held = { id, release };
+          resolve(true);
+        });
+      })
+      .catch((err: unknown) => {
+        if (!granted) return reject(err);
+        // Taken by a tab this one didn't answer (it was frozen).
+        if (held?.id === id) {
+          held = null;
+          lostLock(id);
+        }
+      });
+  });
+}
+
+function releaseLock() {
+  held?.release();
+  held = null;
+}
+
+// The open project's lock went to another tab: this one stops saving it.
+function lostLock(id: string) {
+  if (opening.id === id) opening.lost = true;
+  else if (session.record?.id === id && session.status !== 'readonly' && session.status !== 'off') stopSaving();
+}
+
+// Another tab saves the project from now on.
+function stopSaving() {
+  clearTimeout(timer);
+  releaseLock();
+  setStatus('readonly');
+  hooks.notify('takenOver');
+}
+
+/** Asks the tabs that have the project to save and let it go. Resolves when one says it did (true) or after a while (false). */
+function askForProject(id: string, wait = ANSWER_TIMEOUT) {
+  return new Promise<boolean>((resolve) => {
+    if (!channel) return resolve(false);
+    const listen = (e: MessageEvent<TabMessage>) => {
+      if (e.data?.project === id && e.data.tab !== tab && e.data.type === 'released') finish(true);
+    };
+    const timeout = setTimeout(() => finish(false), wait);
+    const finish = (answered: boolean) => {
+      clearTimeout(timeout);
+      channel.removeEventListener('message', listen);
+      resolve(answered);
+    };
+    channel.addEventListener('message', listen);
+    post({ type: 'claim', project: id });
+  });
+}
+
+/**
+ * Makes this tab the one that saves project `id` (see above); the previous
+ * one's lock goes. When the tab that had it lets it go, another tab asking at
+ * the same time may take it first: then that one is asked in turn.
+ */
 async function claim(id: string) {
+  releaseLock();
+  if (lockManager()) {
+    while (!(await holdLock(id, 'ifAvailable'))) {
+      if (!(await askForProject(id))) {
+        await holdLock(id, 'steal');
+        return;
+      }
+    }
+    return;
+  }
+  // Without Web Locks: ask, and wait for whoever has it.
   if (!channel) return;
   const busy = new Set<string>();
   let released = () => {};
@@ -643,22 +756,32 @@ async function claim(id: string) {
   channel.addEventListener('message', listen);
   post({ type: 'claim', project: id });
   await sleep(150);
-  if (busy.size) await Promise.race([new Promise<void>((resolve) => (released = resolve)), sleep(3000)]);
+  if (busy.size) await Promise.race([new Promise<void>((resolve) => (released = resolve)), sleep(ANSWER_TIMEOUT)]);
   channel.removeEventListener('message', listen);
+}
+
+/** A project nobody else can have yet (just created here): its lock, if there are locks. */
+async function claimNew(id: string) {
+  releaseLock();
+  if (lockManager()) await holdLock(id, 'ifAvailable');
 }
 
 async function onMessage(e: MessageEvent<TabMessage>) {
   const m = e.data;
   if (!m || m.tab === tab) return;
-  const mine = !!m.project && m.project === session.record?.id;
-  if (m.type === 'claim' && mine && session.status !== 'readonly' && session.status !== 'off') {
+  const mine = !!m.project && m.project === session.record?.id && opening.id === null;
+  // With locks, only the tab holding the project's lock answers (also while it opens it).
+  const holder = lockManager() ? !!m.project && held?.id === m.project : mine;
+  if (m.type === 'claim' && holder && m.project === opening.id) {
+    // Asked while opening it here: it goes to the other tab once open.
+    post({ type: 'busy', project: m.project });
+    opening.asked = true;
+  } else if (m.type === 'claim' && holder && mine && session.status !== 'readonly' && session.status !== 'off') {
     post({ type: 'busy', project: m.project });
     try {
       await flush();
     } finally {
-      clearTimeout(timer);
-      setStatus('readonly');
-      hooks.notify('takenOver');
+      stopSaving();
       post({ type: 'released', project: m.project });
     }
   } else if (m.type === 'deleted' && mine) {
