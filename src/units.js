@@ -147,6 +147,24 @@ export function parseLength(text, unit) {
   return Number.isFinite(mm) ? mm || 0 : null;
 }
 
+// El principio de algún sufijo de SUFFIXES («p», «pul», «i», «c»…), o vacío.
+const isSuffixStart = (tail) => !tail || SUFFIXES.some(([suffix]) => suffix.startsWith(tail));
+
+/**
+ * ¿`text` puede ser el principio de una medida que parseLength entendería?
+ * Sirve para no marcar como error lo que todavía se está escribiendo: «2,»,
+ * «1/», «1 1/», «-», «10 c», «4 pul». Lo que ya se entiende también da true.
+ * «abc», «1..2» o «10 kg» dan false.
+ */
+export function isPartialLength(text, unit) {
+  if (typeof text !== 'string') return false;
+  if (parseLength(text, unit) !== null) return true;
+  const s = text.replace(BIDI_MARKS, '').trim().toLowerCase().replace(/\s+/g, ' ').replace(/−/g, '-');
+  // Signo, número (con coma o punto), fracción a medio escribir y unidad a medio escribir.
+  const m = /^[+-]?\s?(\d*(?:[.,]\d*)?)(?:(?:\s+|-)\d*(?:\/\d*)?|\/\d*)?\s?([a-z'"″”“]*)$/.exec(s);
+  return !!m && isSuffixStart(m[2]);
+}
+
 const STEPS = {
   mm: { fine: 0.1, normal: 1, coarse: 10 },
   cm: { fine: 0.01, normal: 0.1, coarse: 1 },

@@ -10,6 +10,7 @@ import {
   parseLength,
   stepFor,
   stepLabel,
+  isPartialLength,
   gridPresets,
   unitLabel,
 } from '../src/units.js';
@@ -266,6 +267,17 @@ describe('pasos y grilla', () => {
       assert.ok(stepFor(u, 'fine').mm < stepFor(u).mm && stepFor(u).mm < stepFor(u, 'coarse').mm, u);
     }
     assert.throws(() => stepFor('mm', 'huge'), RangeError);
+  });
+
+  test('isPartialLength', () => {
+    for (const text of ['', '2', '2,', '2.', ',', '-', '+', '10 c', '10 cm', '4 pul', '4 pulg', '1/', '1 1/', '1-1/2', '1/2 i', '4"', '4”', ' 3 ']) {
+      assert.equal(isPartialLength(text, 'in'), true, JSON.stringify(text));
+    }
+    for (const text of ['abc', '1..2', '10 kg', '1e3', '1,000.5', 'mm 10', '10 min', '2,5,', null, 42]) {
+      assert.equal(isPartialLength(text, 'mm'), false, JSON.stringify(text));
+    }
+    // Todo lo que parseLength entiende, también.
+    for (const text of ['10,5', '2.5 cm', '1 1/2 in', '−3 mm']) assert.equal(isPartialLength(text, 'mm'), true, text);
   });
 
   test('stepLabel', () => {
