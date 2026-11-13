@@ -3,12 +3,12 @@
 // el puntero o el foco encima, y se pueden cerrar); los problemas vigentes
 // quedan mientras existan. Todo se anuncia en las regiones vivas.
 
-import { state, settings, status, area, dims, render } from './store.js';
-import { EPS, overlaps } from './collide.js';
+import { state, settings, status, area, render, boxOf } from './store.js';
+import { pieceProblems, problemSummary } from './sheets.js';
 import { announce, cancelAnnounce } from './live.js';
 import { icon } from './icons.js';
 import { $ } from './util.js';
-import { t, asSentence } from './copy/index.js';
+import { t, asSentence, formatList } from './copy/index.js';
 
 const INFO_MS = 5000;
 const WARN_MS = 9000;
@@ -87,34 +87,25 @@ function dismiss() {
   render();
 }
 
-/** Problemas de cada pieza: {cut, pastMargin, overlap} por id. */
+/** Problemas de cada pieza en su hoja: {cut, pastMargin, overlap} por id. */
 export function problemsById() {
   const { W, H, m } = area();
-  const boxes = state.items.map((item) => {
-    const [w, h] = dims(item);
-    return { id: item.id, x: item.x, y: item.y, w, h };
-  });
-  const outside = (b, inset) =>
-    b.x < inset - EPS || b.y < inset - EPS || b.x + b.w > W - inset + EPS || b.y + b.h > H - inset + EPS;
-  const result = new Map();
-  for (const b of boxes) {
-    const cut = outside(b, 0);
-    result.set(b.id, {
-      cut,
-      pastMargin: !cut && outside(b, m),
-      overlap: boxes.some((o) => o !== b && overlaps(b, o)),
-    });
-  }
-  return result;
+  return pieceProblems(state.items.map(boxOf), { W, H, margin: m });
 }
 
+/** Cuántas piezas tienen cada problema y en qué hojas (índices). */
 export function sheetProblems() {
-  const all = [...problemsById().values()];
-  return {
-    cut: all.filter((p) => p.cut).length,
-    pastMargin: all.filter((p) => p.pastMargin).length,
-    overlap: all.some((p) => p.overlap),
-  };
+  return problemSummary(
+    problemsById(),
+    state.items.map(boxOf),
+    state.sheets.map((sheet) => sheet.id)
+  );
+}
+
+// Con varias hojas, el aviso dice en cuáles: «Hoja 2: …», «Hojas 1 y 3: …».
+function inSheets(text, sheets) {
+  if (state.sheets.length < 2) return text;
+  return t('notices.inSheets', { n: sheets.length, list: formatList(sheets.map((i) => i + 1)), text });
 }
 
 /** Qué aviso corresponde ahora, en orden de prioridad (null: nada que decir). */
@@ -123,14 +114,15 @@ function currentNotice() {
   if (status.flash) return { ...status.flash, flash: true };
   if (!state.items.length) return null;
   const { cut, pastMargin, overlap } = sheetProblems();
-  if (cut) {
-    return { text: t('notices.cut', { n: cut }), warn: true };
+  if (cut.count) {
+    return { text: inSheets(t('notices.cut', { n: cut.count }), cut.sheets), warn: true };
   }
-  if (pastMargin) {
-    return { text: t('notices.pastMargin', { n: pastMargin }), warn: true };
+  if (pastMargin.count) {
+    return { text: inSheets(t('notices.pastMargin', { n: pastMargin.count }), pastMargin.sheets), warn: true };
   }
-  if (overlap && !settings.allowOverlap) {
-    return { text: t('notices.overlap'), action: { label: t('bar.arrange'), run: arrangeAction } };
+  if (overlap.count && !settings.allowOverlap) {
+    const text = state.sheets.length > 1 ? inSheets(t('notices.overlapIn'), overlap.sheets) : t('notices.overlap');
+    return { text, action: { label: t('bar.arrange'), run: arrangeAction } };
   }
   return null;
 }
