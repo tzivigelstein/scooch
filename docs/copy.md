@@ -100,7 +100,9 @@ gracias a personas como tú», no «Lo mantengo…»).
 | Término | Para | No usar |
 | --- | --- | --- |
 | pieza | cada imagen o página de PDF que está en la hoja | elemento, imagen, objeto |
-| hoja | la página que se arma e imprime | página (salvo «página del PDF»), lienzo |
+| hoja | cada página que se arma e imprime («Hoja 2 de 3»; el PDF sale con una página por hoja) | página (salvo «página del PDF»), lienzo |
+| hoja actual | la de la pieza seleccionada o, sin selección, la que más se ve | hoja activa |
+| agregar hoja / quitar hoja | sumar una hoja vacía al final / sacar una hoja con sus piezas | nueva página, borrar hoja |
 | acomodar | ubicar todas las piezas sin superponerlas, en las hojas que hagan falta | autoacomodar, organizar, acomodo (como título) |
 | distribución | la sección del panel con la separación, el giro y la superposición | acomodo |
 | girar | rotar 90° | rotar |
@@ -123,6 +125,14 @@ gracias a personas como tú», no «Lo mantengo…»).
 | barra de acciones | la barra flotante de la pieza | menú, toolbar |
 | aviso | la píldora de mensajes | notificación, toast |
 | aporte / aportar | la donación en Patreon | donar, donación, apoyar |
+| proyecto | cada trabajo guardado en el navegador (nombre, hojas, piezas y archivos) | documento, archivo, diseño |
+| nuevo proyecto | empezar otro en blanco; el abierto queda guardado | limpiar, vaciar (eso es «Quitar todas») |
+| guardado / guardar | lo que hace solo el navegador con el proyecto («Guardado», «Guardando…») | sincronizar, subir, nube |
+| eliminar | borrar un proyecto del navegador, para siempre (no se puede deshacer) | quitar (es para piezas y hojas), borrar |
+| cambiar el nombre | renombrar un proyecto | renombrar, editar el título |
+| preferencias | ajustes de este navegador (unidades, atajos de 1 tecla) | configuración, ajustes |
+| unidades | mm, cm o in para mostrar y escribir medidas | sistema de medida |
+| personalizado | papel con ancho y alto a elección | a medida, custom |
 | pág. | solo en la lista de piezas, por espacio | — |
 
 Teclas: Ctrl (⌘ en Mac), Shift, Alt, Tab, Enter, Espacio, Supr, Retroceso,
@@ -167,5 +177,11 @@ Esc. Las letras y los signos se muestran tal cual.
   «Acomodar» (una acción) y no como un grupo de ajustes. «Distribuir», como
   verbo, queda para repartir piezas con espacios iguales.
 - **Atajos de 1 tecla**, con cifra, como pide la regla de números.
+- **Eliminar** solo para proyectos: es irreversible y por eso usa otra
+  palabra que «quitar» (piezas y hojas, que se pueden deshacer).
+- **Preferencias** para los ajustes de este navegador (no del documento): se
+  abre con el engranaje y no entra en el historial.
+- **Medidas en la unidad elegida**: los textos con medidas reciben el número
+  ya formateado («{w} × {h} {unit}»), nunca «mm» fijo.
 - **Coma decimal**, como en la mayor parte de Sudamérica (es-419 de Google usa
   punto). Si se cambia, es solo `meta.numberLocale` en `es.js`.

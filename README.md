@@ -19,6 +19,18 @@ yarn preview      # sirve dist/ para probar el build
 yarn test         # pruebas unitarias (node --test)
 ```
 
+## Proyectos y privacidad
+
+Cada trabajo es un proyecto que se guarda solo en este navegador (IndexedDB):
+el documento, sus archivos originales y las vistas previas ya rasterizadas.
+Nada se sube a ningún servidor. Si el navegador no permite IndexedDB (algunas
+ventanas privadas), la app funciona igual pero no guarda, y lo avisa.
+
+Con la app abierta en varias pestañas, cada proyecto lo guarda una sola: la
+que lo abre se lo pide a las otras por `BroadcastChannel`, y la que lo tenía
+guarda lo pendiente, deja de guardar y avisa («Editar aquí» lo recupera,
+recargándolo). Así nunca se pisan cambios en silencio.
+
 ## Despliegue en Vercel
 
 Importa el repositorio en Vercel: detecta Vite y no hace falta configurar
@@ -34,20 +46,30 @@ src/
   app.js          arranque: arma la interfaz y conecta las acciones
   styles.css      estilos
   copy/           todos los textos de la interfaz (es.js) y t(clave, params)
-  config.js       nombre de la app, papeles, límites y claves de almacenamiento
-  store.js        estado de la hoja e historial de deshacer/rehacer
-  sheetview.js    la hoja en pantalla y los gestos con el puntero
-  panels.js       panel «Propiedades»
-  piecelist.js    panel «Piezas»
-  layout.js       acomodar, reducir y rellenar con copias
-  pack.js         empaquetado de rectángulos (módulo puro)
-  collide.js      colisiones entre rectángulos (módulo puro)
-  placement.js    dónde ubicar la barra de la pieza sin tapar otras (módulo puro)
-  assets.js       lectura de imágenes y PDF (pdf.js se carga al abrir el primer PDF)
-  export.js       armado del PDF (pdf-lib se carga al exportar o imprimir)
+  config.js       nombre de la app, límites y claves de almacenamiento
+  store.js        documento (hojas y piezas), assets e historial de deshacer
+  sheetview.js    las hojas en pantalla, una debajo de otra, y los gestos
+  panels.js       panel «Propiedades» (campos de longitud: lengthfield.js)
+  piecelist.js    panel «Piezas», agrupado por hoja
+  layout.js       acomodar, reducir, ubicar lo nuevo y rellenar con copias
+  measure.js      medidas y nombres de papel en la unidad elegida
+  prefs.js        diálogo «Preferencias» (unidades, atajos de 1 tecla)
+  projects.js     proyecto abierto, guardado automático y varias pestañas
+  projectsui.js   nombre del proyecto en la barra y diálogo «Proyectos»
+  idbstorage.js   almacenamiento de proyectos en IndexedDB
+  assets.js       lectura de imágenes y PDF (pdf.js se carga recién al
+                  necesitarlo) y binarios para guardar y restaurar
+  export.js       armado del PDF, una página por hoja (pdf-lib se carga al
+                  exportar o imprimir)
   output.js       descarga e impresión
-  …               avisos, atajos, tooltips, paneles plegables, donación y
-                  módulos puros nuevos (unidades, papeles, alinear, recortar…)
+  módulos puros (sin DOM, con pruebas en test/):
+    pack.js         empaquetado de rectángulos en una o varias hojas
+    sheets.js       varias hojas: repartir, ubicar lo nuevo, problemas por hoja
+    projectdoc.js   formato versionado del proyecto (serializar, migrar, validar)
+    projectstore.js lógica de proyectos sobre un almacenamiento intercambiable
+    units.js, papers.js, collide.js, placement.js, humanize.js
+    align.js, crop.js, cutmarks.js (todavía sin usar en la interfaz)
+  …               avisos, atajos, tooltips, paneles plegables, diálogos y donación
 test/             pruebas de los módulos puros
 docs/copy.md      guía de copy: reglas, glosario y ejemplos
 vite.config.js    completa los textos de index.html y nombra los chunks diferidos
