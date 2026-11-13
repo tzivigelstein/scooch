@@ -212,6 +212,21 @@
   background-position: 0 0;
 }
 
+/* Cut lines, as they print (over the pieces, under nothing interactive). */
+.cut-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* While dragging, the lines would show where the pieces were: they come back on drop. */
+.canvas.is-dragging .cut-layer {
+  visibility: hidden;
+}
+
 .safe {
   position: absolute;
   border: 1px dashed #c3c8d1;

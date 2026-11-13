@@ -4,6 +4,7 @@
 import { FilePlus, Trash2, Upload } from 'lucide-react';
 import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FocusEvent } from 'react';
 import { t } from '../../copy/index.ts';
+import type { Cuts } from '../../core/types.ts';
 import type { Unit } from '../../core/units.js';
 import { LEFT_DRAWER_QUERY, NARROW_QUERY } from '../../config.ts';
 import { useCanvasGestures } from '../../hooks/useCanvasGestures.ts';
@@ -21,6 +22,7 @@ import { focusPiece } from '../../state/actions/selection.ts';
 import { addSheet, removeSheet, showSheetSettings } from '../../state/actions/sheets.ts';
 import { Icon } from '../ui/Icon.tsx';
 import { CropContent } from './cropMode.ts';
+import { CutLayer } from './CutLayer.tsx';
 import { Piece } from './Piece.tsx';
 import { SelectionOverlay } from './SelectionOverlay.tsx';
 
@@ -77,6 +79,7 @@ interface PageProps {
   unit: Unit;
   busy: boolean;
   cropping: number | null;
+  cuts: Readonly<Cuts>;
 }
 
 const EmptyDropzone = memo(function EmptyDropzone({ hidden, disabled }: { hidden: boolean; disabled: boolean }) {
@@ -97,7 +100,7 @@ const EmptyDropzone = memo(function EmptyDropzone({ hidden, disabled }: { hidden
   );
 });
 
-const Page = memo(function Page({ id, index, total, items, W, H, zoom, margin, empty, current, showGrid, grid, selection, pinned, unit, busy, cropping }: PageProps) {
+const Page = memo(function Page({ id, index, total, items, W, H, zoom, margin, empty, current, showGrid, grid, selection, pinned, unit, busy, cropping, cuts }: PageProps) {
   const label = t('sheet.numbered', { i: index + 1, total });
   const n = items.length;
   const many = selection.length > 1;
@@ -142,6 +145,7 @@ const Page = memo(function Page({ id, index, total, items, W, H, zoom, margin, e
               />
             );
           })}
+          <CutLayer items={items} cuts={cuts} W={W} H={H} zoom={zoom} />
         </div>
       </div>
     </div>
@@ -159,6 +163,7 @@ export function Stage() {
   const paper = useDocument((s) => s.paper);
   const landscape = useDocument((s) => s.landscape);
   const margin = useDocument((s) => s.margin);
+  const cuts = useDocument((s) => s.cuts);
   const zoom = useView((s) => s.zoom);
   const animating = useView((s) => s.animating);
   const pinned = useView((s) => s.pinned);
@@ -238,6 +243,7 @@ export function Stage() {
             unit={unit}
             busy={busy}
             cropping={cropping}
+            cuts={cuts}
           />
         ))}
         <div id="drag-layer" className="drag-layer" />
