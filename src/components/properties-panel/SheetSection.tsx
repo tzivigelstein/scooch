@@ -70,25 +70,41 @@ export function SheetSection() {
 
   return (
     <Section name="sheet" title={t('props.sheet')}>
-      <div className="paper-row">
-        <label className="field">
-          <span className="field-label">{t('props.size')}</span>
-          <select id="paper" value={custom ? 'custom' : paper} disabled={busyOff(busy, 'paper')} onChange={(e) => choosePaper(e.target.value as PaperId | 'custom')}>
-            {PAPER_GROUPS.map((group) => (
-              <optgroup key={group} label={t(`papers.groups.${group}`)}>
-                {PAPERS.filter((p) => p.group === group).map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {t('papers.option', { paper: t(`papers.names.${p.id}`), size: sizeText(p.w, p.h) })}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-            <option value="custom">{t('papers.custom')}</option>
-          </select>
-        </label>
-        <fieldset className="field">
-          <legend className="field-label">{t('props.orientation')}</legend>
-          <div className="segmented icons">
+      {/* The paper alone on its row, so long names and custom sizes are never cut. */}
+      <label className="field">
+        <span className="field-label">{t('props.size')}</span>
+        <select id="paper" value={custom ? 'custom' : paper} disabled={busyOff(busy, 'paper')} onChange={(e) => choosePaper(e.target.value as PaperId | 'custom')}>
+          {PAPER_GROUPS.map((group) => (
+            <optgroup key={group} label={t(`papers.groups.${group}`)}>
+              {PAPERS.filter((p) => p.group === group).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {t('papers.option', { paper: t(`papers.names.${p.id}`), size: sizeText(p.w, p.h) })}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+          <option value="custom">{t('papers.custom')}</option>
+        </select>
+      </label>
+      <div id="custom-paper" className="custom-paper" hidden={!custom}>
+        <div className="prop-grid">
+          {sideField('w')}
+          {sideField('h')}
+        </div>
+        <p id="paper-error" className="field-error" hidden={!error}>
+          {error?.text}
+        </p>
+        <p id="paper-match" className="field-note" hidden={!showMatch}>
+          {matchText}
+        </p>
+      </div>
+      <div className="prop-grid paper-props">
+        <SheetLength name="margin" stacked />
+        <div className="field">
+          <span id="orientation-label" className="field-label">
+            {t('props.orientation')}
+          </span>
+          <div className="segmented icons" role="radiogroup" aria-labelledby="orientation-label">
             <label className="seg">
               <input type="radio" name="orientation" id="portrait" value="portrait" data-tip={t('props.portrait')} checked={!landscape} disabled={busyOff(busy, 'portrait')} onChange={(e) => e.target.checked && setOrientation(false)} />
               <span>
@@ -114,32 +130,19 @@ export function SheetSection() {
               </span>
             </label>
           </div>
-        </fieldset>
-      </div>
-      <div id="custom-paper" className="custom-paper" hidden={!custom}>
-        <div className="prop-grid">
-          {sideField('w')}
-          {sideField('h')}
         </div>
-        <p id="paper-error" className="field-error" hidden={!error}>
-          {error?.text}
-        </p>
-        <p id="paper-match" className="field-note" hidden={!showMatch}>
-          {matchText}
-        </p>
       </div>
-      <SheetLength name="margin" />
     </Section>
   );
 }
 
-/** Margin and gap: 0 to 50 mm, in one undo step while editing. */
-export function SheetLength({ name }: { name: 'margin' | 'gap' }) {
+/** Margin and gap: 0 to 50 mm, in one undo step while editing. `stacked`: the label above the field. */
+export function SheetLength({ name, stacked = false }: { name: 'margin' | 'gap'; stacked?: boolean }) {
   const busy = useDocument((s) => s.busy);
   useDocument((s) => s[name]);
   usePrefs((s) => s.unit);
   return (
-    <label className="field inline">
+    <label className={stacked ? 'field' : 'field inline'}>
       <span className="field-label">
         <span>{t(name === 'margin' ? 'props.margin' : 'props.gap')}</span>
         <span id={`${name}-unit`} className="sr-only">

@@ -127,7 +127,8 @@ const { open, makeChecker, helpers, overlaps, FIX, path, norm } = require('../li
   // ---- H: ajustes de la hoja; orientación con flechas; L; secciones; G
   await k.press('h');
   check('H: foco en el tamaño del papel', (await act()).id === 'paper');
-  await k.press('Tab');
+  await k.press('Tab'); // the margin, on the row below the paper
+  await k.press('Tab'); // the orientation, beside the margin
   await k.press('ArrowRight');
   check('→ elige «Horizontal»', (await page.isChecked('#landscape')) && norm(await page.locator('#paper-label').textContent()) === 'A4 · 297 × 210 mm');
   await k.press('Escape');

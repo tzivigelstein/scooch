@@ -163,6 +163,10 @@
     min-height: 2.5rem;
   }
 
+  :root {
+    --control-h: 2.5rem;
+  }
+
   .panel select,
   .panel input[type="number"],
   .panel input[type="text"],
@@ -172,6 +176,11 @@
   input.project-name-input,
   .add-sheet {
     height: 2.5rem;
+  }
+
+  /* The margin as tall as the orientation beside it (whose options are touch-sized). */
+  .panel .paper-props input[type="text"] {
+    height: 2.875rem;
   }
 
   .action-row .icon-btn,
