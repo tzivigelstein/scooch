@@ -531,7 +531,8 @@ async function loadFiles(files) {
   else render();
   if (keys.length) {
     const added = state.sheets.length - sheetsBefore;
-    announce(added ? t('announce.addedSheets', { n: keys.length, sheets: added }) : t('announce.added', { n: keys.length }));
+    const sheets = t('announce.newSheets', { n: added });
+    announce(added ? t('announce.addedSheets', { n: keys.length, sheets }) : t('announce.added', { n: keys.length }));
   }
 }
 

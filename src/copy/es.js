@@ -388,9 +388,10 @@ export default {
     cleared: 'Se quitaron todas las piezas',
     added: { one: 'Se agregó 1 archivo', other: 'Se agregaron {n} archivos' },
     addedSheets: {
-      one: 'Se agregó 1 archivo. No entraba en las hojas que había, así que va en una hoja nueva.',
-      other: 'Se agregaron {n} archivos. Los que no entraban en las hojas que había van en {sheets} hojas nuevas.',
+      one: 'Se agregó 1 archivo. No entraba en las hojas que había, así que va en {sheets}.',
+      other: 'Se agregaron {n} archivos. Los que no entraban en las hojas que había van en {sheets}.',
     },
+    newSheets: { one: '{n} hoja nueva', other: '{n} hojas nuevas' },
     sheetAdded: 'Se agregó la hoja {i}',
     sheetRemoved: { one: 'Se quitó la hoja {i} con 1 pieza', other: 'Se quitó la hoja {i} con {n} piezas' },
     sheetRemovedEmpty: 'Se quitó la hoja {i}',
