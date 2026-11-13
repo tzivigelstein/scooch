@@ -38,7 +38,7 @@ yarn e2e --parity URL               # also compare the exported PDF with the bui
 
 They include axe checks in light and dark mode, keyboard-only flows, the
 exported PDF's contents, the projects' storage and performance budgets for
-dragging and scrolling with 150 pieces.
+dragging, scrolling and zooming with 150 pieces.
 
 ## Projects and privacy
 
@@ -68,8 +68,19 @@ little by little up to 1.25 × towards 2800 px: everything is in rem, and the
 root font size (`html` in `src/styles/base.css`) starts from the browser's
 100 %, so it respects zoom and the chosen font size. The panels (`--left-w`
 and `--right-w`, in `src/styles/tokens.css`) also grow with the screen up to a
-cap. The sheet has its own zoom (it fills the available height) and doesn't
-change with this.
+cap. The sheets have their own zoom, which doesn't change with this (see
+below).
+
+## Zoom
+
+The sheets' zoom is a view measure: 100 % draws 1 mm as 96 / 25.4 CSS px and
+never changes the printed size. It starts fitted to the sheet and follows the
+window until the person zooms (Ctrl/⌘ + wheel or pinch, Ctrl/⌘ + / −, the
+control in the canvas corner; Shift+1 and Shift+2 fit again), from 10 % to
+800 %. It is view state: not in the document or the undo history. Every
+conversion between screen pixels and millimetres goes through
+`src/components/canvas/viewport.ts`; the pure part (levels, steps, the wheel)
+is `src/core/zoom.js`.
 
 ## Deploying to Vercel
 
