@@ -129,13 +129,9 @@ describe('autosave', () => {
     expect(app.status()).toBe('saved');
   });
 
-  // PRODUCT BUG (minor): when a change is undone before the ~1 s save, the
-  // status goes back to «Guardado» but the save timer is left running, so the
-  // same document is written again and its «modified» date moves (the
-  // «Proyectos» list then shows it as just changed and may reorder it).
-  // documentChanged() doesn't clearTimeout(timer) when the signature equals
-  // the saved one.
-  test.fails('undoing back to what is saved doesn’t write the project again', async () => {
+  // Writing it again would move its «modified» date: the «Proyectos» list
+  // would show it as just changed and could reorder it.
+  test('undoing back to what is saved doesn’t write the project again', async () => {
     const app = await start();
     app.addPiece(20, 20);
     await vi.advanceTimersByTimeAsync(0);

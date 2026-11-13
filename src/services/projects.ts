@@ -260,6 +260,7 @@ function documentChanged() {
   const doc = serialized();
   const sig = JSON.stringify(doc);
   if (sig === session.savedSig) {
+    clearTimeout(timer); // back to what is saved: nothing left to write
     if (session.status === 'pending') setStatus('saved');
     return;
   }
