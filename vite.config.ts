@@ -18,6 +18,22 @@ export default defineConfig({
   test: {
     // Some suites fuzz thousands of layouts; node:test had no per-test limit.
     testTimeout: 60_000,
+    // One project per layer (see docs/testing.md), so a failure says what kind
+    // of test broke. `yarn test` runs them all.
+    projects: [
+      // Pure functions of src/core and pure helpers: exact results, tables of cases.
+      { extends: true, test: { name: 'unit', include: ['tests/core/**/*.test.{js,ts}'], environment: 'node', sequence: { groupOrder: 0 } } },
+      // Properties checked over many generated cases (fuzz).
+      { extends: true, test: { name: 'properties', include: ['tests/properties/**/*.test.{js,ts}'], environment: 'node', sequence: { groupOrder: 0 } } },
+      // Actions on the real stores, history, selectors and services (PDF, projects,
+      // storage). Node by default; a file that needs a DOM says `@vitest-environment jsdom`.
+      { extends: true, test: { name: 'state', include: ['tests/state/**/*.test.{ts,tsx}', 'tests/services/**/*.test.{js,ts}'], environment: 'node', sequence: { groupOrder: 0 } } },
+      // One component or hook, rendered with Testing Library.
+      { extends: true, test: { name: 'ui', include: ['tests/components/**/*.test.tsx', 'tests/hooks/**/*.test.tsx'], environment: 'jsdom', sequence: { groupOrder: 0 } } },
+      // Work and time budgets: after the others, one file at a time, so their
+      // clock guards don't share the machine with the rest of the run.
+      { extends: true, test: { name: 'performance', include: ['tests/performance/**/*.test.{js,ts}'], environment: 'node', fileParallelism: false, sequence: { groupOrder: 1 } } },
+    ],
   },
   build: {
     rolldownOptions: {
