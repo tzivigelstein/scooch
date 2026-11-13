@@ -34,12 +34,12 @@ import {
   boxOf,
 } from './store.js';
 import { sizeText as measureSize, lengthText, paperName, stepTexts, unitName } from './measure.js';
-import { readFile, pdfPage, openPdf } from './assets.js';
+import { readFile, pdfPage, openPdf } from './services/assets.ts';
 import { makePdf, pdfFileName, downloadBytes, printBytes } from './output.js';
 import { arrange, keepCenter, centerOnSheet, fitToSheet, placeNew, fillWithCopies, duplicatePiece, forgetSpill } from './layout.js';
 import { spotOnSheet, keepCenterInside } from './core/sheets.js';
 import { initNotice, renderNotice, say } from './notice.js';
-import { initLive, announce } from './live.js';
+import { announce } from './components/feedback/announcer.ts';
 import { hydrateIcons } from './icons.js';
 import { initTooltips, refreshTooltip } from './tooltip.js';
 import {
@@ -82,7 +82,8 @@ import {
   groupScaleBounds,
   applyScale,
 } from './groupactions.js';
-import { $, clamp, round1, tidy, fine } from './util.js';
+import { clamp, round1, tidy, fine } from './core/util.ts';
+import { $ } from './hooks/dom.ts';
 
 const ui = {};
 
@@ -891,7 +892,6 @@ function wire() {
   for (const el of document.querySelectorAll('[data-kbd]')) el.dataset.kbd = el.dataset.kbd.split(' ').map(keyLabel).join(' ');
   hydrateIcons();
 
-  initLive();
   initNotice({ onArrange: doArrange });
   initConfirm();
   initPrefs({ trigger: $('prefs-open'), onSingleKeysChange: syncSingleKeys, onUnitChange: unitChanged });

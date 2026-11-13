@@ -10,7 +10,8 @@ import { sizeOf } from './core/papers.js';
 import { isUnit } from './core/units.js';
 import { nextIds, DEFAULT_CUTS } from './core/projectdoc.js';
 import { pieceSize } from './core/crop.js';
-import { storageGet, storageSet, clamp } from './util.js';
+import { clamp } from './core/util.ts';
+import { storageGet, storageSet } from './services/storage/local.ts';
 
 export const assets = new Map();
 

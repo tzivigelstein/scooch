@@ -5,9 +5,9 @@
 
 import { state, settings, status, area, render, boxOf } from './store.js';
 import { pieceProblems, problemSummary } from './core/sheets.js';
-import { announce, cancelAnnounce } from './live.js';
+import { announce, cancelAnnounce } from './components/feedback/announcer.ts';
 import { icon } from './icons.js';
-import { $ } from './util.js';
+import { $ } from './hooks/dom.ts';
 import { t, asSentence, formatList } from './copy/index.ts';
 
 const INFO_MS = 5000;

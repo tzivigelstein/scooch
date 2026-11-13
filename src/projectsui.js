@@ -7,9 +7,9 @@ import { relativeTime, formatBytes } from './core/humanize.js';
 import { sizeOf } from './core/papers.js';
 import { setupDialog } from './dialogs.js';
 import { confirmAction } from './confirm.js';
-import { announce } from './live.js';
+import { announce } from './components/feedback/announcer.ts';
 import { icon } from './icons.js';
-import { $ } from './util.js';
+import { $ } from './hooks/dom.ts';
 import { t, numberLocale } from './copy/index.ts';
 
 let ui = {};

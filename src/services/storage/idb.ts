@@ -1,39 +1,47 @@
-// Almacenamiento de proyectos en IndexedDB, con la interfaz de projectstore.js.
-// Base «pliego»: «projects» (registros, por id) y «files» (binarios como Blob,
-// por [proyecto, clave], con un índice por proyecto). Nada sale del navegador.
+// Project storage in IndexedDB, with the interface of core/projectstore.js.
+// Database «pliego»: «projects» (records, by id) and «files» (binaries as Blob,
+// by [project, key], with an index by project). Nothing leaves the browser.
+
+import type { ProjectRecord, ProjectStorage } from '../../core/types.ts';
 
 const DB_NAME = 'pliego';
 const DB_VERSION = 1;
 
-const promised = (request) =>
-  new Promise((resolve, reject) => {
+interface FileRow {
+  project: string;
+  key: string;
+  blob: Blob;
+}
+
+const promised = <T>(request: IDBRequest<T>) =>
+  new Promise<T>((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 
-const done = (tx) =>
-  new Promise((resolve, reject) => {
+const done = (tx: IDBTransaction) =>
+  new Promise<void>((resolve, reject) => {
     tx.oncomplete = () => resolve();
-    // Si la transacción se aborta (p. ej. por cuota), el error está en tx.error.
-    tx.onabort = () => reject(tx.error ?? new DOMException('Transacción abortada', 'AbortError'));
-    tx.onerror = () => {}; // se informa en onabort
+    // An aborted transaction (e.g. over quota) keeps its error in tx.error.
+    tx.onabort = () => reject(tx.error ?? new DOMException('Transaction aborted', 'AbortError'));
+    tx.onerror = () => {}; // reported by onabort
   });
 
 /**
- * Abre la base. Rechaza si IndexedDB no está o no se puede usar (algunos
- * navegadores en modo privado), o si no responde en `timeout` ms.
+ * Opens the database. Rejects if IndexedDB is missing or unusable (some
+ * browsers in private mode), or if it doesn't answer within `timeout` ms.
  */
-export function openIdbStorage({ timeout = 4000 } = {}) {
+export function openIdbStorage({ timeout = 4000 } = {}): Promise<ProjectStorage> {
   return new Promise((resolve, reject) => {
-    let request;
+    let request: IDBOpenDBRequest;
     try {
-      if (!globalThis.indexedDB) throw new Error('IndexedDB no está disponible');
+      if (!globalThis.indexedDB) throw new Error('IndexedDB is not available');
       request = indexedDB.open(DB_NAME, DB_VERSION);
     } catch (err) {
       reject(err);
       return;
     }
-    const timer = setTimeout(() => reject(new Error('IndexedDB no respondió')), timeout);
+    const timer = setTimeout(() => reject(new Error('IndexedDB did not answer')), timeout);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains('projects')) db.createObjectStore('projects', { keyPath: 'id' });
@@ -42,7 +50,7 @@ export function openIdbStorage({ timeout = 4000 } = {}) {
         files.createIndex('project', 'project');
       }
     };
-    request.onblocked = () => {}; // otra pestaña con una versión vieja: se espera
+    request.onblocked = () => {}; // another tab with an older version: wait
     request.onerror = () => {
       clearTimeout(timer);
       reject(request.error);
@@ -50,33 +58,33 @@ export function openIdbStorage({ timeout = 4000 } = {}) {
     request.onsuccess = () => {
       clearTimeout(timer);
       const db = request.result;
-      // Si otra pestaña necesita actualizar la base, esta la suelta.
+      // If another tab needs to upgrade the database, this one lets it go.
       db.onversionchange = () => db.close();
       resolve(idbStorage(db));
     };
   });
 }
 
-function idbStorage(db) {
+function idbStorage(db: IDBDatabase): ProjectStorage {
   return {
     async list() {
       const tx = db.transaction('projects');
-      return promised(tx.objectStore('projects').getAll());
+      return promised<ProjectRecord[]>(tx.objectStore('projects').getAll());
     },
     async get(id) {
       const tx = db.transaction('projects');
-      return (await promised(tx.objectStore('projects').get(id))) ?? null;
+      return (await promised<ProjectRecord | undefined>(tx.objectStore('projects').get(id))) ?? null;
     },
     async files(id) {
       const tx = db.transaction('files');
-      const rows = await promised(tx.objectStore('files').index('project').getAll(IDBKeyRange.only(id)));
+      const rows = await promised<FileRow[]>(tx.objectStore('files').index('project').getAll(IDBKeyRange.only(id)));
       return new Map(rows.map((row) => [row.key, row.blob]));
     },
     async write(record, { put = new Map(), remove = [] } = {}) {
       const tx = db.transaction(['projects', 'files'], 'readwrite');
       const finished = done(tx);
       const files = tx.objectStore('files');
-      for (const [key, blob] of put) files.put({ project: record.id, key, blob });
+      for (const [key, blob] of put) files.put({ project: record.id, key, blob } satisfies FileRow);
       for (const key of remove) files.delete([record.id, key]);
       tx.objectStore('projects').put(record);
       return finished;
@@ -86,7 +94,7 @@ function idbStorage(db) {
       const finished = done(tx);
       tx.objectStore('projects').delete(id);
       tx.objectStore('files').index('project').openKeyCursor(IDBKeyRange.only(id)).onsuccess = (e) => {
-        const cursor = e.target.result;
+        const cursor = (e.target as IDBRequest<IDBCursor | null>).result;
         if (!cursor) return;
         tx.objectStore('files').delete(cursor.primaryKey);
         cursor.continue();

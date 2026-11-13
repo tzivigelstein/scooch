@@ -3,7 +3,8 @@
 // exportación pedida sigue siempre, se cierre como se cierre.
 
 import { DONATE_URL, DONATE_EVERY, DONATE_STORAGE } from './config.ts';
-import { $, storageGet, storageSet } from './util.js';
+import { storageGet, storageSet } from './services/storage/local.ts';
+import { $ } from './hooks/dom.ts';
 
 let ui = {};
 let askedThisSession = false;

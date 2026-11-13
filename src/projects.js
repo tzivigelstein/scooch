@@ -15,7 +15,7 @@
 // contesta (congelada), se espera 3 s: igual ya había guardado al ocultarse.
 
 import { LAST_PROJECT_STORAGE, JOURNAL_STORAGE } from './config.ts';
-import { openIdbStorage } from './idbstorage.js';
+import { openIdbStorage } from './services/storage/idb.ts';
 import {
   newProjectId,
   cleanName,
@@ -32,9 +32,9 @@ import {
 } from './core/projectstore.js';
 import { serialize, fileKeys } from './core/projectdoc.js';
 import { state, assets, render, replaceDocument, docState, sheetSize, itemsOn } from './store.js';
-import { restoreAssets, assetBlob } from './assets.js';
+import { restoreAssets, assetBlob } from './services/assets.ts';
 import { cssParams } from './core/crop.js';
-import { storageGet, storageSet, storageRemove } from './util.js';
+import { storageGet, storageSet, storageRemove } from './services/storage/local.ts';
 import { t } from './copy/index.ts';
 
 const SAVE_DELAY = 1000;

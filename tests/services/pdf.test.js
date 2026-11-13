@@ -2,7 +2,7 @@ import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { deflateSync } from 'node:zlib';
 import { PDFDocument, PDFName, PDFRawStream, decodePDFRawStream, degrees, rgb } from 'pdf-lib';
-import { buildPdf, CUT_LINE } from '../../src/export.js';
+import { buildPdf, CUT_LINE } from '../../src/services/pdf.ts';
 import { drawParams } from '../../src/core/crop.js';
 import { cutLines } from '../../src/core/cutmarks.js';
 

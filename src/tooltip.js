@@ -3,7 +3,8 @@
 // teclado; se pueden recorrer con el puntero y se cierran con Esc sin mover
 // el foco (WCAG 1.4.13).
 
-import { $, clamp } from './util.js';
+import { clamp } from './core/util.ts';
+import { $ } from './hooks/dom.ts';
 
 let tip;
 let target = null;

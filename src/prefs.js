@@ -5,7 +5,8 @@
 import { SINGLE_KEYS_STORAGE } from './config.ts';
 import { settings, setUnit } from './store.js';
 import { setupDialog } from './dialogs.js';
-import { $, storageGet, storageSet } from './util.js';
+import { storageGet, storageSet } from './services/storage/local.ts';
+import { $ } from './hooks/dom.ts';
 
 let ui = {};
 let openDialog = () => {};

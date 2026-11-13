@@ -13,7 +13,7 @@ import { problemsById } from './notice.js';
 import { printResolution } from './layout.js';
 import { icon } from './icons.js';
 import { sizeText } from './measure.js';
-import { $ } from './util.js';
+import { $ } from './hooks/dom.ts';
 import { t } from './copy/index.ts';
 
 // Distintivos de cada fila (el texto está en pieces.badges.<key>).

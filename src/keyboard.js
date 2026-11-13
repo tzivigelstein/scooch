@@ -5,7 +5,7 @@
 
 import { settings } from './store.js';
 import { stepFor } from './core/units.js';
-import { isTyping } from './util.js';
+import { isTyping } from './hooks/dom.ts';
 
 const NUDGES = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 // Alt+Shift + tecla (por posición, así funciona en cualquier distribución y en Mac).

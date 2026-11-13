@@ -40,9 +40,11 @@ import { keepCenterInside } from './core/sheets.js';
 import { keepCenter, fillSummary, printResolution } from './layout.js';
 import { bindLength, showLength } from './lengthfield.js';
 import { lengthText, sizeText, unitName, unitSymbol } from './measure.js';
-import { announce } from './live.js';
+import { announce } from './components/feedback/announcer.ts';
 import { icon } from './icons.js';
-import { $, clamp, num, storageGet, storageSet } from './util.js';
+import { clamp, num } from './core/util.ts';
+import { storageGet, storageSet } from './services/storage/local.ts';
+import { $ } from './hooks/dom.ts';
 import { t, numberLocale } from './copy/index.ts';
 
 let ui = {};

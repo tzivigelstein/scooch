@@ -5,7 +5,7 @@
 import { settings } from './store.js';
 import { stepTexts } from './measure.js';
 import { setupDialog } from './dialogs.js';
-import { $ } from './util.js';
+import { $ } from './hooks/dom.ts';
 import { t, keyLabel, linkedText } from './copy/index.ts';
 
 // [teclas (nombres de keyLabel), acción (clave en shortcuts.rows), es de una tecla]

@@ -7,7 +7,7 @@
 import { parseLength, isPartialLength, stepFor } from './core/units.js';
 import { settings } from './store.js';
 import { lengthValue, lengthText } from './measure.js';
-import { announce } from './live.js';
+import { announce } from './components/feedback/announcer.ts';
 import { t, asSentence } from './copy/index.ts';
 
 /**

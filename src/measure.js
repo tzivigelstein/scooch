@@ -4,7 +4,7 @@
 import { formatLength, stepLabel } from './core/units.js';
 import { describe } from './core/papers.js';
 import { state, settings } from './store.js';
-import { slug } from './util.js';
+import { slug } from './core/util.ts';
 import { t, numberLocale } from './copy/index.ts';
 
 const locale = () => numberLocale;

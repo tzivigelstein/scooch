@@ -4,7 +4,7 @@
 // click afuera o cuando el foco se va; al cerrar, el foco vuelve a quien los abrió.
 
 import { NARROW_QUERY, LEFT_DRAWER_QUERY } from './config.ts';
-import { $ } from './util.js';
+import { $ } from './hooks/dom.ts';
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), [tabindex="0"], summary';

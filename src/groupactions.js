@@ -68,9 +68,9 @@ import {
 import { duplicatePieces } from './layout.js';
 import { lengthText, sizeText } from './measure.js';
 import { say } from './notice.js';
-import { announce } from './live.js';
+import { announce } from './components/feedback/announcer.ts';
 import { animateNext } from './sheetview.js';
-import { fine } from './util.js';
+import { fine } from './core/util.ts';
 import { t } from './copy/index.ts';
 
 /** Preferencias de la sección (vista, fuera del historial). */

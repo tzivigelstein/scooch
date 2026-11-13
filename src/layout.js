@@ -28,7 +28,7 @@ import { paperName } from './measure.js';
 import { pieceSize, isIdentity } from './core/crop.js';
 import { say } from './notice.js';
 import { animateNext } from './sheetview.js';
-import { clamp, tidy } from './util.js';
+import { clamp, tidy } from './core/util.ts';
 import { t, formatList } from './copy/index.ts';
 
 const packOptions = () => ({ gap: state.gap, rotate: settings.rotate });

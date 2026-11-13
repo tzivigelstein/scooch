@@ -2,7 +2,7 @@
 // una hoja con piezas (se puede deshacer) o eliminar un proyecto (no).
 
 import { setupDialog } from './dialogs.js';
-import { $ } from './util.js';
+import { $ } from './hooks/dom.ts';
 
 let ui = {};
 let openDialog = () => {};
