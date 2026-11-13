@@ -1567,7 +1567,12 @@ input[role="switch"]:checked::before {
   color: #1a1d23;
   border-radius: 2px;
   box-shadow: var(--sheet-shadow);
+  /* Recorta lo que se sale, pero sin ser un contenedor con scroll: con
+     «hidden», al enfocar (o mudar enfocada) una pieza que se sale, el navegador
+     corría el contenido de la hoja para mostrarla y las piezas, la grilla y el
+     margen quedaban desfasados del marco. */
   overflow: hidden;
+  overflow: clip;
 }
 
 .sheet:focus-visible {
@@ -1666,6 +1671,7 @@ input[role="switch"]:checked::before {
   position: absolute;
   cursor: grab;
   overflow: hidden;
+  overflow: clip;
   touch-action: none;
 }
 
