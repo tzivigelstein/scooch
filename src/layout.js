@@ -64,6 +64,14 @@ export function fitToSheet(item) {
 // entonces, acomodar de nuevo deja todo igual y no agrega un paso de deshacer.
 let lastArranged = null;
 
+// Había una sola hoja y lo agregado no entraba: las hojas nuevas las creó la
+// app, no la persona. Al acomodar se ofrece reducir para volver a una hoja,
+// igual que si siguiera habiendo una sola. Acomodar lo olvida.
+let spilled = false;
+
+/** Las hojas pasan a ser decisión de la persona (agregó o quitó una, cambió de proyecto). */
+export const forgetSpill = () => (spilled = false);
+
 function layoutSignature() {
   return JSON.stringify([
     state.paper,
@@ -125,6 +133,8 @@ export function arrange() {
   commit();
   animateNext();
   applyPlan(plan);
+  const fromOne = before === 1 || spilled;
+  spilled = false;
   const placed = n - plan.unplaced.length;
 
   // Las que no entran ni solas: quedan donde estaban y se ofrece ajustarlas.
@@ -137,7 +147,7 @@ export function arrange() {
     return 'arranged';
   }
   // Antes había una hoja y ahora hacen falta más: se ofrece reducir para usar una.
-  if (before === 1 && plan.packed > 1) {
+  if (fromOne && plan.packed > 1) {
     const k = fitScale(rects(state.items), aw, ah, packOptions());
     if (k > 0) {
       const factor = Math.floor(k * 0.999 * 1000) / 1000;
@@ -217,6 +227,7 @@ function placeInto(fresh, from, { rotate = settings.rotate } = {}) {
     item.y = tidy(p.y);
     if (p.rotated) item.r = (item.r + 90) % 360;
   }
+  if (plan.sheets.length && state.sheets.length === 1) spilled = true;
   state.sheets.push(...plan.sheets.map((id) => ({ id })));
   return plan.unplaced;
 }

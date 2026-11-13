@@ -32,7 +32,7 @@ import {
 import { sizeText as measureSize, lengthText, paperName, stepTexts, unitName } from './measure.js';
 import { readFile, pdfPage, openPdf } from './assets.js';
 import { makePdf, pdfFileName, downloadBytes, printBytes } from './output.js';
-import { arrange, keepCenter, centerOnSheet, fitToSheet, placeNew, fillWithCopies, duplicatePiece } from './layout.js';
+import { arrange, keepCenter, centerOnSheet, fitToSheet, placeNew, fillWithCopies, duplicatePiece, forgetSpill } from './layout.js';
 import { spotOnSheet } from './sheets.js';
 import { initNotice, renderNotice, say } from './notice.js';
 import { initLive, announce } from './live.js';
@@ -334,6 +334,7 @@ function clearSheet() {
 function addSheet() {
   if (state.busy) return;
   commit();
+  forgetSpill();
   const sheet = newSheet();
   state.sheets.push(sheet);
   state.selected = null;
@@ -359,6 +360,7 @@ async function removeSheet(id, { viaKeyboard = false } = {}) {
     if (!ok || sheetIndex(id) !== index) return;
   }
   commit();
+  forgetSpill();
   state.items = state.items.filter((item) => item.sheet !== id);
   state.sheets = state.sheets.filter((sheet) => sheet.id !== id);
   if (!selectedItem()) state.selected = null;
@@ -712,6 +714,7 @@ function openFailed(record, error) {
 /** Después de abrir, crear o reemplazar el proyecto abierto. */
 function projectOpened(record, how, previous) {
   shownSelection = null;
+  forgetSpill();
   render();
   if (how === 'replaced') return announce(t('announce.projectReplaced', { name: record.name }));
   focusSheet();
