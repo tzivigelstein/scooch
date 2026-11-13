@@ -47,6 +47,19 @@ export function cancelAnnounce(key: string) {
   keyed.delete(key);
 }
 
+/**
+ * Drops every announcement that hasn't gone out yet. For tests: nothing a test
+ * announced outlives it (its timers would fire in the next test, or after the
+ * test's DOM is gone).
+ */
+export function clearAnnouncements() {
+  for (const timer of keyed.values()) clearTimeout(timer);
+  keyed.clear();
+  clearTimeout(flushTimer);
+  pending.polite = [];
+  pending.assertive = [];
+}
+
 function queue(channel: Channel, text: string) {
   if (!pending[channel].includes(text)) pending[channel].push(text);
   clearTimeout(flushTimer);
