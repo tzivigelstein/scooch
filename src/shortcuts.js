@@ -42,6 +42,7 @@ let dialog;
 let trigger;
 let openDialog = () => {};
 let shownUnit = null;
+let opener = null; // quién abrió el diálogo (a donde vuelve el foco, también desde «Preferencias»)
 
 /** `openPrefs({returnTo})`: abre «Preferencias» (desde el botón del diálogo). */
 export function initShortcuts({ trigger: button, openPrefs }) {
@@ -52,8 +53,9 @@ export function initShortcuts({ trigger: button, openPrefs }) {
   syncShortcuts();
   trigger.addEventListener('click', () => openShortcuts());
   $('shortcuts-prefs').addEventListener('click', () => {
+    const back = opener?.isConnected && opener !== document.body ? opener : trigger;
     dialog.close();
-    openPrefs({ returnTo: trigger.offsetParent ? trigger : null });
+    openPrefs({ returnTo: back });
   });
 }
 
@@ -92,6 +94,8 @@ export function syncShortcuts() {
 }
 
 export function openShortcuts() {
+  if (dialog.open) return;
+  opener = document.activeElement;
   syncShortcuts();
-  openDialog();
+  openDialog({ returnTo: opener });
 }

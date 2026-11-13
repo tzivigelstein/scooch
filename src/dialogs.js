@@ -27,6 +27,9 @@ export function setupDialog(dialog, { close = [], fallback = () => null } = {}) 
       if (id !== session) return;
       const usable = (el) => el?.isConnected && el !== document.body && !el.closest('[hidden]') && !el.disabled;
       const target = [returnTo, fallback()].find(usable);
+      // Si ya se abrió otro diálogo (p. ej. «Preferencias» desde los atajos), el foco es de ese.
+      const other = [...document.querySelectorAll('dialog[open]')].find((d) => d !== dialog);
+      if (other && !other.contains(target)) return;
       target?.focus({ preventScroll: true });
     });
     dialog.showModal();
