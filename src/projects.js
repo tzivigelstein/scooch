@@ -64,8 +64,12 @@ const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('p
 const now = () => Date.now();
 const untitled = () => t('projects.untitled');
 
+let failed = false; // hubo un error y todavía no se volvió a guardar
+
 function setStatus(status, error = null) {
-  const recovered = session.status === 'error' && status === 'saved';
+  if (status === 'error') failed = true;
+  const recovered = failed && status === 'saved';
+  if (recovered || status === 'loading') failed = false;
   session.status = status;
   session.error = error;
   hooks.statusChanged?.({ recovered });
@@ -203,17 +207,21 @@ export function save({ quick = false } = {}) {
   }
   if (!session.storage || !session.record || session.status === 'readonly') return Promise.resolve();
   saving = (async () => {
-    const record = session.record;
+    const id = session.record.id;
     try {
       const doc = serialize(docState(), assets);
       const sig = JSON.stringify(doc);
       session.failedSig = sig;
       const blobs = blobsFor(doc);
       const thumb = quick ? undefined : await thumbnail();
+      if (session.record?.id !== id) return; // se cambió de proyecto mientras tanto
       setStatus('saving');
+      // El registro más reciente (p. ej. con el nombre recién cambiado).
+      const record = session.record;
       const result = await saveProject(session.storage, { record, doc, blobs, stored: session.stored, thumb, now: now() });
-      if (session.record?.id !== record.id) return; // se cambió de proyecto mientras tanto
-      session.record = result.record;
+      if (session.record?.id !== id) return;
+      // Si el nombre cambió mientras se escribía, el próximo guardado lo lleva.
+      session.record = { ...result.record, name: session.record.name };
       session.stored = result.stored;
       session.savedSig = sig;
       session.failedSig = '';
@@ -223,7 +231,7 @@ export function save({ quick = false } = {}) {
       askPersist(doc);
     } catch (err) {
       console.error('No se pudo guardar el proyecto.', err);
-      if (session.record?.id !== record.id) return;
+      if (session.record?.id !== id) return;
       setStatus('error', err);
       hooks.notify('saveFailed', { error: err });
     }
@@ -341,20 +349,24 @@ export async function duplicate(id) {
   return record;
 }
 
-/** Cambia el nombre (vacío: queda el anterior). Devuelve el nombre final. */
+/**
+ * Cambia el nombre (vacío: queda el anterior). Devuelve el nombre final. El
+ * del proyecto abierto pasa por la misma cola que el guardado automático, así
+ * un guardado en curso no lo pisa.
+ */
 export async function rename(id, name) {
-  const current = id === session.record?.id ? session.record : await session.storage?.get(id);
+  const open = id === session.record?.id;
+  const current = open ? session.record : await session.storage?.get(id);
   const clean = cleanName(name, current?.name ?? untitled());
-  if (!session.storage) {
-    session.record.name = clean;
+  if (open) {
+    session.record = { ...session.record, name: clean };
     hooks.statusChanged?.({});
-    return clean;
+    if (session.storage && session.status !== 'readonly') await save();
+  } else {
+    await renameProject(session.storage, id, clean, now());
   }
-  const record = await renameProject(session.storage, id, clean, now());
-  if (id === session.record?.id) session.record = { ...session.record, name: record.name, modified: record.modified };
-  hooks.statusChanged?.({});
-  post({ type: 'renamed', project: id, name: record.name });
-  return record.name;
+  post({ type: 'renamed', project: id, name: clean });
+  return clean;
 }
 
 /**
