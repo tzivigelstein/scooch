@@ -1,17 +1,28 @@
 // Formato del documento de un proyecto guardado: serializar, deserializar,
 // migrar versiones viejas y validar. Módulo puro (sin DOM ni textos).
 //
-// Forma (versión 3):
+// RULE: the shape of a version that has ever been written to storage is
+// frozen. Any change to the format (a new field included) is a new version
+// with its migration, even during development: the app is used, and deployed
+// from main, while it is being worked on. tests/fixtures/documents/ keeps one
+// document per version and tests/core/documents.test.js loads them all.
+//
+// Reading is tolerant: a missing or invalid optional setting (cut lines,
+// crop, paper, margins…) takes its default and out-of-range numbers are
+// clamped (repair); only what can't be interpreted (no sheets, items or
+// assets, pieces pointing nowhere) makes a document damaged.
+//
+// Forma (versión 4):
 //
 //   {
-//     version: 3,
+//     version: 4,
 //     paper: 'A4' | {custom: true, w, h},   // ids de papers.js; medidas en mm
 //     landscape: false,
 //     margin: 10, gap: 5,                  // mm
 //     rotate: true,                        // «Girar si conviene»
 //     cuts: {mode: 'none', length: 4, offset: 1.5,   // líneas de corte (cutmarks.js): modo y mm,
-//            margin: 0,                           // cut margin around each image (mm, −5…20)
-//            weight: 'thin', color: '#000000', dash: 'solid'},  // and their stroke
+//            weight: 'thin', color: '#000000', dash: 'solid',   // their stroke (since 3)
+//            margin: 0},                          // cut margin around each image (mm, −5…20; since 4)
 //     sheets: [{id: 1}, {id: 2}],          // en orden; al menos una
 //     items: [{id, asset, sheet, x, y, scale, r, crop}],   // en orden de apilado;
 //                                          // crop: null o {x, y, w, h} normalizado (crop.js)
@@ -29,10 +40,10 @@
 //   'preview:aK' la vista previa ya rasterizada (así no hace falta pdf.js al abrir)
 
 import { sizeOf } from './papers.js';
-import { MIN_CROP, isIdentity } from './crop.js';
+import { MIN_CROP, clampCrop, isIdentity } from './crop.js';
 import { CUT_DASHES, CUT_MODES, CUT_WEIGHTS, isHexColor } from './cutmarks.js';
 
-export const DOC_VERSION = 3;
+export const DOC_VERSION = 4;
 
 /** Cut lines of a new document: none, and thin solid black when turned on. */
 export const DEFAULT_CUTS = Object.freeze({ mode: 'none', length: 4, offset: 1.5, margin: 0, weight: 'thin', color: '#000000', dash: 'solid' });
@@ -143,11 +154,18 @@ const MIGRATIONS = {
     cuts: { mode: 'none', length: 4, offset: 1.5 },
     items: Array.isArray(doc.items) ? doc.items.map((item) => ({ ...item, crop: null })) : doc.items,
   }),
-  // Version 2 had no cut margin nor choice of stroke: it keeps the look it printed with.
+  // Version 2 had no choice of stroke: it keeps the look it printed with.
   2: (doc) => ({
     ...doc,
     version: 3,
-    cuts: doc.cuts && typeof doc.cuts === 'object' ? { ...doc.cuts, margin: 0, ...LEGACY_CUT_STYLE } : doc.cuts,
+    cuts: doc.cuts && typeof doc.cuts === 'object' ? { ...doc.cuts, ...LEGACY_CUT_STYLE } : doc.cuts,
+  }),
+  // Version 3 had no cut margin. (Some version 3 documents written during
+  // development already have one: it stays when it is a number.)
+  3: (doc) => ({
+    ...doc,
+    version: 4,
+    cuts: doc.cuts && typeof doc.cuts === 'object' ? { ...doc.cuts, margin: isFiniteNumber(doc.cuts.margin) ? doc.cuts.margin : 0 } : doc.cuts,
   }),
 };
 
@@ -257,12 +275,54 @@ export function validate(doc) {
   return problems;
 }
 
+const clampTo = (v, [lo, hi]) => Math.min(hi, Math.max(lo, v));
+const numberOr = (v, fallback, range) => (isFiniteNumber(v) ? clampTo(v, range) : fallback);
+const LENGTH_RANGE = [0, 50];
+
 /**
- * Documento guardado → documento listo para usar (migrado y validado). Lanza
- * ProjectError ('corrupt' o 'newer') si no se puede abrir.
+ * Fills the optional settings of a migrated document that are missing or
+ * can't be read with their defaults, and clamps out-of-range numbers (a new
+ * document, not the original). What the document is made of (sheets, pieces,
+ * assets) is left for validate.
+ */
+export function repair(doc) {
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return doc;
+  const out = { ...doc };
+  if (!sizeOf(out.paper, false)) out.paper = 'A4';
+  if (typeof out.landscape !== 'boolean') out.landscape = false;
+  if (typeof out.rotate !== 'boolean') out.rotate = true;
+  out.margin = numberOr(out.margin, 10, LENGTH_RANGE);
+  out.gap = numberOr(out.gap, 5, LENGTH_RANGE);
+  const cuts = out.cuts && typeof out.cuts === 'object' && !Array.isArray(out.cuts) ? out.cuts : {};
+  out.cuts = {
+    ...cuts,
+    mode: CUT_MODES.includes(cuts.mode) ? cuts.mode : DEFAULT_CUTS.mode,
+    length: numberOr(cuts.length, DEFAULT_CUTS.length, CUT_LIMITS.length),
+    offset: numberOr(cuts.offset, DEFAULT_CUTS.offset, CUT_LIMITS.offset),
+    margin: numberOr(cuts.margin, DEFAULT_CUTS.margin, CUT_LIMITS.margin),
+    weight: Object.hasOwn(CUT_WEIGHTS, cuts.weight) ? cuts.weight : DEFAULT_CUTS.weight,
+    color: isHexColor(cuts.color) ? cuts.color : DEFAULT_CUTS.color,
+    dash: CUT_DASHES.includes(cuts.dash) ? cuts.dash : DEFAULT_CUTS.dash,
+  };
+  if (Array.isArray(out.items)) {
+    out.items = out.items.map((item) => {
+      if (!item || typeof item !== 'object') return item;
+      const fixed = { ...item };
+      // A crop that can't be read is no crop; one slightly outside the image is brought inside.
+      if (item.crop != null) fixed.crop = typeof item.crop === 'object' ? clampCrop(item.crop) : null;
+      if (isPositive(item.scale)) fixed.scale = clampTo(item.scale, [1, 1000]);
+      return fixed;
+    });
+  }
+  return out;
+}
+
+/**
+ * Documento guardado → documento listo para usar (migrado, reparado y
+ * validado). Lanza ProjectError ('corrupt' o 'newer') si no se puede abrir.
  */
 export function deserialize(raw) {
-  const doc = migrate(raw);
+  const doc = repair(migrate(raw));
   const problems = validate(doc);
   if (problems.length) throw new ProjectError('corrupt', problems.slice(0, 5).join('; '));
   return doc;

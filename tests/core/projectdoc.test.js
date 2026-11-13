@@ -143,7 +143,7 @@ describe('deserialize', () => {
     v2.version = 2;
     v2.cuts = { mode: 'corners', length: 3, offset: 2 };
     const doc = deserialize(v2);
-    assert.equal(doc.version, 3);
+    assert.equal(doc.version, DOC_VERSION);
     assert.deepEqual(doc.cuts, { mode: 'corners', length: 3, offset: 2, margin: 0, weight: 'thin', color: '#333333', dash: 'solid' });
     assert.deepEqual(v2.cuts, { mode: 'corners', length: 3, offset: 2 }, 'the original stays as it was');
   });
@@ -162,6 +162,36 @@ describe('deserialize', () => {
     assert.equal(whole.items[0].crop, null);
   });
 
+  test('optional settings that are missing or unreadable take their default; numbers are clamped', () => {
+    const doc = serialize(sampleState(), sampleAssets());
+    const open = (changes) => deserialize({ ...doc, ...changes });
+    assert.deepEqual(open({ cuts: undefined }).cuts, DEFAULT_CUTS);
+    assert.equal(open({ cuts: { ...doc.cuts, mode: 'dotted' } }).cuts.mode, 'none');
+    assert.equal(open({ cuts: { ...doc.cuts, length: 0 } }).cuts.length, 0.5);
+    assert.equal(open({ cuts: { ...doc.cuts, offset: -1 } }).cuts.offset, 0);
+    assert.equal(open({ cuts: { ...doc.cuts, offset: 50 } }).cuts.offset, 10);
+    assert.equal(open({ cuts: { ...doc.cuts, weight: 'hairline' } }).cuts.weight, 'thin');
+    assert.equal(open({ cuts: { ...doc.cuts, color: 'red' } }).cuts.color, '#000000');
+    assert.equal(open({ cuts: { ...doc.cuts, dash: 'dashed' } }).cuts.dash, 'solid');
+    assert.equal(open({ cuts: { ...doc.cuts, margin: 25 } }).cuts.margin, 20);
+    assert.equal(open({ cuts: { ...doc.cuts, margin: -6 } }).cuts.margin, -5);
+    assert.equal(open({ cuts: { mode: 'corners', length: 4, offset: 1 } }).cuts.margin, 0);
+    assert.equal(open({ margin: 80, gap: -2 }).margin, 50);
+    assert.equal(open({ margin: 80, gap: -2 }).gap, 0);
+    assert.equal(open({ paper: 'B0' }).paper, 'A4');
+    assert.equal(open({ paper: { custom: true, w: 5, h: 300 } }).paper, 'A4');
+    assert.equal(open({ gap: NaN }).gap, 5);
+    assert.equal(open({ landscape: 'yes', rotate: null }).landscape, false);
+    const item = (changes) => open({ items: [{ ...doc.items[0], ...changes }] }).items[0];
+    assert.equal(item({ crop: 'todo' }).crop, null);
+    assert.equal(item({ crop: { x: 0, y: 0, w: NaN, h: 1 } }).crop, null);
+    assert.deepEqual(item({ crop: { x: 0.5, y: 0, w: 0.6, h: 1 } }).crop, { x: 0.4, y: 0, w: 0.6, h: 1 });
+    assert.equal(item({ crop: { x: 0, y: 0, w: 0.001, h: 1 } }).crop.w, 0.01);
+    assert.equal(item({ scale: 5000 }).scale, 1000);
+    // Fields it doesn't know are kept, never fatal.
+    assert.equal(open({ future: { x: 1 } }).future.x, 1);
+  });
+
   test('versión futura → «newer»; cualquier otra cosa rara → «corrupt»', () => {
     const doc = serialize(sampleState(), sampleAssets());
     assert.throws(() => deserialize({ ...doc, version: DOC_VERSION + 1 }), (err) => err instanceof ProjectError && err.code === 'newer');
@@ -171,11 +201,6 @@ describe('deserialize', () => {
       [],
       { ...doc, version: -1 },
       { ...doc, version: 1.5 },
-      { ...doc, paper: 'A9' },
-      { ...doc, paper: { custom: true, w: 5, h: 300 } },
-      { ...doc, landscape: 'no' },
-      { ...doc, margin: 80 },
-      { ...doc, gap: NaN },
       { ...doc, sheets: [] },
       { ...doc, sheets: [{ id: 1 }, { id: 1 }] },
       { ...doc, items: [{ ...doc.items[0], sheet: 99 }] },
@@ -189,23 +214,6 @@ describe('deserialize', () => {
       { ...doc, assets: { ...doc.assets, a1: { ...doc.assets.a1, kind: 'video' } } },
       { ...doc, assets: { ...doc.assets, x1: doc.assets.a1 } },
       { ...doc, assets: null },
-      { ...doc, cuts: undefined },
-      { ...doc, cuts: { mode: 'dotted', length: 4, offset: 1 } },
-      { ...doc, cuts: { mode: 'corners', length: 0, offset: 1 } },
-      { ...doc, cuts: { mode: 'corners', length: 4, offset: -1 } },
-      { ...doc, cuts: { mode: 'outline', length: 4, offset: 50 } },
-      { ...doc, cuts: { ...doc.cuts, weight: 'hairline' } },
-      { ...doc, cuts: { ...doc.cuts, color: 'red' } },
-      { ...doc, cuts: { ...doc.cuts, color: '#12345' } },
-      { ...doc, cuts: { ...doc.cuts, dash: 'dashed' } },
-      { ...doc, cuts: { ...doc.cuts, margin: 25 } },
-      { ...doc, cuts: { ...doc.cuts, margin: -6 } },
-      { ...doc, cuts: { ...doc.cuts, margin: undefined } },
-      { ...doc, cuts: { mode: 'corners', length: 4, offset: 1 } },
-      { ...doc, items: [{ ...doc.items[0], crop: { x: 0.5, y: 0, w: 0.6, h: 1 } }] },
-      { ...doc, items: [{ ...doc.items[0], crop: { x: 0, y: 0, w: 0.001, h: 1 } }] },
-      { ...doc, items: [{ ...doc.items[0], crop: { x: 0, y: 0, w: NaN, h: 1 } }] },
-      { ...doc, items: [{ ...doc.items[0], crop: 'todo' }] },
     ];
     for (const raw of broken) {
       assert.throws(

@@ -1,0 +1,32 @@
+{
+  "paper": "Carta",
+  "landscape": true,
+  "margin": 10,
+  "gap": 5,
+  "items": [
+    {
+      "id": 1,
+      "asset": "a1",
+      "x": 1,
+      "y": 2,
+      "scale": 100,
+      "r": 0
+    }
+  ],
+  "assets": {
+    "a1": {
+      "kind": "image",
+      "name": "foto.jpg",
+      "src": 1,
+      "px": [
+        1200,
+        800
+      ],
+      "format": "jpg",
+      "dpi": 300,
+      "w": 101.6,
+      "h": 67.73,
+      "derived": true
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "version": 2,
+  "paper": {
+    "custom": true,
+    "w": 216,
+    "h": 330
+  },
+  "landscape": false,
+  "margin": 8,
+  "gap": 4,
+  "rotate": false,
+  "sheets": [
+    {
+      "id": 1
+    },
+    {
+      "id": 4
+    }
+  ],
+  "assets": {
+    "a1": {
+      "kind": "image",
+      "name": "foto.jpg",
+      "src": 1,
+      "px": [
+        1200,
+        800
+      ],
+      "format": "jpg",
+      "dpi": 300,
+      "w": 101.6,
+      "h": 67.73,
+      "derived": true
+    },
+    "a2": {
+      "kind": "pdf",
+      "name": "plano.pdf",
+      "src": 2,
+      "page": 2,
+      "pages": 3,
+      "pageRotation": 0,
+      "view": [
+        0,
+        0,
+        595.28,
+        841.89
+      ],
+      "px": [
+        1697,
+        2400
+      ],
+      "w": 210,
+      "h": 297
+    }
+  },
+  "cuts": {
+    "mode": "corners",
+    "length": 3,
+    "offset": 2
+  },
+  "items": [
+    {
+      "id": 3,
+      "asset": "a1",
+      "sheet": 1,
+      "x": 10,
+      "y": 10,
+      "scale": 50,
+      "r": 0,
+      "crop": null
+    },
+    {
+      "id": 7,
+      "asset": "a2",
+      "sheet": 4,
+      "x": 20.5,
+      "y": 12,
+      "scale": 80,
+      "r": 90,
+      "crop": {
+        "x": 0.1,
+        "y": 0.2,
+        "w": 0.5,
+        "h": 0.6
+      }
+    }
+  ]
+}

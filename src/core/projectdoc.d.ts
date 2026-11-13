@@ -39,6 +39,8 @@ export function counts(doc: Pick<ProjectDoc, 'sheets' | 'items'>): { sheets: num
 export function nextIds(doc: Pick<ProjectDoc, 'items' | 'sheets' | 'assets'>): { item: number; sheet: number; asset: number; src: number };
 /** Brings a stored document to the current version (not validated). */
 export function migrate(raw: unknown): ProjectDoc;
+/** Fills missing or unreadable optional settings with their defaults and clamps numbers (a migrated document). */
+export function repair<T>(doc: T): T;
 export function validate(doc: unknown): string[];
 /** Stored document → usable document (migrated and validated); throws ProjectError. */
 export function deserialize(raw: unknown): ProjectDoc;

@@ -1,0 +1,524 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`stored documents of every version > v0 opens and becomes the current version 1`] = `
+{
+  "assets": {
+    "a1": {
+      "derived": true,
+      "dpi": 300,
+      "format": "jpg",
+      "h": 67.73,
+      "kind": "image",
+      "name": "foto.jpg",
+      "px": [
+        1200,
+        800,
+      ],
+      "src": 1,
+      "w": 101.6,
+    },
+  },
+  "cuts": {
+    "color": "#333333",
+    "dash": "solid",
+    "length": 4,
+    "margin": 0,
+    "mode": "none",
+    "offset": 1.5,
+    "weight": "thin",
+  },
+  "gap": 5,
+  "items": [
+    {
+      "asset": "a1",
+      "crop": null,
+      "id": 1,
+      "r": 0,
+      "scale": 100,
+      "sheet": 1,
+      "x": 1,
+      "y": 2,
+    },
+  ],
+  "landscape": true,
+  "margin": 10,
+  "paper": "letter",
+  "rotate": true,
+  "sheets": [
+    {
+      "id": 1,
+    },
+  ],
+  "version": 4,
+}
+`;
+
+exports[`stored documents of every version > v1 opens and becomes the current version 1`] = `
+{
+  "assets": {
+    "a1": {
+      "derived": true,
+      "dpi": 300,
+      "format": "jpg",
+      "h": 67.73,
+      "kind": "image",
+      "name": "foto.jpg",
+      "px": [
+        1200,
+        800,
+      ],
+      "src": 1,
+      "w": 101.6,
+    },
+    "a2": {
+      "h": 297,
+      "kind": "pdf",
+      "name": "plano.pdf",
+      "page": 2,
+      "pageRotation": 0,
+      "pages": 3,
+      "px": [
+        1697,
+        2400,
+      ],
+      "src": 2,
+      "view": [
+        0,
+        0,
+        595.28,
+        841.89,
+      ],
+      "w": 210,
+    },
+  },
+  "cuts": {
+    "color": "#333333",
+    "dash": "solid",
+    "length": 4,
+    "margin": 0,
+    "mode": "none",
+    "offset": 1.5,
+    "weight": "thin",
+  },
+  "gap": 4,
+  "items": [
+    {
+      "asset": "a1",
+      "crop": null,
+      "id": 3,
+      "r": 0,
+      "scale": 50,
+      "sheet": 1,
+      "x": 10,
+      "y": 10,
+    },
+    {
+      "asset": "a2",
+      "crop": null,
+      "id": 7,
+      "r": 90,
+      "scale": 80,
+      "sheet": 4,
+      "x": 20.5,
+      "y": 12,
+    },
+  ],
+  "landscape": false,
+  "margin": 8,
+  "paper": {
+    "custom": true,
+    "h": 330,
+    "w": 216,
+  },
+  "rotate": false,
+  "sheets": [
+    {
+      "id": 1,
+    },
+    {
+      "id": 4,
+    },
+  ],
+  "version": 4,
+}
+`;
+
+exports[`stored documents of every version > v2 opens and becomes the current version 1`] = `
+{
+  "assets": {
+    "a1": {
+      "derived": true,
+      "dpi": 300,
+      "format": "jpg",
+      "h": 67.73,
+      "kind": "image",
+      "name": "foto.jpg",
+      "px": [
+        1200,
+        800,
+      ],
+      "src": 1,
+      "w": 101.6,
+    },
+    "a2": {
+      "h": 297,
+      "kind": "pdf",
+      "name": "plano.pdf",
+      "page": 2,
+      "pageRotation": 0,
+      "pages": 3,
+      "px": [
+        1697,
+        2400,
+      ],
+      "src": 2,
+      "view": [
+        0,
+        0,
+        595.28,
+        841.89,
+      ],
+      "w": 210,
+    },
+  },
+  "cuts": {
+    "color": "#333333",
+    "dash": "solid",
+    "length": 3,
+    "margin": 0,
+    "mode": "corners",
+    "offset": 2,
+    "weight": "thin",
+  },
+  "gap": 4,
+  "items": [
+    {
+      "asset": "a1",
+      "crop": null,
+      "id": 3,
+      "r": 0,
+      "scale": 50,
+      "sheet": 1,
+      "x": 10,
+      "y": 10,
+    },
+    {
+      "asset": "a2",
+      "crop": {
+        "h": 0.6,
+        "w": 0.5,
+        "x": 0.1,
+        "y": 0.2,
+      },
+      "id": 7,
+      "r": 90,
+      "scale": 80,
+      "sheet": 4,
+      "x": 20.5,
+      "y": 12,
+    },
+  ],
+  "landscape": false,
+  "margin": 8,
+  "paper": {
+    "custom": true,
+    "h": 330,
+    "w": 216,
+  },
+  "rotate": false,
+  "sheets": [
+    {
+      "id": 1,
+    },
+    {
+      "id": 4,
+    },
+  ],
+  "version": 4,
+}
+`;
+
+exports[`stored documents of every version > v3 opens and becomes the current version 1`] = `
+{
+  "assets": {
+    "a1": {
+      "derived": true,
+      "dpi": 300,
+      "format": "jpg",
+      "h": 67.73,
+      "kind": "image",
+      "name": "foto.jpg",
+      "px": [
+        1200,
+        800,
+      ],
+      "src": 1,
+      "w": 101.6,
+    },
+    "a2": {
+      "h": 297,
+      "kind": "pdf",
+      "name": "plano.pdf",
+      "page": 2,
+      "pageRotation": 0,
+      "pages": 3,
+      "px": [
+        1697,
+        2400,
+      ],
+      "src": 2,
+      "view": [
+        0,
+        0,
+        595.28,
+        841.89,
+      ],
+      "w": 210,
+    },
+  },
+  "cuts": {
+    "color": "#12a0ff",
+    "dash": "dotted",
+    "length": 3,
+    "margin": 0,
+    "mode": "outline",
+    "offset": 2,
+    "weight": "medium",
+  },
+  "gap": 4,
+  "items": [
+    {
+      "asset": "a1",
+      "crop": null,
+      "id": 3,
+      "r": 0,
+      "scale": 50,
+      "sheet": 1,
+      "x": 10,
+      "y": 10,
+    },
+    {
+      "asset": "a2",
+      "crop": {
+        "h": 0.6,
+        "w": 0.5,
+        "x": 0.1,
+        "y": 0.2,
+      },
+      "id": 7,
+      "r": 90,
+      "scale": 80,
+      "sheet": 4,
+      "x": 20.5,
+      "y": 12,
+    },
+  ],
+  "landscape": false,
+  "margin": 8,
+  "paper": {
+    "custom": true,
+    "h": 330,
+    "w": 216,
+  },
+  "rotate": false,
+  "sheets": [
+    {
+      "id": 1,
+    },
+    {
+      "id": 4,
+    },
+  ],
+  "version": 4,
+}
+`;
+
+exports[`stored documents of every version > v3-with-margin opens and becomes the current version 1`] = `
+{
+  "assets": {
+    "a1": {
+      "derived": true,
+      "dpi": 300,
+      "format": "jpg",
+      "h": 67.73,
+      "kind": "image",
+      "name": "foto.jpg",
+      "px": [
+        1200,
+        800,
+      ],
+      "src": 1,
+      "w": 101.6,
+    },
+    "a2": {
+      "h": 297,
+      "kind": "pdf",
+      "name": "plano.pdf",
+      "page": 2,
+      "pageRotation": 0,
+      "pages": 3,
+      "px": [
+        1697,
+        2400,
+      ],
+      "src": 2,
+      "view": [
+        0,
+        0,
+        595.28,
+        841.89,
+      ],
+      "w": 210,
+    },
+  },
+  "cuts": {
+    "color": "#000000",
+    "dash": "solid",
+    "length": 3,
+    "margin": 1.5,
+    "mode": "corners",
+    "offset": 2,
+    "weight": "thin",
+  },
+  "gap": 4,
+  "items": [
+    {
+      "asset": "a1",
+      "crop": null,
+      "id": 3,
+      "r": 0,
+      "scale": 50,
+      "sheet": 1,
+      "x": 10,
+      "y": 10,
+    },
+    {
+      "asset": "a2",
+      "crop": {
+        "h": 0.6,
+        "w": 0.5,
+        "x": 0.1,
+        "y": 0.2,
+      },
+      "id": 7,
+      "r": 90,
+      "scale": 80,
+      "sheet": 4,
+      "x": 20.5,
+      "y": 12,
+    },
+  ],
+  "landscape": false,
+  "margin": 8,
+  "paper": {
+    "custom": true,
+    "h": 330,
+    "w": 216,
+  },
+  "rotate": false,
+  "sheets": [
+    {
+      "id": 1,
+    },
+    {
+      "id": 4,
+    },
+  ],
+  "version": 4,
+}
+`;
+
+exports[`stored documents of every version > v4 opens and becomes the current version 1`] = `
+{
+  "assets": {
+    "a1": {
+      "derived": true,
+      "dpi": 300,
+      "format": "jpg",
+      "h": 67.73,
+      "kind": "image",
+      "name": "foto.jpg",
+      "px": [
+        1200,
+        800,
+      ],
+      "src": 1,
+      "w": 101.6,
+    },
+    "a2": {
+      "h": 297,
+      "kind": "pdf",
+      "name": "plano.pdf",
+      "page": 2,
+      "pageRotation": 0,
+      "pages": 3,
+      "px": [
+        1697,
+        2400,
+      ],
+      "src": 2,
+      "view": [
+        0,
+        0,
+        595.28,
+        841.89,
+      ],
+      "w": 210,
+    },
+  },
+  "cuts": {
+    "color": "#333333",
+    "dash": "solid",
+    "length": 3,
+    "margin": -1,
+    "mode": "corners",
+    "offset": 2,
+    "weight": "thick",
+  },
+  "gap": 4,
+  "items": [
+    {
+      "asset": "a1",
+      "crop": null,
+      "id": 3,
+      "r": 0,
+      "scale": 50,
+      "sheet": 1,
+      "x": 10,
+      "y": 10,
+    },
+    {
+      "asset": "a2",
+      "crop": {
+        "h": 0.6,
+        "w": 0.5,
+        "x": 0.1,
+        "y": 0.2,
+      },
+      "id": 7,
+      "r": 90,
+      "scale": 80,
+      "sheet": 4,
+      "x": 20.5,
+      "y": 12,
+    },
+  ],
+  "landscape": false,
+  "margin": 8,
+  "paper": {
+    "custom": true,
+    "h": 330,
+    "w": 216,
+  },
+  "rotate": false,
+  "sheets": [
+    {
+      "id": 1,
+    },
+    {
+      "id": 4,
+    },
+  ],
+  "version": 4,
+}
+`;
