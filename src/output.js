@@ -4,7 +4,8 @@
 // eso también está bloqueado, lo descarga).
 
 import { APP_NAME } from './config.js';
-import { state, assets, sheetSize, dims, itemsOn } from './store.js';
+import { state, assets, sheetSize, itemsOn, boxOf } from './store.js';
+import { cutLines } from './cutmarks.js';
 import { paperName, paperSlug } from './measure.js';
 import { buildPdf } from './export.js';
 import { slug } from './util.js';
@@ -12,16 +13,21 @@ import { t } from './copy/index.js';
 
 export const pdfFileName = () => `${slug(APP_NAME, t('print.fallbackName'))}-${paperSlug()}.pdf`;
 
-/** Bytes del PDF: una página del tamaño del papel por hoja, en orden, salteando las vacías. */
+/**
+ * Bytes del PDF: una página del tamaño del papel por hoja, en orden,
+ * salteando las vacías, con sus piezas (recortadas y giradas) y, si el
+ * documento las pide, sus líneas de corte.
+ */
 export function makePdf() {
   const [W, H] = sheetSize();
-  const piece = (item) => {
-    const asset = assets.get(item.asset);
-    const k = item.scale / 100;
-    const [w, h] = dims(item);
-    return { asset, x: item.x, y: item.y, w, h, uw: asset.w * k, uh: asset.h * k, r: item.r };
-  };
-  const pages = state.sheets.map((sheet) => itemsOn(sheet.id).map(piece)).filter((pieces) => pieces.length);
+  const piece = (item) => ({ asset: assets.get(item.asset), x: item.x, y: item.y, scale: item.scale, r: item.r, crop: item.crop ?? null });
+  const pages = state.sheets
+    .map((sheet) => itemsOn(sheet.id))
+    .filter((items) => items.length)
+    .map((items) => ({
+      pieces: items.map(piece),
+      lines: cutLines(items.map(boxOf), { ...state.cuts, bounds: { x: 0, y: 0, w: W, h: H } }),
+    }));
   return buildPdf({ width: W, height: H, pages, title: t('print.pdfTitle', { paper: paperName() }), creator: APP_NAME });
 }
 

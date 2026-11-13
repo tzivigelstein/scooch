@@ -25,6 +25,7 @@ import {
   currentSheet,
 } from './store.js';
 import { paperName } from './measure.js';
+import { pieceSize, isIdentity } from './crop.js';
 import { say } from './notice.js';
 import { animateNext } from './sheetview.js';
 import { clamp, tidy } from './util.js';
@@ -296,16 +297,17 @@ export const duplicatePiece = (item) => duplicatePieces([item])[0];
 // ---------- Resolución de impresión ----------
 
 /**
- * Con cuántos ppp se imprime una pieza: píxeles de lo que se embebe en el PDF
- * sobre el ancho impreso sin rotar, en pulgadas. Las páginas de PDF sin
- * rotación propia van como vector; las rotadas, como su vista previa.
+ * Con cuántos ppp se imprime una pieza: píxeles de la zona que se ve (con su
+ * recorte) sobre su ancho impreso sin girar, en pulgadas. Las páginas de PDF
+ * sin rotación propia van como vector; las rotadas, como su vista previa.
  * Devuelve {vector: true} o {ppp, level: 'good' | 'ok' | 'low'}.
  */
 export function printResolution(item) {
   const asset = assets.get(item.asset);
   if (asset.kind === 'pdf' && asset.pageRotation % 360 === 0) return { vector: true };
-  const inches = (asset.w * item.scale) / 100 / 25.4;
-  const ppp = Math.round(asset.px[0] / inches);
+  const pixels = asset.px[0] * (isIdentity(item.crop) ? 1 : item.crop.w);
+  const inches = pieceSize(asset, item).uw / 25.4;
+  const ppp = Math.round(pixels / inches);
   return { ppp, level: ppp >= 200 ? 'good' : ppp >= 120 ? 'ok' : 'low' };
 }
 
@@ -360,7 +362,7 @@ export function fillWithCopies() {
     for (let col = 0; col < plan.cols; col++) {
       const x = tidy(x0 + col * (plan.w + g));
       const y = tidy(y0 + row * (plan.h + g));
-      copies.push(newItem(item.asset, { sheet, scale: item.scale, r, x, y }));
+      copies.push(newItem(item.asset, { sheet, scale: item.scale, r, x, y, crop: item.crop ?? null }));
     }
   }
   // Las copias ocupan el lugar de la primera pieza de esa hoja en el orden general.

@@ -1,7 +1,13 @@
 // Exportación: una página de PDF del tamaño de la hoja por cada hoja con
-// piezas, en orden, armada con pdf-lib.
+// piezas, en orden, armada con pdf-lib. Dónde va cada pieza (recortada y
+// girada) lo calcula crop.drawParams; sin recorte, la cuenta y los operadores
+// son los mismos de siempre.
+
+import { drawParams } from './crop.js';
 
 const PT_PER_MM = 72 / 25.4;
+/** Líneas de corte: finas (pt) y gris oscuro neutro. */
+export const CUT_LINE = Object.freeze({ thickness: 0.25, gray: 0.2 });
 
 let pdfLibPromise = null;
 
@@ -16,40 +22,40 @@ function loadPdfLib() {
 }
 
 /**
- * Arma el PDF y devuelve sus bytes. `pages`: una lista de piezas por página,
- * cada una [{asset, x, y, w, h, uw, uh, r}] en mm; w/h ya rotados, uw/uh sin
- * rotar. Cada origen (imagen o página de PDF) se embebe una sola vez aunque
- * aparezca en varias páginas.
+ * Arma el PDF y devuelve sus bytes. `pages`: [{pieces, lines}] por página;
+ * cada pieza {asset, x, y, scale, r, crop} (x/y en mm desde la esquina
+ * superior izquierda de la hoja; crop como en crop.js) y cada línea de corte
+ * {x1, y1, x2, y2} en mm (cutmarks.cutLines). Con recorte, la pieza se dibuja
+ * entera con un trazado de recorte (las páginas de PDF siguen siendo vector).
+ * Cada origen (imagen o página de PDF) se embebe una sola vez aunque aparezca
+ * en varias páginas.
  */
 export async function buildPdf({ width, height, pages, title, creator = title }) {
-  const { PDFDocument, degrees } = await loadPdfLib();
+  const lib = await loadPdfLib();
+  const { PDFDocument, degrees, rgb } = lib;
   const doc = await PDFDocument.create();
   doc.setTitle(title);
   doc.setCreator(creator);
   const embed = embedder(doc, PDFDocument);
+  const pt = (mm) => mm * PT_PER_MM;
 
-  for (const pieces of pages) {
-    const page = doc.addPage([width * PT_PER_MM, height * PT_PER_MM]);
+  for (const { pieces, lines = [] } of pages) {
+    const page = doc.addPage([pt(width), pt(height)]);
     for (const piece of pieces) {
       const target = await embed(piece.asset);
-      const options = placement(piece, height, degrees);
+      const p = drawParams(piece, piece.asset, height);
+      const options = { x: p.x, y: p.y, width: p.width, height: p.height, rotate: degrees(p.rotate) };
+      if (p.clip) page.pushOperators(lib.pushGraphicsState(), lib.rectangle(p.clip.x, p.clip.y, p.clip.width, p.clip.height), lib.clip(), lib.endPath());
       if (target.page) page.drawPage(target.page, options);
       else page.drawImage(target.image, options);
+      if (p.clip) page.pushOperators(lib.popGraphicsState());
+    }
+    const color = rgb(CUT_LINE.gray, CUT_LINE.gray, CUT_LINE.gray);
+    for (const line of lines) {
+      page.drawLine({ start: { x: pt(line.x1), y: pt(height - line.y1) }, end: { x: pt(line.x2), y: pt(height - line.y2) }, thickness: CUT_LINE.thickness, color });
     }
   }
   return doc.save();
-}
-
-// pdf-lib ancla en la esquina inferior izquierda de lo que dibuja y rota
-// (antihorario) alrededor de ese punto; en pantalla rotamos en sentido horario.
-function placement({ x, y, w, h, uw, uh, r }, sheetHeight, degrees) {
-  return {
-    x: (x + (r === 180 || r === 270 ? w : 0)) * PT_PER_MM,
-    y: (sheetHeight - y - (r === 90 || r === 180 ? 0 : h)) * PT_PER_MM,
-    width: uw * PT_PER_MM,
-    height: uh * PT_PER_MM,
-    rotate: degrees(-r),
-  };
 }
 
 // Devuelve una función que embebe cada origen una sola vez.

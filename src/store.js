@@ -8,14 +8,15 @@
 import { MAX_UNDO, GRID_STORAGE, GRID_DEFAULTS, GRID_MIN, GRID_MAX, PIECES_STORAGE, UNIT_STORAGE } from './config.js';
 import { sizeOf } from './papers.js';
 import { isUnit } from './units.js';
-import { nextIds } from './projectdoc.js';
+import { nextIds, DEFAULT_CUTS } from './projectdoc.js';
+import { pieceSize } from './crop.js';
 import { storageGet, storageSet, clamp } from './util.js';
 
 export const assets = new Map();
 
 export const state = {
   sheets: [{ id: 1 }],
-  items: [], // {id, asset, sheet, x, y, scale, r}, en orden de apilado
+  items: [], // {id, asset, sheet, x, y, scale, r, crop}, en orden de apilado (crop: ver crop.js)
   // Piezas elegidas (ids), en el orden en que se eligieron: la última es la
   // principal (la de la barra, la hoja actual y el foco).
   selection: [],
@@ -23,6 +24,7 @@ export const state = {
   landscape: false,
   margin: 10,
   gap: 5,
+  cuts: { ...DEFAULT_CUTS }, // líneas de corte del PDF (cutmarks.js): {mode, length, offset}
   busy: false,
 };
 
@@ -116,11 +118,10 @@ export function area() {
   return { W, H, m, aw: W - 2 * m, ah: H - 2 * m };
 }
 
-/** Ancho y alto en la hoja, ya rotado. */
+/** Ancho y alto en la hoja, ya girado y recortado (crop.pieceSize: la única cuenta). */
 export function dims(item) {
-  const asset = assets.get(item.asset);
-  const k = item.scale / 100;
-  return item.r % 180 ? [asset.h * k, asset.w * k] : [asset.w * k, asset.h * k];
+  const { w, h } = pieceSize(assets.get(item.asset), item);
+  return [w, h];
 }
 
 export const findItem = (id) => state.items.find((item) => item.id === id);
@@ -173,7 +174,7 @@ export function addAsset(asset) {
   return key;
 }
 
-export const newItem = (asset, props = {}) => ({ id: nextItemId++, asset, x: 0, y: 0, scale: 100, r: 0, ...props });
+export const newItem = (asset, props = {}) => ({ id: nextItemId++, asset, x: 0, y: 0, scale: 100, r: 0, crop: null, ...props });
 export const newId = () => nextItemId++;
 
 export function rects(items, k = 1) {
@@ -193,7 +194,7 @@ export const canUndo = () => undoStack.length > 0;
 export const canRedo = () => redoStack.length > 0;
 
 function snapshot() {
-  const { paper, landscape, margin, gap } = state;
+  const { paper, landscape, margin, gap, cuts } = state;
   return {
     sheets: state.sheets.map((sheet) => ({ ...sheet })),
     items: state.items.map((item) => ({ ...item })),
@@ -202,6 +203,7 @@ function snapshot() {
     landscape,
     margin,
     gap,
+    cuts: { ...cuts },
   };
 }
 
@@ -239,6 +241,7 @@ function restore(snap) {
   state.landscape = snap.landscape;
   state.margin = snap.margin;
   state.gap = snap.gap;
+  state.cuts = { ...snap.cuts };
   status.flash = null;
 }
 
@@ -264,8 +267,8 @@ export function redo() {
 
 /** Lo que se guarda del documento (para projectdoc.serialize). */
 export function docState() {
-  const { sheets, items, paper, landscape, margin, gap } = state;
-  return { sheets, items, paper, landscape, margin, gap, rotate: settings.rotate };
+  const { sheets, items, paper, landscape, margin, gap, cuts } = state;
+  return { sheets, items, paper, landscape, margin, gap, cuts, rotate: settings.rotate };
 }
 
 // Suelta los binarios de un asset que ya nadie usa (URL de la vista previa y,
@@ -294,6 +297,7 @@ export function replaceDocument(doc, loaded = new Map()) {
   state.landscape = doc.landscape;
   state.margin = doc.margin;
   state.gap = doc.gap;
+  state.cuts = { ...(doc.cuts ?? DEFAULT_CUTS) };
   state.selection = [];
   view.pinned = false;
   settings.rotate = doc.rotate;

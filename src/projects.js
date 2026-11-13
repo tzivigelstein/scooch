@@ -33,6 +33,7 @@ import {
 import { serialize, fileKeys } from './projectdoc.js';
 import { state, assets, render, replaceDocument, docState, sheetSize, itemsOn } from './store.js';
 import { restoreAssets, assetBlob } from './assets.js';
+import { cssParams } from './crop.js';
 import { storageGet, storageSet, storageRemove } from './util.js';
 import { t } from './copy/index.js';
 
@@ -170,10 +171,10 @@ function adopt(record, stored) {
   render();
 }
 
-// Papel, margen y separación del proyecto actual (uno nuevo los conserva).
+// Papel, margen, separación y líneas de corte del proyecto actual (uno nuevo los conserva).
 function currentSettings() {
-  const { paper, landscape, margin, gap } = state;
-  return { paper: typeof paper === 'string' ? paper : { ...paper }, landscape, margin, gap, rotate: true };
+  const { paper, landscape, margin, gap, cuts } = state;
+  return { paper: typeof paper === 'string' ? paper : { ...paper }, landscape, margin, gap, rotate: true, cuts: { ...cuts } };
 }
 
 // ---------- Guardado automático ----------
@@ -315,7 +316,7 @@ async function thumbnail() {
   const [W, H] = sheetSize();
   const first = state.sheets[0];
   const items = itemsOn(first.id);
-  const sig = JSON.stringify([W, H, items.map((item) => [item.asset, item.x, item.y, item.scale, item.r])]);
+  const sig = JSON.stringify([W, H, items.map((item) => [item.asset, item.x, item.y, item.scale, item.r, item.crop ?? null])]);
   if (sig === session.thumbSig) return undefined;
   const k = THUMB_WIDTH / W;
   const canvas = document.createElement('canvas');
@@ -328,13 +329,16 @@ async function thumbnail() {
     const img = hooks.thumbImage?.(item);
     const asset = assets.get(item.asset);
     if (!img?.complete || !img.naturalWidth || !asset) continue;
-    const w = asset.w * (item.scale / 100) * k;
-    const h = asset.h * (item.scale / 100) * k;
-    const turned = item.r % 180 !== 0;
+    // La misma cuenta que la pantalla (crop.cssParams): la imagen entera, girada
+    // alrededor de su centro, recortada al rectángulo de la pieza.
+    const p = cssParams(item, asset, k);
     ctx.save();
-    ctx.translate(item.x * k + (turned ? h : w) / 2, item.y * k + (turned ? w : h) / 2);
+    ctx.beginPath();
+    ctx.rect(p.left, p.top, p.width, p.height);
+    ctx.clip();
+    ctx.translate(p.left + p.img.left + p.img.width / 2, p.top + p.img.top + p.img.height / 2);
     ctx.rotate((item.r * Math.PI) / 180);
-    ctx.drawImage(img, -w / 2, -h / 2, w, h);
+    ctx.drawImage(img, -p.img.width / 2, -p.img.height / 2, p.img.width, p.img.height);
     ctx.restore();
   }
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.82));

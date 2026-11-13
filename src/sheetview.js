@@ -34,6 +34,7 @@ import { icon } from './icons.js';
 import { $, clamp, round1, tidy, isTyping } from './util.js';
 import { t } from './copy/index.js';
 import { pickSpot, clip } from './placement.js';
+import { cssParams } from './crop.js';
 
 const nodes = new Map(); // id de pieza → nodo
 const pages = new Map(); // id de hoja → {page, label, remove, box, sheet, grid, safe, hint}
@@ -349,28 +350,26 @@ export function pieceLabel(item) {
 function updatePiece(node, item, offset = null) {
   const asset = assets.get(item.asset);
   const [w, h] = dims(item);
-  const k = item.scale / 100;
-  const left = (offset?.left ?? 0) + item.x * zoom;
-  const top = (offset?.top ?? 0) + item.y * zoom;
+  // Contenedor (la pieza, que recorta) e imagen entera adentro, girada: crop.cssParams.
+  const p = cssParams(item, asset, zoom);
+  const left = (offset?.left ?? 0) + p.left;
+  const top = (offset?.top ?? 0) + p.top;
+  const crop = item.crop ? `${item.crop.x},${item.crop.y},${item.crop.w},${item.crop.h}` : '';
   const selected = isSelected(item.id);
   const grouped = selected && state.selection.length > 1;
   // Con varias elegidas (o la selección fijada), el nombre dice si está elegida.
   const marked = selected && (grouped || view.pinned);
-  const key = `${left}|${top}|${w}|${h}|${zoom}|${item.r}|${asset.url}|${selected}|${grouped}|${marked}|${settings.unit}|${asset.name}|${asset.page}`;
+  const key = `${left}|${top}|${w}|${h}|${zoom}|${item.r}|${crop}|${asset.url}|${selected}|${grouped}|${marked}|${settings.unit}|${asset.name}|${asset.page}`;
   if (node.dataset.key === key) return;
   node.dataset.key = key;
   node.classList.toggle('is-selected', selected);
   node.classList.toggle('is-grouped', grouped);
   const label = pieceLabel(item) + (marked ? t('piece.a11ySelected') : '');
   if (node.getAttribute('aria-label') !== label) node.setAttribute('aria-label', label);
-  Object.assign(node.style, { left: `${left}px`, top: `${top}px`, width: `${w * zoom}px`, height: `${h * zoom}px` });
+  Object.assign(node.style, { left: `${left}px`, top: `${top}px`, width: `${p.width}px`, height: `${p.height}px` });
   const img = node.firstChild;
   if (img.getAttribute('src') !== asset.url) img.src = asset.url;
-  Object.assign(img.style, {
-    width: `${asset.w * k * zoom}px`,
-    height: `${asset.h * k * zoom}px`,
-    transform: `translate(-50%, -50%) rotate(${item.r}deg)`,
-  });
+  Object.assign(img.style, { width: `${p.img.width}px`, height: `${p.img.height}px`, transform: p.img.transform });
 }
 
 /** Rectángulo de una pieza en su hoja, con su id. */
