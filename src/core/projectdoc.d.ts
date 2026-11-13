@@ -5,7 +5,7 @@ export const DEFAULT_CUTS: Readonly<Cuts>;
 /** The stroke of version 2 documents (they keep it when migrated). */
 export const LEGACY_CUT_STYLE: Readonly<Pick<Cuts, 'weight' | 'color' | 'dash'>>;
 export function cleanCuts(cuts: Partial<Cuts> | undefined): Cuts;
-export const CUT_LIMITS: Readonly<{ length: readonly [number, number]; offset: readonly [number, number] }>;
+export const CUT_LIMITS: Readonly<{ length: readonly [number, number]; offset: readonly [number, number]; margin: readonly [number, number] }>;
 
 export function cleanCrop(crop: Crop | null | undefined): Crop | null;
 

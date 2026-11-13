@@ -67,7 +67,7 @@ describe('serialize', () => {
     assert.deepEqual(doc.assets.a1, { kind: 'image', name: 'foto.jpg', src: 1, px: [1200, 800], format: 'jpg', dpi: 300, w: 101.6, h: 67.73, derived: true });
     assert.deepEqual(doc.assets.a2, { kind: 'pdf', name: 'plano.pdf', src: 2, page: 2, pages: 3, pageRotation: 0, view: [0, 0, 595.28, 841.89], px: [1697, 2400], w: 210, h: 297 });
     assert.equal(doc.rotate, false);
-    assert.deepEqual(doc.cuts, { mode: 'corners', length: 3, offset: 2, weight: 'thin', color: '#000000', dash: 'solid' }, 'the default stroke fills what is missing');
+    assert.deepEqual(doc.cuts, { mode: 'corners', length: 3, offset: 2, margin: 0, weight: 'thin', color: '#000000', dash: 'solid' }, 'the defaults fill what is missing');
     assert.deepEqual(doc.items.map((item) => item.crop), [null, { x: 0.1, y: 0.2, w: 0.5, h: 0.6 }, null], 'sin recorte → null');
     // Es JSON puro: ida y vuelta sin pérdidas.
     assert.deepEqual(JSON.parse(JSON.stringify(doc)), doc);
@@ -133,7 +133,7 @@ describe('deserialize', () => {
     for (const item of v1.items) delete item.crop;
     const doc = deserialize(v1);
     assert.equal(doc.version, DOC_VERSION);
-    assert.deepEqual(doc.cuts, { mode: 'none', length: 4, offset: 1.5, ...LEGACY_CUT_STYLE });
+    assert.deepEqual(doc.cuts, { mode: 'none', length: 4, offset: 1.5, margin: 0, ...LEGACY_CUT_STYLE });
     assert.ok(doc.items.every((item) => item.crop === null));
     assert.equal(v1.cuts, undefined, 'no toca el original');
   });
@@ -144,12 +144,12 @@ describe('deserialize', () => {
     v2.cuts = { mode: 'corners', length: 3, offset: 2 };
     const doc = deserialize(v2);
     assert.equal(doc.version, 3);
-    assert.deepEqual(doc.cuts, { mode: 'corners', length: 3, offset: 2, weight: 'thin', color: '#333333', dash: 'solid' });
+    assert.deepEqual(doc.cuts, { mode: 'corners', length: 3, offset: 2, margin: 0, weight: 'thin', color: '#333333', dash: 'solid' });
     assert.deepEqual(v2.cuts, { mode: 'corners', length: 3, offset: 2 }, 'the original stays as it was');
   });
 
   test('a version 3 document keeps its chosen stroke', () => {
-    const state = { ...sampleState(), cuts: { mode: 'outline', length: 4, offset: 1.5, weight: 'thick', color: '#12A0fF', dash: 'dotted' } };
+    const state = { ...sampleState(), cuts: { mode: 'outline', length: 4, offset: 1.5, margin: -1.5, weight: 'thick', color: '#12A0fF', dash: 'dotted' } };
     const doc = deserialize(JSON.parse(JSON.stringify(serialize(state, sampleAssets()))));
     assert.deepEqual(doc.cuts, state.cuts);
   });
@@ -198,6 +198,9 @@ describe('deserialize', () => {
       { ...doc, cuts: { ...doc.cuts, color: 'red' } },
       { ...doc, cuts: { ...doc.cuts, color: '#12345' } },
       { ...doc, cuts: { ...doc.cuts, dash: 'dashed' } },
+      { ...doc, cuts: { ...doc.cuts, margin: 25 } },
+      { ...doc, cuts: { ...doc.cuts, margin: -6 } },
+      { ...doc, cuts: { ...doc.cuts, margin: undefined } },
       { ...doc, cuts: { mode: 'corners', length: 4, offset: 1 } },
       { ...doc, items: [{ ...doc.items[0], crop: { x: 0.5, y: 0, w: 0.6, h: 1 } }] },
       { ...doc, items: [{ ...doc.items[0], crop: { x: 0, y: 0, w: 0.001, h: 1 } }] },

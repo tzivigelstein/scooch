@@ -10,6 +10,7 @@
 //     margin: 10, gap: 5,                  // mm
 //     rotate: true,                        // «Girar si conviene»
 //     cuts: {mode: 'none', length: 4, offset: 1.5,   // líneas de corte (cutmarks.js): modo y mm,
+//            margin: 0,                           // cut margin around each image (mm, −5…20)
 //            weight: 'thin', color: '#000000', dash: 'solid'},  // and their stroke
 //     sheets: [{id: 1}, {id: 2}],          // en orden; al menos una
 //     items: [{id, asset, sheet, x, y, scale, r, crop}],   // en orden de apilado;
@@ -34,17 +35,17 @@ import { CUT_DASHES, CUT_MODES, CUT_WEIGHTS, isHexColor } from './cutmarks.js';
 export const DOC_VERSION = 3;
 
 /** Cut lines of a new document: none, and thin solid black when turned on. */
-export const DEFAULT_CUTS = Object.freeze({ mode: 'none', length: 4, offset: 1.5, weight: 'thin', color: '#000000', dash: 'solid' });
+export const DEFAULT_CUTS = Object.freeze({ mode: 'none', length: 4, offset: 1.5, margin: 0, weight: 'thin', color: '#000000', dash: 'solid' });
 
 /** The stroke documents had before it could be chosen (version 2): 0.25 pt dark gray, solid. */
 export const LEGACY_CUT_STYLE = Object.freeze({ weight: 'thin', color: '#333333', dash: 'solid' });
-/** Largo de las marcas y separación de la esquina, en mm (inclusive). */
-export const CUT_LIMITS = Object.freeze({ length: [0.5, 20], offset: [0, 10] });
+/** Largo de las marcas, separación de la esquina and the cut margin, in mm (inclusive). */
+export const CUT_LIMITS = Object.freeze({ length: [0.5, 20], offset: [0, 10], margin: [-5, 20] });
 
 /** A clean copy of the cut lines, with the default stroke for what is missing. */
 export function cleanCuts(cuts) {
-  const { mode, length, offset, weight, color, dash } = { ...DEFAULT_CUTS, ...cuts };
-  return { mode, length, offset, weight, color, dash };
+  const { mode, length, offset, margin, weight, color, dash } = { ...DEFAULT_CUTS, ...cuts };
+  return { mode, length, offset, margin, weight, color, dash };
 }
 
 /** Copia limpia de un recorte (o null si no hay o es la imagen entera). */
@@ -142,11 +143,11 @@ const MIGRATIONS = {
     cuts: { mode: 'none', length: 4, offset: 1.5 },
     items: Array.isArray(doc.items) ? doc.items.map((item) => ({ ...item, crop: null })) : doc.items,
   }),
-  // Version 2 had no choice of stroke: it keeps the look it printed with.
+  // Version 2 had no cut margin nor choice of stroke: it keeps the look it printed with.
   2: (doc) => ({
     ...doc,
     version: 3,
-    cuts: doc.cuts && typeof doc.cuts === 'object' ? { ...doc.cuts, ...LEGACY_CUT_STYLE } : doc.cuts,
+    cuts: doc.cuts && typeof doc.cuts === 'object' ? { ...doc.cuts, margin: 0, ...LEGACY_CUT_STYLE } : doc.cuts,
   }),
 };
 
@@ -218,7 +219,7 @@ export function validate(doc) {
   const cuts = doc.cuts;
   if (!cuts || typeof cuts !== 'object' || !CUT_MODES.includes(cuts.mode)) problems.push('líneas de corte');
   else {
-    for (const key of ['length', 'offset']) {
+    for (const key of ['length', 'offset', 'margin']) {
       const [lo, hi] = CUT_LIMITS[key];
       if (!isFiniteNumber(cuts[key]) || cuts[key] < lo || cuts[key] > hi) problems.push(`líneas de corte: ${key}`);
     }

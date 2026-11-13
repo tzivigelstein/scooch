@@ -17,6 +17,11 @@ export interface CutStyle {
 
 export function cutStyle(cuts?: Partial<Pick<Cuts, 'weight' | 'color' | 'dash'>>): CutStyle;
 
+/** The image box grown by `margin` mm on every side (shrunk when negative, never inverted). */
+export function cutBox(rect: Rect, margin?: number): Rect;
+/** What the layout adds around each image: the cut margin while cut lines are on and it is positive, else 0. */
+export function footprintPad(cuts: Pick<Cuts, 'mode' | 'margin'> | null | undefined): number;
+
 /** A horizontal or vertical segment in mm (x1 ≤ x2, y1 ≤ y2). */
 export interface CutLine {
   x1: number;
@@ -25,4 +30,4 @@ export interface CutLine {
   y2: number;
 }
 
-export function cutLines(rects: readonly Rect[], options?: { mode?: CutMode; length?: number; offset?: number; bounds?: Rect | null }): CutLine[];
+export function cutLines(rects: readonly Rect[], options?: { mode?: CutMode; length?: number; offset?: number; margin?: number; bounds?: Rect | null }): CutLine[];

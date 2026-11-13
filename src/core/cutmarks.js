@@ -5,6 +5,8 @@
 // que esto no se dibuja.
 const TOL = 1e-6;
 
+const finite = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
+
 /** Modos de `cutLines`. */
 export const CUT_MODES = Object.freeze(['none', 'corners', 'outline']);
 
@@ -17,6 +19,25 @@ export const CUT_COLORS = Object.freeze({ black: '#000000', gray: '#808080' });
 export const CUT_DASHES = Object.freeze(['solid', 'dotted']);
 
 export const isHexColor = (v) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+
+// ---------- Cut margin ----------
+
+/**
+ * A piece's cut box: its image box grown by `margin` mm on every side
+ * (positive: a white border around the image; negative: the cut goes inside
+ * the image). It never inverts: at most it shrinks to a line.
+ */
+export function cutBox(rect, margin = 0) {
+  const m = Math.max(finite(margin, 0), -Math.min(rect.w, rect.h) / 2);
+  return { x: rect.x - m, y: rect.y - m, w: rect.w + 2 * m, h: rect.h + 2 * m };
+}
+
+/**
+ * How much bigger than its image a piece is for the layout (arranging, gaps,
+ * overlaps, the sheet's edges): the cut margin while cut lines are on and the
+ * margin is positive, otherwise 0 (the image box, as always).
+ */
+export const footprintPad = (cuts) => (cuts && cuts.mode !== 'none' && finite(cuts.margin, 0) > 0 ? cuts.margin : 0);
 
 /** A dotted line's dash pattern (on, off) in points for a stroke of `width` pt: short dashes that stay visible. */
 export const dotPattern = (width) => [Math.max(0.5, width * 1.5), Math.max(1.5, width * 3)];
@@ -149,8 +170,6 @@ function clip(seg, bounds) {
   return b - a > TOL ? [{ ...seg, a, b }] : [];
 }
 
-const finite = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
-
 /**
  * Líneas de corte para las piezas `rects` ({x, y, w, h} en mm, ya giradas),
  * como segmentos horizontales o verticales [{x1, y1, x2, y2}] (x1 ≤ x2,
@@ -171,24 +190,35 @@ const finite = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? v
  *   outline runs inside a piece above it is left out.
  * - 'none': [].
  *
+ * With `margin` (mm) the lines go on each piece's cut box (see cutBox) instead
+ * of its image; nothing runs inside another piece's image or cut box.
+ *
  * Con `bounds` ({x, y, w, h}, la hoja) todo se recorta a esa área, y lo que
  * cae justo sobre su borde se descarta. Las piezas de medidas no positivas
  * o no finitas se ignoran; `offset` negativo cuenta como 0 y `length` ≤ 0 no
  * dibuja marcas.
  */
-export function cutLines(rects, { mode = 'corners', length = 4, offset = 1.5, bounds = null } = {}) {
+export function cutLines(rects, { mode = 'corners', length = 4, offset = 1.5, margin = 0, bounds = null } = {}) {
   if (!CUT_MODES.includes(mode)) throw new RangeError(`modo de corte desconocido: ${mode}`);
   if (mode === 'none') return [];
   const pieces = rects.filter(
     (q) => [q.x, q.y, q.w, q.h].every((v) => typeof v === 'number' && Number.isFinite(v)) && q.w > 0 && q.h > 0
   );
+  // The lines go on the cut boxes; neither image boxes nor cut boxes get lines over them.
+  const boxes = pieces.map((q) => cutBox(q, margin));
+  const solid = (q) => q.w > TOL && q.h > TOL;
   let segments;
-  if (mode === 'outline') segments = pieces.flatMap((q, i) => outline(q).flatMap((s) => notUnder(s, pieces.slice(i + 1))));
-  else {
+  if (mode === 'outline') {
+    segments = boxes.flatMap((q, i) => (solid(q) ? outline(q).flatMap((s) => notUnder(s, [...pieces.slice(i + 1), ...boxes.slice(i + 1)])) : []));
+  } else {
     const len = finite(length, 0);
     if (len <= 0) return [];
     const off = Math.max(0, finite(offset, 0));
-    segments = pieces.flatMap((q) => cornerMarks(q, len, off)).flatMap((s) => outsidePieces(s, pieces));
+    const obstacles = [...pieces, ...boxes.filter(solid)];
+    segments = boxes
+      .filter(solid)
+      .flatMap((q) => cornerMarks(q, len, off))
+      .flatMap((s) => outsidePieces(s, obstacles));
   }
   let merged = merge(segments);
   if (bounds) merged = merged.flatMap((s) => clip(s, bounds));

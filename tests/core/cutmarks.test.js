@@ -421,3 +421,58 @@ describe('outline with overlapping pieces and the stroke style', () => {
     assert.deepEqual(cutStyle({ color: 'nope', weight: 'x' }), { width: 0.25, hex: '#000000', rgb: [0, 0, 0], dash: null });
   });
 });
+
+describe('cut margin', () => {
+  test('cutBox grows (or shrinks) a box on every side, never inverting it', async () => {
+    const { cutBox } = await import('../../src/core/cutmarks.js');
+    assert.deepEqual(cutBox({ x: 10, y: 20, w: 30, h: 40 }, 2), { x: 8, y: 18, w: 34, h: 44 });
+    assert.deepEqual(cutBox({ x: 10, y: 20, w: 30, h: 40 }, -1), { x: 11, y: 21, w: 28, h: 38 });
+    assert.deepEqual(cutBox({ x: 10, y: 20, w: 30, h: 40 }, -50), { x: 25, y: 35, w: 0, h: 10 }, 'shrinks to a line at most');
+    assert.deepEqual(cutBox({ x: 10, y: 20, w: 30, h: 40 }), { x: 10, y: 20, w: 30, h: 40 });
+  });
+
+  test('cut boxes of rotated and cropped pieces follow their size on the sheet', async () => {
+    const { cutBox } = await import('../../src/core/cutmarks.js');
+    const { pieceSize } = await import('../../src/core/crop.js');
+    const asset = { w: 150, h: 100 };
+    for (const r of [0, 90, 180, 270]) {
+      for (const crop of [null, { x: 0.1, y: 0.2, w: 0.5, h: 0.4 }]) {
+        const { w, h } = pieceSize(asset, { scale: 50, r, crop });
+        const box = cutBox({ x: 20, y: 30, w, h }, 3);
+        assert.ok(Math.abs(box.w - (w + 6)) < 1e-9 && Math.abs(box.h - (h + 6)) < 1e-9 && box.x === 17 && box.y === 27, `r=${r} crop=${!!crop}`);
+      }
+    }
+  });
+
+  test('lines go on the cut boxes; equal margins that touch share one line', () => {
+    // 2 mm margins and a 4 mm gap: the cut boxes touch at x = 52.
+    const a = { x: 10, y: 10, w: 40, h: 30 };
+    const b = { x: 54, y: 10, w: 40, h: 30 };
+    const outline = cutLines([a, b], { mode: 'outline', margin: 2 });
+    assert.deepEqual(outline.filter((s) => s.x1 === s.x2 && Math.abs(s.x1 - 52) < TOL), [V(52, 8, 42)]);
+    assert.ok(outline.some((s) => s.y1 === 8 && s.y2 === 8 && Math.abs(s.x1 - 8) < TOL && Math.abs(s.x2 - 96) < TOL), 'the top edges continue as one line');
+    const corners = cutLines([a, b], { mode: 'corners', margin: 2, length: 4, offset: 1 });
+    assertWellFormed(corners, 'corners with margin');
+    // The marks start at the cut box corners (8, 8): the first horizontal one ends at 8 − 1.
+    assert.ok(corners.some((s) => s.y1 === 8 && Math.abs(s.x2 - 7) < TOL && Math.abs(s.x1 - 3) < TOL), JSON.stringify(corners.slice(0, 4)));
+    // Nothing inside an image box nor a cut box.
+    for (const q of [a, b, { x: 8, y: 8, w: 44, h: 34 }, { x: 52, y: 8, w: 44, h: 34 }]) assert.ok(!corners.some((s) => entersPiece(s, q)), JSON.stringify(q));
+  });
+
+  test('a negative margin draws the outline inside the image; a degenerate cut box draws nothing', () => {
+    const lines = cutLines([{ x: 10, y: 10, w: 40, h: 30 }], { mode: 'outline', margin: -1 });
+    assert.deepEqual(lines, [H(11, 11, 49), H(39, 11, 49), V(11, 11, 39), V(49, 11, 39)]);
+    assert.deepEqual(cutLines([{ x: 10, y: 10, w: 40, h: 30 }], { mode: 'outline', margin: -20 }), []);
+    assert.deepEqual(cutLines([{ x: 10, y: 10, w: 40, h: 30 }], { mode: 'corners', margin: -20 }), []);
+  });
+
+  test('footprintPad: the margin only while cut lines are on and it is positive', async () => {
+    const { footprintPad } = await import('../../src/core/cutmarks.js');
+    assert.equal(footprintPad({ mode: 'corners', margin: 2 }), 2);
+    assert.equal(footprintPad({ mode: 'outline', margin: 2 }), 2);
+    assert.equal(footprintPad({ mode: 'none', margin: 2 }), 0);
+    assert.equal(footprintPad({ mode: 'corners', margin: -1 }), 0);
+    assert.equal(footprintPad({ mode: 'corners', margin: 0 }), 0);
+    assert.equal(footprintPad(null), 0);
+  });
+});

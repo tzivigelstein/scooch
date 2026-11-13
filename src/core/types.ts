@@ -103,11 +103,16 @@ export type CutMode = 'none' | 'corners' | 'outline';
 export type CutWeight = 'thin' | 'medium' | 'thick';
 export type CutDash = 'solid' | 'dotted';
 
-/** Cut lines: the mode, the marks' length and offset (mm) and the stroke (weight, #rrggbb color, dash). */
+/**
+ * Cut lines: the mode, the marks' length and offset (mm), the cut margin
+ * (mm between the image and its cut line; negative cuts inside the image) and
+ * the stroke (weight, #rrggbb color, dash).
+ */
 export interface Cuts {
   mode: CutMode;
   length: number;
   offset: number;
+  margin: number;
   weight: CutWeight;
   color: string;
   dash: CutDash;
