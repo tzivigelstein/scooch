@@ -14,7 +14,7 @@ import { flushUi } from '../flush.ts';
 import { getDocument, newSheet, patchItems, setDocument } from '../document.ts';
 import { commit, endEdit } from '../history.ts';
 import { loadCustomPaper, saveCustomPaper, setGrid, getPrefs } from '../prefs.ts';
-import { area, boxOf, currentSheet, itemsOn, layoutPad, selectedItem, selectedItems, sheetIndex, sheetSize } from '../selectors.ts';
+import { area, boxOf, currentSheet, findItem, itemsOn, layoutPad, selectedItem, selectedItems, sheetIndex, sheetSize } from '../selectors.ts';
 import { animateNext, setView } from '../view.ts';
 import { revealPanel } from './drawers.ts';
 import { focusSheet, pieceNode, sheetNode } from './focus.ts';
@@ -162,6 +162,29 @@ export function sheetEmptied(id: number) {
 }
 
 /**
+ * Moves pieces (all on one sheet) to a new sheet created at `index` in the
+ * list, each to its position there. One undo step (undo removes the sheet).
+ * Their old sheet, if left empty, stays, with a notice that offers to remove
+ * it. Returns the new sheet's id.
+ */
+export function moveToNewSheetAt(index: number, positions: ReadonlyMap<number, { x: number; y: number }>) {
+  const items = [...positions.keys()].map((id) => findItem(id)).filter((item) => !!item);
+  if (busy() || !items.length || items.some((item) => item.sheet !== items[0].sheet)) return null;
+  const from = items[0].sheet;
+  commit();
+  forgetSpill();
+  const sheet = newSheet();
+  const sheets = [...getDocument().sheets];
+  sheets.splice(clamp(index, 0, sheets.length), 0, sheet);
+  setDocument({ sheets });
+  patchItems(new Map(items.map((item) => [item.id, { sheet: sheet.id, ...positions.get(item.id) }])));
+  setView({ sheet: sheet.id });
+  announce(t('announce.movedToNewSheet', { n: items.length, i: sheetIndex(sheet.id) + 1 }));
+  sheetEmptied(from);
+  return sheet.id;
+}
+
+/**
  * «Mover a una hoja nueva»: the selection (all on one sheet) goes to a new
  * sheet right after its own, keeping where it was on the sheet. One undo step.
  */
@@ -170,22 +193,14 @@ export function moveToNewSheet() {
   const items = selectedItems();
   if (!items.length) return announce(t('announce.needSelection'));
   if (!canMoveToNewSheet()) return announce(t('menu.reasons.oneSheet'));
-  const from = items[0].sheet;
-  commit();
-  const sheet = newSheet();
-  const sheets = [...getDocument().sheets];
-  sheets.splice(sheetIndex(from) + 1, 0, sheet);
-  setDocument({ sheets });
-  patchItems(new Map(items.map((item) => [item.id, { sheet: sheet.id }])));
-  setView({ sheet: sheet.id });
+  const id = moveToNewSheetAt(sheetIndex(items[0].sheet) + 1, new Map(items.map((item) => [item.id, { x: item.x, y: item.y }])));
+  if (id === null) return;
   animateNext();
   focusSheet();
   revealPieces(
     items.map((item) => item.id),
     getDocument().selection.at(-1)!
   );
-  announce(t('announce.movedToNewSheet', { n: items.length, i: sheetIndex(sheet.id) + 1 }));
-  sheetEmptied(from);
 }
 
 /** «Quitar todas»: removes the pieces of every sheet and leaves one empty sheet. */

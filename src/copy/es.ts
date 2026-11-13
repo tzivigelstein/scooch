@@ -126,6 +126,8 @@ const es = {
     addTip: 'Agregar una hoja vacía al final',
     remove: 'Quitar hoja',
     removeLabel: 'Quitar la hoja {i}',
+    // While dragging pieces out of the sheets: where dropping them creates a sheet
+    dropNew: 'Suelta para crear una hoja',
     paperLabel: '{paper} · {size}',
     landscapeName: '{paper} horizontal',
     drop: 'Suelta imágenes o PDF, pega con {mod}+V o presiona O',

@@ -23,7 +23,7 @@ import { showPropsTab } from '../state/actions/panels.ts';
 import { startCrop } from '../components/canvas/cropMode.ts';
 import { openContextMenuFromKeyboard } from '../components/canvas/contextMenu.ts';
 import { fitSheet, stepZoom } from '../components/canvas/viewport.ts';
-import { holdSpace, isPointerOnCanvas, isSpaceHeld as space, releaseSpace } from './useCanvasGestures.ts';
+import { cancelGesture, holdSpace, isPointerOnCanvas, isSpaceHeld as space, releaseSpace } from './useCanvasGestures.ts';
 import {
   alignSelection,
   bringToFront,
@@ -177,7 +177,7 @@ function onKeyDown(e: KeyboardEvent) {
   }
 
   if (key === 'Escape') {
-    if (escape(target)) e.preventDefault();
+    if (cancelGesture() || escape(target)) e.preventDefault();
     return;
   }
 

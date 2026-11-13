@@ -14,8 +14,8 @@ import { DRAG_THRESHOLD } from '../config.ts';
 import { bounds, scaleGroup } from '../core/align.js';
 import { maxGrowth, overlapsAny } from '../core/collide.js';
 import { planDrag, planDrop, planScale, scaleBounds, touchedBy, type Drag } from '../core/group.js';
-import { keepCenterInside } from '../core/sheets.js';
-import type { Box, Rect } from '../core/types.ts';
+import { keepCenterInside, placeOnNewSheet } from '../core/sheets.js';
+import type { Box, Point, Rect } from '../core/types.ts';
 import { wheelFactor } from '../core/zoom.js';
 import { clamp, round1, tidy } from '../core/util.ts';
 import { t } from '../copy/index.ts';
@@ -27,15 +27,19 @@ import {
   layerToSheet,
   measureBoxes,
   mmToPx,
+  newSheetSpot,
   pxToMm,
   sheetAtLayerY,
+  sheetAtPoint,
   sheetBoxes,
   toLayer,
   viewZoom,
   visibleSheet,
   zoomBy,
   type BoxOffset,
+  type NewSheetSpot,
 } from '../components/canvas/viewport.ts';
+import { paintNewSheetSpot } from '../components/canvas/newSheetDrop.ts';
 import { getAsset } from '../state/assets.ts';
 import { getDocument, patchItems, useDocument, type Piece } from '../state/document.ts';
 import { flushUi } from '../state/flush.ts';
@@ -51,6 +55,7 @@ import {
   fromBox,
   groupOptions,
   imageBoxes,
+  layoutPad,
   obstaclesFor,
   othersOnSheet,
   scaleOptions,
@@ -61,6 +66,7 @@ import {
 import { animateNext, getView, setView } from '../state/view.ts';
 import { focusSheetNode, pieceNode } from '../state/actions/focus.ts';
 import { makePrimary, select, selectTouched, toggleInSelection } from '../state/actions/selection.ts';
+import { moveToNewSheetAt } from '../state/actions/sheets.ts';
 import { startCrop } from '../components/canvas/cropMode.ts';
 import { openContextMenuAt, openContextMenuFromKeyboard } from '../components/canvas/contextMenu.ts';
 import { isTyping } from './dom.ts';
@@ -91,6 +97,10 @@ interface MoveGesture extends Pointer {
   draft: Piece & { sheet: number };
   blocked: boolean;
   target: number;
+  /** Over a placeholder: dropping creates a sheet there. */
+  spot: NewSheetSpot | null;
+  /** How far it was dragged (px, scroll included). */
+  delta: Point;
 }
 
 interface ResizeGesture extends Pointer {
@@ -115,6 +125,8 @@ interface GroupMoveGesture extends Pointer {
   dropTarget: number | null;
   blocked: boolean;
   target: number;
+  spot: NewSheetSpot | null;
+  delta: Point;
 }
 
 interface GroupResizeGesture extends Pointer {
@@ -264,6 +276,8 @@ function onPointerDown(e: PointerEvent) {
     draft: { ...fresh },
     blocked: false,
     target: fresh.sheet,
+    spot: null,
+    delta: { x: 0, y: 0 },
   });
 }
 
@@ -326,6 +340,8 @@ function startGroupMove(e: PointerEvent, item: Piece, collapse: boolean) {
     dropTarget: null,
     blocked: false,
     target: item.sheet,
+    spot: null,
+    delta: { x: 0, y: 0 },
   });
 }
 
@@ -409,6 +425,15 @@ function updateMove(g: MoveGesture, px: number, dy: number) {
   const start = toLayer(g.item.sheet, rectOf(g.item))!;
   const ax = start.left + px;
   const ay = start.top + dy;
+  g.delta = { x: px, y: dy };
+  if (followNewSheet(g, { x: ax + start.width / 2, y: ay + start.height / 2 })) {
+    // Over a placeholder: the piece follows the pointer until it is dropped.
+    const free = layerToSheet(g.item.sheet, ax, ay)!;
+    g.draft = { ...g.draft, x: free.x, y: free.y, sheet: g.item.sheet };
+    paintDraft(g.node, g.draft, sheetBoxes().get(g.item.sheet));
+    preview([g.draft]);
+    return;
+  }
   const target = sheetAtLayerY(ay + mmToPx(h) / 2);
   const at = layerToSheet(target, ax, ay)!;
   // Snapping: to the nearest multiple of the grid, which starts at the sheet's
@@ -428,9 +453,21 @@ function updateMove(g: MoveGesture, px: number, dy: number) {
 function updateGroupMove(g: GroupMoveGesture, px: number, dy: number) {
   let target: number | null = null;
   let offsetY = 0;
+  g.delta = { x: px, y: dy };
   if (g.oneSheet !== null) {
     // The sheet with the center of the group's box.
     const start = toLayer(g.oneSheet, g.box)!;
+    if (followNewSheet(g, { x: start.left + start.width / 2 + px, y: start.top + start.height / 2 + dy })) {
+      // Over a placeholder: the group follows the pointer, as it is, until it is dropped.
+      g.drag = null;
+      for (const item of g.items) {
+        const draft = { ...g.drafts.get(item.id)!, x: item.x + pxToMm(px), y: item.y + pxToMm(dy), sheet: item.sheet };
+        g.drafts.set(item.id, draft);
+        paintDraft(pieceNode(item.id), draft, sheetBoxes().get(item.sheet));
+      }
+      preview([...g.drafts.values()]);
+      return;
+    }
     target = sheetAtLayerY(start.top + start.height / 2 + dy);
     offsetY = pxToMm(sheetBoxes().get(g.oneSheet)!.top - sheetBoxes().get(target)!.top);
     markTarget(g, target);
@@ -515,6 +552,26 @@ function setBlocked(g: MoveGesture | GroupMoveGesture, blocked: boolean, nodes: 
   for (const frame of document.querySelectorAll('#sheets > .group-frame')) frame.classList.toggle('is-blocked', blocked);
 }
 
+/**
+ * A piece or a group from one sheet whose center (#sheets px) left the sheets
+ * shows where it can create a sheet; over one of those spots (true), no sheet
+ * is the target and nothing is blocked.
+ */
+function followNewSheet(g: MoveGesture | GroupMoveGesture, center: Point) {
+  const canCreate = g.kind === 'move' || g.oneSheet !== null;
+  const outside = canCreate && sheetAtPoint(center) === null;
+  g.spot = outside ? newSheetSpot(center, clientToLayer(g.lastX, g.lastY)) : null;
+  paintNewSheetSpot(outside ? g.spot : false);
+  if (!g.spot) return false;
+  markTarget(g, g.kind === 'move' ? g.item.sheet : g.oneSheet!);
+  setBlocked(
+    g,
+    false,
+    g.kind === 'move' ? [g.node] : g.items.map((item) => pieceNode(item.id))
+  );
+  return true;
+}
+
 // While dragging near the top or bottom edge of the canvas, it scrolls (to take
 // a piece to a sheet out of view).
 function startAutoScroll() {
@@ -554,6 +611,13 @@ function onPointerUp(e: PointerEvent) {
   finish(e.type === 'pointerup' ? e : null);
 }
 
+/** Esc during a drag: everything stays as it was. Returns whether there was one to cancel. */
+export function cancelGesture() {
+  if (!gesture?.moved) return false;
+  finish(null);
+  return true;
+}
+
 /** Ends the gesture: `e` is the pointerup that drops it, or null to cancel. */
 function finish(e: PointerEvent | null) {
   const g = gesture!;
@@ -566,6 +630,7 @@ function finish(e: PointerEvent | null) {
   for (const frame of document.querySelectorAll('#sheets > .group-frame')) frame.classList.remove('is-blocked');
   for (const node of document.querySelectorAll('#sheets .piece.is-blocked')) node.classList.remove('is-blocked');
   if (g.kind !== 'marquee' && g.kind !== 'resize' && g.kind !== 'group-resize') pageOf(g.target)?.classList.remove('is-drop-target');
+  paintNewSheetSpot(false);
   const done = e !== null;
   const active = document.activeElement;
   restore();
@@ -581,7 +646,9 @@ function finish(e: PointerEvent | null) {
 function endPieceGesture(g: MoveGesture | ResizeGesture, done: boolean, hadFocus: boolean) {
   let result: 'moved-aside' | 'reverted' | null = null;
   let sheetChanged = false;
-  if (g.moved && done && findItem(g.item.id) === g.item) {
+  if (g.kind === 'move' && g.spot && g.moved && done && findItem(g.item.id) === g.item) {
+    dropOnNewSheet(g.spot, [g.item], g.delta);
+  } else if (g.moved && done && findItem(g.item.id) === g.item) {
     let { x, y } = g.draft;
     const sheet = g.draft.sheet ?? g.item.sheet;
     if (g.kind === 'move' && g.blocked) {
@@ -628,6 +695,8 @@ function endGroupGesture(g: GroupMoveGesture | GroupResizeGesture, done: boolean
   if (!g.moved) {
     // A click without dragging on one of several selected: only that one stays selected.
     if (g.kind === 'group-move' && g.collapse && done) select(g.item.id);
+  } else if (done && alive && g.kind === 'group-move' && g.spot) {
+    dropOnNewSheet(g.spot, g.items, g.delta);
   } else if (done && alive && g.kind === 'group-move' && g.drag) {
     const before = g.item.sheet;
     if (!g.drag.plan.ok) animateNext();
@@ -662,6 +731,30 @@ function dropGroup(drag: Drag, target: number | null) {
   patchItems(new Map([...at].map(([id, p]) => [id, { ...p, ...(target !== null ? { sheet: target } : {}) }])));
   if (target !== null) setView({ sheet: target });
   return result;
+}
+
+/**
+ * Drops pieces of one sheet, dragged by `delta` (px), onto a new sheet at
+ * `spot`: where they were let go, on the grid with «Imán» and inside the
+ * sheet, as they were arranged. One undo step.
+ */
+function dropOnNewSheet(spot: NewSheetSpot, items: readonly Piece[], delta: Point) {
+  const pad = layoutPad();
+  const frame = bounds(items.map(rectOf))!;
+  const start = toLayer(items[0].sheet, frame)!;
+  // Their layout box where it was let go, in mm on the new sheet.
+  const box = {
+    x: pxToMm(start.left + delta.x - spot.box.left) - pad,
+    y: pxToMm(start.top + delta.y - spot.box.top) - pad,
+    w: frame.w + 2 * pad,
+    h: frame.h + 2 * pad,
+  };
+  const [W, H] = sheetSize();
+  const { grid } = getPrefs();
+  const at = placeOnNewSheet(box, W, H, { snapStep: grid.snap ? grid.size : 0, pad, margin: getDocument().margin });
+  const dx = at.x + pad - frame.x;
+  const dy = at.y + pad - frame.y;
+  moveToNewSheetAt(spot.index, new Map(items.map((item) => [item.id, { x: tidy(item.x + dx), y: tidy(item.y + dy) }])));
 }
 
 /** Applies a factor already bounded (the handle), from each part's top left corner. */

@@ -8,6 +8,7 @@ import {
   spotOnSheet,
   sheetAt,
   keepCenterInside,
+  placeOnNewSheet,
   pieceProblems,
   problemSummary,
 } from '../../src/core/sheets.js';
@@ -177,6 +178,30 @@ describe('keepCenterInside', () => {
     assert.deepEqual(keepCenterInside({ x: 400, y: 600, w: 40, h: 30 }, W, H), { x: 190, y: 282 }, 'muy afuera abajo a la derecha');
     assert.deepEqual(keepCenterInside({ x: -300, y: -300, w: 40, h: 30 }, W, H), { x: -20, y: -15 }, 'muy afuera arriba a la izquierda');
     assert.deepEqual(keepCenterInside({ x: -300, y: 10, w: 500, h: 30 }, W, H), { x: -250, y: 10 }, 'más grande que la hoja: centro en el borde');
+  });
+});
+
+describe('placeOnNewSheet', () => {
+  const W = 210;
+  const H = 297;
+  test('where it was dropped when it is inside', () => {
+    assert.deepEqual(placeOnNewSheet({ x: 30.3, y: 40.6, w: 50, h: 40 }, W, H), { x: 30.3, y: 40.6 });
+  });
+  test('a box that fits goes entirely inside the sheet', () => {
+    assert.deepEqual(placeOnNewSheet({ x: -12, y: 280, w: 50, h: 40 }, W, H), { x: 0, y: 257 });
+    assert.deepEqual(placeOnNewSheet({ x: 190, y: -400, w: 50, h: 40 }, W, H), { x: 160, y: 0 });
+  });
+  test('one larger than the sheet keeps its center inside', () => {
+    assert.deepEqual(placeOnNewSheet({ x: -300, y: 10, w: 500, h: 30 }, W, H), { x: -250, y: 10 });
+  });
+  test('inside the printable area when it fits there, else inside the sheet', () => {
+    assert.deepEqual(placeOnNewSheet({ x: 2, y: 280, w: 50, h: 40 }, W, H, { margin: 10 }), { x: 10, y: 247 });
+    assert.deepEqual(placeOnNewSheet({ x: 2, y: 3, w: 200, h: 40 }, W, H, { margin: 10 }), { x: 2, y: 10 });
+  });
+  test('on the grid by its image corner (pad mm inside the box)', () => {
+    assert.deepEqual(placeOnNewSheet({ x: 31.2, y: 47.6, w: 50, h: 40 }, W, H, { snapStep: 5 }), { x: 30, y: 50 });
+    const p = placeOnNewSheet({ x: 29.2, y: 47.6, w: 50, h: 40 }, W, H, { snapStep: 5, pad: 2 });
+    assert.ok(Math.abs(p.x - 28) < 1e-9 && Math.abs(p.y - 48) < 1e-9, JSON.stringify(p));
   });
 });
 

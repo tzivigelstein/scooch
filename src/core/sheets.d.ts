@@ -34,6 +34,9 @@ export function spotOnSheet(rect: IdSize<RectId>, boxes: readonly Rect[], option
 /** Closest position whose center stays inside the W × H sheet. */
 export function keepCenterInside(rect: Rect, W: number, H: number): Point;
 
+/** Where a box dropped on a new, empty sheet goes: snapped (its image corner, `pad` inside), inside the printable area or else the sheet when it fits. */
+export function placeOnNewSheet(rect: Rect, W: number, H: number, options?: { snapStep?: number; pad?: number; margin?: number }): Point;
+
 /** The closest free spot for `rect` on the sheet (printable area first), or null. */
 export function freeSpotNear(rect: Rect, others: readonly Rect[], options: { W: number; H: number; margin?: number }): Point | null;
 

@@ -149,6 +149,23 @@ export function keepCenterInside({ x, y, w, h }, W, H) {
 }
 
 /**
+ * Where a box dropped on a new, empty W × H sheet goes ({x, y} of the box,
+ * mm): its image corner (`pad` mm inside the box) snapped to the grid
+ * (`snapStep`, 0: none), then the box inside the printable area (the sheet
+ * minus `margin`) if it fits there, else inside the sheet; a box larger than
+ * the sheet keeps its center inside.
+ */
+export function placeOnNewSheet({ x, y, w, h }, W, H, { snapStep = 0, pad = 0, margin = 0 } = {}) {
+  const snap = (v) => (snapStep > 0 ? Math.round((v + pad) / snapStep) * snapStep - pad : v);
+  const fit = (v, size, total) => {
+    if (size <= total - 2 * margin) return Math.min(Math.max(v, margin), total - margin - size);
+    if (size <= total) return Math.min(Math.max(v, 0), total - size);
+    return Math.min(Math.max(v, -size / 2), total - size / 2);
+  };
+  return { x: fit(snap(x), w, W), y: fit(snap(y), h, H) };
+}
+
+/**
  * The closest free spot for `rect` ({x, y, w, h} mm) on a W × H sheet with
  * those `others`: inside the printable area (the sheet minus `margin`) if it
  * fits there, else anywhere on the sheet. Its own position when already free.

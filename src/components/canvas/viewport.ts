@@ -20,6 +20,8 @@ export interface BoxOffset {
 }
 
 let boxes = new Map<number, BoxOffset>();
+// The page heading's height and the gap between pages (px), measured with the boxes.
+let spacing = { head: 0, gap: 0 };
 
 const stage = () => document.getElementById('stage');
 const sheetsEl = () => document.getElementById('sheets');
@@ -33,6 +35,12 @@ export function measureBoxes() {
     if (box) next.set(sheet.id, { left: box.offsetLeft, top: box.offsetTop });
   }
   boxes = next;
+  const first = getDocument().sheets[0];
+  const el = sheetsEl();
+  spacing = {
+    head: (first && (pageNode(first.id)?.firstElementChild as HTMLElement | null)?.offsetHeight) || 0,
+    gap: (el && parseFloat(getComputedStyle(el).rowGap)) || 0,
+  };
   return boxes;
 }
 
@@ -212,6 +220,63 @@ export function toClient(sheet: number, r: Rect): Rect | null {
   if (!p || !sheets) return null;
   const origin = sheets.getBoundingClientRect();
   return { x: origin.left + p.left, y: origin.top + p.top, w: p.width, h: p.height };
+}
+
+// ---------- A new sheet from a drag ----------
+
+/** Where a drag can create a sheet: its place in the list and where its box would be (#sheets px). */
+export interface NewSheetSpot {
+  index: number;
+  box: LayerRect;
+  kind: 'gap' | 'end';
+}
+
+/** The sheet whose box contains a #sheets point (id), or null. */
+export function sheetAtPoint(p: Point): number | null {
+  const [W, H] = sheetSize();
+  for (const [id, box] of boxes) {
+    if (p.x >= box.left && p.x <= box.left + mmToPx(W) && p.y >= box.top && p.y <= box.top + mmToPx(H)) return id;
+  }
+  return null;
+}
+
+// The measured sheet boxes in order, the page heading and the gap between pages (px).
+function column() {
+  const tops = getDocument().sheets.map((sheet) => boxes.get(sheet.id));
+  if (!tops.length || tops.some((box) => !box)) return null;
+  const [W, H] = sheetSize().map(mmToPx);
+  return { tops: tops as BoxOffset[], ...spacing, W, H };
+}
+
+/** Where a sheet added after the last one would be (its box, #sheets px). */
+export function endSheetBox(): LayerRect | null {
+  const c = column();
+  if (!c) return null;
+  return { left: c.tops[0].left, top: c.tops.at(-1)!.top + c.H + c.gap + c.head, width: c.W, height: c.H };
+}
+
+/**
+ * Where a drag whose center (#sheets px) is outside every sheet could create
+ * one: in the gap under the pointer (between two sheets or above the first)
+ * or, with the center or the pointer below the last sheet, after it. null
+ * when it is beside the sheets (the drop goes to the nearest one).
+ */
+export function newSheetSpot(center: Point, pointer: Point): NewSheetSpot | null {
+  const c = column();
+  if (!c) return null;
+  const { tops, head, gap, W, H } = c;
+  const left = tops[0].left;
+  for (let i = 0; i < tops.length; i++) {
+    const above = i === 0 ? -Infinity : tops[i - 1].top + H;
+    if (pointer.y >= above && pointer.y < tops[i].top) {
+      // The bar sits in the middle of the gap (above the first sheet, in the stage's padding).
+      const line = i === 0 ? tops[0].top - head - gap / 2 : (above + tops[i].top - head) / 2;
+      return { index: i, box: { left, top: line, width: W, height: H }, kind: 'gap' };
+    }
+  }
+  const bottom = tops.at(-1)!.top + H;
+  if (center.y > bottom || pointer.y > bottom) return { index: tops.length, box: endSheetBox()!, kind: 'end' };
+  return null;
 }
 
 /** The sheet that shows the most right now (id), or null. */

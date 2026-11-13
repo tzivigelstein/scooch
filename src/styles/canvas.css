@@ -683,6 +683,55 @@
   display: none;
 }
 
+/* Dragging pieces out of the sheets: where dropping them creates a sheet. Out
+   of the layout, so nothing moves under the pointer. */
+.new-sheet-drop {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  border: 0.125rem dashed var(--line-strong);
+  border-radius: 0.125rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+}
+
+.new-sheet-drop.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.new-sheet-gap {
+  position: absolute;
+  z-index: 6;
+  height: 0;
+  border-top: 0.1875rem dashed var(--accent);
+  pointer-events: none;
+}
+
+.new-sheet-gap span {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  padding: 0.125rem 0.625rem;
+  border-radius: 62.4375rem;
+  background: var(--primary-bg);
+  color: var(--primary-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+}
+
+.sheets.has-new-sheet .sheets-foot {
+  visibility: hidden;
+}
+
 /* ---------- Zoom and pan ---------- */
 
 .stage.is-wide {

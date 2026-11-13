@@ -252,6 +252,12 @@ export function Stage() {
           </button>
         </div>
         <div className="marquee" hidden aria-hidden="true" />
+        <div id="new-sheet-end" className="new-sheet-drop" hidden aria-hidden="true">
+          <span>{t('sheet.dropNew')}</span>
+        </div>
+        <div id="new-sheet-gap" className="new-sheet-gap" hidden aria-hidden="true">
+          <span>{t('sheet.dropNew')}</span>
+        </div>
         <p id="sheet-settings-hint" className="sr-only">
           {t('sheet.settingsHint')}
         </p>
