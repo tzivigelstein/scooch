@@ -220,13 +220,13 @@
             <!-- Alinear y distribuir (con una pieza, contra el área útil) -->
             <div class="arrange-tools">
               <p id="align-sheet-note" class="tools-note field-label" data-i18n="props.alignSheetNote" hidden></p>
-              <fieldset id="align-to-field" class="tools-head">
-                <legend class="field-label" data-i18n="props.alignTo"></legend>
+              <div id="align-to-field" class="tools-head" role="group" aria-labelledby="align-to-label">
+                <span id="align-to-label" class="field-label" data-i18n="props.alignTo"></span>
                 <div id="align-to" class="segmented chips small">
                   <label class="seg"><input type="radio" name="align-to" value="selection" checked /><span data-i18n="props.alignToSelection"></span></label>
                   <label class="seg"><input type="radio" name="align-to" value="sheet" /><span data-i18n="props.alignToSheet"></span></label>
                 </div>
-              </fieldset>
+              </div>
               <div id="align-row" class="tool-row" role="group" data-i18n-label="props.align">
                 <button type="button" class="icon-btn" data-align="left" data-i18n-label="props.alignLeft" data-i18n-tip="props.alignLeft" data-kbd="Alt+Shift+ArrowLeft" data-aks="Alt+Shift+ArrowLeft"><span data-icon="align-start-vertical"></span></button>
                 <button type="button" class="icon-btn" data-align="centerX" data-i18n-label="props.alignCenterX" data-i18n-tip="props.alignCenterX" data-kbd="Alt+Shift+H" data-aks="Alt+Shift+H"><span data-icon="align-center-vertical"></span></button>
@@ -235,13 +235,13 @@
                 <button type="button" class="icon-btn" data-align="centerY" data-i18n-label="props.alignCenterY" data-i18n-tip="props.alignCenterY" data-kbd="Alt+Shift+V" data-aks="Alt+Shift+V"><span data-icon="align-center-horizontal"></span></button>
                 <button type="button" class="icon-btn" data-align="bottom" data-i18n-label="props.alignBottom" data-i18n-tip="props.alignBottom" data-kbd="Alt+Shift+ArrowDown" data-aks="Alt+Shift+ArrowDown"><span data-icon="align-end-horizontal"></span></button>
               </div>
-              <fieldset class="tools-head">
-                <legend class="field-label" data-i18n="props.distributeBy"></legend>
+              <div class="tools-head wide" role="group" aria-labelledby="distribute-label">
+                <span id="distribute-label" class="field-label" data-i18n="props.distributeBy"></span>
                 <div id="distribute-mode" class="segmented chips small">
                   <label class="seg"><input type="radio" name="distribute-mode" value="gap" checked /><span data-i18n="props.distributeGap"></span></label>
                   <label class="seg"><input type="radio" name="distribute-mode" value="even" /><span data-i18n="props.distributeEven"></span></label>
                 </div>
-              </fieldset>
+              </div>
               <div id="distribute-row" class="tool-row" role="group" data-i18n-label="props.distribute">
                 <button type="button" class="icon-btn" data-distribute="x" data-i18n-label="props.distributeX" data-i18n-tip="props.distributeX" data-kbd="Alt+Shift+X" data-aks="Alt+Shift+X"><span data-icon="align-horizontal-space-between"></span></button>
                 <button type="button" class="icon-btn" data-distribute="y" data-i18n-label="props.distributeY" data-i18n-tip="props.distributeY" data-kbd="Alt+Shift+Y" data-aks="Alt+Shift+Y"><span data-icon="align-vertical-space-between"></span></button>

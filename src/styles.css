@@ -563,7 +563,6 @@ input.project-name-input {
   overscroll-behavior: contain;
   background: var(--surface);
   color: var(--text);
-  /* Lo que cambia arriba (la sección Pieza) no corre lo que se está viendo. */
   overflow-anchor: none;
 }
 
@@ -1143,21 +1142,20 @@ input[type="range"] {
 }
 
 .tools-head {
-  display: flow-root;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.5rem;
   min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
 }
 
-.tools-head > legend {
-  float: left;
-  padding: 0;
-  line-height: 1.75rem;
-}
-
+/* El control ocupa lo que queda de la fila; si no entra al lado del título, la fila entera. */
 .tools-head > .segmented {
-  float: right;
+  flex: 1 1 8rem;
+}
+
+.tools-head.wide > .segmented {
+  flex-basis: 11rem;
 }
 
 .tools-note {
