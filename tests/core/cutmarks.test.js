@@ -358,9 +358,19 @@ describe('propiedades (fuzz)', () => {
             ? s.y1 === s.y2 && Math.abs(s.y1 - c) <= TOL && s.x1 <= a + TOL && s.x2 >= b - TOL
             : s.x1 === s.x2 && Math.abs(s.x1 - c) <= TOL && s.y1 <= a + TOL && s.y2 >= b - TOL
         );
-      for (const q of pieces) {
+      // Every edge of a piece that no piece above it overlaps (an overlapped one is checked apart).
+      const overlapped = (q, i) => pieces.slice(i + 1).some((o) => q.x < o.x + o.w - TOL && o.x < q.x + q.w - TOL && q.y < o.y + o.h - TOL && o.y < q.y + q.h - TOL);
+      pieces.forEach((q, i) => {
+        if (overlapped(q, i)) return;
         assert.ok(covered('h', q.y, q.x, q.x + q.w) && covered('h', q.y + q.h, q.x, q.x + q.w), `semilla ${seed}`);
         assert.ok(covered('v', q.x, q.y, q.y + q.h) && covered('v', q.x + q.w, q.y, q.y + q.h), `semilla ${seed}`);
+      });
+      // Whatever runs inside a piece is the edge of a piece stacked above it.
+      const onEdge = (s, o) => (s.y1 === s.y2 ? [o.y, o.y + o.h].some((y) => Math.abs(y - s.y1) <= TOL) : [o.x, o.x + o.w].some((x) => Math.abs(x - s.x1) <= TOL));
+      for (const s of segments) {
+        pieces.forEach((q, i) => {
+          if (entersPiece(s, q)) assert.ok(pieces.slice(i + 1).some((o) => onEdge(s, o)), `semilla ${seed}: an outline under a piece above it ${JSON.stringify(s)}`);
+        });
       }
       // Ningún segmento sale de la unión de los bordes: el largo total no supera la suma de perímetros.
       const length = segments.reduce((s, g) => s + (g.x2 - g.x1) + (g.y2 - g.y1), 0);
@@ -376,5 +386,38 @@ describe('propiedades (fuzz)', () => {
     const ms = performance.now() - t0;
     await t.annotate(`cutLines 196 piezas: ${ms.toFixed(0)} ms, ${segments.length} segmentos`);
     assert.ok(ms < 300, `tardó ${ms.toFixed(0)} ms`);
+  });
+});
+
+describe('outline with overlapping pieces and the stroke style', () => {
+  test('an outline doesn’t run over the image of a piece stacked above it', () => {
+    const lower = { x: 0, y: 0, w: 40, h: 40 };
+    const upper = { x: 20, y: 20, w: 40, h: 40 };
+    const lines = cutLines([lower, upper], { mode: 'outline' });
+    // The lower piece's right and bottom edges stop where the upper one starts; the upper one is whole.
+    assert.ok(lines.some((s) => s.x1 === 40 && s.x2 === 40 && s.y1 === 0 && s.y2 === 20), JSON.stringify(lines));
+    assert.ok(!lines.some((s) => s.x1 === 40 && s.y2 > 20 + TOL && s.y1 < 40 - TOL), 'nothing inside the upper piece');
+    assert.ok(lines.some((s) => s.y1 === 20 && s.y2 === 20 && s.x1 <= 20 && s.x2 >= 60), 'the upper piece’s top edge');
+    // The other order: the upper (now lower) piece’s edges under the first are left out.
+    const flipped = cutLines([upper, lower], { mode: 'outline' });
+    assert.ok(!flipped.some((s) => s.y1 === 20 && s.y2 === 20 && s.x1 < 40 - TOL && s.x2 > 20 + TOL), JSON.stringify(flipped));
+  });
+
+  test('touching pieces share one line', () => {
+    const lines = cutLines([{ x: 0, y: 0, w: 20, h: 10 }, { x: 20, y: 0, w: 20, h: 10 }], { mode: 'outline' });
+    assert.deepEqual(lines.filter((s) => s.x1 === 20 && s.x2 === 20), [V(20, 0, 10)]);
+    assert.deepEqual(lines.filter((s) => s.y1 === 0 && s.y2 === 0), [H(0, 0, 40)]);
+  });
+
+  test('cutStyle: weights in points, colors and the dotted pattern', async () => {
+    const { cutStyle, CUT_WEIGHTS, dotPattern } = await import('../../src/core/cutmarks.js');
+    assert.deepEqual(CUT_WEIGHTS, { thin: 0.25, medium: 0.5, thick: 1 });
+    assert.deepEqual(cutStyle({}), { width: 0.25, hex: '#000000', rgb: [0, 0, 0], dash: null });
+    const style = cutStyle({ weight: 'thick', color: '#FF8000', dash: 'dotted' });
+    assert.equal(style.width, 1);
+    assert.equal(style.hex, '#ff8000');
+    assert.deepEqual(style.rgb, [1, 128 / 255, 0]);
+    assert.deepEqual(style.dash, dotPattern(1));
+    assert.deepEqual(cutStyle({ color: 'nope', weight: 'x' }), { width: 0.25, hex: '#000000', rgb: [0, 0, 0], dash: null });
   });
 });

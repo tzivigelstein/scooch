@@ -8,6 +8,30 @@ const TOL = 1e-6;
 /** Modos de `cutLines`. */
 export const CUT_MODES = Object.freeze(['none', 'corners', 'outline']);
 
+// ---------- Style ----------
+
+/** Stroke weights, in PDF points. */
+export const CUT_WEIGHTS = Object.freeze({ thin: 0.25, medium: 0.5, thick: 1 });
+/** Preset colors (#rrggbb); any other #rrggbb is a custom color. */
+export const CUT_COLORS = Object.freeze({ black: '#000000', gray: '#808080' });
+export const CUT_DASHES = Object.freeze(['solid', 'dotted']);
+
+export const isHexColor = (v) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+
+/** A dotted line's dash pattern (on, off) in points for a stroke of `width` pt: short dashes that stay visible. */
+export const dotPattern = (width) => [Math.max(0.5, width * 1.5), Math.max(1.5, width * 3)];
+
+/**
+ * How the lines are drawn, the same on screen and in the PDF: `width` and
+ * `dash` (null when solid) in points, `color` as #rrggbb and as rgb 0–1.
+ */
+export function cutStyle({ weight = 'thin', color = CUT_COLORS.black, dash = 'solid' } = {}) {
+  const width = CUT_WEIGHTS[weight] ?? CUT_WEIGHTS.thin;
+  const hex = isHexColor(color) ? color.toLowerCase() : CUT_COLORS.black;
+  const rgb = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  return { width, hex, rgb, dash: dash === 'dotted' ? dotPattern(width) : null };
+}
+
 // Internamente cada segmento es {dir, c, a, b}: horizontal ('h') sobre y = c
 // de x = a a x = b, o vertical ('v') sobre x = c de y = a a y = b; a < b.
 
@@ -48,6 +72,26 @@ function outline(q) {
     { dir: 'v', c: q.x, a: q.y, b: q.y + q.h },
     { dir: 'v', c: q.x + q.w, a: q.y, b: q.y + q.h },
   ];
+}
+
+// Removes what of an outline segment runs strictly inside one of `above`
+// (pieces stacked over it): it would print over their image. A segment on an
+// edge of theirs stays (it is a shared cut).
+function notUnder(seg, above) {
+  let parts = [[seg.a, seg.b]];
+  for (const q of above) {
+    const [from, to, lo, hi] = span(q, seg.dir);
+    if (seg.c <= lo + TOL || seg.c >= hi - TOL) continue;
+    parts = parts.flatMap(([a, b]) => {
+      if (to <= a + TOL || from >= b - TOL) return [[a, b]];
+      const kept = [];
+      if (from > a) kept.push([a, from]);
+      if (to < b) kept.push([to, b]);
+      return kept;
+    });
+    if (!parts.length) break;
+  }
+  return parts.filter(([a, b]) => b - a > TOL).map(([a, b]) => ({ dir: seg.dir, c: seg.c, a, b }));
 }
 
 // Saca del segmento lo que cae sobre alguna pieza, borde incluido: una marca
@@ -122,8 +166,9 @@ const finite = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? v
  *   comparten marca, y entre piezas más cerca que `offset + length` la marca
  *   cruza el espacio entre ellas de lado a lado.
  * - 'outline': el contorno de cada pieza; los bordes compartidos (o que se
- *   continúan en la misma línea) quedan como un solo segmento. Las piezas
- *   superpuestas no se recortan entre sí.
+ *   continúan en la misma línea) quedan como un solo segmento. With
+ *   overlapping pieces (`rects` in stacking order, the last on top), what of an
+ *   outline runs inside a piece above it is left out.
  * - 'none': [].
  *
  * Con `bounds` ({x, y, w, h}, la hoja) todo se recorta a esa área, y lo que
@@ -138,7 +183,7 @@ export function cutLines(rects, { mode = 'corners', length = 4, offset = 1.5, bo
     (q) => [q.x, q.y, q.w, q.h].every((v) => typeof v === 'number' && Number.isFinite(v)) && q.w > 0 && q.h > 0
   );
   let segments;
-  if (mode === 'outline') segments = pieces.flatMap(outline);
+  if (mode === 'outline') segments = pieces.flatMap((q, i) => outline(q).flatMap((s) => notUnder(s, pieces.slice(i + 1))));
   else {
     const len = finite(length, 0);
     if (len <= 0) return [];
