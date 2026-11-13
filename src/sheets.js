@@ -72,11 +72,22 @@ export function samePlan(plan, boxes, sheetIds, round = (v) => v) {
   });
 }
 
+// Las posiciones se guardan redondeadas a 0,01 mm, así que un hueco exacto
+// (lo que dejó una pieza igual) puede quedar unas milésimas más angosto. Los
+// obstáculos se achican esto (la mitad de cada lado) para que la pieza vuelva
+// a entrar donde estaba; es menos que cualquier tolerancia visible.
+const ROUND_SLACK = 0.012;
+
+const asObstacle = (b, margin) => ({
+  x: b.x - margin + ROUND_SLACK / 2,
+  y: b.y - margin + ROUND_SLACK / 2,
+  w: Math.max(0, b.w - ROUND_SLACK),
+  h: Math.max(0, b.h - ROUND_SLACK),
+});
+
 /** Obstáculos de cada hoja (lo ocupado), en coordenadas del área útil. */
 export function obstaclesBySheet(boxes, sheetIds, margin = 0) {
-  return sheetIds.map((id) =>
-    boxes.filter((b) => b.sheet === id).map((b) => ({ x: b.x - margin, y: b.y - margin, w: b.w, h: b.h }))
-  );
+  return sheetIds.map((id) => boxes.filter((b) => b.sheet === id).map((b) => asObstacle(b, margin)));
 }
 
 /**
@@ -121,7 +132,7 @@ export function spotOnSheet(rect, boxes, { area, margin = 0, gap = 0 }) {
   const result = packInto([rect], area.w, area.h, {
     gap,
     rotate: false,
-    sheets: [boxes.map((b) => ({ x: b.x - margin, y: b.y - margin, w: b.w, h: b.h }))],
+    sheets: [boxes.map((b) => asObstacle(b, margin))],
   });
   const p = result.placements[0];
   return p && p.sheet === 0 ? { x: margin + p.x, y: margin + p.y } : null;

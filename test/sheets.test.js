@@ -125,15 +125,31 @@ describe('placeIntoSheets', () => {
     assert.deepEqual(res.placements, []);
   });
 
-  test('obstaclesBySheet, en coordenadas del área útil', () => {
-    assert.deepEqual(obstaclesBySheet([{ id: 1, sheet: 2, x: 15, y: 20, w: 5, h: 6 }], [1, 2], 10), [[], [{ x: 5, y: 10, w: 5, h: 6 }]]);
+  test('obstaclesBySheet, en coordenadas del área útil (apenas achicados por el redondeo)', () => {
+    const [[], [o]] = obstaclesBySheet([{ id: 1, sheet: 2, x: 15, y: 20, w: 5, h: 6 }], [1, 2], 10);
+    assert.ok(Math.abs(o.x - 5) < 0.01 && Math.abs(o.y - 10) < 0.01 && Math.abs(o.w - 5) < 0.02 && Math.abs(o.h - 6) < 0.02, JSON.stringify(o));
   });
 });
 
 describe('spotOnSheet', () => {
+  test('una pieza vuelve a entrar en el hueco exacto que dejó, aunque las posiciones estén redondeadas', () => {
+    // 3 × 3 de 55,9647 × 80,0098 con separación 5, posiciones redondeadas a 0,01 (como en la app).
+    const w = 55.9647;
+    const h = 80.0098;
+    const round = (v) => Math.round(v * 100) / 100;
+    const grid = [];
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) grid.push({ id: `${r}${c}`, sheet: 1, x: round(10 + c * (w + 5)), y: round(10 + r * (h + 5)), w, h });
+    for (const hole of ['00', '11', '22']) {
+      const spot = spotOnSheet({ id: 'n', w, h }, grid.filter((b) => b.id !== hole), OPTS);
+      const original = grid.find((b) => b.id === hole);
+      assert.ok(spot && Math.abs(spot.x - original.x) < 0.02 && Math.abs(spot.y - original.y) < 0.02, `${hole}: ${JSON.stringify(spot)}`);
+    }
+  });
+
+
   test('lugar libre sin girar, o null si no entra', () => {
     const spot = spotOnSheet({ id: 'n', w: 80, h: 60 }, [{ id: 'a', sheet: 1, x: 10, y: 10, w: 190, h: 100 }], OPTS);
-    assert.ok(spot && spot.y >= 115 - 1e-6, JSON.stringify(spot));
+    assert.ok(spot && spot.y >= 115 - 0.02, JSON.stringify(spot));
     assert.equal(spotOnSheet({ id: 'n', w: 150, h: 250 }, [{ id: 'a', sheet: 1, x: 10, y: 10, w: 190, h: 100 }], OPTS), null);
   });
 });
