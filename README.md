@@ -17,28 +17,30 @@ yarn install      # dependencies
 yarn dev          # development server with hot reload
 yarn build        # production build in dist/
 yarn preview      # serves dist/ to try the build
-yarn typecheck    # TypeScript, no emit
-yarn test         # unit tests (Vitest)
-yarn e2e          # browser suites (Playwright), see below
+yarn typecheck    # TypeScript (src, tests and e2e), no emit
+yarn test         # every Vitest project: unit, properties, state, ui, performance
+yarn e2e          # browser tests (Playwright), see below
+yarn verify       # typecheck + test + build + e2e + the ledger check
 ```
 
-### Browser suites
+### Tests
 
-`yarn e2e` builds the app, serves it on 127.0.0.1:4317 and runs every suite in
-`e2e/suites/` (logs and screenshots go to `e2e/out/`, which is ignored):
+[docs/testing.md](docs/testing.md) explains the layers (what goes in Vitest
+and what only a real browser can check), how to run part of them and how to
+add a test. `yarn e2e` builds the app into `e2e/out/build`, serves it with
+`vite preview` on 127.0.0.1:4319 (`E2E_PORT`) and runs every spec in
+`e2e/specs/`; everything a run writes goes under `e2e/out/` (`E2E_OUT`),
+which is ignored. While working on something, run only what it touches:
 
 ```sh
-yarn e2e --only paper-sizes,zoom-and-pan   # some suites (names without .cjs)
-yarn e2e --no-build                 # reuse the current dist/
-yarn e2e --dev --strict-console     # against `vite` dev; console warnings fail
-yarn e2e --jobs 3                   # in parallel (timings get noisier)
-yarn e2e --port 4400                # another port
-yarn e2e --parity URL               # also compare the exported PDF with the build at URL
+node_modules/.bin/vitest run tests/state/sheets.test.ts
+node_modules/.bin/playwright test e2e/specs/paper.spec.ts -g 'landscape'
 ```
 
-They include axe checks in light and dark mode, keyboard-only flows, the
-exported PDF's contents, the projects' storage and performance budgets for
-dragging, scrolling and zooming with 150 pieces.
+The browser tests include axe checks of every state in light and dark mode,
+keyboard-only flows, the exported PDF's contents, the projects' storage and
+performance budgets for dragging, scrolling and zooming with 150 pieces.
+There is no quick mode and no retries.
 
 ## Projects and privacy
 
@@ -63,12 +65,12 @@ takes it back, reloading it). Changes are never overwritten silently.
 
 ## Large screens
 
-Up to 1600 px wide the interface keeps the same size. From there it grows
-little by little up to 1.25 × towards 2800 px: everything is in rem, and the
-root font size (`html` in `src/styles/base.css`) starts from the browser's
-100 %, so it respects zoom and the chosen font size. The panels (`--left-w`
-and `--right-w`, in `src/styles/tokens.css`) also grow with the screen up to a
-cap. The sheets have their own zoom, which doesn't change with this (see
+The interface keeps its size at every width: everything is in rem, and the
+root font size (`html` in `src/styles/base.css`) is the browser's 100 %, so
+it follows the browser's zoom and the chosen font size, never the screen.
+Only the side panels get wider on wide screens, up to a cap (in
+`src/styles/tokens.css`: `--left-w: clamp(14.25rem, 15vw, 20rem)` and
+`--right-w: clamp(18rem, 19vw, 24rem)`). The sheets have their own zoom (see
 below).
 
 ## Zoom
@@ -142,8 +144,9 @@ src/
   hooks/                keyboard shortcuts, pointer gestures, focus rescue
   services/             files, PDF export, printing, projects and storage
   styles/               stylesheet by area (index.css sets the order)
-tests/                  unit tests (Vitest; jsdom for state, hooks and components)
-e2e/                    browser suites (Playwright), fixtures and runner
+tests/                  Vitest tests by layer (core, properties, state, services, components, hooks, performance)
+e2e/                    browser tests (Playwright): specs/, their support/ helpers, fixtures and the ledger
+docs/testing.md         test layers, how to run them and how to add a test
 docs/copy.md            copy guide: rules, glossary and examples
 vite.config.ts          React, the static texts of index.html and chunk names
 ```

@@ -20,18 +20,19 @@ yarn playwright install chromium   # once, for the browser suites
 | Command | What it does |
 | --- | --- |
 | `yarn dev` | Development server with hot reload |
-| `yarn test` | Unit tests (Vitest) |
-| `yarn e2e` | Builds the app, serves it and runs the browser suites (Playwright) |
-| `yarn typecheck` | TypeScript, no emit |
+| `yarn test` | Every Vitest project: unit, properties, state, ui and performance |
+| `yarn e2e` | Builds the app into `e2e/out/build`, serves it on port 4319 and runs the browser tests (Playwright) |
+| `yarn verify` | `typecheck`, `test`, `build`, `e2e` and the ledger check, in that order |
+| `yarn typecheck` | TypeScript (src, tests and e2e), no emit |
 | `yarn build` | Production build in `dist/` |
 | `yarn preview` | Serves `dist/` to try the build |
 
-`yarn e2e` takes options to run some suites, reuse the build or run against the
-dev server; they are listed in the [README](README.md) and at the top of
-`e2e/run.mjs`.
+[docs/testing.md](docs/testing.md) explains which layer a test belongs to,
+how to run only the tests a change touches (`node_modules/.bin/vitest run
+<file>`, `node_modules/.bin/playwright test <spec>`) and how to add one. Two
+`yarn e2e` runs at the same time need different `E2E_PORT` and `E2E_OUT`.
 
-Before opening a pull request, run `yarn typecheck` and `yarn test`. If you
-changed anything the person sees or does, also run `yarn e2e`.
+Before opening a pull request, run `yarn verify`.
 
 ## Project structure
 
@@ -45,10 +46,11 @@ src/
   hooks/          keyboard shortcuts, pointer gestures, focus rescue
   services/       files, PDF export, printing, projects and storage
   styles/         stylesheets by area
-tests/            unit tests (Vitest; jsdom for state, hooks and components)
+tests/            Vitest tests by layer (see docs/testing.md)
   fixtures/documents/   one stored project document per format version
-e2e/              browser suites (Playwright), their fixtures and runner
+e2e/              browser tests (Playwright): specs/, support/, fixtures/ and the ledger
 docs/copy.md      copy guide for the interface texts (in Spanish)
+docs/testing.md   test layers, running them and adding one
 ```
 
 The [README](README.md) explains how the parts fit together.
@@ -129,8 +131,9 @@ Every change keeps this bar:
 - Accessible names start with the visible text (WCAG 2.5.3), and results of
   actions are announced through the live regions in
   `src/components/feedback/`.
-- axe reports no violations, in light and dark mode. The browser suites run
-  axe on the main states; add the new state to a suite when you add one.
+- axe reports no violations, in light and dark mode. `e2e/specs/accessibility.spec.ts`
+  scans one catalogue of states in both themes; add the new state to it when
+  you add one.
 
 ### Commits
 
