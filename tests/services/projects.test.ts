@@ -4,8 +4,9 @@
 // writes, and what opening and deleting do to the undo history. The real
 // IndexedDB, reloads and other tabs are in e2e/specs/projects.spec.ts.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { createProject, memoryStorage } from '../../src/core/projectstore.js';
+import { memoryStorage } from '../../src/core/projectstore.js';
 import type { ProjectDoc, ProjectStorage } from '../../src/core/types.ts';
+import { storedProject } from '../support/projects.ts';
 
 // The storage the service opens instead of IndexedDB (set by each test).
 const opened = vi.hoisted(() => ({ storage: null as ProjectStorage | null }));
@@ -48,29 +49,6 @@ async function start(storage: ProjectStorage = memoryStorage()) {
   /** The open project as stored. */
   const stored = async () => (await storage.get(projects.projectSession().record!.id))!;
   return { projects, storage, status, x, addPiece, stored, nudge, undoLast, historyDepth, getDocument, setDocument, notices };
-}
-
-/** A Blob that can be read back (jsdom's has no arrayBuffer()). */
-const blob = (text: string) => Object.assign(new Blob([text]), { arrayBuffer: async () => new TextEncoder().encode(text).buffer });
-
-/** A project in storage with one image piece at `x`, and its files. */
-async function storedProject(storage: ProjectStorage, id: string, name: string, x: number, now: number) {
-  const doc: ProjectDoc = {
-    version: 5,
-    paper: 'A4',
-    landscape: false,
-    margin: 10,
-    gap: 5,
-    rotate: true,
-    allowOverlap: false,
-    cuts: { mode: 'none', length: 4, offset: 1, weight: 'thin', color: '#000000', dash: 'solid', margin: 0 },
-    sheets: [{ id: 1 }],
-    items: [{ id: 1, asset: 'a1', sheet: 1, x, y: 20, scale: 100, r: 0, crop: null }],
-    assets: { a1: { kind: 'image', name: `${name}.png`, src: 1, px: [472, 354], format: 'png', dpi: 300, w: 39.96, h: 29.97, derived: false } },
-  };
-  const record = await createProject(storage, { id, name, now, doc });
-  await storage.write(record, { put: new Map([['src:1', blob('png')], ['preview:a1', blob('preview')]]) });
-  return record;
 }
 
 beforeEach(() => {

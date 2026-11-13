@@ -57,6 +57,8 @@ export interface ProjectHooks {
   listChanged?: () => void;
   /** A piece's loaded <img>, for the thumbnail. */
   thumbImage?: (item: Piece) => HTMLImageElement | null;
+  /** Another document replaced the open one (the view starts over at its first sheet). */
+  documentReplaced?: () => void;
 }
 
 /** The open project. */
@@ -134,6 +136,7 @@ function replaceDocument(doc: ProjectDoc, loaded: ReadonlyMap<string, AppAsset> 
   setView({ pinned: false, sheet: doc.sheets[0].id, flash: null });
   resetHistory();
   resetIds(ids);
+  hooks.documentReplaced?.();
 }
 
 // ---------- Start ----------

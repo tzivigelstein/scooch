@@ -426,6 +426,14 @@ export function revealPieces(ids: readonly number[], primary: number) {
   revealRect(items[0].sheet, { x, y, w: Math.max(...rects.map((r) => r.x + r.w)) - x, h: Math.max(...rects.map((r) => r.y + r.h)) - y });
 }
 
+/** Back to the top of the first sheet (another project opened: its sheets are another column). */
+export function scrollToStart() {
+  const stageEl = stage();
+  if (!stageEl) return;
+  stageEl.scrollTop = 0;
+  stageEl.scrollLeft = 0;
+}
+
 /** Shows the sheet (with its heading). */
 export function revealSheet(id: number) {
   const page = pageNode(id);

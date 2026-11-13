@@ -10,6 +10,7 @@ import { initProjects, newProject, openProject, projectSession, remove, retry, s
 import { setDocument } from '../document.ts';
 import { setView } from '../view.ts';
 import { setBusy } from './files.ts';
+import { scrollToStart } from '../../components/canvas/viewport.ts';
 import { focusSheet, pieceNode } from './focus.ts';
 import { forgetSpill } from './layout.ts';
 import { say } from './notify.ts';
@@ -132,6 +133,7 @@ export async function startProjects() {
     notify: projectNotice,
     listChanged: projectListChanged,
     thumbImage: (item) => pieceNode(item.id)?.querySelector('img') ?? null,
+    documentReplaced: scrollToStart,
   });
   clearTimeout(slow);
   setDocument({ busy: false });
