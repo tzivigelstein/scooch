@@ -24,7 +24,7 @@ import { Icon } from '../ui/Icon.tsx';
 import { CropContent } from './cropMode.ts';
 import { CutLayer } from './CutLayer.tsx';
 import { Piece } from './Piece.tsx';
-import { fitZoom, sheetsAreWide } from './viewport.ts';
+import { fitZoom, sheetsAreWide, syncStageBars } from './viewport.ts';
 import { SelectionOverlay } from './SelectionOverlay.tsx';
 
 /**
@@ -195,6 +195,8 @@ export function Stage() {
   }, [updateZoom]);
 
   useCanvasGestures(stage);
+  // The scrollbars come and go with the zoom and the window: what floats over the stage avoids them.
+  useLayoutEffect(syncStageBars);
 
   // Focusing a piece selects it (unless the selection is pinned); focusing
   // something on a sheet makes it the current one.

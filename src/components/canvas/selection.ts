@@ -14,7 +14,7 @@ import { sizeText } from '../../services/measure.ts';
 import type { Piece } from '../../state/document.ts';
 import { getDocument } from '../../state/document.ts';
 import { dims, itemsOn, sheetSize } from '../../state/selectors.ts';
-import { layerStyle, measureBoxes, mmToPx, pageNode, sheetBoxes, toClient } from './viewport.ts';
+import { layerStyle, measureBoxes, mmToPx, pageNode, sheetBoxes, stageBars, toClient } from './viewport.ts';
 
 const rectOf = (item: Piece): Rect => {
   const [w, h] = dims(item);
@@ -144,7 +144,9 @@ export function placeBar(bar: HTMLElement, target: Pick<SelectionTarget, 'sheet'
   // The zoom control floats in a corner of the canvas: the bar never covers it.
   const zoomControl = document.querySelector('.zoom-control')?.getBoundingClientRect();
   if (zoomControl?.width) panels.push({ x: zoomControl.left - canvas.left, y: zoomControl.top - canvas.top, w: zoomControl.width, h: zoomControl.height });
-  const area = { x: minX, y: edge, w: canvas.width - edge - minX, h: canvas.height - 2 * edge };
+  // Off the stage's scrollbars too.
+  const bars = stageBars();
+  const area = { x: minX, y: edge, w: canvas.width - edge - minX - bars.right, h: canvas.height - 2 * edge - bars.bottom };
   const inX = (x: number) => clamp(x, area.x, Math.max(area.x, area.x + area.w - w));
   const above = piece.y - h - gap;
   const below = piece.y + piece.h + gap + 6; // room for the handle

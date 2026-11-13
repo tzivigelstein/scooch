@@ -102,8 +102,10 @@
     margin-left: 0.125rem;
   }
 
+  /* Room at the top for the zoom control: the first sheet's heading (its title
+     and remove button) never starts under it. */
   .stage {
-    padding: 1rem 1rem 8.25rem;
+    padding: 4.25rem 1rem 8.25rem;
   }
 
   .paper-label {
@@ -250,6 +252,10 @@
     bottom: auto;
   }
 
+  .canvas {
+    --zoom-room: 0.75rem;
+  }
+
   .zoom-control .icon-btn,
   .zoom-level {
     height: 2.5rem;
@@ -262,8 +268,8 @@
   .dock {
     position: absolute;
     left: 0.75rem;
-    right: 0.75rem;
-    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    right: calc(0.75rem + var(--stage-bar-right, 0px));
+    bottom: calc(0.75rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
     z-index: 16;
     display: flex;
     justify-content: space-between;
@@ -276,22 +282,21 @@
 
   /* The piece toolbar, anchored at the bottom: right above «Piezas» and «Propiedades». */
   .piecebar {
-    left: 50%;
+    left: calc((100% - var(--stage-bar-right, 0px)) / 2);
     top: auto;
-    bottom: calc(4.125rem + env(safe-area-inset-bottom));
+    bottom: calc(4.125rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
     transform: translateX(-50%);
     transition: opacity var(--fast) var(--ease);
   }
 
   .pill {
-    bottom: calc(4.25rem + env(safe-area-inset-bottom));
-    max-width: calc(100% - 1.5rem);
+    bottom: calc(4.25rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
     font-size: 0.8125rem;
   }
 
   /* With the piece toolbar visible, the notice goes above it. */
   .canvas:has(.piecebar:not([hidden])) .pill {
-    bottom: calc(7.875rem + env(safe-area-inset-bottom));
+    bottom: calc(7.875rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
   }
 
   .dialog {

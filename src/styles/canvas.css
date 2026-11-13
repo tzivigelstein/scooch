@@ -1,12 +1,20 @@
 /* ---------- Canvas and sheet ---------- */
 
 .canvas {
+  /* What the zoom control takes at the bottom right, kept clear by the notice. */
+  --zoom-room: 9.5rem;
   min-width: 0;
   min-height: 0;
   position: relative;
   overflow: hidden;
   background: var(--canvas);
   user-select: none;
+}
+
+@media (pointer: coarse) {
+  .canvas {
+    --zoom-room: 10.5rem;
+  }
 }
 
 .stage {
@@ -751,10 +759,11 @@
   cursor: grabbing;
 }
 
+/* Floating over the stage, off its scrollbars (their size: viewport.syncStageBars). */
 .zoom-control {
   position: absolute;
-  right: 0.75rem;
-  bottom: 0.75rem;
+  right: calc(0.75rem + var(--stage-bar-right, 0px));
+  bottom: calc(0.75rem + var(--stage-bar-bottom, 0px));
   z-index: 18;
   display: flex;
   align-items: center;

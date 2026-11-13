@@ -53,6 +53,25 @@ export const sheetBoxes = () => boxes;
 /** px per mm of the sheets on screen. */
 export const viewZoom = () => getView().zoom;
 
+/** The stage's scrollbars (px; 0 when they overlay the content): {right, bottom}. */
+export function stageBars() {
+  const stageEl = stage();
+  return stageEl ? { right: stageEl.offsetWidth - stageEl.clientWidth, bottom: stageEl.offsetHeight - stageEl.clientHeight } : { right: 0, bottom: 0 };
+}
+
+/**
+ * Tells the canvas how wide the stage's scrollbars are (--stage-bar-right,
+ * --stage-bar-bottom), so what floats over the stage stays off them.
+ */
+export function syncStageBars() {
+  const canvas = stage()?.parentElement;
+  if (!canvas) return;
+  const { right, bottom } = stageBars();
+  for (const [name, value] of [['--stage-bar-right', right], ['--stage-bar-bottom', bottom]] as const) {
+    if (canvas.style.getPropertyValue(name) !== `${value}px`) canvas.style.setProperty(name, `${value}px`);
+  }
+}
+
 // ---------- Zoom ----------
 
 const clampZoom = (next: number, current = viewZoom()) => fromPercent(clampPercent(toPercent(next), toPercent(current)));
