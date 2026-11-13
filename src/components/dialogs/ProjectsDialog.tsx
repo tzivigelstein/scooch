@@ -59,44 +59,52 @@ function Card({ record, current, thumb, renaming, onRename }: { record: ListedPr
     />
   );
 
+  const thumbnail = (
+    <span className="project-thumb">
+      {thumb ? <img alt="" src={thumb} /> : <span className="blank-page" style={{ aspectRatio: size ? `${size.w} / ${size.h}` : '210 / 297' }} />}
+    </span>
+  );
+
   return (
     <li className={`project-card${current ? ' is-current' : ''}${record.damaged ? ' is-damaged' : ''}`} data-id={record.id}>
-      {renaming && (
-        <input
-          ref={input}
-          type="text"
-          className="project-title-input"
-          maxLength={80}
-          aria-label={t('projects.nameField')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              onRename(true, e.currentTarget.value);
-            } else if (e.key === 'Escape') {
-              // Esc cancels the rename, it doesn't close the dialog.
-              e.preventDefault();
-              e.stopPropagation();
-              onRename(false, e.currentTarget.value);
-            }
-          }}
-          onBlur={(e) => onRename(true, e.currentTarget.value)}
-        />
+      {renaming ? (
+        // Renaming edits the title in place: the card keeps its size and its thumbnail.
+        <div className="project-open is-renaming">
+          {thumbnail}
+          <input
+            ref={input}
+            type="text"
+            className="project-title-input"
+            maxLength={80}
+            aria-label={t('projects.nameField')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                onRename(true, e.currentTarget.value);
+              } else if (e.key === 'Escape') {
+                // Esc cancels the rename, it doesn't close the dialog.
+                e.preventDefault();
+                e.stopPropagation();
+                onRename(false, e.currentTarget.value);
+              }
+            }}
+            onBlur={(e) => onRename(true, e.currentTarget.value)}
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="project-open"
+          data-act="open"
+          disabled={record.damaged}
+          aria-label={t(current ? 'projects.openCurrent' : 'projects.open', { name: record.name })}
+          aria-describedby={metaId}
+          data-tip={record.name}
+        >
+          {thumbnail}
+          <span className="project-title">{record.name}</span>
+        </button>
       )}
-      <button
-        type="button"
-        className="project-open"
-        data-act="open"
-        disabled={record.damaged}
-        aria-label={t(current ? 'projects.openCurrent' : 'projects.open', { name: record.name })}
-        aria-describedby={metaId}
-        data-tip={record.name}
-        hidden={renaming}
-      >
-        <span className="project-thumb">
-          {thumb ? <img alt="" src={thumb} /> : <span className="blank-page" style={{ aspectRatio: size ? `${size.w} / ${size.h}` : '210 / 297' }} />}
-        </span>
-        <span className="project-title">{record.name}</span>
-      </button>
       <p className="project-meta" id={metaId}>
         {record.damaged
           ? t('projects.damagedMeta')

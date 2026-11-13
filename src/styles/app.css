@@ -2438,10 +2438,16 @@ input[role="switch"]:checked::before {
   font-weight: 650;
 }
 
+/* The title's line box exactly, so renaming doesn't move anything. */
 input.project-title-input {
-  height: 1.875rem;
+  width: calc(100% + 0.5rem);
+  height: 1.45em;
+  margin: 0 -0.25rem;
+  padding: 0 0.1875rem;
+  border-radius: 0.3125rem;
   font-size: 0.84375rem;
   font-weight: 650;
+  line-height: inherit;
 }
 
 .project-meta {
