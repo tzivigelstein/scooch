@@ -90,7 +90,10 @@ const STORED = async () => {
   await p.evaluate(PATCH, `(doc) => ({ ...doc, gap: 'x', cuts: { ...doc.cuts, color: 'red', margin: 99, dash: 'wavy' }, items: doc.items.map((item) => ({ ...item, crop: 'all' })) })`);
   await reopen();
   check('unreadable optional settings take their defaults: the project opens', (await p.locator('#sheets .piece').count()) === 2);
-  await edit();
+  // (A 20 mm cut margin may leave no room to nudge: any change saves.)
+  await p.click('#add-sheet');
+  await p.waitForTimeout(1300);
+  await saved();
   doc = await p.evaluate(STORED);
   check('…saved repaired (gap 5, black, solid, margin 20, no crop)', doc.gap === 5 && doc.cuts.color === '#000000' && doc.cuts.dash === 'solid' && doc.cuts.margin === 20 && doc.items.every((item) => item.crop === null), JSON.stringify({ gap: doc.gap, cuts: doc.cuts }));
 
