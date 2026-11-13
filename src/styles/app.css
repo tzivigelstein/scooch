@@ -141,11 +141,6 @@ html {
   display: contents;
 }
 
-.noscript {
-  margin: auto;
-  padding: 1rem;
-}
-
 body {
   height: 100dvh;
   display: flex;

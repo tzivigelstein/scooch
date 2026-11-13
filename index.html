@@ -12,10 +12,100 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='7' y='2.5' width='14' height='17' rx='2.5' fill='%230066ff' opacity='.3'/><rect x='3' y='5' width='14' height='17' rx='2.5' fill='%230066ff'/><rect x='6' y='8.5' width='4' height='5' rx='1' fill='white'/><rect x='11' y='8.5' width='3' height='3' rx='.8' fill='white'/><rect x='11' y='12.5' width='3' height='6' rx='.8' fill='white'/><rect x='6' y='14.5' width='4' height='4' rx='1' fill='white'/></svg>" />
     <!-- Inter's Latin subset: the only one the interface needs (the rest load by text). -->
     <link rel="preload" href="/node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <style>
+      /* Critical styles, inline: nothing shows unstyled before the stylesheet
+         arrives (in dev, Vite injects it from JS). Colors match app.css's tokens. */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        background: #ffffff;
+        color: #0e1014;
+        font: 0.875rem/1.45 "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      .sr-only {
+        position: absolute !important;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+      }
+      /* Until React mounts: nothing for fast loads, a calm brand mark for slow ones. */
+      .boot {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 0.625rem;
+        color: #0066ff;
+        opacity: 0;
+        animation: boot-in 240ms ease-out 200ms forwards;
+      }
+      .boot-name {
+        margin: 0;
+        color: #0e1014;
+        font-size: 1.25rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+      .noscript {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        margin: 0;
+        padding: 1rem;
+        text-align: center;
+      }
+      @keyframes boot-in {
+        to {
+          opacity: 1;
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #15171c;
+          color: #eef0f3;
+        }
+        .boot {
+          color: #5c9dff;
+        }
+        .boot-name {
+          color: #eef0f3;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .boot {
+          animation-duration: 1ms;
+        }
+      }
+    </style>
+    <noscript><style>.boot { display: none; }</style></noscript>
     <script type="module" src="/src/main.tsx"></script>
   </head>
   <body class="is-loading">
-    <div id="root"><h1 class="sr-only">{{app.heading}}</h1></div>
+    <div id="root">
+      <div class="boot" aria-busy="true">
+        <h1 class="sr-only">{{app.heading}}</h1>
+        <svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true" focusable="false">
+          <rect x="7" y="2.5" width="14" height="17" rx="2.5" fill="currentColor" opacity=".28" />
+          <rect x="3" y="5" width="14" height="17" rx="2.5" fill="currentColor" />
+          <rect x="6" y="8.5" width="4" height="5" rx="1" fill="#fff" />
+          <rect x="11" y="8.5" width="3" height="3" rx=".8" fill="#fff" />
+          <rect x="11" y="12.5" width="3" height="6" rx=".8" fill="#fff" />
+          <rect x="6" y="14.5" width="4" height="4" rx="1" fill="#fff" />
+        </svg>
+        <p class="boot-name" aria-hidden="true">{{app.name}}</p>
+      </div>
+    </div>
     <noscript><p class="noscript">{{app.noscript}}</p></noscript>
   </body>
 </html>
