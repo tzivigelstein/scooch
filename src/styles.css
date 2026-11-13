@@ -2238,11 +2238,6 @@ input[role="switch"]:checked::before {
   margin: 0;
 }
 
-.dialog-foot strong {
-  color: var(--text);
-  font-weight: 600;
-}
-
 .keys {
   width: 100%;
   border-collapse: collapse;

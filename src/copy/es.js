@@ -626,9 +626,6 @@ export default {
     action: 'Acción',
     or: ' o ',
     off: 'Desactivado',
-    printLead: 'Para imprimir:',
-    printTip: 'en el diálogo de impresión, elige «Tamaño real» o «100 %» para que las medidas sean exactas',
-    private: 'Tus archivos no salen del navegador',
     rows: {
       tab: 'Recorrer la barra, los paneles y las piezas; en la hoja, enfocar una pieza la selecciona',
       move: 'Mover la pieza {normal} (Shift: {coarse}; Alt: {fine}). Si choca con otra, salta al otro lado.',
