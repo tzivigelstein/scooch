@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Checks e2e/ledger.csv, the record of where every check of the old browser
-// suites went (see docs/testing.md). Fails when:
-//   - a row has no destination while its old suite is gone (a row may stay
-//     empty only while e2e/suites/<suite>.cjs still exists and runs);
+// suites (the custom scripts e2e/suites/*.cjs, removed once every check had a
+// destination) went; see docs/testing.md. Fails when:
+//   - a row has no destination;
 //   - a destination isn't one of the kinds below;
 //   - a destination points to a test that doesn't exist (by the test lists of
 //     Playwright and Vitest, not by grepping), or to a file of another layer.
@@ -67,7 +67,6 @@ function vitestTests() {
 
 const { rows } = parseCsv(readFileSync(LEDGER, 'utf8'));
 const problems = [];
-const pending = new Map();
 const kinds = {};
 
 const needsTests = rows.some((r) => /^(kept|moved|duplicate-of|fixed):/.test(r.destination));
@@ -92,8 +91,7 @@ for (const row of rows) {
   const destination = row.destination.trim();
   const main = destination.split(' :: ')[0];
   if (!destination) {
-    if (existsSync(join(ROOT, `e2e/suites/${row.suite}.cjs`))) pending.set(row.suite, (pending.get(row.suite) ?? 0) + 1);
-    else problems.push(`${row.id}: no destination, and e2e/suites/${row.suite}.cjs is gone`);
+    problems.push(`${row.id}: no destination`);
     continue;
   }
   const kind = main.match(/^(kept:e2e|moved:\w+|duplicate-of|fixed|deleted):/)?.[1];
@@ -120,9 +118,7 @@ for (const row of rows) {
 const summary = Object.entries(kinds)
   .map(([k, n]) => `${k} ${n}`)
   .join(' · ');
-const waiting = [...pending].map(([suite, n]) => `${suite} (${n})`);
-console.log(`ledger: ${rows.length} rows${summary ? ` · ${summary}` : ''}${waiting.length ? ` · still in old suites: ${[...pending.values()].reduce((a, b) => a + b, 0)}` : ''}`);
-if (waiting.length) console.log(`  without a destination yet (their old suite still runs): ${waiting.join(', ')}`);
+console.log(`ledger: ${rows.length} rows${summary ? ` · ${summary}` : ''}`);
 if (problems.length) {
   console.error(`\n${problems.length} problem(s):\n${problems.slice(0, 200).join('\n')}${problems.length > 200 ? '\n…' : ''}`);
   process.exit(1);
