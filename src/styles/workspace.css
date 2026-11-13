@@ -221,10 +221,18 @@
   background: #fff;
 }
 
+/* The piece as it prints: its crop and rotation (see pieceView.thumbView). */
+.thumb-piece {
+  position: relative;
+  overflow: hidden;
+  overflow: clip;
+}
+
 .thumb img {
-  max-width: 1.875rem;
-  max-height: 1.875rem;
-  object-fit: contain;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: none;
   pointer-events: none;
 }
 

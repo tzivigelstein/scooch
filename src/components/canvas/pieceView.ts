@@ -37,6 +37,22 @@ export function pieceView(item: Piece, asset: AppAsset, zoom: number, marked: bo
   };
 }
 
+/**
+ * A small picture of the piece as it prints (cropped and rotated) that fits
+ * in a `size` × `size` rem box: the clipping box and the whole image inside it.
+ */
+export function thumbView(item: Piece, asset: AppAsset, size: number) {
+  const [w, h] = dims(item);
+  const p = cssParams({ ...item, x: 0, y: 0 }, asset, size / Math.max(w, h));
+  const tx = p.img.left - p.width / 2 + p.img.width / 2;
+  const ty = p.img.top - p.height / 2 + p.img.height / 2;
+  const shift = tx || ty ? ` translate(${tx}rem, ${ty}rem)` : '';
+  return {
+    box: { width: `${p.width}rem`, height: `${p.height}rem` },
+    img: { width: `${p.img.width}rem`, height: `${p.img.height}rem`, transform: `translate(-50%, -50%)${shift} rotate(${p.img.rotate}deg)` },
+  };
+}
+
 /** Paints a piece directly (during a drag, or to put back what React last rendered). */
 export function paintPiece(node: HTMLElement, view: PieceView) {
   Object.assign(node.style, view.box);

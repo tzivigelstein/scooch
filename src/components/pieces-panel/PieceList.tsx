@@ -22,7 +22,11 @@ import { focusSheet } from '../../state/actions/focus.ts';
 import { printResolution } from '../../state/actions/layout.ts';
 import { remove } from '../../state/actions/pieces.ts';
 import { focusPiece, select, selectRange, toggleInSelection } from '../../state/actions/selection.ts';
+import { thumbView } from '../canvas/pieceView.ts';
 import { Icon } from '../ui/Icon.tsx';
+
+/** The side of a row's thumbnail, in rem (the box is 2.25rem with a border). */
+const THUMB_REM = 1.875;
 
 // Each row's badges (their text is in pieces.badges.<key>).
 const BADGES: readonly { key: 'cut' | 'pastMargin' | 'overlap' | 'lowRes'; icon: LucideIcon }[] = [
@@ -47,6 +51,7 @@ const Row = memo(function Row({ item, selected, tabStop, problems, allowOverlap 
   const [w, h] = dims(item);
   const paged = asset.kind === 'pdf' && asset.pages > 1;
   const res = printResolution(item);
+  const thumb = thumbView(item, asset, THUMB_REM);
   const flags = {
     cut: !!problems?.cut,
     pastMargin: !!problems?.pastMargin,
@@ -56,7 +61,9 @@ const Row = memo(function Row({ item, selected, tabStop, problems, allowOverlap 
   return (
     <div role="option" className="piece-row" data-id={item.id} aria-selected={selected} tabIndex={tabStop ? 0 : -1} data-tip={asset.name}>
       <span className="thumb">
-        <img alt="" draggable={false} src={asset.url} style={{ transform: item.r ? `rotate(${item.r}deg)` : undefined }} />
+        <span className="thumb-piece" style={thumb.box}>
+          <img alt="" draggable={false} src={asset.url} style={thumb.img} />
+        </span>
       </span>
       <span className="row-text">
         <span className="row-name">{asset.name}</span>
