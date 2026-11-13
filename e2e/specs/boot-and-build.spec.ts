@@ -74,7 +74,8 @@ test.describe('before the app mounts', () => {
     });
 
     test.describe(`${scheme} theme, slow load`, () => {
-      test.use({ colorScheme: scheme });
+      // The boot screen's fade, as most people see it (reduced motion shortens it to 1 ms).
+      test.use({ colorScheme: scheme, contextOptions: { reducedMotion: 'no-preference' } });
 
       test('the first paint has the app’s background, the boot screen fades in later and the app replaces it', async ({ page }) => {
         let release!: () => void;

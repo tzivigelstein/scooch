@@ -22,8 +22,9 @@ const WEBKIT = process.env.E2E_WEBKIT === '1';
 const page = {
   viewport: { width: 1440, height: 900 },
   colorScheme: 'light' as const,
-  reducedMotion: 'reduce' as const,
   acceptDownloads: true,
+  // A context option, not a test option: at the top level it would be ignored.
+  contextOptions: { reducedMotion: 'reduce' as const },
 };
 
 // Specs that measure time run alone, after everything else, so other workers
