@@ -42,9 +42,13 @@ src/
   layout.js       acomodar, reducir y rellenar con copias
   pack.js         empaquetado de rectángulos (módulo puro)
   collide.js      colisiones entre rectángulos (módulo puro)
+  placement.js    dónde ubicar la barra de la pieza sin tapar otras (módulo puro)
   assets.js       lectura de imágenes y PDF (pdf.js se carga al abrir el primer PDF)
   export.js       armado del PDF (pdf-lib se carga al exportar o imprimir)
   output.js       descarga e impresión
-  …               avisos, atajos, tooltips, paneles plegables, donación
+  …               avisos, atajos, tooltips, paneles plegables, donación y
+                  módulos puros nuevos (unidades, papeles, alinear, recortar…)
 test/             pruebas de los módulos puros
+docs/copy.md      guía de copy: reglas, glosario y ejemplos
+vite.config.js    completa los textos de index.html y nombra los chunks diferidos
 ```
