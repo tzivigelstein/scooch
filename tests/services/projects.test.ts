@@ -149,6 +149,61 @@ describe('the settings a project keeps', () => {
   });
 });
 
+describe('the last-moment journal', () => {
+  /** A storage whose writes stop reaching it (like IndexedDB when the page goes away). */
+  function closingStorage() {
+    const storage = memoryStorage();
+    const state = { closed: false };
+    const write = storage.write.bind(storage);
+    storage.write = (...args) => (state.closed ? new Promise<void>(() => {}) : write(...args));
+    return Object.assign(storage, { close: () => (state.closed = true), open: () => (state.closed = false) });
+  }
+
+  test('two tabs with different projects closing at once each keep their own last change', async () => {
+    const storage = closingStorage();
+    await storedProject(storage, 'p1', 'Uno', 11, 1000);
+    await storedProject(storage, 'p2', 'Dos', 22, 2000);
+    localStorage.setItem('scooch:last-project', 'p1');
+    const a = await start(storage);
+    localStorage.setItem('scooch:last-project', 'p2');
+    const b = await start(storage);
+    expect([a.x(), b.x()]).toEqual([11, 22]);
+    a.setDocument({ selection: [1] });
+    b.setDocument({ selection: [1] });
+    a.nudge(5, 0);
+    b.nudge(7, 0);
+    // Both pages go away (the same window event reaches both «tabs»); nothing reaches the storage any more.
+    storage.close();
+    window.dispatchEvent(new Event('pagehide'));
+    storage.open();
+
+    localStorage.setItem('scooch:last-project', 'p1');
+    const again = await start(storage);
+    expect(again.x()).toBe(16);
+    await again.projects.openProject('p2');
+    expect(again.x()).toBe(29);
+  });
+
+  test('a move right before closing is kept even if the system clock went back since the last save', async () => {
+    const storage = closingStorage();
+    vi.setSystemTime(10_000);
+    await storedProject(storage, 'p1', 'Uno', 11, 1000);
+    localStorage.setItem('scooch:last-project', 'p1');
+    const app = await start(storage);
+    app.setDocument({ selection: [1] });
+    app.nudge(1, 0);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(app.status()).toBe('saved');
+    vi.setSystemTime(5_000); // the clock steps back
+    app.nudge(1, 0);
+    storage.close();
+    window.dispatchEvent(new Event('pagehide'));
+    storage.open();
+    const again = await start(storage);
+    expect(again.x()).toBe(13);
+  });
+});
+
 describe('the last opened project', () => {
   test('a last project saved by a newer version opens another one but stays the last opened (the newer version opens it)', async () => {
     const storage = memoryStorage();

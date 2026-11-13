@@ -44,6 +44,16 @@ export function storageRemove(key: string) {
   }
 }
 
+/** The keys that start with `prefix`. */
+export function storageKeys(prefix: string): string[] {
+  try {
+    const local = store();
+    return Array.from({ length: local.length }, (_, i) => local.key(i)).filter((key): key is string => !!key?.startsWith(prefix));
+  } catch {
+    return [];
+  }
+}
+
 /** A JSON value from storage, or null when missing or unreadable. */
 export function storageJson(key: string): unknown {
   try {

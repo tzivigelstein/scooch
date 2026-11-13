@@ -30,12 +30,10 @@ export function listProjects(storage: ProjectStorage): Promise<ListedProject[]>;
 export function pickProject(list: readonly ListedProject[], lastId: string | null): string | null;
 
 /** Last-moment copy of the open document, written synchronously when the tab goes away. */
-export interface Journal {
-  id: string;
-  at: number;
-  name: unknown;
-  doc: unknown;
-}
+export type Journal =
+  | { v: 2; id: string; base: number; name: unknown; doc: unknown }
+  /** Version 1 (one key for every tab): used when `at` is later than the save, by the clock. */
+  | { v?: undefined; id: string; at: number; name: unknown; doc: unknown };
 
 export function recoverJournal(record: ProjectRecord, files: ReadonlyMap<string, Blob>, journal: Journal | null, context?: MigrationContext): { doc: ProjectDoc; name: string } | null;
 export function memoryStorage(options?: { fail?: (op: string) => Error | null | undefined }): ProjectStorage;

@@ -18,6 +18,11 @@ import {
 } from '../../src/core/projectstore.js';
 import { ProjectError, fileKeys } from '../../src/core/projectdoc.js';
 import { relativeTime, formatBytes } from '../../src/core/humanize.js';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+/** A stored journal of one format version (tests/fixtures/journal). */
+const journalFixture = (version) => JSON.parse(readFileSync(join(import.meta.dirname, '../fixtures/journal', `${version}.json`), 'utf8')).journal;
 
 const blob = (text) => new Blob([text]);
 
@@ -215,6 +220,33 @@ describe('recoverJournal', () => {
     assert.equal(recoverJournal(record, files, { id: 'p1', at: record.modified - 1, doc }), null, 'más viejo que lo guardado');
     assert.equal(recoverJournal(record, files, { id: 'p2', at: record.modified + 1, doc }), null, 'de otro proyecto');
     assert.equal(recoverJournal(record, files, { id: 'p1', at: record.modified + 1, doc: { ...doc, sheets: 'x' } }), null, 'roto');
+  });
+});
+
+describe('recoverJournal: the stored versions', () => {
+  test('version 2 (one key per project) is used while the stored record is still the one it started from, whatever the clock says', async () => {
+    const storage = memoryStorage();
+    const { record } = await saved(storage); // modified: 1001
+    const { files } = await loadProject(storage, 'p1');
+    const journal = journalFixture('v2');
+    assert.equal(journal.base, record.modified);
+    const out = recoverJournal(record, files, journal);
+    assert.equal(out.name, 'Antes de cerrar');
+    assert.equal(out.doc.items[0].x, 99);
+    // Saved since (the last save went through, or another tab saved it): stale.
+    assert.equal(recoverJournal({ ...record, modified: 900 }, files, journal), null, 'an older save, by the clock');
+    assert.equal(recoverJournal({ ...record, modified: 2000 }, files, journal), null);
+  });
+
+  test('version 1 (one key for every tab) is used when it is later than the save, by the clock', async () => {
+    const storage = memoryStorage();
+    const { record } = await saved(storage);
+    const { files } = await loadProject(storage, 'p1');
+    const journal = journalFixture('v1');
+    const out = recoverJournal(record, files, journal, { allowOverlap: true });
+    assert.equal(out.doc.items[0].x, 99);
+    assert.equal(out.doc.allowOverlap, true, 'migrated like any document of its version');
+    assert.equal(recoverJournal({ ...record, modified: journal.at + 1 }, files, journal), null);
   });
 });
 

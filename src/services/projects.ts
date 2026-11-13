@@ -14,7 +14,7 @@
 // tab, «Editar aquí» asks for it again and reloads it. If a tab doesn't
 // answer (frozen), it waits 3 s: it saved when it got hidden anyway.
 
-import { JOURNAL_STORAGE, LAST_PROJECT_STORAGE, TABS_CHANNEL } from '../config.ts';
+import { JOURNAL_PREFIX, JOURNAL_STORAGE, LAST_PROJECT_STORAGE, TABS_CHANNEL } from '../config.ts';
 import { DEFAULT_CUTS, fileKeys, nextIds, serialize } from '../core/projectdoc.js';
 import {
   cleanName,
@@ -43,7 +43,7 @@ import { setView } from '../state/view.ts';
 import { assetBlob, restoreAssets, type AppAsset } from './assets.ts';
 import { openIdbStorage } from './storage/idb.ts';
 import { migrateLegacyProjects } from './storage/migrate.ts';
-import { storageGet, storageJson, storageRemove, storageSet } from './storage/local.ts';
+import { storageGet, storageJson, storageKeys, storageRemove, storageSet } from './storage/local.ts';
 import { drawThumbnail, thumbnailSignature } from './thumbnail.ts';
 
 const SAVE_DELAY = 1000;
@@ -183,6 +183,7 @@ async function restoreLast() {
   const storage = session.storage!;
   try {
     const list = await listProjects(storage);
+    forgetJournalsOtherThan(list);
     const lastId = storageGet(LAST_PROJECT_STORAGE);
     // The last one opened can't be opened: nothing breaks; it says so (and, if
     // it is damaged, offers to delete it; one saved by a newer version is left alone).
@@ -349,18 +350,33 @@ export function save({ quick = false } = {}): Promise<void> {
 
 // Last-moment journal (see recoverJournal): the unsaved document is written
 // synchronously, because IndexedDB may not finish when the page goes away.
+// `base`: the stored record this tab last read or wrote.
 function writeJournal() {
   if (!session.storage || !session.record || ['loading', 'readonly', 'off'].includes(session.status)) return;
   const doc = serialized();
   if (JSON.stringify(doc) === session.savedSig) return;
-  storageSet(JOURNAL_STORAGE, JSON.stringify({ id: session.record.id, at: Date.now(), name: session.record.name, doc }));
+  const { id, modified, name } = session.record;
+  storageSet(JOURNAL_PREFIX + id, JSON.stringify({ v: 2, id, base: modified, name, doc } satisfies Journal));
 }
 
-const readJournal = () => storageJson(JOURNAL_STORAGE) as Journal | null;
+/** A project's journal: its own key, or the one every tab shared before. */
+function readJournal(id: string) {
+  const own = storageJson(JOURNAL_PREFIX + id) as Journal | null;
+  if (own?.id === id) return own;
+  const shared = storageJson(JOURNAL_STORAGE) as Journal | null;
+  return shared?.id === id ? shared : null;
+}
 
 // Everything is saved: that project's journal is not needed.
 function clearJournal(id: string) {
-  if (readJournal()?.id === id) storageRemove(JOURNAL_STORAGE);
+  storageRemove(JOURNAL_PREFIX + id);
+  if ((storageJson(JOURNAL_STORAGE) as Journal | null)?.id === id) storageRemove(JOURNAL_STORAGE);
+}
+
+// Journals of projects that aren't there any more (deleted in a tab that closed meanwhile).
+function forgetJournalsOtherThan(list: readonly Pick<ProjectRecord, 'id'>[]) {
+  const ids = new Set(list.map((record) => record.id));
+  for (const key of storageKeys(JOURNAL_PREFIX)) if (!ids.has(key.slice(JOURNAL_PREFIX.length))) storageRemove(key);
 }
 
 /** Retry after an error. */
@@ -418,7 +434,7 @@ export async function openProject(id: string, { remember = true } = {}) {
     await claim(id);
     const { record, doc, files } = await loadProject(session.storage!, id, migrationContext());
     // What was journaled when the tab closed, if newer than what was saved.
-    const recovered = recoverJournal(record, files, readJournal(), migrationContext());
+    const recovered = recoverJournal(record, files, readJournal(id), migrationContext());
     const use = recovered?.doc ?? doc;
     const loaded = await restoreAssets(use, files);
     replaceDocument(use, loaded);
@@ -499,6 +515,7 @@ export async function remove(id: string) {
   if (wasOpen) clearTimeout(timer);
   const storage = session.storage!;
   await deleteProject(storage, id);
+  clearJournal(id);
   post({ type: 'deleted', project: id });
   if (!wasOpen) return;
   const next = pickProject(await listProjects(storage), null);

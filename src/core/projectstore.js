@@ -153,18 +153,27 @@ export function pickProject(list, lastId) {
 }
 
 /**
- * Diario de último momento: al cerrarse o recargarse la pestaña, IndexedDB no
- * garantiza terminar de escribir (la conexión se cierra con la página), así que
- * el documento también se anota de forma síncrona (localStorage). Al abrir el
- * proyecto, si el diario es de ese proyecto y más nuevo que lo guardado, se usa
- * el diario. Las piezas cuyos archivos todavía no llegaron a guardarse (las
- * agregadas en el último segundo) se descartan, junto con sus assets.
+ * Last-moment journal: when the tab closes or reloads, IndexedDB doesn't
+ * promise to finish writing (the connection closes with the page), so the
+ * document is also written down synchronously (localStorage, one key per
+ * project). On opening the project, the journal is used when the stored
+ * record is still the one it started from. Pieces whose files didn't get
+ * saved yet (added in the last second) are dropped, with their assets.
  *
- * `journal`: {id, at, name, doc} (doc sin validar). Devuelve {doc, name} o
- * null si no corresponde o no sirve.
+ * `journal` (doc not validated yet), one of:
+ *   version 2: {v: 2, id, base, name, doc}: `base` is the `modified` of the
+ *     stored record the tab had last read or written. If the record was saved
+ *     since (by that last save going through, or by another tab), its
+ *     `modified` is another one and the journal is stale. An equality, not an
+ *     order: the system clock can step back between saving and closing.
+ *   version 1 (no `v`): {id, at, name, doc}, used when `at` is later than the
+ *     record's `modified` (by the clock).
+ * Returns {doc, name}, or null when it doesn't apply or can't be read.
  */
 export function recoverJournal(record, files, journal, context = {}) {
-  if (!journal || journal.id !== record.id || !(journal.at > (record.modified ?? 0))) return null;
+  if (!journal || journal.id !== record.id) return null;
+  const current = journal.v === 2 ? journal.base === record.modified : journal.at > (record.modified ?? 0);
+  if (!current) return null;
   let doc;
   try {
     doc = deserialize(journal.doc, context);

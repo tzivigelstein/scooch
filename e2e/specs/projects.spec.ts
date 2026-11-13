@@ -178,14 +178,10 @@ test.describe('saving and restoring', () => {
     await expect(app.pieces()).toHaveCount(2);
   });
 
-  // PRODUCT BUG: the last-moment journal is used only when `journal.at >
-  // record.modified` (recoverJournal in src/core/projectstore.js), two
-  // wall-clock times. If the system clock steps back between the last save
-  // and closing the tab (NTP corrections; under load WSL2 steps it back ~2 s
-  // every ~30 s), the journal looks older than the save and is dropped: the
-  // last changes are lost. Comparing against the `modified` the journal was
-  // based on, instead of the clock, would not depend on it.
-  test.fail('a move right before a reload is kept even if the system clock went back since the last save', async ({ page, app }) => {
+  // The journal is used while the stored record is still the one it started
+  // from (an equality, see recoverJournal), not by comparing two wall-clock
+  // times: the clock can step back between the last save and closing the tab.
+  test('a move right before a reload is kept even if the system clock went back since the last save', async ({ page, app }) => {
     const t0 = Date.now();
     await page.clock.setFixedTime(t0);
     await app.addFiles(['card10.png']);

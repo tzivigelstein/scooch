@@ -1,0 +1,93 @@
+{
+  "about": "The last-moment journal version 2 (scooch:journal:<id>): «base» is the «modified» of the stored record it started from",
+  "journal": {
+    "v": 2,
+    "id": "p1",
+    "base": 1001,
+    "name": "Antes de cerrar",
+    "doc": {
+      "version": 5,
+      "paper": "folio",
+      "landscape": false,
+      "margin": 10,
+      "gap": 5,
+      "rotate": true,
+      "allowOverlap": false,
+      "cuts": {
+        "mode": "none",
+        "length": 4,
+        "offset": 1.5,
+        "margin": 0,
+        "weight": "thin",
+        "color": "#000000",
+        "dash": "solid"
+      },
+      "sheets": [
+        {
+          "id": 1
+        },
+        {
+          "id": 2
+        }
+      ],
+      "items": [
+        {
+          "id": 1,
+          "asset": "a1",
+          "sheet": 1,
+          "x": 99,
+          "y": 10,
+          "scale": 100,
+          "r": 0,
+          "crop": null
+        },
+        {
+          "id": 2,
+          "asset": "a2",
+          "sheet": 2,
+          "x": 10,
+          "y": 10,
+          "scale": 100,
+          "r": 90,
+          "crop": null
+        }
+      ],
+      "assets": {
+        "a1": {
+          "kind": "image",
+          "name": "foto.jpg",
+          "src": 1,
+          "px": [
+            100,
+            50
+          ],
+          "format": "jpg",
+          "dpi": 300,
+          "w": 8.5,
+          "h": 4.2,
+          "derived": true
+        },
+        "a2": {
+          "kind": "pdf",
+          "name": "plano.pdf",
+          "src": 2,
+          "page": 3,
+          "pages": 4,
+          "pageRotation": 0,
+          "view": [
+            0,
+            0,
+            100,
+            100
+          ],
+          "px": [
+            10,
+            10
+          ],
+          "w": 35,
+          "h": 35
+        }
+      }
+    }
+  }
+}

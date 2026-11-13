@@ -51,7 +51,13 @@ export const GRID_MAX = 50;
 export const PIECES_STORAGE = stored('piece-preferences');
 /** Unit of the lengths ('mm' | 'cm' | 'in'), chosen in «Preferencias». */
 export const UNIT_STORAGE = stored('unit-preference');
-/** Last-moment journal of the open project (if the tab closed before saving finished). */
+/**
+ * Last-moment journal of an open project (if the tab closed before saving
+ * finished): one key per project, «scooch:journal:<id>», so two tabs closing
+ * at once don't overwrite each other ({v: 2, id, base, name, doc}).
+ */
+export const JOURNAL_PREFIX = stored('journal:');
+/** Where the journal was before (one key for every tab, {id, at, name, doc}): read once, then removed. */
 export const JOURNAL_STORAGE = stored('project-journal');
 /** Id of the last open project (to restore it on return). */
 export const LAST_PROJECT_STORAGE = stored('last-project');
