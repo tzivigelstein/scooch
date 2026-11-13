@@ -65,7 +65,7 @@ export const DONATE_STORAGE = stored('donate-dismissed');
  * without a prefix): moved once, on the first start (services/storage/migrate.ts).
  */
 export const LEGACY_PROJECTS_DB = 'pliego';
-/** Set once the legacy keys were moved: they're never looked at again. */
+/** Set once the legacy keys were first moved (any written later still are, see migrate.ts). */
 export const MIGRATED_STORAGE = stored('migrated');
 export const LEGACY_STORAGE_KEYS: Readonly<Record<string, string>> = Object.freeze({
   'panel-sections': SECTIONS_STORAGE,

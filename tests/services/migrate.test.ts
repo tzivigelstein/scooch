@@ -32,13 +32,16 @@ describe('migrateKeys', () => {
     expect(store.getItem('unit-preference')).toBeNull();
   });
 
-  test('runs only once: legacy keys written later are left alone', () => {
+  test('a legacy key written after the move (by a tab still running the app from before the rename) is moved on the next start, or dropped when the current one has a value', () => {
     const store = mapStore({ 'unit-preference': 'cm' });
     migrateKeys(store, MAPPING, 'app:done');
     store.setItem('last-project', 'p9');
-    expect(migrateKeys(store, MAPPING, 'app:done')).toEqual([]);
-    expect(store.getItem('last-project')).toBe('p9');
-    expect(store.getItem('app:last')).toBeNull();
+    store.setItem('unit-preference', 'in');
+    expect(migrateKeys(store, MAPPING, 'app:done')).toEqual(['last-project']);
+    expect(store.getItem('app:last')).toBe('p9');
+    expect(store.getItem('app:unit')).toBe('cm');
+    expect(store.getItem('last-project')).toBeNull();
+    expect(store.getItem('unit-preference')).toBeNull();
   });
 
   test('a full storage keeps what was not moved and tries again later', () => {

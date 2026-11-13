@@ -11,14 +11,14 @@ import { deleteIdb, openExistingIdbStorage } from './idb.ts';
 export type KeyStore = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 /**
- * Moves each `legacy → current` key of `mapping`, once: `done` marks it as
- * finished, so later starts never touch the old keys again. A current key
- * that already has a value keeps it. Returns the legacy keys whose value was
- * copied. If writing fails (storage full), nothing is marked and the keys
- * not moved yet stay where they were.
+ * Moves each `legacy → current` key of `mapping`. It runs on every start: a
+ * tab still running the app from before the rename can write an old key after
+ * the first move, and that one is moved too (or dropped, when the current key
+ * already has a value: a current key keeps it). `done` records that the first
+ * move finished. Returns the legacy keys whose value was copied. If writing
+ * fails (storage full), the keys not moved yet stay where they were.
  */
 export function migrateKeys(store: KeyStore, mapping: Readonly<Record<string, string>>, done: string): string[] {
-  if (store.getItem(done) !== null) return [];
   const copied: string[] = [];
   for (const [legacy, current] of Object.entries(mapping)) {
     const value = store.getItem(legacy);
@@ -29,7 +29,7 @@ export function migrateKeys(store: KeyStore, mapping: Readonly<Record<string, st
     }
     store.removeItem(legacy);
   }
-  store.setItem(done, '1');
+  if (store.getItem(done) === null) store.setItem(done, '1');
   return copied;
 }
 
