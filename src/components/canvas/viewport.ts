@@ -12,7 +12,7 @@ import { clampPercent, fromPercent, stepPercent, toPercent } from '../../core/zo
 import { flushUi } from '../../state/flush.ts';
 import { isDragging } from '../../state/gesture.ts';
 import { getView, setView, type ZoomMode } from '../../state/view.ts';
-import { announce } from '../feedback/announcer.ts';
+import { announce, cancelAnnounce } from '../feedback/announcer.ts';
 
 export interface BoxOffset {
   left: number;
@@ -156,6 +156,7 @@ export function stepZoom(dir: 1 | -1) {
  */
 export function fitSheet(mode: 'fit' | 'width', sheet: number) {
   if (isDragging()) return;
+  cancelAnnounce('zoom'); // a level still waiting to be said is no longer the zoom
   zoomTo(fitZoom(mode), { mode });
   const box = measureBoxes().get(sheet);
   const stageEl = stage();

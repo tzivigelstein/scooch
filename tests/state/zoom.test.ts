@@ -72,11 +72,9 @@ describe('what the zoom says', () => {
     expect(live()).toMatch(/^Zoom 150 %/);
   });
 
-  // BUG: + (or Ctrl + =) says its level 300 ms later (keyed «zoom»); a fit
-  // chosen within those 300 ms says «Se ve la hoja entera» and then the stale
-  // «Zoom 125 %» still goes out, so a screen reader ends on a level that is no
-  // longer the zoom. fitSheet should cancel it (cancelAnnounce('zoom')).
-  test.fails('a fit right after + is the last thing said', () => {
+  // + (or Ctrl + =) says its level 300 ms later; a fit chosen meanwhile must
+  // not be followed by that stale level.
+  test('a fit right after + is the last thing said', () => {
     stepZoom(1);
     fitSheet('fit', 1);
     vi.advanceTimersByTime(400);
