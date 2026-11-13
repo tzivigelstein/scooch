@@ -2,7 +2,8 @@ import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { deflateSync } from 'node:zlib';
 import { PDFDocument, PDFName, PDFRawStream, decodePDFRawStream, degrees, rgb } from 'pdf-lib';
-import { buildPdf, CUT_LINE } from '../../src/services/pdf.ts';
+import { buildPdf } from '../../src/services/pdf.ts';
+import { cutStyle } from '../../src/core/cutmarks.js';
 import { drawParams } from '../../src/core/crop.js';
 import { cutLines } from '../../src/core/cutmarks.js';
 
@@ -112,7 +113,7 @@ describe('buildPdf', () => {
     assert.match(content, /re\nW\nn\n[\s\S]*Do\nQ/);
   });
 
-  test('líneas de corte: un trazo fino gris por segmento, en sus coordenadas; sin líneas, nada extra', async () => {
+  test('líneas de corte: un trazo fino negro por segmento, en sus coordenadas; sin líneas, nada extra', async () => {
     const boxes = [
       { x: 20, y: 20, w: 50, h: 30 },
       { x: 80, y: 20, w: 50, h: 30 },
@@ -127,10 +128,21 @@ describe('buildPdf', () => {
       const want = [line.x1 * PT, (SHEET.height - line.y1) * PT, line.x2 * PT, (SHEET.height - line.y2) * PT];
       strokes[i].forEach((v, j) => assert.ok(Math.abs(v - want[j]) < 1e-3, `línea ${i}: ${v} ≠ ${want[j]}`));
     });
-    assert.match(withLines, new RegExp(`${CUT_LINE.thickness} w`));
-    assert.match(withLines, new RegExp(`${CUT_LINE.gray} ${CUT_LINE.gray} ${CUT_LINE.gray} RG`));
+    assert.match(withLines, /0\.25 w/);
+    assert.match(withLines, /0 0 0 RG/);
+    assert.doesNotMatch(withLines, /\[\d[^\]]*\] \S+ d/, 'solid: no dash pattern');
     assert.ok(withLines.startsWith(without), 'las líneas van después de las piezas, sin cambiar lo demás');
     assert.equal((without.match(/ l\nS/g) ?? []).length, 0);
+  });
+
+  test('cut lines take the chosen weight, color and dash', async () => {
+    const lines = [{ x1: 10, y1: 10, x2: 60, y2: 10 }];
+    const pieces = [{ asset: image, x: 20, y: 20, scale: 100, r: 0, crop: null }];
+    const style = cutStyle({ weight: 'thick', color: '#ff8000', dash: 'dotted' });
+    const [content] = await contents(await buildPdf({ ...SHEET, pages: [{ pieces, lines }], title: 't', cutStyle: style }));
+    assert.match(content, /\n1 w\n/);
+    assert.match(content, /1 0\.50196\d* 0 RG/);
+    assert.match(content, new RegExp(`\\[${style.dash[0]} ${style.dash[1]}\\] 0 d`));
   });
 
   test('varias páginas: cada una con lo suyo', async () => {

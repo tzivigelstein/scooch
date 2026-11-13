@@ -3,7 +3,7 @@
 // the document asks for them, its cut lines.
 
 import { APP_NAME } from '../config.ts';
-import { cutLines } from '../core/cutmarks.js';
+import { cutLines, cutStyle } from '../core/cutmarks.js';
 import { slug } from '../core/util.ts';
 import { t } from '../copy/index.ts';
 import { getAsset } from '../state/assets.ts';
@@ -26,5 +26,5 @@ export function makePdf() {
       pieces: items.map(piece),
       lines: cutLines(items.map(boxOf), { ...cuts, bounds: { x: 0, y: 0, w: W, h: H } }),
     }));
-  return buildPdf({ width: W, height: H, pages, title: t('print.pdfTitle', { paper: paperName() }), creator: APP_NAME });
+  return buildPdf({ width: W, height: H, pages, title: t('print.pdfTitle', { paper: paperName() }), creator: APP_NAME, cutStyle: cutStyle(cuts) });
 }

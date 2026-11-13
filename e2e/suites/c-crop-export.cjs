@@ -15,7 +15,7 @@ const PATCH = async (patch) => {
   const get = () => new Promise((res) => { const r = db.transaction('projects').objectStore('projects').get(id); r.onsuccess = () => res(r.result); });
   const record = await get();
   const doc = record.doc;
-  doc.cuts = patch.cuts;
+  doc.cuts = { ...doc.cuts, ...patch.cuts }; // the stroke stays as the document has it (version 3)
   for (const [i, change] of patch.items.entries()) Object.assign(doc.items[i], change);
   await new Promise((res, rej) => { const tx = db.transaction('projects', 'readwrite'); tx.objectStore('projects').put({ ...record, doc, modified: Date.now() + 5000 }); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
   db.close();
@@ -77,7 +77,7 @@ async function contents(file) {
     const lines = cutLines(boxes, { ...cuts, bounds: { x: 0, y: 0, w: 210, h: 297 } });
     const strokes = (text.match(/ l\nS/g) ?? []).length;
     check(`PDF: ${lines.length} líneas de corte (las de cutLines)`, strokes === lines.length && lines.length > 0, `${strokes}`);
-    check('PDF: líneas de 0,25 pt en gris oscuro', /0\.25 w/.test(text) && /0\.2 0\.2 0\.2 RG/.test(text));
+    check('PDF: líneas de 0,25 pt en negro (el trazo de un documento nuevo)', /0\.25 w/.test(text) && /0 0 0 RG/.test(text));
     // Rasterizado: sin líneas (la pantalla no las dibuja todavía), PDF vs captura de la hoja
     await p.evaluate(PATCH, { cuts: { mode: 'none', length: 4, offset: 1.5 }, items: [] });
     await p.reload();

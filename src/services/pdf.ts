@@ -4,14 +4,12 @@
 // as always.
 
 import type { PDFDocument as PdfLibDocument, PDFEmbeddedPage, PDFImage } from 'pdf-lib';
-import type { CutLine } from '../core/cutmarks.js';
+import { cutStyle as styleOf, type CutLine, type CutStyle } from '../core/cutmarks.js';
 import { drawParams } from '../core/crop.js';
 import type { Crop } from '../core/types.ts';
 import type { ImageAsset, PdfAsset } from './assets.ts';
 
 const PT_PER_MM = 72 / 25.4;
-/** Cut lines: thin (pt) and neutral dark gray. */
-export const CUT_LINE = Object.freeze({ thickness: 0.25, gray: 0.2 });
 
 /** What the PDF needs of an asset. */
 export type PdfSource =
@@ -50,11 +48,26 @@ function loadPdfLib() {
  * Builds the PDF and returns its bytes. `pages`: [{pieces, lines}] per page;
  * each piece {asset, x, y, scale, r, crop} (x/y in mm from the sheet's top
  * left corner; crop as in crop.js) and each cut line {x1, y1, x2, y2} in mm
- * (cutmarks.cutLines). A cropped piece is drawn whole with a clipping path
- * (PDF pages stay vector). Each source (image or PDF page) is embedded once
- * even if it shows up on several pages.
+ * (cutmarks.cutLines), drawn with `cutStyle` (cutmarks.cutStyle: the same
+ * weight, color and dash as on screen). A cropped piece is drawn whole with a
+ * clipping path (PDF pages stay vector). Each source (image or PDF page) is
+ * embedded once even if it shows up on several pages.
  */
-export async function buildPdf({ width, height, pages, title, creator = title }: { width: number; height: number; pages: readonly PdfPage[]; title: string; creator?: string }) {
+export async function buildPdf({
+  width,
+  height,
+  pages,
+  title,
+  creator = title,
+  cutStyle = styleOf(),
+}: {
+  width: number;
+  height: number;
+  pages: readonly PdfPage[];
+  title: string;
+  creator?: string;
+  cutStyle?: CutStyle;
+}) {
   const lib = await loadPdfLib();
   const { PDFDocument, degrees, rgb } = lib;
   const doc = await PDFDocument.create();
@@ -74,9 +87,10 @@ export async function buildPdf({ width, height, pages, title, creator = title }:
       else page.drawImage(target.image, options);
       if (p.clip) page.pushOperators(lib.popGraphicsState());
     }
-    const color = rgb(CUT_LINE.gray, CUT_LINE.gray, CUT_LINE.gray);
+    const color = rgb(...cutStyle.rgb);
+    const dash = cutStyle.dash ? { dashArray: [...cutStyle.dash], dashPhase: 0 } : {};
     for (const line of lines) {
-      page.drawLine({ start: { x: pt(line.x1), y: pt(height - line.y1) }, end: { x: pt(line.x2), y: pt(height - line.y2) }, thickness: CUT_LINE.thickness, color });
+      page.drawLine({ start: { x: pt(line.x1), y: pt(height - line.y1) }, end: { x: pt(line.x2), y: pt(height - line.y2) }, thickness: cutStyle.width, color, ...dash });
     }
   }
   return doc.save();
