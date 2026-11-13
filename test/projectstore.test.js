@@ -13,6 +13,7 @@ import {
   deleteProject,
   listProjects,
   pickProject,
+  recoverJournal,
   memoryStorage,
 } from '../src/projectstore.js';
 import { ProjectError, fileKeys } from '../src/projectdoc.js';
@@ -170,6 +171,35 @@ describe('duplicar, renombrar, eliminar y listar', () => {
     assert.equal(pickProject(list, 'borrado'), 'b', 'si ya no existe, el más reciente');
     assert.equal(pickProject([], 'x'), null);
     assert.equal(pickProject([{ id: 'r', damaged: true }, ...list], 'r'), 'b', 'nunca uno dañado');
+  });
+});
+
+describe('recoverJournal', () => {
+  test('usa el diario si es de ese proyecto y más nuevo; descarta lo que no tiene archivos', async () => {
+    const storage = memoryStorage();
+    const { record } = await saved(storage);
+    const { files } = await loadProject(storage, 'p1');
+    const doc = docWith();
+    doc.items[0].x = 99;
+    // Una pieza agregada a último momento, sin archivos guardados todavía.
+    doc.assets.a3 = { kind: 'image', name: 'nueva.png', src: 3, px: [10, 10], format: 'png', dpi: 300, w: 1, h: 1 };
+    doc.items.push({ id: 3, asset: 'a3', sheet: 1, x: 0, y: 0, scale: 100, r: 0 });
+    const journal = { id: 'p1', at: record.modified + 10, name: 'Otro nombre', doc };
+    const out = recoverJournal(record, files, journal);
+    assert.equal(out.name, 'Otro nombre');
+    assert.equal(out.doc.items.length, 2, 'sin la pieza sin archivos');
+    assert.equal(out.doc.items[0].x, 99, 'con el cambio de último momento');
+    assert.deepEqual(Object.keys(out.doc.assets).sort(), ['a1', 'a2']);
+  });
+
+  test('no lo usa si es viejo, de otro proyecto o está roto', async () => {
+    const storage = memoryStorage();
+    const { record, doc } = await saved(storage);
+    const { files } = await loadProject(storage, 'p1');
+    assert.equal(recoverJournal(record, files, null), null);
+    assert.equal(recoverJournal(record, files, { id: 'p1', at: record.modified - 1, doc }), null, 'más viejo que lo guardado');
+    assert.equal(recoverJournal(record, files, { id: 'p2', at: record.modified + 1, doc }), null, 'de otro proyecto');
+    assert.equal(recoverJournal(record, files, { id: 'p1', at: record.modified + 1, doc: { ...doc, sheets: 'x' } }), null, 'roto');
   });
 });
 

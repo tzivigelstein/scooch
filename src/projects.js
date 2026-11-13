@@ -14,7 +14,7 @@
 // vieja, «Editar aquí» lo vuelve a pedir y lo recarga. Si una pestaña no
 // contesta (congelada), se espera 3 s: igual ya había guardado al ocultarse.
 
-import { LAST_PROJECT_STORAGE } from './config.js';
+import { LAST_PROJECT_STORAGE, JOURNAL_STORAGE } from './config.js';
 import { openIdbStorage } from './idbstorage.js';
 import {
   newProjectId,
@@ -28,11 +28,12 @@ import {
   deleteProject,
   listProjects,
   pickProject,
+  recoverJournal,
 } from './projectstore.js';
 import { serialize, fileKeys } from './projectdoc.js';
 import { state, assets, render, replaceDocument, docState, sheetSize, itemsOn } from './store.js';
 import { restoreAssets, assetBlob } from './assets.js';
-import { storageGet, storageSet } from './util.js';
+import { storageGet, storageSet, storageRemove } from './util.js';
 import { t } from './copy/index.js';
 
 const SAVE_DELAY = 1000;
@@ -87,9 +88,16 @@ export async function initProjects(h) {
   hooks = h;
   channel?.addEventListener('message', onMessage);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') flush();
+    if (document.visibilityState !== 'hidden') return;
+    writeJournal();
+    flush({ quick: true });
   });
-  window.addEventListener('pagehide', () => flush());
+  // Al irse (también al recargar, con la pestaña todavía visible) se guarda sin
+  // esperar la miniatura: la transacción tiene que empezar en este mismo evento.
+  window.addEventListener('pagehide', () => {
+    writeJournal();
+    flush({ quick: true });
+  });
   try {
     session.storage = await openIdbStorage();
   } catch (err) {
@@ -178,7 +186,8 @@ function docSignature() {
 export function documentChanged() {
   if (!session.storage || !session.record || ['loading', 'readonly', 'off'].includes(session.status)) return;
   if (state.busy) return;
-  const sig = docSignature();
+  const doc = serialize(docState(), assets);
+  const sig = JSON.stringify(doc);
   if (sig === session.savedSig) {
     if (session.status === 'pending') setStatus('saved');
     return;
@@ -186,16 +195,22 @@ export function documentChanged() {
   if (session.status === 'error' && sig === session.failedSig) return; // espera «Reintentar» o un cambio nuevo
   if (session.status !== 'pending' && session.status !== 'saving') setStatus('pending');
   clearTimeout(timer);
-  timer = setTimeout(() => save(), SAVE_DELAY);
+  // Archivos nuevos (agregados): se guardan enseguida, que son lo más caro de
+  // perder; el resto, ~1 s después del último cambio.
+  const newFiles = fileKeys(doc).some((key) => !session.stored.has(key));
+  timer = setTimeout(() => save(), newFiles ? 0 : SAVE_DELAY);
 }
 
-/** Guarda ya lo pendiente (al ocultarse la pestaña, antes de cambiar de proyecto…). */
-export function flush() {
+/**
+ * Guarda ya lo pendiente (al ocultarse la pestaña, antes de cambiar de
+ * proyecto…). `quick`: sin regenerar la miniatura.
+ */
+export function flush({ quick = false } = {}) {
   clearTimeout(timer);
   if (saving) return saving;
   if (!session.storage || session.status === 'readonly' || session.status === 'off') return Promise.resolve();
   if (docSignature() === session.savedSig && session.status !== 'error') return Promise.resolve();
-  return save({ quick: document.visibilityState === 'hidden' });
+  return save({ quick });
 }
 
 /** Guarda el documento. `quick`: sin regenerar la miniatura (al irse de la pestaña). */
@@ -213,20 +228,27 @@ export function save({ quick = false } = {}) {
       const sig = JSON.stringify(doc);
       session.failedSig = sig;
       const blobs = blobsFor(doc);
-      const thumb = quick ? undefined : await thumbnail();
-      if (session.record?.id !== id) return; // se cambió de proyecto mientras tanto
       setStatus('saving');
+      // Primero el documento, en una transacción que empieza ya (si la pestaña se
+      // cierra justo ahora, lo importante queda); la miniatura va después.
       // El registro más reciente (p. ej. con el nombre recién cambiado).
-      const record = session.record;
-      const result = await saveProject(session.storage, { record, doc, blobs, stored: session.stored, thumb, now: now() });
+      const result = await saveProject(session.storage, { record: session.record, doc, blobs, stored: session.stored, now: now() });
+      if (session.record?.id !== id) return; // se cambió de proyecto mientras tanto
+      session.stored = result.stored;
+      const thumb = quick ? undefined : await thumbnail();
+      if (thumb && session.record?.id === id) {
+        const withThumb = { ...result.record, name: session.record.name, thumb };
+        await session.storage.write(withThumb, { put: new Map(), remove: [] });
+        result.record = withThumb;
+      }
       if (session.record?.id !== id) return;
       // Si el nombre cambió mientras se escribía, el próximo guardado lo lleva.
       session.record = { ...result.record, name: session.record.name };
-      session.stored = result.stored;
       session.savedSig = sig;
       session.failedSig = '';
       setStatus(docSignature() === sig ? 'saved' : 'pending');
       if (session.status === 'pending') timer = setTimeout(() => save(), SAVE_DELAY);
+      else clearJournal(id);
       post({ type: 'changed' });
       askPersist(doc);
     } catch (err) {
@@ -237,6 +259,28 @@ export function save({ quick = false } = {}) {
     }
   })().finally(() => (saving = null));
   return saving;
+}
+
+// Diario de último momento (ver recoverJournal): el documento sin guardar se
+// anota de forma síncrona, porque IndexedDB puede no terminar si la página se va.
+function writeJournal() {
+  if (!session.storage || !session.record || ['loading', 'readonly', 'off'].includes(session.status)) return;
+  const doc = serialize(docState(), assets);
+  if (JSON.stringify(doc) === session.savedSig) return;
+  storageSet(JOURNAL_STORAGE, JSON.stringify({ id: session.record.id, at: Date.now(), name: session.record.name, doc }));
+}
+
+function readJournal() {
+  try {
+    return JSON.parse(storageGet(JOURNAL_STORAGE) ?? 'null');
+  } catch {
+    return null;
+  }
+}
+
+// Ya está todo guardado: el diario de ese proyecto sobra.
+function clearJournal(id) {
+  if (readJournal()?.id === id) storageRemove(JOURNAL_STORAGE);
 }
 
 /** Reintentar después de un error. */
@@ -314,9 +358,17 @@ export async function openProject(id) {
   try {
     await claim(id);
     const { record, doc, files } = await loadProject(session.storage, id);
-    const loaded = await restoreAssets(doc, files);
-    replaceDocument(doc, loaded);
-    adopt(record, new Set([...files.keys()]));
+    // Lo que quedó anotado al cerrarse la pestaña, si es más nuevo que lo guardado.
+    const recovered = recoverJournal(record, files, readJournal());
+    const use = recovered?.doc ?? doc;
+    const loaded = await restoreAssets(use, files);
+    replaceDocument(use, loaded);
+    adopt(recovered ? { ...record, name: recovered.name } : record, new Set([...files.keys()]));
+    if (recovered) {
+      // Quedó distinto de lo guardado: el guardado automático lo escribe.
+      session.savedSig = JSON.stringify(doc);
+      render();
+    } else clearJournal(id);
     return record;
   } catch (err) {
     setStatus(previous === 'loading' ? 'saved' : previous);

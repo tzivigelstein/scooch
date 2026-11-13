@@ -140,6 +140,36 @@ export function pickProject(list, lastId) {
 }
 
 /**
+ * Diario de último momento: al cerrarse o recargarse la pestaña, IndexedDB no
+ * garantiza terminar de escribir (la conexión se cierra con la página), así que
+ * el documento también se anota de forma síncrona (localStorage). Al abrir el
+ * proyecto, si el diario es de ese proyecto y más nuevo que lo guardado, se usa
+ * el diario. Las piezas cuyos archivos todavía no llegaron a guardarse (las
+ * agregadas en el último segundo) se descartan, junto con sus assets.
+ *
+ * `journal`: {id, at, name, doc} (doc sin validar). Devuelve {doc, name} o
+ * null si no corresponde o no sirve.
+ */
+export function recoverJournal(record, files, journal) {
+  if (!journal || journal.id !== record.id || !(journal.at > (record.modified ?? 0))) return null;
+  let doc;
+  try {
+    doc = deserialize(journal.doc);
+  } catch {
+    return null;
+  }
+  const has = (key) => files.get(key) instanceof Blob;
+  const usable = new Set(
+    Object.entries(doc.assets)
+      .filter(([key, a]) => has(`src:${a.src}`) && has(`preview:${key}`) && (!(a.kind === 'image' && a.derived) || has(`bytes:${a.src}`)))
+      .map(([key]) => key)
+  );
+  const items = doc.items.filter((item) => usable.has(item.asset));
+  const assets = Object.fromEntries(Object.entries(doc.assets).filter(([key]) => items.some((item) => item.asset === key)));
+  return { doc: { ...doc, items, assets }, name: typeof journal.name === 'string' ? journal.name : record.name };
+}
+
+/**
  * Almacenamiento en memoria con la misma interfaz (para pruebas). `fail(op)`
  * puede devolver un error para simular fallas (p. ej. cuota excedida).
  */

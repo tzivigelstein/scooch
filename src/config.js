@@ -28,6 +28,8 @@ export const GRID_MAX = 50;
 export const PIECES_STORAGE = 'piece-preferences';
 /** Unidad de las medidas ('mm' | 'cm' | 'in'), elegida en «Preferencias». */
 export const UNIT_STORAGE = 'unit-preference';
+/** Diario de último momento del proyecto abierto (si la pestaña se cerró sin terminar de guardar). */
+export const JOURNAL_STORAGE = 'project-journal';
 /** Id del último proyecto abierto (para restaurarlo al volver). */
 export const LAST_PROJECT_STORAGE = 'last-project';
 /** Último papel personalizado ({w, h} en mm, como se cargó): preferencia local. */

@@ -41,3 +41,11 @@ export function storageSet(key, value) {
     // Modo privado o almacenamiento bloqueado: el ajuste dura lo que la pestaña.
   }
 }
+
+export function storageRemove(key) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // nada: el almacenamiento puede estar bloqueado
+  }
+}
