@@ -108,7 +108,7 @@ has no destination or names a test that doesn't exist. Careful:
 
 Before a group of browser checks was replaced by lower-layer tests, the product
 code they guarded was broken on purpose with a one-line mutation, in a
-throwaway copy of the repository, and the new tests had to fail. The 338
+throwaway copy of the repository, and the new tests had to fail. The 339
 mutations used are in `e2e/mutations.md`, with the few that survived and why.
 Do the same when you move a check down a layer: a test that doesn't fail when
 the code is wrong doesn't test it.

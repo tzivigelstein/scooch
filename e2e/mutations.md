@@ -6,7 +6,7 @@ was broken with a one-line mutation in a throwaway copy of the repository
 did; a mutation that survived led to a stronger test (noted in its row) or is
 explained as equivalent or not guarded. See docs/testing.md.
 
-338 mutations recorded.
+339 mutations recorded.
 
 ## Selection and groups
 
@@ -409,4 +409,5 @@ explained as equivalent or not guarded. See docs/testing.md.
 |---|---|---|---|
 | projects-storage: autosave (fix 86fe315) | tests/services/projects.test.ts › autosave › undoing back to what is saved doesn’t write the project again | src/services/projects.ts: the new `clearTimeout(timer);` in documentChanged's saved-signature branch → removed | CAUGHT |
 | zoom-and-pan: zoom announcements (fix c330def) | tests/state/zoom.test.ts › what the zoom says › a fit right after + is the last thing said | src/components/canvas/viewport.ts: `cancelAnnounce('zoom');` in fitSheet → removed | CAUGHT |
+| (new) wide screens: only the side panels grow (fix 7059cc0) | e2e/specs/panels-and-tabs.spec.ts › wide screens › only the side panels grow… | src/styles/base.css: `font-size: 100%;` → the old `clamp(100%, calc(100% + (100vw - 1600px) / 300), 125%)` | CAUGHT (left panel 384 px instead of 320 at 2560) |
 | multiple-sheets: long tasks during a drag (sleep replaced by takeRecords) | e2e/specs/performance.spec.ts › with 150 pieces on 10 sheets › drag… / drag at 200 %… | src/hooks/useCanvasGestures.ts: onPointerUp → also schedules a 120 ms busy task | CAUGHT (2 tests: «no long tasks») |
