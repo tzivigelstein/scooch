@@ -28,7 +28,7 @@ yarn e2e          # browser suites (Playwright), see below
 `e2e/suites/` (logs and screenshots go to `e2e/out/`, which is ignored):
 
 ```sh
-yarn e2e --only a-papers,migrate    # some suites (names without .cjs)
+yarn e2e --only paper-sizes,zoom-and-pan   # some suites (names without .cjs)
 yarn e2e --no-build                 # reuse the current dist/
 yarn e2e --dev --strict-console     # against `vite` dev; console warnings fail
 yarn e2e --jobs 3                   # in parallel (timings get noisier)

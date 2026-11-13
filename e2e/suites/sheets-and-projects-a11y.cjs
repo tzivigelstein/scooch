@@ -1,7 +1,7 @@
-// axe-core en los estados nuevos (varias hojas, proyectos vacío y con proyectos, preferencias,
+// axe-core en los estados de varias hojas y proyectos (varias hojas, proyectos vacío y con proyectos, preferencias,
 // papel personalizado con error, confirmaciones, pieza fuera de la hoja), claro y oscuro, 3 anchos.
 const { AxeBuilder } = require('@axe-core/playwright');
-const { open, helpers, addFiles, OUT4, path, fs } = require('../lib/sheets.cjs');
+const { open, helpers, addFiles, OUT, path, fs } = require('../lib/sheets.cjs');
 
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'];
 const cards = (from, n) => Array.from({ length: n }, (_, i) => `card${String(from + i).padStart(2, '0')}.png`);
@@ -89,7 +89,7 @@ async function scan(page, label, results) {
       await s.browser.close();
     }
   }
-  fs.writeFileSync(path.join(OUT4, 'axe.json'), JSON.stringify(results, null, 2));
+  fs.writeFileSync(path.join(OUT, 'sheets-and-projects-a11y.json'), JSON.stringify(results, null, 2));
   const totals = { critical: 0, serious: 0, moderate: 0, minor: 0 };
   for (const r of results) {
     for (const k of Object.keys(totals)) totals[k] += r.byImpact[k] ?? 0;

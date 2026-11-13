@@ -1,5 +1,5 @@
 // Barra de la pieza: no tapa vecinas si puede evitarlo, nunca sale del lienzo ni pisa paneles;
-// en pantallas angostas va anclada abajo (reconstruida tras perderse /tmp; adaptada a v4).
+// en pantallas angostas va anclada abajo.
 const { open, makeChecker, helpers } = require('../lib/base.cjs');
 
 const RECTS = () => {

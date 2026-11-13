@@ -1,4 +1,4 @@
-// D. Proyectos: guardado automático y restauración, exportar igual tras recargar, nombre,
+// Proyectos: guardado automático y restauración, exportar igual tras recargar, nombre,
 // diálogo (nuevo, abrir, duplicar, renombrar, eliminar), alternar sin mezclar ni perder
 // memoria, dos pestañas, sin almacenamiento, proyecto dañado y cuota excedida.
 const { open, launch, makeChecker, helpers, norm, addFiles, pill, pdfInfo, download, heard, ready, BASE } = require('../lib/sheets.cjs');
@@ -32,7 +32,7 @@ const TRACK = () => {
 };
 
 (async () => {
-  const { check, report } = makeChecker('D. Proyectos');
+  const { check, report } = makeChecker('Proyectos');
   const allErrors = [];
 
   // ---------- 1. Guardado automático, restauración y exportar igual

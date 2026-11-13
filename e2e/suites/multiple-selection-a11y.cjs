@@ -1,9 +1,9 @@
-// Accesibilidad de lo nuevo: axe (0 violaciones) en selección múltiple, panel de grupo, alinear y
+// Accesibilidad de la selección múltiple y lo que la rodea: axe (0 violaciones) en selección múltiple, panel de grupo, alinear y
 // distribuir, rechazo con acción, lista multiselección, Preferencias y atajos (claro/oscuro, 1440,
 // 1024, 390 y 2560), y un recorrido solo con teclado.
 const { AxeBuilder } = require('@axe-core/playwright');
 const { open, makeChecker, addFiles, cards, tiles, lib, norm } = require('../lib/selection.cjs');
-const { check, report } = makeChecker('A/B + retoques: axe y teclado');
+const { check, report } = makeChecker('Selección múltiple, Preferencias y atajos: axe y teclado');
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'];
 const totals = { critical: 0, serious: 0, moderate: 0, minor: 0 };
 let states = 0;

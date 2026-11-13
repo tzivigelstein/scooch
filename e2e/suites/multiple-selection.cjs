@@ -1,8 +1,8 @@
-// A. Selección múltiple: cada forma de elegir, marco de grupo, mover/girar/escalar el grupo,
+// Selección múltiple: cada forma de elegir, marco de grupo, mover/girar/escalar el grupo,
 // alinear y distribuir con resultados exactos, y la matriz de ajustes globales.
 const { open, makeChecker, addFiles, tiles, lib, helpers, near, overlapping, centersInside, boxOf, onGrid, norm } = require('../lib/selection.cjs');
 
-const { check, report } = makeChecker('A. Selección múltiple, alinear y distribuir');
+const { check, report } = makeChecker('Selección múltiple, alinear y distribuir');
 const errors = [];
 
 async function selection() {

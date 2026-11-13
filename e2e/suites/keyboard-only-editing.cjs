@@ -1,4 +1,5 @@
-// Recorrido solo con teclado de la v2/v3 (reconstruido tras perderse /tmp; adaptado a v4).
+// Recorrido solo con teclado de la edición: saltar a la hoja, agregar, el orden de Tab, las piezas, su barra,
+// la lista, Propiedades (M y H), la hoja, la grilla y Preferencias.
 const { open, makeChecker, helpers, overlaps, FIX, path, norm } = require('../lib/base.cjs');
 
 (async () => {
@@ -41,7 +42,7 @@ const { open, makeChecker, helpers, overlaps, FIX, path, norm } = require('../li
     if (seq.at(-1) !== r) seq.push(r);
     if (r === 'propiedades') break;
   }
-  // v4: después de las piezas de la hoja está «Agregar hoja» (región «hoja»); before them, the
+  // After the sheet's pieces comes «Agregar hoja» (region «hoja»); before them, the
   // sheet's title (a button to its settings).
   // The zoom control floats in a corner of the canvas: after the piece's toolbar, before Propiedades.
   check('orden: saltar → barra → piezas → título de la hoja → piezas de la hoja → «Agregar hoja» → barra de pieza → zoom → propiedades', seq.join(' > ') === 'saltar > barra > piezas > hoja > pieza > hoja > barra-pieza > zoom > propiedades', seq.join(' > '));

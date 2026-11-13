@@ -1,8 +1,8 @@
-// C/D sin interfaz: el PDF exportado sin recorte ni líneas de corte es igual (contenido de cada
+// Sin interfaz: el PDF exportado sin recorte ni líneas de corte es igual (contenido de cada
 // página, objetos embebidos) al del build anterior, con imágenes, PDF vectorial, PDF con /Rotate,
 // piezas giradas y varias hojas.
 const { open, makeChecker, addFiles, lib, pdfInfo, download } = require('../lib/selection.cjs');
-const { check, report } = makeChecker('C/D. PDF idéntico sin recorte ni líneas de corte');
+const { check, report } = makeChecker('PDF idéntico sin recorte ni líneas de corte');
 
 async function exportFrom(base) {
   process.env.BASE = base;

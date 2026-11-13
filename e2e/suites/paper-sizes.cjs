@@ -1,9 +1,9 @@
-// A. Papeles: presets agrupados, personalizado válido e inválido, coincidencia con preset,
+// Papeles: presets agrupados, personalizado válido e inválido, coincidencia con preset,
 // preferencia recordada y PDF con el tamaño de página correcto.
 const { open, makeChecker, helpers, norm, addFiles, pill, pdfInfo, download } = require('../lib/sheets.cjs');
 
 (async () => {
-  const { check, report } = makeChecker('A. Papeles');
+  const { check, report } = makeChecker('Papeles');
   const s = await open();
   const p = s.page;
   const h = helpers(p);

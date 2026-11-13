@@ -1,5 +1,5 @@
 // Imprimir (iframe + print() espiado), caminos alternativos, descarga y resolución de impresión
-// (reconstruida tras perderse /tmp; adaptada a v4).
+// .
 const { open, makeChecker, helpers, OUT, path, fs, norm } = require('../lib/base.cjs');
 const { pdfInfo } = require('../lib/sheets.cjs');
 

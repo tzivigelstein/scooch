@@ -4,11 +4,8 @@ const { path, fs } = base;
 const { PDFDocument, PDFName } = require('pdf-lib');
 const crypto = require('crypto');
 
-const FIX4 = base.FIX;
-const OUT4 = base.OUT;
-fs.mkdirSync(OUT4, { recursive: true });
 
-const fx = (name) => (fs.existsSync(path.join(FIX4, name)) ? path.join(FIX4, name) : path.join(base.FIX, name));
+const fx = (name) => path.join(base.FIX, name);
 
 async function addFiles(page, names, expected) {
   const before = await page.locator('#sheets .piece').count();
@@ -79,7 +76,7 @@ async function pdfInfo(src) {
 
 async function download(page, selector = '#export') {
   const [d] = await Promise.all([page.waitForEvent('download'), page.click(selector)]);
-  const file = path.join(OUT4, `${Date.now()}-${d.suggestedFilename()}`);
+  const file = path.join(base.OUT, `${Date.now()}-${d.suggestedFilename()}`);
   await d.saveAs(file);
   await page.waitForFunction(() => !/Creando/.test(document.getElementById('pill').hidden ? '' : document.getElementById('pill-text').textContent));
   return { file, name: d.suggestedFilename() };
@@ -98,4 +95,4 @@ const heard = (page, re, ms = 2500) =>
       () => false
     );
 
-module.exports = { ...base, FIX4, OUT4, fx, addFiles, ready, pill, sheets, pdfInfo, download, heard };
+module.exports = { ...base, fx, addFiles, ready, pill, sheets, pdfInfo, download, heard };

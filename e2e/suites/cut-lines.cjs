@@ -1,4 +1,4 @@
-// B. Cut lines: the Hoja tab's controls, the lines on screen equal to the PDF's (positions, weight,
+// Cut lines: the Hoja tab's controls, the lines on screen equal to the PDF's (positions, weight,
 // color, dash), never over a piece nor off the sheet, outline sharing edges, the gap note and its
 // fix, the history and saving with the project.
 const { open, makeChecker, addFiles, lib, download, fs } = require('../lib/selection.cjs');
@@ -48,7 +48,7 @@ const hexToRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)
 const sameLines = (a, b) => a.length === b.length && a.every((l, i) => l.every((v, j) => Math.abs(v - b[i][j]) < 0.01));
 
 (async () => {
-  const { check, report } = makeChecker('B. Cut lines');
+  const { check, report } = makeChecker('Cut lines');
   const errors = [];
   const s = await open();
   const p = s.page;

@@ -1,7 +1,7 @@
-// B. «Duplicar ×N» y «Seleccionar iguales».
+// «Duplicar ×N» y «Seleccionar iguales».
 const { open, makeChecker, addFiles, tiles, lib, near, overlapping, norm } = require('../lib/selection.cjs');
 
-const { check, report } = makeChecker('B. Duplicar ×N y Seleccionar iguales');
+const { check, report } = makeChecker('Duplicar ×N y Seleccionar iguales');
 const errors = [];
 
 async function duplicateTimes() {

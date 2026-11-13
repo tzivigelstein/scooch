@@ -1,4 +1,4 @@
-// Recorrido solo con teclado de las cuatro funciones (ningún evento de mouse).
+// Recorrido solo con teclado (ningún evento de mouse) de los papeles, las unidades, varias hojas y los proyectos.
 const { open, makeChecker, norm, sheets, heard, fx } = require('../lib/sheets.cjs');
 const cards = (from, n) => Array.from({ length: n }, (_, i) => `card${String(from + i).padStart(2, '0')}.png`);
 

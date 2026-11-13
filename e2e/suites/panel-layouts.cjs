@@ -1,4 +1,4 @@
-// Paneles y lista en los tres anchos (reconstruida tras perderse /tmp; adaptada a v4).
+// Paneles y lista en los tres anchos.
 const { open, makeChecker, helpers } = require('../lib/base.cjs');
 
 (async () => {

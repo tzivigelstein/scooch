@@ -1,10 +1,10 @@
-// C/D sin interfaz: un proyecto v2 con recorte (imagen y PDF vectorial, girados) y líneas de corte,
+// Sin interfaz: un proyecto guardado con recorte (imagen y PDF vectorial, girados) y líneas de corte,
 // cargado directo en IndexedDB. Se restaura igual, la pantalla muestra el recorte, el PDF lleva el
 // trazado de recorte (la página de PDF sigue siendo vector) y las marcas, y rasterizado coincide
 // con la captura de la hoja.
-const { open, makeChecker, addFiles, lib, pdfInfo, download, path, fs, OUT5 } = require('../lib/selection.cjs');
+const { open, makeChecker, addFiles, lib, pdfInfo, download, path, fs, OUT } = require('../lib/selection.cjs');
 const { PDFDocument, PDFName, PDFRawStream, decodePDFRawStream } = require('pdf-lib');
-const { check, report } = makeChecker('C/D. Recorte y líneas de corte: proyecto, pantalla y PDF');
+const { check, report } = makeChecker('Recorte y líneas de corte: proyecto, pantalla y PDF');
 const ROOT = path.resolve(__dirname, '../..');
 const PDFJS = path.join(ROOT, 'node_modules/pdfjs-dist/build');
 
@@ -86,7 +86,7 @@ async function contents(file) {
     await p.mouse.move(2, 2);
     await p.waitForTimeout(400);
     const sheetBox = await p.locator('.sheet').first().boundingBox();
-    await p.locator('.sheet').first().screenshot({ path: path.join(OUT5, 'c-screen.png') });
+    await p.locator('.sheet').first().screenshot({ path: path.join(OUT, 'crop-and-cut-lines-screen.png') });
     const plain = await download(p);
     await p.route('**/__pdfjs/**', (route) => route.fulfill({ path: path.join(PDFJS, path.basename(route.request().url())), contentType: 'text/javascript' }));
     const b64 = fs.readFileSync(plain.file).toString('base64');
@@ -104,7 +104,7 @@ async function contents(file) {
       await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
       return canvas.toDataURL('image/png');
     }, { b64, width: sheetBox.width });
-    fs.writeFileSync(path.join(OUT5, 'c-pdf.png'), Buffer.from(dataUrl.split(',')[1], 'base64'));
+    fs.writeFileSync(path.join(OUT, 'crop-and-cut-lines-pdf.png'), Buffer.from(dataUrl.split(',')[1], 'base64'));
     // Same measure as PIL's convert('L') + ImageChops.difference, computed in the page.
     const png = (file) => 'data:image/png;base64,' + fs.readFileSync(file).toString('base64');
     const out = await p.evaluate(async ([a, b]) => {
@@ -137,7 +137,7 @@ async function contents(file) {
         if (v > 64) big++;
       }
       return [sum / (w * h), big / (w * h)];
-    }, [png(path.join(OUT5, 'c-screen.png')), png(path.join(OUT5, 'c-pdf.png'))]);
+    }, [png(path.join(OUT, 'crop-and-cut-lines-screen.png')), png(path.join(OUT, 'crop-and-cut-lines-pdf.png'))]);
     check(`rasterizado: el PDF coincide con la hoja en pantalla (dif. media ${out[0].toFixed(2)}/255, ${(out[1] * 100).toFixed(2)} % de píxeles muy distintos)`, out[0] < 3 && out[1] < 0.01);
     errors.push(...s.errors);
     await s.browser.close();

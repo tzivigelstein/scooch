@@ -6,9 +6,9 @@
 //   yarn e2e --no-build             reuse the current dist/
 //   yarn e2e --dev                  run against `vite` (dev mode); with
 //                                   --strict-console, console warnings fail too
-//   yarn e2e --only a-papers,axe    run some suites (names without .cjs)
+//   yarn e2e --only paper-sizes,zoom-and-pan    run some suites (names without .cjs)
 //   yarn e2e --jobs 3               run suites in parallel (timings get noisier)
-//   yarn e2e --parity URL           also run c-export-parity against the build at URL
+//   yarn e2e --parity URL           also run export-parity against the build at URL
 //
 // Logs go to e2e/out/logs/<suite>.log and a summary to e2e/out/logs/summary.txt.
 
@@ -39,7 +39,7 @@ const parity = option('--parity', process.env.PARITY_BASE ?? null);
 const base = `http://127.0.0.1:${port}/`;
 
 // Suites that only make sense against the production build.
-const BUILD_ONLY = new Set(['smoke-build', 'copy-check']);
+const BUILD_ONLY = new Set(['build-smoke', 'static-copy']);
 
 function run(command, commandArgs, options = {}) {
   return new Promise((done) => {
@@ -108,9 +108,9 @@ async function main() {
   if (only) names = names.filter((name) => only.includes(name));
   if (dev) names = names.filter((name) => !BUILD_ONLY.has(name));
   const skipped = [];
-  if (!parity && names.includes('c-export-parity')) {
-    names = names.filter((name) => name !== 'c-export-parity');
-    skipped.push('c-export-parity (needs --parity URL)');
+  if (!parity && names.includes('export-parity')) {
+    names = names.filter((name) => name !== 'export-parity');
+    skipped.push('export-parity (needs --parity URL)');
   }
 
   if (build && (await run(VITE, ['build', '--logLevel', 'warn'])) !== 0) process.exit(1);

@@ -1,4 +1,4 @@
-// Reglas de superposición, imán y grilla (reconstruida tras perderse /tmp; adaptada a v4).
+// Reglas de superposición, imán y grilla.
 const { open, makeChecker, helpers, overlaps } = require('../lib/base.cjs');
 const { heard, pill } = require('../lib/sheets.cjs');
 

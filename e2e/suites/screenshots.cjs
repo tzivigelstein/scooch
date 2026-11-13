@@ -1,6 +1,6 @@
 // Capturas de los estados nuevos: 3 anchos × claro y oscuro, con detector de textos cortados.
 const { open, helpers, addFiles, path, fs, OUT } = require('../lib/sheets.cjs');
-const DIR = path.resolve(OUT, process.env.SHOTS || 'shots');
+const DIR = path.resolve(OUT, process.env.SHOTS || 'screenshots');
 fs.mkdirSync(DIR, { recursive: true });
 const SIZES = (process.env.SIZES || '1440x900,1024x768,390x844').split(',').map((s) => s.split('x').map(Number));
 const cards = (from, n) => Array.from({ length: n }, (_, i) => `card${String(from + i).padStart(2, '0')}.png`);

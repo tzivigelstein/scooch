@@ -2,9 +2,6 @@
 const base = require('./sheets.cjs');
 const { path, fs } = base;
 
-const OUT5 = base.OUT;
-fs.mkdirSync(OUT5, { recursive: true });
-
 const tiles = (from, n) => Array.from({ length: n }, (_, i) => `tile${String(from + i).padStart(3, '0')}.png`);
 const cards = (from, n) => Array.from({ length: n }, (_, i) => `card${String(from + i).padStart(2, '0')}.png`);
 
@@ -12,7 +9,7 @@ const cards = (from, n) => Array.from({ length: n }, (_, i) => `card${String(fro
  * Exact geometry (mm) read from the styles (px / zoom). The zoom comes from the
  * width of the sheet's box and the paper's real width in mm (`paperW`, A4: 210).
  */
-const GEOM5 = (paperW) => {
+const GEOM_EXACT = (paperW) => {
   const box = document.querySelector('#sheets .sheet-box');
   const zoom = parseFloat(box.style.width) / paperW;
   const H = parseFloat(box.style.height) / zoom;
@@ -52,7 +49,7 @@ const SNAP = () =>
 
 function lib(page, { paperW = 210 } = {}) {
   const h = base.helpers(page);
-  const geom = () => page.evaluate(GEOM5, paperW);
+  const geom = () => page.evaluate(GEOM_EXACT, paperW);
   const snap = () => page.evaluate(SNAP);
   const pill = () => base.pill(page);
   const piece = (id) => page.locator(`#sheets .piece[data-id="${id}"]`);
@@ -117,4 +114,4 @@ function boxOf(g, ids, sheet) {
 
 const onGrid = (v, step, tol = 2e-3) => Math.abs(v / step - Math.round(v / step)) * step <= tol;
 
-module.exports = { ...base, OUT5, tiles, cards, lib, near, overlapping, centersInside, boxOf, onGrid, GEOM5, SNAP };
+module.exports = { ...base, tiles, cards, lib, near, overlapping, centersInside, boxOf, onGrid, GEOM_EXACT, SNAP };

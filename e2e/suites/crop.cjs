@@ -1,9 +1,9 @@
-// A. Crop: every standard photo size on landscape, portrait and square images in the 4 rotations
+// Crop: every standard photo size on landscape, portrait and square images in the 4 rotations
 // (exact to ±0.05 mm); crop mode by mouse and by keyboard (one undo step; Esc changes nothing; a
 // standard size keeps its size); ppp of the cropped area; the list thumbnail; what other actions
 // do with a cropped piece; PDF page changes; save and restore; and the exported PDF against the
 // screen for cropped and rotated image and vector PDF pieces.
-const { open, makeChecker, addFiles, lib, heard, download, path, fs, OUT5 } = require('../lib/selection.cjs');
+const { open, makeChecker, addFiles, lib, heard, download, path, fs, OUT } = require('../lib/selection.cjs');
 const { bareSheet, rasterize, difference } = require('../lib/raster.cjs');
 const { PDFDocument, PDFName, rgb } = require('pdf-lib');
 
@@ -26,7 +26,7 @@ const OVERLAY = () => {
 };
 
 (async () => {
-  const { check, report } = makeChecker('A. Crop and standard photo sizes');
+  const { check, report } = makeChecker('Crop and standard photo sizes');
   const errors = [];
   const { PHOTO_SIZES } = await import(path.join(ROOT, 'src/core/crop.js'));
 
@@ -271,7 +271,7 @@ const OVERLAY = () => {
       const pg = same.addPage([300, 420]);
       pg.drawRectangle({ x: 20, y: 20, width: 260, height: 380, color });
     }
-    const samePath = path.join(OUT5, 'same-size-pages.pdf');
+    const samePath = path.join(OUT, 'same-size-pages.pdf');
     fs.writeFileSync(samePath, await same.save());
     const s = await open();
     const p = s.page;
@@ -337,10 +337,10 @@ const OVERLAY = () => {
     await p.keyboard.press('Escape');
     await bareSheet(p);
     const sheet = await box(p, '.sheet');
-    const screen = path.join(OUT5, 'k-crop-screen.png');
+    const screen = path.join(OUT, 'crop-screen.png');
     await p.locator('.sheet').first().screenshot({ path: screen });
     const { file } = await download(p);
-    const raster = await rasterize(p, file, sheet.width, path.join(OUT5, 'k-crop-pdf.png'));
+    const raster = await rasterize(p, file, sheet.width, path.join(OUT, 'crop-pdf.png'));
     const [mean, big] = await difference(p, screen, raster);
     check(`the PDF matches the sheet on screen (mean ${mean.toFixed(2)}/255, ${(big * 100).toFixed(2)} % very different)`, mean < 3 && big < 0.01);
     // The cropped, turned PDF page is still vector: a form XObject (its page), not an image.

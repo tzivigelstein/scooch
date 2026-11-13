@@ -2,12 +2,12 @@
 // properties tabs: crop mode, the photo size select, the cut line options with the color picker, the
 // piece's and the sheet's context menus, the zoom menu, the Pieza tab with a group, the Hoja tab
 // focused with H and the new-sheet placeholder mid-drag. Screenshots of them (1440, 1024 and 390) in
-// e2e/out/tool-states/.
+// e2e/out/canvas-tools-a11y/.
 const { AxeBuilder } = require('@axe-core/playwright');
 const { open, makeChecker, addFiles, lib, cards, OUT, path, fs } = require('../lib/selection.cjs');
 
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'];
-const SHOTS = path.join(OUT, 'tool-states');
+const SHOTS = path.join(OUT, 'canvas-tools-a11y');
 fs.mkdirSync(SHOTS, { recursive: true });
 
 (async () => {

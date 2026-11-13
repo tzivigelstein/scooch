@@ -1,6 +1,6 @@
-// C. Varias hojas: acomodar, agregar y duplicar, arrastrar y teclado entre hojas, quitar
+// Varias hojas: acomodar, agregar y duplicar, arrastrar y teclado entre hojas, quitar
 // hojas, deshacer/rehacer, PDF de N páginas, impresión por iframe y rendimiento.
-const { open, makeChecker, helpers, norm, addFiles, pill, sheets, pdfInfo, download, heard, OUT4, path, fs } = require('../lib/sheets.cjs');
+const { open, makeChecker, helpers, norm, addFiles, pill, sheets, pdfInfo, download, heard, OUT, path, fs } = require('../lib/sheets.cjs');
 
 const cards = (from, n) => Array.from({ length: n }, (_, i) => `card${String(from + i).padStart(2, '0')}.png`);
 const EPS = 0.05;
@@ -42,7 +42,7 @@ const SPY = () => {
 };
 
 (async () => {
-  const { check, report } = makeChecker('C. Varias hojas');
+  const { check, report } = makeChecker('Varias hojas');
   const allErrors = [];
 
   // ---------- 1. Acomodar 20 piezas iguales → 3 hojas 9 + 9 + 2
@@ -416,7 +416,7 @@ const SPY = () => {
       return { median: times[60], p95: times[114], max: times.at(-1), outside, longs };
     });
     check('arrastre a 200 % y fuera de las hojas (con los lugares para una hoja nueva): < 1 ms (p95), sin tareas largas', dragZoomed.outside && dragZoomed.p95 < 1 && dragZoomed.longs.filter((x) => x > 50).length === 0, JSON.stringify(dragZoomed));
-    fs.writeFileSync(path.join(OUT4, 'perf.json'), JSON.stringify({ loadMs, drag, scroll, sel, zoom, dragZoomed }, null, 2));
+    fs.writeFileSync(path.join(OUT, 'perf.json'), JSON.stringify({ loadMs, drag, scroll, sel, zoom, dragZoomed }, null, 2));
     allErrors.push(...s.errors);
     await s.browser.close();
   }

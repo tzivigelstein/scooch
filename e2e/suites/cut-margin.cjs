@@ -1,4 +1,4 @@
-// B+. The cut margin: lines on each piece's cut box (screen = PDF) at +2, 0 and −1 mm; arranging keeps
+// The cut margin: lines on each piece's cut box (screen = PDF) at +2, 0 and −1 mm; arranging keeps
 // the cut boxes a gap apart; changing the margin or the mode never moves pieces; the history and saving.
 const { open, makeChecker, addFiles, lib, download, fs } = require('../lib/selection.cjs');
 const { PDFDocument, PDFRawStream, decodePDFRawStream } = require('pdf-lib');
@@ -26,7 +26,7 @@ async function pdfLines(file) {
 const same = (a, b) => a.length === b.length && a.every((l, i) => l.every((v, j) => Math.abs(v - b[i][j]) < 0.01));
 
 (async () => {
-  const { check, report } = makeChecker('B+. Cut margin');
+  const { check, report } = makeChecker('Cut margin');
   const errors = [];
   const s = await open();
   const p = s.page;

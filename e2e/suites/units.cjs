@@ -1,9 +1,9 @@
-// B. Unidades globales: cada campo en mm/cm/in, fracciones y sufijos, flechas por unidad,
+// Unidades globales: cada campo en mm/cm/in, fracciones y sufijos, flechas por unidad,
 // etiquetas y anuncios, y la ida y vuelta mm → cm → in → mm sin tocar el documento.
 const { open, makeChecker, helpers, norm, addFiles, pdfInfo, download, heard } = require('../lib/sheets.cjs');
 
 (async () => {
-  const { check, report } = makeChecker('B. Unidades');
+  const { check, report } = makeChecker('Unidades');
   const s = await open();
   const p = s.page;
   const h = helpers(p);

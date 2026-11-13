@@ -1,4 +1,4 @@
-// Modal de donación al imprimir o descargar (reconstruida tras perderse /tmp).
+// Modal de donación al imprimir o descargar.
 const { open, makeChecker, helpers, BASE } = require('../lib/base.cjs');
 const URL_OK = 'https://www.patreon.com/ejemplo';
 

@@ -1,5 +1,5 @@
-// Regresión funcional (reconstruida de la suite v3 tras perderse /tmp; adaptada a v4:
-// varias hojas, sin cascada superpuesta, reducir para usar 1 hoja, campos de longitud con coma).
+// Regresión funcional: varias hojas, sin cascada superpuesta, reducir para usar 1 hoja, campos de
+// longitud con coma.
 const { open, makeChecker, helpers, overlaps, outsideMargin, OUT, path, fs, norm } = require('../lib/base.cjs');
 const num = (s) => parseFloat(String(s).replace(',', '.'));
 
@@ -41,7 +41,7 @@ const num = (s) => parseFloat(String(s).replace(',', '.'));
   check('todo dentro del margen', outsideMargin(g).length === 0);
   check('nuevas limitadas a 48 %', g.pieces.filter((p) => p.id !== big.id).every((p) => p.w <= 0.48 * 190 + 0.01 && p.h <= 0.48 * 277 + 0.01));
 
-  // ---- Más que no entran: v4 (a propósito) van a una hoja nueva, sin cascada superpuesta
+  // ---- Más que no entran: van a una hoja nueva (a propósito), sin cascada superpuesta
   const before3 = await geom();
   await load('tall.png', 'exif6.jpg');
   g = await geom();
@@ -92,7 +92,7 @@ const num = (s) => parseFloat(String(s).replace(',', '.'));
   check('rehacer vuelve a la página 2', (await page.inputValue('#page')) === '2');
   await page.keyboard.press('Control+z');
 
-  // ---- Acomodar: v4 (a propósito) reparte en las hojas necesarias y ofrece reducir para usar 1
+  // ---- Acomodar: reparte (a propósito) en las hojas necesarias y ofrece reducir para usar 1
   const g4 = await geom();
   await page.click('#arrange');
   g = await geom();
@@ -112,7 +112,7 @@ const num = (s) => parseFloat(String(s).replace(',', '.'));
   g = await geom();
   check('…y no agregó un paso de deshacer (un Ctrl+Z deshace la reducción)', g.pieces.every((p) => Math.abs(area(p) - area(byId(g4, p.id))) < 1e-4 * area(p)));
   await page.keyboard.press('Control+Shift+z');
-  await page.screenshot({ path: path.join(OUT, 'reg-01-acomodado-a4.png') });
+  await page.screenshot({ path: path.join(OUT, 'functional-regression-arranged-a4.png') });
 
   // ---- A6: lo que no entra ni solo queda donde estaba y se ofrece «Ajustar a la hoja»
   const beforeShrink = await geom();
@@ -278,7 +278,7 @@ const num = (s) => parseFloat(String(s).replace(',', '.'));
   check('rellenar: las demás hojas siguen', (await page.locator('.page').count()) === sheetsBefore);
   await page.keyboard.press('Control+z');
   check('deshacer rellenar', (await count()) === 7);
-  await page.screenshot({ path: path.join(OUT, 'reg-02-copias.png') });
+  await page.screenshot({ path: path.join(OUT, 'functional-regression-copies.png') });
 
   // ---- Quitar todas (y deshacer)
   await page.click('#clear');
@@ -334,7 +334,7 @@ const num = (s) => parseFloat(String(s).replace(',', '.'));
   check('antes de exportar: sin superposición', overlaps(g.pieces, g.gap).length === 0 && outsideMargin(g).length === 0);
   const rots = g.pieces.map((p) => p.rot);
   check('hay piezas con 90, 180 y 270', [90, 180, 270].every((r) => rots.includes(r)), rots.join(','));
-  await page.screenshot({ path: path.join(OUT, 'reg-03-antes-de-exportar.png') });
+  await page.screenshot({ path: path.join(OUT, 'functional-regression-before-export.png') });
   const [download] = await Promise.all([page.waitForEvent('download'), page.click('#export')]);
   await download.saveAs(path.join(OUT, download.suggestedFilename()));
   await h.waitIdle();

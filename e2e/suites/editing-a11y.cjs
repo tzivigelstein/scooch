@@ -1,4 +1,5 @@
-// axe-core en cada estado relevante de la v2/v3, claro y oscuro (los estados nuevos: ../e-axe.js).
+// axe-core en los estados de edición (vacío, piezas, selección, avisos, secciones, tooltip, atajos,
+// donación, paneles superpuestos), claro y oscuro (varias hojas y proyectos: sheets-and-projects-a11y).
 const { AxeBuilder } = require('@axe-core/playwright');
 const { open, helpers, BASE, OUT, path, fs } = require('../lib/base.cjs');
 
@@ -81,7 +82,7 @@ async function scan(page, label, results) {
       await s.browser.close();
     }
   }
-  fs.writeFileSync(path.join(OUT, 'axe.json'), JSON.stringify(results, null, 2));
+  fs.writeFileSync(path.join(OUT, 'editing-a11y.json'), JSON.stringify(results, null, 2));
   const totals = { critical: 0, serious: 0, moderate: 0, minor: 0 };
   for (const r of results) {
     for (const k of Object.keys(totals)) totals[k] += r.byImpact[k] ?? 0;
