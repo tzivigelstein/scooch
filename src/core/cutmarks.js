@@ -95,12 +95,22 @@ function outline(q) {
   ];
 }
 
+// Test-only work counter (see tests/performance): while `countWork` has set a
+// counter, each box a segment is compared against adds 1 to its `checks`, so a
+// test can bound the work instead of the time. Null in the app: one null check
+// per comparison.
+let work = null;
+export function countWork(counter) {
+  work = counter;
+}
+
 // Removes what of an outline segment runs strictly inside one of `above`
 // (pieces stacked over it): it would print over their image. A segment on an
 // edge of theirs stays (it is a shared cut).
 function notUnder(seg, above) {
   let parts = [[seg.a, seg.b]];
   for (const q of above) {
+    if (work) work.checks++;
     const [from, to, lo, hi] = span(q, seg.dir);
     if (seg.c <= lo + TOL || seg.c >= hi - TOL) continue;
     parts = parts.flatMap(([a, b]) => {
@@ -120,6 +130,7 @@ function notUnder(seg, above) {
 function outsidePieces(seg, pieces) {
   let parts = [[seg.a, seg.b]];
   for (const q of pieces) {
+    if (work) work.checks++;
     const [from, to, lo, hi] = span(q, seg.dir);
     if (seg.c < lo - TOL || seg.c > hi + TOL) continue;
     parts = parts.flatMap(([a, b]) => {

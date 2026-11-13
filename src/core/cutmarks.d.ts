@@ -30,4 +30,11 @@ export interface CutLine {
   y2: number;
 }
 
+/** Work cutLines did while counting: boxes a segment was compared against. */
+export interface CutWork {
+  checks: number;
+}
+/** Test-only: add cutLines' work to `counter` from now on (null stops counting). */
+export function countWork(counter: CutWork | null): void;
+
 export function cutLines(rects: readonly Rect[], options?: { mode?: CutMode; length?: number; offset?: number; margin?: number; bounds?: Rect | null }): CutLine[];

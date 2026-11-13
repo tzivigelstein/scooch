@@ -18,6 +18,14 @@ export interface PackOptions {
   obstacles?: readonly Rect[];
 }
 
+/** Work the search did while counting: placement passes and free spaces examined. */
+export interface PackWork {
+  attempts: number;
+  spots: number;
+}
+/** Test-only: add the search's work to `counter` from now on (null stops counting). */
+export function countWork(counter: PackWork | null): void;
+
 export function score<I extends RectId>(placements: readonly Placement<I>[], rects: readonly IdSize<I>[], W: number, H: number): number;
 /** Places every rect inside W × H without overlaps, or null when they don't all fit. */
 export function pack<I extends RectId>(rects: readonly IdSize<I>[], W: number, H: number, options?: PackOptions): Placement<I>[] | null;

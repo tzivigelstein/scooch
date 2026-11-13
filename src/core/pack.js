@@ -85,10 +85,21 @@ function orientations(rects, rotate) {
   return variants;
 }
 
+// Test-only work counter (see tests/performance): while `countWork` has set a
+// counter, each placement pass over an ordering of the pieces adds 1 to its
+// `attempts` and each free space examined for a piece adds 1 to its `spots`,
+// so a test can bound the work instead of the time. Null in the app: one null
+// check per pass and per piece placed.
+let work = null;
+export function countWork(counter) {
+  work = counter;
+}
+
 // Mejor hueco para la pieza según la heurística (con su gap), o null si no entra.
 function bestSpot(p, free, gap, heuristic) {
   let best = null;
   for (const turn of p.free ? [false, true] : [false]) {
+    if (work) work.spots += free.length;
     const w = (turn ? p.h : p.w) + gap;
     const h = (turn ? p.w : p.h) + gap;
     for (const f of free) {
@@ -102,6 +113,7 @@ function bestSpot(p, free, gap, heuristic) {
 
 // Ubica las piezas en el orden dado; null si alguna no entra.
 function packOnce(pieces, start, gap, heuristic) {
+  if (work) work.attempts++;
   let free = start;
   const placements = [];
   for (const p of pieces) {
@@ -446,6 +458,7 @@ function fitsAlone(r, start, gap, rotate) {
 
 // Como packOnce, pero saltea las piezas que no entran.
 function fillOnce(pieces, start, gap, heuristic) {
+  if (work) work.attempts++;
   let free = start;
   const placements = [];
   for (const p of pieces) {
@@ -461,6 +474,7 @@ function fillOnce(pieces, start, gap, heuristic) {
 // ninguna) y después, si `topUp`, rellena con las que quedaron afuera. Los
 // grupos van en el orden de su primera pieza.
 function fillGroups(pieces, start, gap, heuristic, info, topUp) {
+  if (work) work.attempts++;
   const blocks = new Map();
   for (const p of pieces) {
     const g = info.get(p.id).group;
