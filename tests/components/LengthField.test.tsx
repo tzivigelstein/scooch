@@ -8,7 +8,7 @@ import { commit, endEdit, historyDepth, resetHistory } from '../../src/state/his
 import { setUnit } from '../../src/state/prefs.ts';
 import { getView } from '../../src/state/view.ts';
 
-function Field({ initial = 10.5, onApply }: { initial?: number; onApply?: (mm: number, final: boolean) => void }) {
+function Field({ initial = 10.5, onApply, range = { min: 0, max: 50 } }: { initial?: number; onApply?: (mm: number, final: boolean) => void; range?: { min: number; max: number } }) {
   const [mm, setMm] = useState(initial);
   return (
     <>
@@ -16,7 +16,7 @@ function Field({ initial = 10.5, onApply }: { initial?: number; onApply?: (mm: n
         id="field"
         aria-label="Largo"
         value={() => mm}
-        range={() => ({ min: 0, max: 50 })}
+        range={() => range}
         apply={(v, { final }) => {
           setMm(v);
           onApply?.(v, final);
@@ -175,5 +175,139 @@ describe('LengthField', () => {
     input().value = '12,3';
     act(() => setUnit('cm'));
     expect(input().value).toBe('12,3');
+  });
+});
+
+describe('LengthField in cm and inches', () => {
+  const shown = () => document.querySelector('output')!.textContent;
+  const confirm = (text: string) => {
+    type(text);
+    fireEvent.keyDown(input(), { key: 'Enter' });
+  };
+  const helper = () => {
+    const ids = (input().getAttribute('aria-describedby') ?? '').split(' ').filter(Boolean);
+    return ids.length ? (document.getElementById(ids[0])?.textContent ?? '').replace(/ /g, ' ') : null;
+  };
+
+  test('a text field with the decimal keyboard (type text, inputmode decimal), without autocomplete or spellcheck', () => {
+    render(<Field />);
+    expect([input().type, input().getAttribute('inputmode'), input().getAttribute('autocomplete'), input().getAttribute('spellcheck')]).toEqual(['text', 'decimal', 'off', 'false']);
+  });
+
+  test('in: shows the value to 3 decimals (10 mm → 0,394; 67,733 mm → 2,667)', () => {
+    setUnit('in');
+    render(<Field initial={10} />);
+    expect(input().value).toBe('0,394');
+    cleanup();
+    render(<Field initial={(800 / 300) * 25.4} />);
+    expect(input().value).toBe('2,667');
+  });
+
+  test('cm: reads «2.5», «30 mm» and «1/2 in», and shows each in cm', () => {
+    setUnit('cm');
+    render(<Field />);
+    input().focus();
+    for (const [text, mm, value] of [
+      ['2.5', '25', '2,5'],
+      ['30 mm', '30', '3'],
+      ['1/2 in', '12.7', '1,27'],
+    ]) {
+      confirm(text);
+      expect([shown(), input().value], text).toEqual([mm, value]);
+    }
+  });
+
+  test('in: reads «1 1/2», 1-1/4 with the inch mark and «25,4 mm», and shows each in inches', () => {
+    setUnit('in');
+    render(<Field />);
+    input().focus();
+    for (const [text, mm, value] of [
+      ['1 1/2', 38.1, '1,5'],
+      ['1-1/4"', 31.75, '1,25'],
+      ['25,4 mm', 25.4, '1'],
+    ] as const) {
+      confirm(text);
+      expect(Number(shown())).toBeCloseTo(mm, 9);
+      expect(input().value, text).toBe(value);
+    }
+  });
+
+  test('cm: arrows step 0,1 cm; Shift 1 cm; Alt 0,01 cm', () => {
+    setUnit('cm');
+    render(<Field initial={10} />);
+    input().focus();
+    fireEvent.keyDown(input(), { key: 'ArrowUp' });
+    expect([Number(shown()), input().value]).toEqual([11, '1,1']);
+    fireEvent.keyDown(input(), { key: 'ArrowUp', shiftKey: true });
+    expect([Number(shown()), input().value]).toEqual([21, '2,1']);
+    fireEvent.keyDown(input(), { key: 'ArrowDown', altKey: true });
+    expect(Number(shown())).toBeCloseTo(20.9, 9);
+    expect(input().value).toBe('2,09');
+  });
+
+  test('in: arrows step 1/16 in; Shift 1/2 in; Alt 1/64 in', () => {
+    setUnit('in');
+    render(<Field initial={38.1} range={{ min: 0, max: 100 }} />);
+    input().focus();
+    fireEvent.keyDown(input(), { key: 'ArrowUp' });
+    expect(Number(shown())).toBeCloseTo(38.1 + 25.4 / 16, 9);
+    expect(input().value).toBe('1,563');
+    fireEvent.keyDown(input(), { key: 'ArrowUp', shiftKey: true });
+    expect(Number(shown())).toBeCloseTo(38.1 + 25.4 / 16 + 12.7, 9);
+    expect(input().value).toBe('2,063');
+    fireEvent.keyDown(input(), { key: 'ArrowUp', altKey: true });
+    expect(Number(shown())).toBeCloseTo(38.1 + 25.4 / 16 + 12.7 + 25.4 / 64, 9);
+    expect(input().value).toBe('2,078');
+  });
+
+  test('cm: out of range the field says «Máximo 5 cm» or «Mínimo 0 cm», and confirming keeps the limit', () => {
+    setUnit('cm');
+    render(<Field />);
+    input().focus();
+    type('7');
+    expect(input().getAttribute('aria-invalid')).toBe('true');
+    expect(helper()).toBe('Máximo 5 cm');
+    expect(shown()).toBe('50');
+    type('-1');
+    expect(helper()).toBe('Mínimo 0 cm');
+    expect(shown()).toBe('0');
+    type('9');
+    fireEvent.keyDown(input(), { key: 'Enter' });
+    expect([shown(), input().value, helper(), input().getAttribute('aria-invalid')]).toEqual(['50', '5', null, null]);
+  });
+
+  test('in: the limit is said in inches', () => {
+    setUnit('in');
+    render(<Field />);
+    input().focus();
+    type('3');
+    expect(helper()).toBe('Máximo 1,969 in');
+  });
+
+  test('cm: confirming 0 where the minimum is 0,07 cm (a 1 % width) keeps the minimum', () => {
+    setUnit('cm');
+    const min = 67.733 / 100;
+    render(<Field initial={67.733} range={{ min, max: 677.33 }} />);
+    input().focus();
+    type('0');
+    expect(helper()).toBe('Mínimo 0,07 cm');
+    fireEvent.keyDown(input(), { key: 'Enter' });
+    expect(Number(shown())).toBeCloseTo(min, 9);
+    expect(input().value).toBe('0,07');
+  });
+
+  test('in: something unreadable goes back to the value and says so in inches; half a fraction is not an error yet', () => {
+    vi.useFakeTimers();
+    setUnit('in');
+    const applied: number[] = [];
+    render(<Field onApply={(mm) => applied.push(mm)} />);
+    input().focus();
+    type('1 1/');
+    expect(applied).toEqual([]);
+    type('hola');
+    fireEvent.change(input());
+    expect(input().value).toBe('0,413');
+    act(() => vi.advanceTimersByTime(100));
+    expect(document.getElementById('live-assertive')!.textContent!.replace(/ /g, ' ')).toMatch(/«hola» no es una medida válida\. Se mantiene 0,413 in\./);
   });
 });
