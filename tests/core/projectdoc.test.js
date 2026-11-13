@@ -181,6 +181,7 @@ describe('deserialize', () => {
     assert.equal(open({ paper: 'B0' }).paper, 'A4');
     assert.equal(open({ paper: { custom: true, w: 5, h: 300 } }).paper, 'A4');
     assert.equal(open({ gap: NaN }).gap, 5);
+    assert.equal(open({ gap: 'x' }).gap, 5);
     assert.equal(open({ landscape: 'yes', rotate: null }).landscape, false);
     const item = (changes) => open({ items: [{ ...doc.items[0], ...changes }] }).items[0];
     assert.equal(item({ crop: 'todo' }).crop, null);
