@@ -1,5 +1,9 @@
-// Estado de la hoja, assets cargados e historial de deshacer/rehacer.
-// Todas las medidas internas en mm.
+// Estado del documento (hojas y piezas), assets cargados e historial de
+// deshacer/rehacer. Todas las medidas internas en mm.
+//
+// El documento tiene una lista ordenada de hojas (siempre al menos una), todas
+// con el mismo papel, orientación y margen; cada pieza pertenece a una hoja
+// (`sheet`, el id) y sus x/y son relativas a esa hoja.
 
 import { MAX_UNDO, GRID_STORAGE, GRID_DEFAULTS, GRID_MIN, GRID_MAX, PIECES_STORAGE, UNIT_STORAGE } from './config.js';
 import { sizeOf } from './papers.js';
@@ -9,7 +13,8 @@ import { storageGet, storageSet, clamp } from './util.js';
 export const assets = new Map();
 
 export const state = {
-  items: [],
+  sheets: [{ id: 1 }],
+  items: [], // {id, asset, sheet, x, y, scale, r}, en orden de apilado
   selected: null,
   paper: 'A4', // id de un preset de papers.js o {custom: true, w, h}
   landscape: false,
@@ -76,8 +81,12 @@ export function setGrid(changes) {
 /** Aviso de la última acción ({text, warn, action}) y texto mientras se carga algo. */
 export const status = { flash: null, busyText: '' };
 
+/** Vista (no entra en el historial): la hoja actual cuando no hay pieza seleccionada. */
+export const view = { sheet: 1 };
+
 let nextItemId = 1;
 let nextAssetId = 1;
+let nextSheetId = 2;
 
 // ---------- Render ----------
 
@@ -110,6 +119,28 @@ export function dims(item) {
 export const selectedItem = () => state.items.find((item) => item.id === state.selected) ?? null;
 export const findItem = (id) => state.items.find((item) => item.id === id);
 
+// ---------- Hojas ----------
+
+export const newSheet = () => ({ id: nextSheetId++ });
+export const newSheetId = () => nextSheetId++;
+/** Posición de la hoja en la lista (desde 0), o −1. */
+export const sheetIndex = (id) => state.sheets.findIndex((sheet) => sheet.id === id);
+/** Piezas de una hoja, en orden de apilado. */
+export const itemsOn = (id) => state.items.filter((item) => item.sheet === id);
+
+/** La hoja actual: la de la pieza seleccionada o, si no hay, la de la vista. */
+export function currentSheet() {
+  const item = selectedItem();
+  if (item) return item.sheet;
+  return sheetIndex(view.sheet) >= 0 ? view.sheet : state.sheets[0].id;
+}
+
+/** Rectángulo de una pieza en su hoja: {id, sheet, x, y, w, h}. */
+export function boxOf(item) {
+  const [w, h] = dims(item);
+  return { id: item.id, sheet: item.sheet, x: item.x, y: item.y, w, h };
+}
+
 export function addAsset(asset) {
   const key = `a${nextAssetId++}`;
   assets.set(key, asset);
@@ -137,7 +168,15 @@ export const canRedo = () => redoStack.length > 0;
 
 function snapshot() {
   const { selected, paper, landscape, margin, gap } = state;
-  return { items: state.items.map((item) => ({ ...item })), selected, paper, landscape, margin, gap };
+  return {
+    sheets: state.sheets.map((sheet) => ({ ...sheet })),
+    items: state.items.map((item) => ({ ...item })),
+    selected,
+    paper,
+    landscape,
+    margin,
+    gap,
+  };
 }
 
 /** Guarda el estado actual antes de modificarlo. Con `key`, ediciones seguidas comparten un paso. */
@@ -154,6 +193,7 @@ export function commit(key = null) {
 export const endEdit = () => (editKey = null);
 
 function restore(snap) {
+  state.sheets = snap.sheets.map((sheet) => ({ ...sheet }));
   state.items = snap.items.map((item) => ({ ...item }));
   state.selected = snap.selected;
   state.paper = snap.paper;

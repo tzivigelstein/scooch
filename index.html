@@ -16,7 +16,7 @@
     <script type="module" src="/src/app.js"></script>
   </head>
   <body>
-    <a id="skip" class="skip-link" href="#sheet" data-i18n="app.skip"></a>
+    <a id="skip" class="skip-link" href="#sheets" data-i18n="app.skip"></a>
 
     <header class="topbar">
       <a class="brand" href="./">
@@ -99,20 +99,19 @@
         <h1 class="sr-only" data-i18n="app.heading"></h1>
 
         <div id="stage" class="stage">
-          <div class="sheet-wrap">
-            <div id="sheet-box" class="sheet-box">
-              <div id="sheet" class="sheet" role="group" data-i18n-label="sheet.label" tabindex="-1">
-                <div id="grid" class="grid-layer" aria-hidden="true" hidden></div>
-                <div id="safe" class="safe" aria-hidden="true"></div>
-                <button type="button" id="empty" class="dropzone" data-aks="O" data-single>
-                  <span class="dropzone-icon"><span data-icon="upload"></span></span>
-                  <span id="empty-text" class="dropzone-title" data-i18n="sheet.drop"></span>
-                  <span id="empty-sub" class="dropzone-sub" data-i18n="sheet.private"></span>
-                </button>
-              </div>
-              <div id="frame" class="frame" aria-hidden="true" hidden><span id="handle" class="handle"></span></div>
+          <!-- Las hojas (.page) las arma sheetview.js, una debajo de otra. -->
+          <div id="sheets" class="sheets">
+            <button type="button" id="empty" class="dropzone" data-aks="O" data-single>
+              <span class="dropzone-icon"><span data-icon="upload"></span></span>
+              <span id="empty-text" class="dropzone-title" data-i18n="sheet.drop"></span>
+              <span id="empty-sub" class="dropzone-sub" data-i18n="sheet.private"></span>
+            </button>
+            <div id="drag-layer" class="drag-layer"></div>
+            <div id="frame" class="frame" aria-hidden="true" hidden><span id="handle" class="handle"></span></div>
+            <div class="sheets-foot">
+              <p id="paper-label" class="paper-label"></p>
+              <button type="button" id="add-sheet" class="add-sheet" data-i18n-tip="sheet.addTip"><span data-icon="file-plus"></span><span data-i18n="sheet.add"></span></button>
             </div>
-            <p id="paper-label" class="paper-label" data-i18n="sheet.paperLabel" data-i18n-params='{"paper":"A4","w":210,"h":297}'></p>
           </div>
         </div>
 
@@ -211,7 +210,7 @@
               <summary><span data-icon="grid-2x2-plus"></span><span data-i18n="props.fill"></span></summary>
               <div class="fill-body">
                 <p id="fill-summary" class="fill-summary" aria-live="polite"></p>
-                <p class="callout"><span data-icon="triangle-alert"></span><span data-i18n="props.fillWarning"></span></p>
+                <p class="callout"><span data-icon="triangle-alert"></span><span id="fill-warning" data-i18n="props.fillWarning"></span></p>
                 <button type="button" id="fill" class="btn primary block" data-i18n="props.fill"></button>
               </div>
             </details>
@@ -387,6 +386,19 @@
         <p data-i18n="shortcuts.private"></p>
       </div>
     </dialog>
+    <dialog id="confirm" class="dialog confirm" aria-labelledby="confirm-title" aria-describedby="confirm-body">
+      <div class="dialog-head">
+        <h2 id="confirm-title" class="dialog-title"></h2>
+      </div>
+      <div class="dialog-body">
+        <p id="confirm-body" class="confirm-body"></p>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" id="confirm-cancel" class="btn ghost" data-i18n="confirm.cancel"></button>
+        <button type="button" id="confirm-ok" class="btn danger"></button>
+      </div>
+    </dialog>
+
     <dialog id="prefs" class="dialog prefs" aria-labelledby="prefs-title">
       <div class="dialog-head">
         <h2 id="prefs-title" class="dialog-title" data-i18n="prefs.title"></h2>

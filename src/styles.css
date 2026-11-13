@@ -572,6 +572,43 @@ kbd {
   list-style: none;
 }
 
+/* Con varias hojas: un grupo por hoja, con encabezado fijo arriba al hacer scroll. */
+.list-group {
+  margin: 0;
+  padding: 0;
+}
+
+.list-group + .list-group {
+  margin-top: 6px;
+}
+
+.group-head {
+  position: sticky;
+  top: -2px;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 8px 4px 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.group-count {
+  color: var(--muted);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.group-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .piece-row {
   position: relative;
   display: grid;
@@ -1278,20 +1315,156 @@ input[role="switch"]:checked::before {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 36px 64px;
+  flex-direction: column;
+  padding: 20px 36px 64px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
-.sheet-wrap {
+/* Las hojas, una debajo de otra. Con pocas, quedan centradas en el alto (los
+   márgenes automáticos de flex no recortan cuando hay scroll). */
+.sheets {
+  position: relative;
+  flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 20px;
+  margin: auto;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 36px;
+  padding: 0 0 4px 2px;
+}
+
+.page-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  transition: color var(--fast) var(--ease);
+}
+
+/* Hoja actual: etiqueta en acento y un borde sutil alrededor de la hoja. */
+.sheets[data-many] .page.is-current .page-label {
+  color: var(--accent-strong);
+}
+
+.sheets[data-many] .page.is-current .sheet {
+  box-shadow: var(--sheet-shadow), 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Quitar hoja: aparece al pasar o enfocar (y en la hoja actual); con el dedo, siempre. */
+.page-remove {
+  opacity: 0;
+  color: var(--muted);
+  transition: opacity var(--fast) var(--ease), background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.page:hover .page-remove,
+.page:focus-within .page-remove,
+.sheets[data-many] .page.is-current .page-remove {
+  opacity: 1;
+}
+
+.page-remove:hover:not(:disabled) {
+  color: var(--danger);
+}
+
+@media (hover: none) {
+  .page-remove {
+    opacity: 1;
+  }
+}
+
+/* Arrastrando una pieza hacia otra hoja: la de destino se marca (no solo color: borde punteado). */
+.page.is-drop-target .sheet {
+  outline: 2px dashed var(--accent);
+  outline-offset: 4px;
 }
 
 .sheet-box {
   position: relative;
   flex: none;
+}
+
+/* La pieza que se arrastra viaja por encima de todas las hojas, sin recorte. */
+.drag-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.drag-layer .piece {
+  pointer-events: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.sheet-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: #8a909b;
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.sheets-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  align-self: stretch;
+  min-height: 32px;
+  margin-top: -6px;
+}
+
+.add-sheet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.add-sheet .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.add-sheet:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.add-sheet:disabled {
+  opacity: 0.45;
 }
 
 .sheet {
@@ -1309,7 +1482,7 @@ input[role="switch"]:checked::before {
   outline-offset: 4px;
 }
 
-.workspace.is-drop-target .sheet {
+.workspace.is-drop-target .page.is-current .sheet {
   outline: 3px dashed var(--accent);
   outline-offset: 6px;
 }
@@ -1328,7 +1501,7 @@ input[role="switch"]:checked::before {
 }
 
 .paper-label {
-  margin: 12px 0 0;
+  margin: 0;
   color: var(--muted);
   font-size: 12px;
   font-weight: 500;
@@ -1441,12 +1614,12 @@ input[role="switch"]:checked::before {
   z-index: 5;
 }
 
-.sheet-box:has(.piece.is-selected:focus-visible) .frame {
+.sheets:has(.piece.is-selected:focus-visible) .frame {
   box-shadow: 0 0 0 2px #fff, 0 0 0 5px var(--sel-strong), 0 0 0 6px rgb(255 255 255 / 0.9);
 }
 
 .frame.is-blocked,
-.sheet-box:has(.piece.is-selected:focus-visible) .frame.is-blocked {
+.sheets:has(.piece.is-selected:focus-visible) .frame.is-blocked {
   box-shadow: 0 0 0 1px rgb(255 255 255 / 0.95);
   outline: 2.5px dashed var(--blocked);
   outline-offset: 1px;
@@ -1489,15 +1662,15 @@ input[role="switch"]:checked::before {
 }
 
 /* Animación al reacomodar */
-.sheet-box.is-animating,
-.sheet-box.is-animating .frame,
-.sheet-box.is-animating .piece {
+.sheets.is-animating .sheet-box,
+.sheets.is-animating .frame,
+.sheets.is-animating .piece {
   transition-property: left, top, width, height;
   transition-duration: 180ms;
   transition-timing-function: var(--ease);
 }
 
-.sheet-box.is-animating .piece img {
+.sheets.is-animating .piece img {
   transition: transform 180ms var(--ease), width 180ms var(--ease), height 180ms var(--ease);
 }
 
@@ -1519,9 +1692,11 @@ input[role="switch"]:checked::before {
   will-change: transform;
 }
 
-.canvas.is-dragging .piecebar {
+.canvas.is-dragging .piecebar,
+.piecebar.is-offscreen {
   opacity: 0;
   pointer-events: none;
+  visibility: hidden;
 }
 
 .piecebar-size {

@@ -1,6 +1,6 @@
-// Pliego: acomodar imágenes y páginas de PDF en una hoja a tamaño real y
+// Pliego: acomodar imágenes y páginas de PDF en hojas a tamaño real y
 // exportar un PDF listo para imprimir. Este módulo arma la interfaz y conecta
-// las acciones; el estado vive en store.js y la hoja en sheetview.js.
+// las acciones; el estado vive en store.js y las hojas en sheetview.js.
 
 import { MAX_ITEMS } from './config.js';
 import { t, applyCopy, keyLabel } from './copy/index.js';
@@ -9,10 +9,10 @@ import {
   settings,
   status,
   assets,
+  view,
   dims,
   selectedItem,
   addAsset,
-  newId,
   commit,
   endEdit,
   undo,
@@ -23,22 +23,39 @@ import {
   render,
   setGrid,
   area,
+  newSheet,
+  sheetIndex,
+  itemsOn,
+  currentSheet,
+  boxOf,
 } from './store.js';
 import { sizeText as measureSize, lengthText, paperName, stepTexts, unitName } from './measure.js';
 import { readFile, pdfPage } from './assets.js';
 import { makePdf, pdfFileName, downloadBytes, printBytes } from './output.js';
-import { arrange, keepCenter, centerOnSheet, fitToSheet, placeNew, fillWithCopies } from './layout.js';
+import { arrange, keepCenter, centerOnSheet, fitToSheet, placeNew, fillWithCopies, duplicatePiece } from './layout.js';
+import { spotOnSheet } from './sheets.js';
 import { initNotice, renderNotice, say } from './notice.js';
 import { initLive, announce } from './live.js';
 import { hydrateIcons } from './icons.js';
 import { initTooltips, refreshTooltip } from './tooltip.js';
-import { initSheetView, renderSheetView, animateNext, pieceNode, isDragging, rectOf } from './sheetview.js';
-import { overlapsAny, nearestFree, nextFreeInDirection, maxGrowth } from './collide.js';
+import {
+  initSheetView,
+  renderSheetView,
+  animateNext,
+  pieceNode,
+  sheetNode,
+  isDragging,
+  rectOf,
+  revealPiece,
+  revealSheet,
+} from './sheetview.js';
+import { overlapsAny, nextFreeInDirection, maxGrowth } from './collide.js';
 import { initPanels, renderPanels, expandSection, firstPieceField, firstSheetField, setFrontEnabled } from './panels.js';
 import { initPieceList, renderPieceList, focusList, listFocusTarget } from './piecelist.js';
 import { initDrawers, closeDrawer, isDrawerOpen, isCollapsible, drawerOf, revealPanel } from './drawers.js';
 import { initShortcuts, openShortcuts, syncShortcuts } from './shortcuts.js';
 import { initPrefs, openPrefs } from './prefs.js';
+import { initConfirm, confirmAction } from './confirm.js';
 import { initDonate, shouldAskDonation, askDonation, isDonationOpen } from './donate.js';
 import { initKeyboard } from './keyboard.js';
 import { $, clamp, round1, tidy, fine } from './util.js';
@@ -48,6 +65,7 @@ const ui = {};
 // ---------- Render ----------
 
 let lastFocus = null;
+let shownSelection = null;
 
 function renderAll() {
   renderSheetView();
@@ -56,6 +74,11 @@ function renderAll() {
   renderPieceList();
   renderNotice();
   rescueFocus();
+  // La pieza recién seleccionada (con teclado, desde la lista, al agregar…) se lleva a la vista.
+  if (state.selected !== shownSelection) {
+    shownSelection = state.selected;
+    if (state.selected !== null && !isDragging()) revealPiece(state.selected);
+  }
 }
 
 function renderTopbar() {
@@ -77,18 +100,20 @@ function renderTopbar() {
   setFrontEnabled(overlapsOthers(item));
 }
 
-const othersOf = (item) => state.items.filter((other) => other !== item).map(rectOf);
+// Las otras piezas de su misma hoja (las de otras hojas no chocan).
+const othersOf = (item) => itemsOn(item.sheet).filter((other) => other !== item).map(rectOf);
 const overlapsOthers = (item) => overlapsAny(rectOf(item), othersOf(item));
 const nameOf = (rect) => assets.get(state.items.find((item) => item.id === rect.id)?.asset)?.name ?? t('pieces.other');
+const sheetNumber = (id) => sheetIndex(id) + 1;
 
 // ---------- Foco ----------
 
-/** Enfoca la pieza seleccionada; si no hay, la zona para soltar o la hoja. */
+/** Enfoca la pieza seleccionada; si no hay, la zona para soltar o la hoja actual. */
 function focusSheet() {
   const node = pieceNode(state.selected);
   if (node) return node.focus({ preventScroll: true });
   if (!state.items.length && !ui.empty.disabled) return ui.empty.focus({ preventScroll: true });
-  ui.sheet.focus({ preventScroll: true });
+  sheetNode(currentSheet())?.focus({ preventScroll: true });
 }
 
 // Si el elemento enfocado desapareció o quedó deshabilitado, el foco no se pierde.
@@ -110,6 +135,8 @@ function rescueFocus() {
 function select(id) {
   if (state.selected === id) return;
   state.selected = id;
+  const item = selectedItem();
+  if (item) view.sheet = item.sheet;
   render();
 }
 
@@ -133,37 +160,30 @@ function editSelected(change, { focus = false, announce: message = null } = {}) 
   return true;
 }
 
-/**
- * Dónde va una copia: sin superposición, al hueco libre más cercano a la
- * original (primero dentro del margen, después en la hoja); si no hay, o si
- * se permite superponer, 5 mm abajo a la derecha (queda superpuesta y avisada).
- */
-function duplicateSpot(item) {
-  const offset = { x: item.x + 5, y: item.y + 5 };
-  if (settings.allowOverlap) return offset;
-  const rect = rectOf(item);
-  const others = state.items.map(rectOf); // incluida la original
-  const { W, H, m, aw, ah } = area();
-  const inMargin = aw > 0 && ah > 0 ? nearestFree(rect, others, { bounds: { x: m, y: m, w: aw, h: ah } }) : null;
-  const spot = inMargin ?? nearestFree(rect, others, { bounds: { x: 0, y: 0, w: W, h: H } });
-  return spot ? { x: tidy(spot.x), y: tidy(spot.y) } : offset;
-}
-
 const pieceActions = {
   rotate: (opts = {}, dir = 1) =>
     editSelected((item) => keepCenter(item, () => (item.r = (item.r + (dir > 0 ? 90 : 270)) % 360)), {
       ...opts,
       announce: (item) => t('announce.rotated', { deg: item.r, size: sizeText(item) }),
     }),
+  /** La copia va al primer hueco libre desde la hoja de la original (o a una hoja nueva). */
   duplicate: (opts = {}) => {
     if (state.items.length >= MAX_ITEMS) return say(t('errors.maxPieces', { max: MAX_ITEMS }), { warn: true });
+    let moved = false;
     editSelected(
       (item) => {
-        const copy = { ...item, id: newId(), ...duplicateSpot(item) };
-        state.items.push(copy);
+        const copy = duplicatePiece(item);
+        moved = copy.sheet !== item.sheet;
         state.selected = copy.id;
+        view.sheet = copy.sheet;
       },
-      { ...opts, announce: () => t('announce.duplicated', { n: state.items.length }) }
+      {
+        ...opts,
+        announce: (copy) =>
+          moved
+            ? t('announce.duplicatedTo', { n: state.items.length, i: sheetNumber(copy.sheet) })
+            : t('announce.duplicated', { n: state.items.length }),
+      }
     );
   },
   fit: (opts = {}) =>
@@ -181,23 +201,26 @@ const pieceActions = {
     );
   },
   /**
-   * Con teclado, la selección y el foco pasan a la vecina (en la hoja, o en la
-   * lista si se quitó desde ahí); con el mouse, se deselecciona.
+   * Con teclado, la selección y el foco pasan a la vecina de la misma hoja (en
+   * la hoja, o en la lista si se quitó desde ahí); con el mouse, se deselecciona.
    */
   remove: ({ focus = true, inList = false } = {}) => {
     const item = selectedItem();
     if (!item || state.busy) return;
-    const index = state.items.indexOf(item);
+    const sameSheet = itemsOn(item.sheet);
+    const index = sameSheet.indexOf(item);
     const name = assets.get(item.asset).name;
     commit();
     state.items = state.items.filter((other) => other !== item);
-    const neighbor = focus ? (state.items[index] ?? state.items[index - 1] ?? null) : null;
+    const rest = sameSheet.filter((other) => other !== item);
+    const neighbor = focus ? (rest[index] ?? rest[index - 1] ?? null) : null;
     state.selected = neighbor?.id ?? null;
+    view.sheet = item.sheet;
     render();
     if (inList && focusList()) {
       // el foco sigue en la lista
     } else if (focus) focusSheet();
-    else ui.sheet.focus({ preventScroll: true });
+    else sheetNode(item.sheet)?.focus({ preventScroll: true });
     announce(t(state.items.length ? 'announce.removed' : 'announce.removedLast', { name }));
   },
 };
@@ -245,7 +268,7 @@ function scaleBy(delta) {
 }
 
 function doUndo() {
-  const onSheet = !!document.activeElement?.closest?.('#sheet');
+  const onSheet = !!document.activeElement?.closest?.('#sheets');
   if (!undo()) return;
   animateNext();
   render();
@@ -254,7 +277,7 @@ function doUndo() {
 }
 
 function doRedo() {
-  const onSheet = !!document.activeElement?.closest?.('#sheet');
+  const onSheet = !!document.activeElement?.closest?.('#sheets');
   if (!redo()) return;
   animateNext();
   render();
@@ -289,13 +312,120 @@ function sheetChanged() {
   announce(t('announce.sheet', { paper: paperName() }));
 }
 
+/** «Quitar todas»: quita las piezas de todas las hojas y deja una hoja vacía. */
 function clearSheet() {
   if (!state.items.length || state.busy) return;
   commit();
   state.items = [];
+  state.sheets = [state.sheets[0]];
   state.selected = null;
+  view.sheet = state.sheets[0].id;
   render();
   announce(t('announce.cleared'));
+}
+
+// ---------- Hojas ----------
+
+/** Agrega una hoja vacía al final (un paso de deshacer). */
+function addSheet() {
+  if (state.busy) return;
+  commit();
+  const sheet = newSheet();
+  state.sheets.push(sheet);
+  state.selected = null;
+  view.sheet = sheet.id;
+  render();
+  revealSheet(sheet.id);
+  announce(t('announce.sheetAdded', { i: state.sheets.length }));
+}
+
+/** Quita una hoja (si tiene piezas, pregunta antes); siempre queda al menos una. */
+async function removeSheet(id, { viaKeyboard = false } = {}) {
+  if (state.busy || state.sheets.length < 2) return;
+  const index = sheetIndex(id);
+  if (index < 0) return;
+  const n = itemsOn(id).length;
+  if (n) {
+    const ok = await confirmAction({
+      title: t('confirm.removeSheetTitle', { i: index + 1 }),
+      body: t('confirm.removeSheetBody', { n }),
+      confirm: t('confirm.removeSheet'),
+      returnTo: document.activeElement,
+    });
+    if (!ok || sheetIndex(id) !== index) return;
+  }
+  commit();
+  state.items = state.items.filter((item) => item.sheet !== id);
+  state.sheets = state.sheets.filter((sheet) => sheet.id !== id);
+  if (!selectedItem()) state.selected = null;
+  const next = state.sheets[Math.min(index, state.sheets.length - 1)];
+  view.sheet = next.id;
+  render();
+  if (viaKeyboard || n) {
+    // El foco sigue en la hoja que ocupa su lugar.
+    revealSheet(next.id);
+    sheetNode(next.id)?.focus({ preventScroll: true });
+  }
+  announce(n ? t('announce.sheetRemoved', { i: index + 1, n }) : t('announce.sheetRemovedEmpty', { i: index + 1 }));
+}
+
+/** Re Pág / Av Pág: el foco pasa a la hoja anterior o siguiente (a su primera pieza). */
+function gotoSheet(dir) {
+  const index = sheetIndex(currentSheet());
+  const target = index + dir;
+  if (target < 0 || target >= state.sheets.length) {
+    return announce(t(dir > 0 ? 'announce.lastSheet' : 'announce.firstSheet'));
+  }
+  const sheet = state.sheets[target];
+  // La primera pieza en orden de lectura (de arriba abajo, de izquierda a derecha).
+  const first = itemsOn(sheet.id).sort((a, b) => a.y - b.y || a.x - b.x)[0];
+  view.sheet = sheet.id;
+  if (first) {
+    select(first.id);
+    pieceNode(first.id)?.focus({ preventScroll: true });
+    revealPiece(first.id);
+  } else {
+    state.selected = null;
+    render();
+    revealSheet(sheet.id);
+    sheetNode(sheet.id)?.focus({ preventScroll: true });
+  }
+}
+
+/**
+ * Shift + Re Pág / Av Pág: muda la pieza a la hoja anterior o siguiente, a un
+ * hueco libre. Si ahí no entra, o si no hay hoja siguiente, va a una hoja
+ * nueva justo al lado. Si no entra ni sola en una hoja, conserva su posición.
+ */
+function sendToSheet(dir) {
+  const item = selectedItem();
+  if (!item || state.busy) return;
+  const index = sheetIndex(item.sheet);
+  const target = index + dir;
+  if (target < 0) return announce(t('announce.firstSheet'));
+  const { m, aw, ah } = area();
+  const rect = { id: item.id, ...rectOf(item) };
+  const opts = { area: { w: aw, h: ah }, margin: m, gap: state.gap };
+  commit();
+  let sheet = state.sheets[target];
+  let spot = sheet && aw > 0 && ah > 0 ? spotOnSheet(rect, itemsOn(sheet.id).map(boxOf), opts) : null;
+  if (!spot) {
+    // Una hoja nueva al lado: después de la actual (siguiente) o antes (anterior).
+    sheet = newSheet();
+    state.sheets.splice(dir > 0 ? index + 1 : index, 0, sheet);
+    spot = aw > 0 && ah > 0 ? spotOnSheet(rect, [], opts) : null;
+  }
+  item.sheet = sheet.id;
+  if (spot) {
+    item.x = tidy(spot.x);
+    item.y = tidy(spot.y);
+  }
+  view.sheet = sheet.id;
+  animateNext();
+  render();
+  focusSheet();
+  revealPiece(item.id);
+  announce(t('announce.movedToSheet', { i: sheetNumber(sheet.id), total: state.sheets.length }));
 }
 
 // Cambiar la página crea (o reusa) otro asset: así deshacer vuelve a la anterior.
@@ -305,7 +435,7 @@ async function changePage(n) {
   if (!asset || asset.kind !== 'pdf' || asset.page === n || state.busy) return;
   setBusy(true, t('busy.loadingPage', { page: n }));
   try {
-    let key = [...assets].find(([, a]) => a.pdf === asset.pdf && a.page === n)?.[0];
+    let key = [...assets].find(([, a]) => a.kind === 'pdf' && a.src === asset.src && a.page === n)?.[0];
     key ??= addAsset(await pdfPage(asset, n));
     commit();
     item.asset = key;
@@ -378,6 +508,7 @@ async function loadFiles(files) {
       errors.push(t('errors.loadItem', { name: file.name || t('errors.unnamedFile'), reason: err.message }));
     }
   }
+  const sheetsBefore = state.sheets.length;
   if (keys.length) {
     commit(); // todavía "busy": la limpieza no toca los assets recién creados
     placeNew(keys);
@@ -387,7 +518,10 @@ async function loadFiles(files) {
   if (skipped) errors.push(t('errors.maxReached', { max: MAX_ITEMS, n: skipped }));
   if (errors.length) say(t('errors.load', { n: failed, list: errors.join(t('errors.loadSeparator')) }), { warn: true });
   else render();
-  if (keys.length) announce(t('announce.added', { n: keys.length }));
+  if (keys.length) {
+    const added = state.sheets.length - sheetsBefore;
+    announce(added ? t('announce.addedSheets', { n: keys.length, sheets: added }) : t('announce.added', { n: keys.length }));
+  }
 }
 
 const filesFrom = (dataTransfer) => (dataTransfer ? [...dataTransfer.files] : []);
@@ -413,6 +547,12 @@ function setupDropZone(zone) {
     e.preventDefault();
     depth = 0;
     zone.classList.remove('is-drop-target');
+    // Soltados sobre una hoja: empiezan por esa hoja.
+    const page = e.target.closest?.('.page');
+    if (page) {
+      view.sheet = Number(page.dataset.sheet);
+      state.selected = null;
+    }
     loadFiles(filesFrom(e.dataTransfer));
   });
 }
@@ -534,7 +674,6 @@ function wire() {
     addzone: $('addzone'),
     file: $('file'),
     canvas: $('canvas'),
-    sheet: $('sheet'),
     empty: $('empty'),
     emptyText: $('empty-text'),
     piecebar: $('piecebar'),
@@ -550,22 +689,27 @@ function wire() {
 
   initLive();
   initNotice({ onArrange: doArrange });
+  initConfirm();
   initPrefs({ trigger: $('prefs-open'), onSingleKeysChange: syncSingleKeys, onUnitChange: unitChanged });
   initShortcuts({ trigger: ui.help, openPrefs });
   initDonate();
   initTooltips({ showShortcut: (el) => el.dataset.single === undefined || settings.singleKeys });
   initSheetView({
     select,
-    background: () => {
-      if (state.selected === null) return;
+    background: (sheetId) => {
+      if (sheetId !== null) view.sheet = sheetId;
+      if (state.selected === null) return render();
       select(null);
-      ui.sheet.focus({ preventScroll: true });
+      sheetNode(currentSheet())?.focus({ preventScroll: true });
     },
-    commitGesture: (result) => {
+    commitGesture: (result, { sheetChanged, item }) => {
       if (result === 'reverted') say(t('notices.reverted'));
       else render();
+      if (sheetChanged) announce(t('announce.movedToSheet', { i: sheetNumber(item.sheet), total: state.sheets.length }));
     },
     preview: (draft) => renderPanels(draft),
+    removeSheet,
+    addSheet,
   });
   initPanels({
     sheetChanged,
@@ -643,6 +787,8 @@ function wire() {
     endEdit,
     nudge,
     scaleBy,
+    gotoSheet,
+    sendToSheet,
     rotate: (dir) => pieceActions.rotate({ focus: true }, dir),
     duplicate: withFocus(pieceActions.duplicate),
     fit: withFocus(pieceActions.fit),
@@ -671,8 +817,9 @@ function wire() {
       }
       if (state.selected === null) return false;
       const onPiece = !!target.closest('.piece');
+      const sheet = selectedItem()?.sheet;
       select(null);
-      if (onPiece) ui.sheet.focus({ preventScroll: true });
+      if (onPiece && sheet) sheetNode(sheet)?.focus({ preventScroll: true });
       announce(t('announce.deselected'));
       return true;
     },

@@ -57,6 +57,17 @@ function onKeyDown(e, a) {
 
   const onPiece = t.classList.contains('piece');
 
+  // En las hojas: Re Pág / Av Pág pasan el foco de hoja en hoja; con Shift,
+  // la pieza enfocada se muda a la hoja anterior o siguiente.
+  if ((key === 'PageDown' || key === 'PageUp') && !e.altKey && t.closest('#stage')) {
+    e.preventDefault();
+    const dir = key === 'PageDown' ? 1 : -1;
+    if (e.shiftKey) {
+      if (onPiece && !e.repeat) a.sendToSheet(dir);
+    } else a.gotoSheet(dir);
+    return;
+  }
+
   // Sobre una pieza enfocada: flechas (pasos de la unidad elegida: Alt fino,
   // Shift grueso), Supr y Enter.
   if (onPiece && NUDGES[key] && !e.ctrlKey && !e.metaKey) {

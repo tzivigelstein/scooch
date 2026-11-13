@@ -55,6 +55,8 @@ export default {
     ArrowUp: '↑',
     ArrowRight: '→',
     ArrowDown: '↓',
+    PageUp: 'Re Pág',
+    PageDown: 'Av Pág',
     Plus: '+',
     Minus: '−',
   },
@@ -85,6 +87,9 @@ export default {
       'Agrega imágenes (JPG, PNG, WebP…) o PDF. Cada página es una pieza que puedes mover, girar y cambiar de tamaño.',
     listHint: 'Usa las flechas arriba y abajo para elegir una pieza, Enter para ir a ella en la hoja y Supr para quitarla',
     count: { one: '{n} pieza', other: '{n} piezas' },
+    // Encabezados de la lista con varias hojas
+    groupTitle: 'Hoja {i}',
+    groupEmpty: 'Vacía',
     clear: 'Quitar todas',
     other: 'otra pieza',
     pastedName: 'Imagen pegada',
@@ -100,9 +105,15 @@ export default {
 
   // La hoja en pantalla
   sheet: {
-    label: 'Hoja',
-    labelEmpty: 'Hoja {paper}, vacía',
-    labelCount: { one: 'Hoja {paper}, {n} pieza', other: 'Hoja {paper}, {n} piezas' },
+    numbered: 'Hoja {i} de {total}',
+    // Nombre de cada hoja para lectores de pantalla ({label}: «Hoja 2 de 3»)
+    groupLabel: { one: '{label}, {n} pieza', other: '{label}, {n} piezas' },
+    groupEmpty: '{label}, vacía',
+    emptyHint: 'Hoja vacía',
+    add: 'Agregar hoja',
+    addTip: 'Agregar una hoja vacía al final',
+    remove: 'Quitar hoja',
+    removeLabel: 'Quitar la hoja {i}',
     paperLabel: '{paper} · {size}',
     landscapeName: '{paper} horizontal',
     drop: 'Suelta imágenes o PDF, pega con {mod}+V o presiona O',
@@ -216,7 +227,9 @@ export default {
     pageOption: '{n} de {total}',
     fill: 'Rellenar con copias',
     fillWarning: 'Reemplaza todas las piezas de la hoja por copias de esta. Puedes deshacerlo.',
+    fillWarningSheet: 'Reemplaza las piezas de la hoja {i} por copias de esta. Las demás hojas no cambian. Puedes deshacerlo.',
     fillSummary: { one: '{n} copia en {paper}', other: '{n} copias en {paper}' },
+    fillSummarySheet: { one: '{n} copia en la hoja {i}', other: '{n} copias en la hoja {i}' },
     fillNoFit: 'No entra en la hoja: reduce la pieza',
     fillTooMany: 'Entrarían {n} copias y el máximo es {max}: agranda la pieza',
     remove: 'Quitar de la hoja',
@@ -265,7 +278,19 @@ export default {
       other: '{n} piezas pasan el margen y puede que la impresora no imprima esos bordes',
     },
     overlap: 'Hay piezas superpuestas',
+    // Con varias hojas: «Hoja 2: hay piezas superpuestas», «Hojas 1 y 3: 2 piezas se salen…»
+    overlapIn: 'hay piezas superpuestas',
+    inSheets: { one: 'Hoja {list}: {text}', other: 'Hojas {list}: {text}' },
     arranged: { one: 'Se acomodó 1 pieza', other: 'Se acomodaron {n} piezas' },
+    arrangedSheets: { one: 'Se acomodó 1 pieza en {sheets} hojas', other: 'Se acomodaron {n} piezas en {sheets} hojas' },
+    unplaced: {
+      one: '{names} no entra en la hoja ni sola, así que quedó donde estaba',
+      other: '{n} piezas no entran en la hoja ni solas, así que quedaron donde estaban: {names}',
+    },
+    // Dos avisos en uno ({first} y {second} van sin punto)
+    twoSentences: '{first}. {second}.',
+    shrinkToOne: 'Reducir al {pct} % para usar 1 hoja',
+    fitted: { one: 'Se ajustó 1 pieza a la hoja', other: 'Se ajustaron {n} piezas a la hoja' },
     shrunk: {
       one: 'Se acomodó 1 pieza, reducida al {pct} %',
       other: 'Se acomodaron {n} piezas, reducidas al {pct} %',
@@ -276,6 +301,7 @@ export default {
     },
     shrinkAction: 'Reducir al {pct} % y acomodar',
     filled: { one: 'Se rellenó la hoja con 1 copia', other: 'Se rellenó la hoja con {n} copias' },
+    filledSheet: { one: 'Se rellenó la hoja {i} con 1 copia', other: 'Se rellenó la hoja {i} con {n} copias' },
     reverted: 'No había espacio libre ahí, así que la pieza volvió a su lugar',
     downloaded: 'Se descargó {file}. Al imprimirlo, elige «Tamaño real» o «100 %».',
     printDialog: 'En el diálogo de impresión, elige «Tamaño real» o «100 %» y el papel {paper}',
@@ -303,8 +329,8 @@ export default {
     loadSeparator: ' · ',
     loadItem: '{name}: {reason}',
     unnamedFile: 'Archivo sin nombre',
-    maxReached: 'la hoja admite hasta {max} piezas ({n} sin agregar)',
-    maxPieces: 'La hoja admite hasta {max} piezas. Quita alguna para duplicar esta.',
+    maxReached: 'se admiten hasta {max} piezas en total ({n} sin agregar)',
+    maxPieces: 'Se admiten hasta {max} piezas en total. Quita alguna para duplicar esta.',
     page: 'No se pudo cargar la página {page}. Inténtalo de nuevo.',
     pdf: 'No se pudo crear el PDF. Inténtalo de nuevo.',
     marginTooBig: 'El margen no deja espacio para las piezas. Reduce el margen.',
@@ -326,6 +352,10 @@ export default {
   announce: {
     rotated: 'Girada {deg}°: {size}',
     duplicated: { one: 'Se duplicó la pieza. Hay {n} pieza.', other: 'Se duplicó la pieza. Hay {n} piezas.' },
+    duplicatedTo: {
+      one: 'Se duplicó la pieza en la hoja {i}. Hay {n} pieza.',
+      other: 'Se duplicó la pieza en la hoja {i}. Hay {n} piezas.',
+    },
     fitted: 'Ajustada a la hoja: {size}',
     centered: 'Centrada en la hoja',
     actualSize: 'Tamaño real: {size}',
@@ -344,6 +374,16 @@ export default {
     gridHidden: 'Grilla oculta',
     cleared: 'Se quitaron todas las piezas',
     added: { one: 'Se agregó 1 archivo', other: 'Se agregaron {n} archivos' },
+    addedSheets: {
+      one: 'Se agregó 1 archivo. No entraba en las hojas que había, así que va en una hoja nueva.',
+      other: 'Se agregaron {n} archivos. Los que no entraban en las hojas que había van en {sheets} hojas nuevas.',
+    },
+    sheetAdded: 'Se agregó la hoja {i}',
+    sheetRemoved: { one: 'Se quitó la hoja {i} con 1 pieza', other: 'Se quitó la hoja {i} con {n} piezas' },
+    sheetRemovedEmpty: 'Se quitó la hoja {i}',
+    movedToSheet: 'Se movió a la hoja {i} de {total}',
+    firstSheet: 'Es la primera hoja',
+    lastSheet: 'Es la última hoja',
     needSelection: 'Primero selecciona una pieza',
     deselected: 'Ninguna pieza seleccionada',
   },
@@ -370,6 +410,17 @@ export default {
     skip: 'Seguir sin aportar',
     never: 'No volver a mostrar en este dispositivo',
     thanks: 'Gracias por usar {app}, con o sin aporte',
+  },
+
+  // Confirmaciones breves
+  confirm: {
+    cancel: 'Cancelar',
+    removeSheetTitle: '¿Quitar la hoja {i}?',
+    removeSheetBody: {
+      one: 'Se quita con su pieza. Puedes deshacerlo.',
+      other: 'Se quita con sus {n} piezas. Puedes deshacerlo.',
+    },
+    removeSheet: 'Quitar hoja',
   },
 
   // Diálogo «Preferencias» (ajustes de este navegador)
@@ -408,6 +459,8 @@ export default {
       center: 'Centrar en la hoja',
       front: 'Traer al frente',
       toolbar: 'Sobre una pieza, ir a su barra de acciones',
+      pages: 'En las hojas, ir a la hoja anterior o a la siguiente',
+      sendPage: 'Mover la pieza a la hoja anterior o a la siguiente (si no hay lugar, a una hoja nueva)',
       remove: 'Quitar la pieza',
       measures: 'Editar las medidas de la pieza en «Propiedades»',
       sheet: 'Ir a los ajustes de la hoja',

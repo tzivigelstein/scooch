@@ -54,6 +54,11 @@ export function t(key, params = {}) {
   });
 }
 
+const listFormat = new Intl.ListFormat(messages.meta.lang, { style: 'long', type: 'conjunction' });
+
+/** Lista para una frase: «1, 2 y 3», «foto.jpg y plano.pdf». */
+export const formatList = (items) => listFormat.format(items.map(String));
+
 /** El texto con punto final (para unir mensajes sueltos al anunciarlos). */
 export const asSentence = (text) => (/[.!?…:]$/.test(text.trim()) ? text.trim() : `${text.trim()}.`);
 

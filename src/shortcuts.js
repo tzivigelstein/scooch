@@ -19,6 +19,8 @@ const ROWS = [
   [['C'], 'center', true],
   [[']'], 'front', true],
   [['Enter', 'Space'], 'toolbar', false],
+  [['PageUp', 'PageDown'], 'pages', false],
+  [['Shift+PageUp', 'Shift+PageDown'], 'sendPage', false],
   [['Delete', 'Backspace'], 'remove', false],
   [['M'], 'measures', true],
   [['H'], 'sheet', true],
