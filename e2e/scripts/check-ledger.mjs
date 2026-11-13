@@ -45,9 +45,10 @@ function playwrightTests() {
   });
   const report = JSON.parse(out);
   const titles = new Set();
+  // Anonymous describes (test.describe(() => …)) have no title: Playwright leaves them out of a test's name.
   const walk = (suite, path) => {
     for (const spec of suite.specs ?? []) titles.add([...path, spec.title].join(SEP));
-    for (const child of suite.suites ?? []) walk(child, [...path, child.title]);
+    for (const child of suite.suites ?? []) walk(child, child.title ? [...path, child.title] : path);
   };
   for (const file of report.suites ?? []) walk(file, [`e2e/specs/${file.file ?? file.title}`]);
   return titles;
