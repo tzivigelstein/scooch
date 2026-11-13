@@ -10,7 +10,7 @@ PDFs) and pdf-lib (writing them) load only when first needed.
 
 ## Development
 
-Requires Node.js 20.19+ or 22.12+ and Yarn 1.
+Requires Node.js 24 (`.nvmrc` pins the major: `nvm use`) and Yarn 1.
 
 ```sh
 yarn install      # dependencies
