@@ -13,6 +13,7 @@ import {
   AlignVerticalSpaceBetween,
   BringToFront,
   CircleCheck,
+  Crop as CropIcon,
   CopyPlus,
   Crosshair,
   Grid2x2Plus,
@@ -76,6 +77,7 @@ import { LengthField, type LengthFieldHandle } from '../ui/LengthField.tsx';
 import { NumberField } from '../ui/NumberField.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
 import { announce } from '../feedback/announcer.ts';
+import { startCrop } from '../canvas/cropMode.ts';
 
 /** While something loads, controls are disabled except the focused one. */
 const busyOff = (busy: boolean, selector: string) => busy && !document.activeElement?.matches(selector);
@@ -364,6 +366,20 @@ export function PieceSection() {
               ))}
             </select>
           </label>
+          <Button
+            id="crop-start"
+            className="chip-btn icon-chip"
+            icon={CropIcon}
+            data-crop-toggle=""
+            tip={t('crop.startTip')}
+            note={group ? t('crop.startSingle') : undefined}
+            shortcut="crop"
+            aria-disabled={group || undefined}
+            disabled={busyOff(busy, '#crop-start')}
+            onClick={(e) => (group ? announceNote(e.currentTarget) : startCrop())}
+          >
+            <span>{t('crop.start')}</span>
+          </Button>
         </div>
         <div className="action-row" role="group" aria-label={t('props.quick')}>
           <button type="button" id="actual" className="chip-btn" aria-label={t('props.actualLabel')} data-tip={t('props.actualTip')} disabled={busyOff(busy, '#actual')} onClick={actualSize}>

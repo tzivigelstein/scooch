@@ -9,6 +9,7 @@ import { PieceToolbar } from './components/canvas/PieceToolbar.tsx';
 import { Stage } from './components/canvas/Stage.tsx';
 import { Dialogs } from './components/dialogs/Dialogs.tsx';
 import { preloadDialogs } from './components/dialogs/lazy.ts';
+import { preloadCrop } from './components/canvas/cropMode.ts';
 import { LiveRegions } from './components/feedback/LiveRegions.tsx';
 import { NoticePill } from './components/feedback/NoticePill.tsx';
 import { Tooltip } from './components/feedback/Tooltip.tsx';
@@ -127,7 +128,10 @@ export function App() {
     for (const list of lists) list.addEventListener('change', changed);
     // The rarely used dialogs load when the app is idle.
     const idle = window.requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 1500));
-    idle(preloadDialogs);
+    idle(() => {
+      preloadDialogs();
+      preloadCrop();
+    });
     return () => {
       stopFollowing();
       window.removeEventListener('dragover', prevent);

@@ -47,6 +47,8 @@ export interface ViewState {
   loading: boolean;
   /** A measurement field is being edited: problem notices wait until it is confirmed. */
   editing: boolean;
+  /** The piece in crop mode, or null. */
+  cropping: number | null;
 }
 
 export const useView = create<ViewState>()(() => ({
@@ -62,6 +64,7 @@ export const useView = create<ViewState>()(() => ({
   animating: false,
   loading: true,
   editing: false,
+  cropping: null,
 }));
 
 export const getView = () => useView.getState();

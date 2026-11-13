@@ -2,7 +2,7 @@
 // selection frames, current sheet and the pointer gestures.
 
 import { FilePlus, Trash2, Upload } from 'lucide-react';
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FocusEvent } from 'react';
+import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FocusEvent } from 'react';
 import { t } from '../../copy/index.ts';
 import type { Unit } from '../../core/units.js';
 import { LEFT_DRAWER_QUERY, NARROW_QUERY } from '../../config.ts';
@@ -20,6 +20,7 @@ import { openFiles } from '../../state/actions/files.ts';
 import { focusPiece } from '../../state/actions/selection.ts';
 import { addSheet, removeSheet, showSheetSettings } from '../../state/actions/sheets.ts';
 import { Icon } from '../ui/Icon.tsx';
+import { CropContent } from './cropMode.ts';
 import { Piece } from './Piece.tsx';
 import { SelectionOverlay } from './SelectionOverlay.tsx';
 
@@ -75,6 +76,7 @@ interface PageProps {
   pinned: boolean;
   unit: Unit;
   busy: boolean;
+  cropping: number | null;
 }
 
 const EmptyDropzone = memo(function EmptyDropzone({ hidden, disabled }: { hidden: boolean; disabled: boolean }) {
@@ -95,7 +97,7 @@ const EmptyDropzone = memo(function EmptyDropzone({ hidden, disabled }: { hidden
   );
 });
 
-const Page = memo(function Page({ id, index, total, items, W, H, zoom, margin, empty, current, showGrid, grid, selection, pinned, unit, busy }: PageProps) {
+const Page = memo(function Page({ id, index, total, items, W, H, zoom, margin, empty, current, showGrid, grid, selection, pinned, unit, busy, cropping }: PageProps) {
   const label = t('sheet.numbered', { i: index + 1, total });
   const n = items.length;
   const many = selection.length > 1;
@@ -136,6 +138,7 @@ const Page = memo(function Page({ id, index, total, items, W, H, zoom, margin, e
                 grouped={selected && many}
                 marked={selected && (many || pinned)}
                 unit={unit}
+                cropping={item.id === cropping}
               />
             );
           })}
@@ -160,6 +163,7 @@ export function Stage() {
   const animating = useView((s) => s.animating);
   const pinned = useView((s) => s.pinned);
   const viewSheet = useView((s) => s.sheet);
+  const cropping = useView((s) => s.cropping);
   // On medium screens the list opens over the canvas: the sheets move beside it
   // (refitted), so what the list selects can always be seen.
   const listOpen = useView((s) => s.drawer === 'pieces');
@@ -233,10 +237,16 @@ export function Stage() {
             pinned={pinned}
             unit={unit}
             busy={busy}
+            cropping={cropping}
           />
         ))}
         <div id="drag-layer" className="drag-layer" />
         <SelectionOverlay layout={layout} />
+        {cropping !== null && (
+          <Suspense fallback={null}>
+            <CropContent />
+          </Suspense>
+        )}
         <div className="sheets-foot">
           <p id="paper-label" className="paper-label">
             {t('sheet.paperLabel', { paper: paperTitle(), size: sizeText(W, H) })}

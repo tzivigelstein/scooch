@@ -20,6 +20,7 @@ import { openFiles } from '../state/actions/files.ts';
 import { focusList, focusSheet, pieceNode, sheetNode } from '../state/actions/focus.ts';
 import { exportPdf, printPdf } from '../state/actions/output.ts';
 import { showPropsTab } from '../state/actions/panels.ts';
+import { startCrop } from '../components/canvas/cropMode.ts';
 import {
   alignSelection,
   bringToFront,
@@ -42,7 +43,7 @@ const NUDGES: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRigh
 const ALIGNS: Record<string, AlignMode> = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'top', ArrowDown: 'bottom', KeyH: 'centerX', KeyV: 'centerY' };
 const DISTRIBUTES: Record<string, 'x' | 'y'> = { KeyX: 'x', KeyY: 'y' };
 // Single keys that act on the selection (see the piece keys below).
-const PIECE_KEYS = new Set(['r', 'd', 'f', 'c', ']', 'i']);
+const PIECE_KEYS = new Set(['r', 'd', 'f', 'c', ']', 'i', 'k']);
 const GROWS = new Set(['+', '=', '*']);
 const SHRINKS = new Set(['-', '_', '−']);
 
@@ -263,6 +264,7 @@ function onKeyDown(e: KeyboardEvent) {
     f: () => fit({ focus: true }),
     c: () => center({ focus: true }),
     ']': () => bringToFront({ focus: true }),
+    k: () => startCrop(),
   };
   if (pieceKeys[lower] && !e.repeat) {
     e.preventDefault();

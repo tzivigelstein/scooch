@@ -82,3 +82,25 @@ function resultText(id: string, list: readonly Piece[]) {
   }
   return t('notices.sizedMany', { n: list.length, name: photoSizeName(id) });
 }
+
+/**
+ * Applies what crop mode left (position, scale and crop of piece `id`) in one
+ * undo step, keeping the piece valid like a size change (see settle).
+ */
+export function commitCrop(id: number, patch: Pick<Item, 'x' | 'y' | 'scale' | 'crop'>) {
+  const item = findItem(id);
+  if (!item || getDocument().busy) return;
+  const same = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+  const sameCrop = (a: Item['crop'], b: Item['crop']) => (!a || !b ? a === b : same(a.x, b.x) && same(a.y, b.y) && same(a.w, b.w) && same(a.h, b.h));
+  if (same(item.x, patch.x) && same(item.y, patch.y) && same(item.scale, patch.scale) && sameCrop(item.crop, patch.crop)) {
+    announce(t('crop.unchanged'));
+    return;
+  }
+  commit();
+  const moved = settle([{ ...item, ...patch }]);
+  const next = findItem(id)!;
+  const [w, h] = dims(next);
+  const applied = t('crop.applied', { name: pieceName(id), size: sizeText(w, h) });
+  if (moved.length) say(t('notices.twoSentences', { first: applied, second: t('notices.movedAside', { n: 1 }) }));
+  else announce(applied);
+}

@@ -33,6 +33,7 @@ import { animateNext, getView, setView } from '../state/view.ts';
 import { focusSheetNode, pieceNode } from '../state/actions/focus.ts';
 import { say } from '../state/actions/notify.ts';
 import { makePrimary, select, selectTouched, toggleInSelection } from '../state/actions/selection.ts';
+import { startCrop } from '../components/canvas/cropMode.ts';
 import { isTyping } from './dom.ts';
 
 interface Pointer {
@@ -687,16 +688,26 @@ function onScroll() {
   });
 }
 
+// A double click on a piece: crop mode. (With the pointer captured by #sheets
+// the event targets it, so the piece is the one under the pointer.)
+function onDoubleClick(e: MouseEvent) {
+  const node = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('#sheets .piece');
+  if (!node || getDocument().busy || getView().cropping !== null) return;
+  startCrop(Number(node.dataset.id));
+}
+
 /** Wires the gestures and the scroll handling to #stage. */
 export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const node = stage.current!;
+    node.addEventListener('dblclick', onDoubleClick);
     node.addEventListener('pointerdown', onPointerDown);
     node.addEventListener('pointermove', onPointerMove);
     node.addEventListener('pointerup', onPointerUp);
     node.addEventListener('pointercancel', onPointerUp);
     node.addEventListener('scroll', onScroll, { passive: true });
     return () => {
+      node.removeEventListener('dblclick', onDoubleClick);
       node.removeEventListener('pointerdown', onPointerDown);
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);

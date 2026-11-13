@@ -16,14 +16,16 @@ export interface PieceProps {
   marked: boolean;
   /** The unit of the lengths in its name (re-renders when it changes). */
   unit: Unit;
+  /** In crop mode: the crop overlay draws it meanwhile. */
+  cropping: boolean;
 }
 
 /** A piece on its sheet: a focusable button that clips the image to its crop. */
-export const Piece = memo(function Piece({ item, asset, zoom, selected, grouped, marked }: PieceProps) {
+export const Piece = memo(function Piece({ item, asset, zoom, selected, grouped, marked, cropping }: PieceProps) {
   const view = pieceView(item, asset, zoom, marked);
   return (
     <div
-      className={`piece${selected ? ' is-selected' : ''}${grouped ? ' is-grouped' : ''}`}
+      className={`piece${selected ? ' is-selected' : ''}${grouped ? ' is-grouped' : ''}${cropping ? ' is-cropping' : ''}`}
       data-id={item.id}
       tabIndex={0}
       role="button"

@@ -1,22 +1,27 @@
 // The floating toolbar of the selected piece (or pieces): a toolbar with a
 // roving tab stop. Its position is painted by selection.ts.
 
-import { Copy, RotateCcw, RotateCw, Trash2 } from 'lucide-react';
+import { Copy, Crop, RotateCcw, RotateCw, Trash2 } from 'lucide-react';
 import { useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { t } from '../../copy/index.ts';
 import { getAsset } from '../../state/assets.ts';
 import { useDocument } from '../../state/document.ts';
 import { duplicate, remove, rotate } from '../../state/actions/pieces.ts';
 import { IconButton } from '../ui/Button.tsx';
+import { startCrop } from './cropMode.ts';
 
-const ACTIONS = ['rotate-left', 'rotate-right', 'duplicate', 'remove'] as const;
+const ACTIONS = ['rotate-left', 'rotate-right', 'crop', 'duplicate', 'remove'] as const;
 type Action = (typeof ACTIONS)[number];
+// Cropping works on one piece: with several, the toolbar doesn't offer it.
+const GROUP_ACTIONS = ACTIONS.filter((action) => action !== 'crop');
 
 export function PieceToolbar() {
   const selection = useDocument((s) => s.selection);
   const items = useDocument((s) => s.items);
   const [stop, setStop] = useState(0);
   const n = selection.length;
+  const actions: readonly Action[] = n > 1 ? GROUP_ACTIONS : ACTIONS;
+  const tabStop = Math.min(stop, actions.length - 1);
   const primary = items.find((item) => item.id === selection.at(-1));
   const label = n > 1 ? t('piecebar.labelGroup', { n }) : primary ? t('piecebar.labelFor', { name: getAsset(primary.asset).name }) : t('piecebar.label');
 
@@ -25,6 +30,7 @@ export function PieceToolbar() {
     if (action === 'remove') return remove({ focus: viaKeyboard });
     if (action === 'rotate-left') return rotate(-1);
     if (action === 'rotate-right') return rotate(1);
+    if (action === 'crop') return startCrop();
     duplicate(1);
   };
 
@@ -43,9 +49,9 @@ export function PieceToolbar() {
 
   const props = (action: Action) => ({
     'data-action': action,
-    tabIndex: ACTIONS.indexOf(action) === stop ? 0 : -1,
+    tabIndex: actions.indexOf(action) === tabStop ? 0 : -1,
     onClick: (e: MouseEvent) => run(action, e),
-    onFocus: () => setStop(ACTIONS.indexOf(action)),
+    onFocus: () => setStop(actions.indexOf(action)),
   });
 
   return (
@@ -53,6 +59,7 @@ export function PieceToolbar() {
       <span id="piece-size" className="piecebar-size" aria-hidden="true" />
       <IconButton icon={RotateCcw} label={t('piecebar.rotateLeft')} tip={t('piecebar.rotateLeftTip')} shortcut="rotateLeft" {...props('rotate-left')} />
       <IconButton icon={RotateCw} label={t('piecebar.rotateRight')} tip={t('piecebar.rotateRightTip')} shortcut="rotateRight" {...props('rotate-right')} />
+      {n === 1 && <IconButton icon={Crop} label={t('crop.start')} tip={t('crop.start')} shortcut="crop" data-crop-toggle="" {...props('crop')} />}
       <IconButton icon={Copy} label={t('piecebar.duplicate')} tip={t('piecebar.duplicate')} shortcut="duplicate" {...props('duplicate')} />
       <span className="piecebar-sep" aria-hidden="true" />
       <IconButton icon={Trash2} className="icon-btn danger" label={t('piecebar.remove')} tip={t('piecebar.removeTip')} shortcut="remove" {...props('remove')} />
