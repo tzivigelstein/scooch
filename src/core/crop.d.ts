@@ -1,4 +1,4 @@
-import type { AssetSize, Crop, Point, Rotation, Size } from './types';
+import type { AssetSize, Crop, Point, Rect, Rotation, Size } from './types';
 
 export const MIN_CROP: number;
 
@@ -64,3 +64,26 @@ export interface CssParams {
 }
 
 export function cssParams(item: PlacedOnSheet, asset: AssetSize, zoom: number): CssParams;
+
+export const SIZE_MATCH_TOLERANCE: number;
+/** The standard photo size of a w × h mm piece, in either orientation, or null. */
+export function matchPhotoSize(w: number, h: number, tolerance?: number): PhotoSize | null;
+
+export function rotateCrop(crop: Crop | null | undefined, r: number): Crop;
+export function unrotateCrop(rect: Crop, r: number): Crop;
+
+/** Crop mode's two rectangles in sheet mm: the visible area and the whole (rotated) image. */
+export interface CropFrame {
+  frame: Rect;
+  image: Rect;
+}
+
+export type FrameHandle = 'n' | 'e' | 's' | 'w' | 'ne' | 'se' | 'sw' | 'nw';
+export const FRAME_HANDLES: readonly FrameHandle[];
+
+export function cropFrame(item: PlacedOnSheet, asset: AssetSize): CropFrame;
+export function pieceFromFrame(asset: AssetSize, r: number, frame: CropFrame): { x: number; y: number; scale: number; crop: Crop | null };
+export function panFrame(frame: CropFrame, dx: number, dy: number): CropFrame;
+export function zoomFrame(frame: CropFrame, factor: number, focus?: Point): CropFrame;
+export function resizeFrame(frame: CropFrame, handle: FrameHandle, dx: number, dy: number, options?: { lock?: boolean }): CropFrame;
+export function frameToSize(frame: CropFrame, size: Size): CropFrame;

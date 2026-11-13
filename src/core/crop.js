@@ -293,3 +293,159 @@ export function cssParams(item, asset, zoom) {
     },
   };
 }
+
+// ---------- Standard sizes on the sheet ----------
+
+/** Tolerance (mm) to call a piece's size a standard photo size. */
+export const SIZE_MATCH_TOLERANCE = 0.05;
+
+/**
+ * The standard photo size a w × h mm piece (as it sits on the sheet) has, in
+ * either orientation, or null.
+ */
+export function matchPhotoSize(w, h, tolerance = SIZE_MATCH_TOLERANCE) {
+  const same = (a, b) => Math.abs(a - b) <= tolerance;
+  return PHOTO_SIZES.find((size) => (same(w, size.w) && same(h, size.h)) || (same(w, size.h) && same(h, size.w))) ?? null;
+}
+
+// ---------- Crop frame on the sheet (crop mode) ----------
+//
+// Crop mode works in sheet millimetres with two rectangles: `frame`, the
+// piece's visible area (what prints), and `image`, the whole image as it
+// sits on the sheet (rotated, so its w/h follow the rotation). The frame
+// always lies inside the image. The crop is the frame relative to the image,
+// turned back into the unrotated image's normalized coordinates.
+
+/** A normalized rect of the unrotated image → the same rect as seen rotated `r` degrees clockwise. */
+export function rotateCrop(crop, r) {
+  const c = isIdentity(crop) ? FULL : crop;
+  switch (normRotation(r)) {
+    case 90:
+      return { x: 1 - c.y - c.h, y: c.x, w: c.h, h: c.w };
+    case 180:
+      return { x: 1 - c.x - c.w, y: 1 - c.y - c.h, w: c.w, h: c.h };
+    case 270:
+      return { x: c.y, y: 1 - c.x - c.w, w: c.h, h: c.w };
+    default:
+      return { x: c.x, y: c.y, w: c.w, h: c.h };
+  }
+}
+
+/** The inverse of rotateCrop: a rect as seen rotated → the unrotated image's rect. */
+export function unrotateCrop(rect, r) {
+  return rotateCrop(rect, (360 - normRotation(r)) % 360);
+}
+
+/** The frame and the whole image of a placed piece, in sheet mm. */
+export function cropFrame(item, asset) {
+  const { w, h } = pieceSize(asset, item);
+  const seen = rotateCrop(item.crop, item.r);
+  const iw = w / seen.w;
+  const ih = h / seen.h;
+  return {
+    frame: { x: item.x, y: item.y, w, h },
+    image: { x: item.x - seen.x * iw, y: item.y - seen.y * ih, w: iw, h: ih },
+  };
+}
+
+/**
+ * Back from a frame and an image (sheet mm) to the piece: its position, scale
+ * and crop. `asset` at 100 %; `r` the piece's rotation (unchanged by cropping).
+ */
+export function pieceFromFrame(asset, r, { frame, image }) {
+  const turned = normRotation(r) % 180 !== 0;
+  const seen = { x: (frame.x - image.x) / image.w, y: (frame.y - image.y) / image.h, w: frame.w / image.w, h: frame.h / image.h };
+  const crop = clampCrop(unrotateCrop(seen, r));
+  const fullW = turned ? image.h : image.w; // the unrotated image's width on the sheet
+  return { x: frame.x, y: frame.y, scale: (100 * fullW) / asset.w, crop };
+}
+
+// Moves `image` the least so the frame stays inside it.
+function containFrame(frame, image) {
+  const x = clamp(image.x, frame.x + frame.w - image.w, frame.x);
+  const y = clamp(image.y, frame.y + frame.h - image.h, frame.y);
+  return { ...image, x, y };
+}
+
+/** Pans the image under a fixed frame by (dx, dy) mm, stopping where the frame would leave it. */
+export function panFrame({ frame, image }, dx, dy) {
+  return { frame, image: containFrame(frame, { ...image, x: image.x + dx, y: image.y + dy }) };
+}
+
+/**
+ * Zooms the image under a fixed frame by `factor` (> 1 closer) around `focus`
+ * (sheet mm): never smaller than the frame and never closer than MIN_CROP.
+ */
+export function zoomFrame({ frame, image }, factor, focus = { x: frame.x + frame.w / 2, y: frame.y + frame.h / 2 }) {
+  if (!(factor > 0) || !Number.isFinite(factor)) throw new RangeError(`invalid factor: ${factor}`);
+  const least = Math.max(frame.w / image.w, frame.h / image.h);
+  const most = Math.max(least, Math.min(frame.w / (image.w * MIN_CROP), frame.h / (image.h * MIN_CROP)));
+  const k = clamp(factor, least, most);
+  const next = { x: focus.x + (image.x - focus.x) * k, y: focus.y + (image.y - focus.y) * k, w: image.w * k, h: image.h * k };
+  return { frame, image: containFrame(frame, next) };
+}
+
+/** The handles of the crop frame: edges and corners. */
+export const FRAME_HANDLES = Object.freeze(['n', 'e', 's', 'w', 'ne', 'se', 'sw', 'nw']);
+
+/**
+ * Drags a handle of the frame by (dx, dy) mm over a fixed image. Free, each
+ * dragged edge moves on its own; with `lock`, the frame keeps its proportion
+ * (from the opposite corner, or the opposite edge's middle). The frame stays
+ * inside the image and never gets thinner than MIN_CROP of it.
+ */
+export function resizeFrame({ frame, image }, handle, dx, dy, { lock = false } = {}) {
+  if (!FRAME_HANDLES.includes(handle)) throw new RangeError(`unknown handle: ${handle}`);
+  const minW = image.w * MIN_CROP;
+  const minH = image.h * MIN_CROP;
+  const right = image.x + image.w;
+  const bottom = image.y + image.h;
+  let x0 = frame.x;
+  let y0 = frame.y;
+  let x1 = frame.x + frame.w;
+  let y1 = frame.y + frame.h;
+  const moves = (side) => handle.includes(side);
+  if (!lock) {
+    if (moves('w')) x0 = clamp(x0 + dx, image.x, x1 - minW);
+    if (moves('e')) x1 = clamp(x1 + dx, x0 + minW, right);
+    if (moves('n')) y0 = clamp(y0 + dy, image.y, y1 - minH);
+    if (moves('s')) y1 = clamp(y1 + dy, y0 + minH, bottom);
+    return { frame: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, image };
+  }
+  const aspect = frame.w / frame.h;
+  const horizontal = moves('e') || moves('w');
+  const vertical = moves('n') || moves('s');
+  // How much the frame grows (mm of width), from the pointer along the axes it drags.
+  const grownW = moves('e') ? dx : moves('w') ? -dx : 0;
+  const grownH = moves('s') ? dy : moves('n') ? -dy : 0;
+  // A corner follows the pointer projected on the frame's diagonal (like the piece's handle).
+  const diagonal = (grownW * frame.w + grownH * frame.h) / (frame.w * frame.w + frame.h * frame.h);
+  let w = horizontal && vertical ? frame.w * (1 + diagonal) : horizontal ? frame.w + grownW : frame.w + grownH * aspect;
+  // The anchor: the opposite corner, or the middle of the opposite edge.
+  const ax = moves('e') ? frame.x : moves('w') ? x1 : frame.x + frame.w / 2;
+  const ay = moves('s') ? frame.y : moves('n') ? y1 : frame.y + frame.h / 2;
+  // Largest width that keeps the frame inside the image around that anchor.
+  const room = (anchor, lo, hi, dir) => (dir > 0 ? hi - anchor : dir < 0 ? anchor - lo : 2 * Math.min(anchor - lo, hi - anchor));
+  const dirX = moves('e') ? 1 : moves('w') ? -1 : 0;
+  const dirY = moves('s') ? 1 : moves('n') ? -1 : 0;
+  const maxW = Math.min(room(ax, image.x, right, dirX), room(ay, image.y, bottom, dirY) * aspect);
+  const minLocked = Math.max(minW, minH * aspect);
+  w = clamp(w, Math.min(minLocked, maxW), maxW);
+  const h = w / aspect;
+  const x = dirX > 0 ? ax : dirX < 0 ? ax - w : ax - w / 2;
+  const y = dirY > 0 ? ay : dirY < 0 ? ay - h : ay - h / 2;
+  return { frame: { x, y, w, h }, image };
+}
+
+/**
+ * Scales frame and image together around the frame's center so the frame is
+ * exactly `size` ({w, h} mm, in the frame's orientation): a locked standard
+ * size stays that size after its crop changes.
+ */
+export function frameToSize({ frame, image }, size) {
+  const k = size.w / frame.w;
+  const cx = frame.x + frame.w / 2;
+  const cy = frame.y + frame.h / 2;
+  const scaled = (r) => ({ x: cx + (r.x - cx) * k, y: cy + (r.y - cy) * k, w: r.w * k, h: r.h * k });
+  return { frame: { ...scaled(frame), w: size.w, h: size.h }, image: scaled(image) };
+}
