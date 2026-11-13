@@ -4,8 +4,10 @@ const PT_PER_MM = 72 / 25.4;
 
 let pdfLibPromise = null;
 
+// pdf-lib va en un archivo aparte: se descarga recién al exportar o imprimir.
+
 function loadPdfLib() {
-  pdfLibPromise ??= import('../vendor/pdf-lib.esm.min.js').catch((err) => {
+  pdfLibPromise ??= import('pdf-lib').catch((err) => {
     pdfLibPromise = null;
     throw err;
   });

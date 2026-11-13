@@ -1,6 +1,8 @@
 // Lectura de archivos: imágenes y páginas de PDF convertidas en "assets"
 // con su tamaño físico en mm y todo lo necesario para mostrarlas y exportarlas.
 
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
 export const MAX_FILE_BYTES = 40 * 1024 * 1024;
 export const DEFAULT_DPI = 300;
 
@@ -164,10 +166,11 @@ function ascii(view, start, length) {
 
 let pdfjsPromise = null;
 
+// pdf.js y su worker van en archivos aparte: se descargan recién con el primer PDF.
 function loadPdfjs() {
-  pdfjsPromise ??= import('../vendor/pdf.min.mjs').then(
+  pdfjsPromise ??= import('pdfjs-dist').then(
     (lib) => {
-      lib.GlobalWorkerOptions.workerSrc = new URL('../vendor/pdf.worker.min.mjs', import.meta.url).href;
+      lib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
       return lib;
     },
     (err) => {
