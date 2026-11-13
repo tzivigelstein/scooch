@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { CutsSection } from '../../src/components/properties-panel/CutsSection.tsx';
 import { getDocument, setDocument } from '../../src/state/document.ts';
 import { historyDepth } from '../../src/state/history.ts';
+import { getPrefs, usePrefs } from '../../src/state/prefs.ts';
 import { resetState } from '../support/state.ts';
 
 const cuts = () => getDocument().cuts;
@@ -25,6 +26,25 @@ beforeEach(() => {
   );
 });
 afterEach(cleanup);
+
+describe('«Más opciones»', () => {
+  test('opening or closing it is remembered in this browser (not in the document), and it opens as it was left', () => {
+    setMode('corners');
+    const details = byId('cut-options') as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    act(() => {
+      details.open = true;
+      fireEvent(details, new Event('toggle'));
+    });
+    expect(getPrefs().cutOptions).toBe(true);
+    expect(JSON.parse(localStorage.getItem('scooch:panel-sections')!)).toEqual({ v: 2, cutOptions: true });
+    expect(historyDepth().undo).toBe(0);
+    act(() => usePrefs.setState({ cutOptions: false }));
+    expect(details.open).toBe(false);
+    act(() => usePrefs.setState({ cutOptions: true }));
+    expect(details.open).toBe(true);
+  });
+});
 
 describe('cut line modes', () => {
   test('a named radio group with tooltips; none by default, with the options hidden', () => {

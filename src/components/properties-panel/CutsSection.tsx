@@ -1,6 +1,7 @@
 // «Líneas de corte» (Hoja tab): none, corner marks or the outline, and in
 // «Más opciones» the marks' length and distance and the stroke (weight,
-// color, dash). Document settings: in the undo history and saved with it.
+// color, dash). Document settings: in the undo history and saved with it;
+// whether «Más opciones» is open is remembered in this browser.
 
 import { Ban, Scan, Square, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -11,7 +12,7 @@ import { t } from '../../copy/index.ts';
 import { lengthText, unitName, unitSymbol } from '../../services/measure.ts';
 import { getDocument, useDocument } from '../../state/document.ts';
 import { endEdit } from '../../state/history.ts';
-import { usePrefs } from '../../state/prefs.ts';
+import { setCutOptionsOpen, usePrefs } from '../../state/prefs.ts';
 import { gapForCuts, setCuts, useGapForCuts } from '../../state/actions/sheets.ts';
 import { Icon } from '../ui/Icon.tsx';
 import { LengthField } from '../ui/LengthField.tsx';
@@ -82,6 +83,7 @@ export function CutsSection() {
   const gap = useDocument((s) => s.gap);
   const busy = useDocument((s) => s.busy);
   usePrefs((s) => s.unit);
+  const optionsOpen = usePrefs((s) => s.cutOptions);
   const choice = colorChoice(cuts.color);
   const needed = gapForCuts();
   const tight = cuts.mode === 'corners' && gap < needed - 1e-9;
@@ -113,7 +115,7 @@ export function CutsSection() {
           </button>
         </p>
       )}
-      <details id="cut-options" className="fill-details cut-details" hidden={cuts.mode === 'none'}>
+      <details id="cut-options" className="fill-details cut-details" hidden={cuts.mode === 'none'} open={optionsOpen} onToggle={(e) => setCutOptionsOpen(e.currentTarget.open)}>
         <summary>{t('cuts.more')}</summary>
         <div className="fill-body">
           <div className="field cut-margin">

@@ -12,6 +12,7 @@ import {
   SINGLE_KEYS_STORAGE,
   UNIT_STORAGE,
 } from '../config.ts';
+import { parseSections, serializeSections, type SectionName } from '../core/storedprefs.js';
 import { isUnit, type Unit } from '../core/units.js';
 import { clamp } from '../core/util.ts';
 import { storageGet, storageJson, storageSet } from '../services/storage/local.ts';
@@ -22,7 +23,7 @@ export interface GridPrefs {
   snap: boolean;
 }
 
-export type SectionName = 'sheet' | 'arrange' | 'cuts' | 'grid';
+export type { SectionName };
 
 export interface PrefsState {
   /** Unit to show and type lengths in; the document is always in mm. */
@@ -33,6 +34,8 @@ export interface PrefsState {
   allowOverlap: boolean;
   /** Collapsed sections of the properties panel (missing: open). */
   sections: Partial<Record<SectionName, boolean>>;
+  /** «Más opciones» of the cut lines is open. */
+  cutOptions: boolean;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -48,11 +51,6 @@ function loadGrid(): GridPrefs {
   };
 }
 
-function loadSections(): PrefsState['sections'] {
-  const saved = storageJson(SECTIONS_STORAGE);
-  return isRecord(saved) ? (saved as PrefsState['sections']) : {};
-}
-
 function loadPrefs(): PrefsState {
   const unit = storageGet(UNIT_STORAGE);
   const pieces = storageJson(PIECES_STORAGE);
@@ -61,7 +59,7 @@ function loadPrefs(): PrefsState {
     singleKeys: storageGet(SINGLE_KEYS_STORAGE) !== 'off',
     grid: loadGrid(),
     allowOverlap: isRecord(pieces) && pieces.allowOverlap === true,
-    sections: loadSections(),
+    ...parseSections(storageJson(SECTIONS_STORAGE)),
   };
 }
 
@@ -91,10 +89,18 @@ export function setGrid(changes: Partial<GridPrefs>) {
   storageSet(GRID_STORAGE, JSON.stringify(grid));
 }
 
+const savePanels = () => storageSet(SECTIONS_STORAGE, JSON.stringify(serializeSections(getPrefs())));
+
 export function setSectionOpen(name: SectionName, open: boolean) {
-  const sections = { ...getPrefs().sections, [name]: open };
-  usePrefs.setState({ sections });
-  storageSet(SECTIONS_STORAGE, JSON.stringify(sections));
+  usePrefs.setState({ sections: { ...getPrefs().sections, [name]: open } });
+  savePanels();
+}
+
+/** «Más opciones» of the cut lines opened or closed. */
+export function setCutOptionsOpen(open: boolean) {
+  if (getPrefs().cutOptions === open) return;
+  usePrefs.setState({ cutOptions: open });
+  savePanels();
 }
 
 /** The last custom paper ({w, h} in mm, as typed), or null. */

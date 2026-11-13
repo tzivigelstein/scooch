@@ -67,7 +67,7 @@ export const piece = (id: number, asset: string, x: number, y: number, props: Pa
  * notice. `doc` patches the document on top of that.
  */
 export function resetState(doc: Partial<DocumentState> = {}) {
-  usePrefs.setState({ unit: 'mm', singleKeys: true, allowOverlap: false, grid: { ...GRID_DEFAULTS }, sections: {} });
+  usePrefs.setState({ unit: 'mm', singleKeys: true, allowOverlap: false, grid: { ...GRID_DEFAULTS }, sections: {}, cutOptions: false });
   setView({ sheet: 1, pinned: false, flash: null, busyText: '', alignTo: 'selection', distribute: 'gap', drawer: null, propsTab: 'sheet', editing: false, cropping: null, loading: false });
   setDocument({
     sheets: [{ id: 1 }],
