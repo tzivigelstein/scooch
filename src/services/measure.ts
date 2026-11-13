@@ -56,10 +56,16 @@ export function paperName() {
   return landscape ? t('sheet.landscapeName', { paper: name }) : name;
 }
 
-/** For the file name: «a4», «carta»; a custom paper, «216x330mm». */
+/**
+ * For the file name: «a4», «carta»; a custom paper by its size in the chosen
+ * unit, like the PDF's title: «216x330mm» (whole mm), «21,6x33cm», «8,5x13in».
+ */
 export function paperSlug() {
   const { paper, landscape } = getDocument();
   const info = describe(paper, landscape);
-  if (info && !info.match) return `${Math.round(info.w)}x${Math.round(info.h)}mm`;
+  if (info && !info.match) {
+    const side = (mm: number) => (unit() === 'mm' ? String(Math.round(mm)) : lengthValue(mm));
+    return `${side(info.w)}x${side(info.h)}${unit()}`;
+  }
   return slug(paperTitle(), 'hoja');
 }

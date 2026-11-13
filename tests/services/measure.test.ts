@@ -1,8 +1,8 @@
 // What the paper is called, for every preset and for custom papers: the short
 // name on the sheet's label (paperTitle), the name in sentences and in the
 // PDF's title (paperName), and the slug of the downloaded file's name
-// (paperSlug, pdfFileName). The file name is in mm whatever the unit; the
-// names follow the unit chosen in «Preferencias».
+// (paperSlug, pdfFileName). A custom paper's names and file name follow the
+// unit chosen in «Preferencias».
 import { beforeEach, describe, expect, test } from 'vitest';
 import { PAPERS } from '../../src/core/papers.js';
 import type { PaperId } from '../../src/core/types.ts';
@@ -96,12 +96,12 @@ describe('custom papers', () => {
     expect(names()).toEqual({ title: 'A4', name: 'A4 horizontal', slug: 'a4', file: 'scooch-a4.pdf' });
   });
 
-  test('in cm or in: the name follows the unit, the file name stays in mm', () => {
+  test('in cm or in: the name and the file name both follow the unit', () => {
     setDocument({ paper: { custom: true, w: 123.4, h: 170 }, landscape: false });
     setUnit('cm');
-    expect(names()).toEqual({ title: 'Personalizado', name: '12,34 × 17 cm', slug: '123x170mm', file: 'scooch-123x170mm.pdf' });
+    expect(names()).toEqual({ title: 'Personalizado', name: '12,34 × 17 cm', slug: '12,34x17cm', file: 'scooch-12,34x17cm.pdf' });
     setUnit('in');
     expect(names().name).toBe('4,858 × 6,693 in');
-    expect(pdfFileName()).toBe('scooch-123x170mm.pdf');
+    expect(pdfFileName()).toBe('scooch-4,858x6,693in.pdf');
   });
 });
