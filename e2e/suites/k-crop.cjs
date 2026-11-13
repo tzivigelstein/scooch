@@ -5,7 +5,7 @@
 // screen for cropped and rotated image and vector PDF pieces.
 const { open, makeChecker, addFiles, lib, heard, download, path, fs, OUT5 } = require('../lib/selection.cjs');
 const { bareSheet, rasterize, difference } = require('../lib/raster.cjs');
-const { PDFDocument, rgb } = require('pdf-lib');
+const { PDFDocument, PDFName, rgb } = require('pdf-lib');
 
 const ROOT = path.resolve(__dirname, '../..');
 const TOL = 0.05;
@@ -343,6 +343,11 @@ const OVERLAY = () => {
     const raster = await rasterize(p, file, sheet.width, path.join(OUT5, 'k-crop-pdf.png'));
     const [mean, big] = await difference(p, screen, raster);
     check(`the PDF matches the sheet on screen (mean ${mean.toFixed(2)}/255, ${(big * 100).toFixed(2)} % very different)`, mean < 3 && big < 0.01);
+    // The cropped, turned PDF page is still vector: a form XObject (its page), not an image.
+    const pdf = await PDFDocument.load(fs.readFileSync(file));
+    const xobjects = pdf.getPage(0).node.Resources().lookup(PDFName.of('XObject'));
+    const kinds = xobjects.keys().map((key) => pdf.context.lookup(xobjects.get(key)).dict.get(PDFName.of('Subtype')).toString()).sort();
+    check('the cropped PDF piece stays vector (a form XObject); the image piece is the only image', JSON.stringify(kinds) === JSON.stringify(['/Form', '/Image']), JSON.stringify(kinds));
     errors.push(...s.errors);
     await s.browser.close();
   }
