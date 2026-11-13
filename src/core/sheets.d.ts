@@ -34,6 +34,9 @@ export function spotOnSheet(rect: IdSize<RectId>, boxes: readonly Rect[], option
 /** Closest position whose center stays inside the W × H sheet. */
 export function keepCenterInside(rect: Rect, W: number, H: number): Point;
 
+/** The closest free spot for `rect` on the sheet (printable area first), or null. */
+export function freeSpotNear(rect: Rect, others: readonly Rect[], options: { W: number; H: number; margin?: number }): Point | null;
+
 /** Index of the sheet (by its top edge and height) containing `y`, or the nearest one; −1 without sheets. */
 export function sheetAt(y: number, tops: readonly number[], height: number): number;
 

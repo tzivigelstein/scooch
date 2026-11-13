@@ -7,7 +7,7 @@
 // como cajas {id, sheet, x, y, w, h} (w/h ya con la orientación aplicada).
 
 import { packSheets, packInto } from './pack.js';
-import { overlaps, EPS } from './collide.js';
+import { overlaps, EPS, nearestFree } from './collide.js';
 
 const sameNumber = (a, b) => Math.abs(a - b) < 1e-9;
 
@@ -146,6 +146,25 @@ export function spotOnSheet(rect, boxes, { area, margin = 0, gap = 0 }) {
 export function keepCenterInside({ x, y, w, h }, W, H) {
   const fit = (v, size, total) => Math.min(Math.max(v, -size / 2), total - size / 2);
   return { x: fit(x, w, W), y: fit(y, h, H) };
+}
+
+/**
+ * The closest free spot for `rect` ({x, y, w, h} mm) on a W × H sheet with
+ * those `others`: inside the printable area (the sheet minus `margin`) if it
+ * fits there, else anywhere on the sheet. Its own position when already free.
+ * null when there is no room on that sheet.
+ */
+export function freeSpotNear(rect, others, { W, H, margin = 0 }) {
+  const areas = [
+    { x: margin, y: margin, w: W - 2 * margin, h: H - 2 * margin },
+    { x: 0, y: 0, w: W, h: H },
+  ];
+  for (const bounds of areas) {
+    if (bounds.w + EPS < rect.w || bounds.h + EPS < rect.h) continue;
+    const spot = nearestFree(rect, others, { bounds });
+    if (spot) return spot;
+  }
+  return null;
 }
 
 /**
