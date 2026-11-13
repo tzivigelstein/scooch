@@ -1,5 +1,7 @@
 // Panel «Piezas»: zona para agregar y lista de piezas (listbox de selección
 // única, con foco itinerante: una sola parada de Tab y flechas para recorrer).
+// Con varias hojas, las piezas se agrupan por hoja (role="group" con su
+// encabezado y contador); las flechas pasan de un grupo al siguiente.
 // La selección de la lista y la de la hoja son la misma.
 
 import { state, assets, dims, settings } from './store.js';
@@ -18,7 +20,8 @@ const BADGES = [
   { key: 'lowRes', icon: 'triangle-alert' },
 ];
 
-const rows = new Map(); // id → <li role="option">
+const rows = new Map(); // id de pieza → <li role="option">
+const groups = new Map(); // id de hoja → {group, head, title, count, items}
 let ui = {};
 let handlers = {};
 
@@ -135,6 +138,39 @@ function updateRow(row, item, problems = {}) {
   }
 }
 
+// Grupo de una hoja: <li role="group"> con su encabezado y una lista interna.
+function createGroup(id) {
+  const group = document.createElement('li');
+  group.setAttribute('role', 'group');
+  group.className = 'list-group';
+  const head = document.createElement('div');
+  head.className = 'group-head';
+  head.id = `list-group-${id}`;
+  head.setAttribute('role', 'presentation');
+  const title = document.createElement('span');
+  title.className = 'group-title';
+  const count = document.createElement('span');
+  count.className = 'group-count';
+  head.append(title, count);
+  const items = document.createElement('ul');
+  items.setAttribute('role', 'none');
+  items.className = 'group-items';
+  group.setAttribute('aria-labelledby', head.id);
+  group.append(head, items);
+  return { group, head, title, count, items };
+}
+
+// Pone `nodes` como hijos de `container`, en ese orden, sin recrearlos.
+function sync(container, nodes) {
+  let prev = null;
+  for (const node of nodes) {
+    const expected = prev ? prev.nextSibling : container.firstChild;
+    if (expected !== node) container.insertBefore(node, expected);
+    prev = node;
+  }
+  while (prev ? prev.nextSibling : container.firstChild) (prev ? prev.nextSibling : container.firstChild).remove();
+}
+
 export function renderPieceList() {
   const n = state.items.length;
   ui.empty.hidden = n > 0;
@@ -150,20 +186,45 @@ export function renderPieceList() {
       rows.delete(id);
     }
   }
-  let prev = null;
-  for (const item of state.items) {
+  const rowOf = (item) => {
     let row = rows.get(item.id);
     if (!row) {
       row = createRow(item);
       rows.set(item.id, row);
     }
     updateRow(row, item, problems.get(item.id));
-    const expected = prev ? prev.nextSibling : ui.list.firstChild;
-    if (expected !== row) ui.list.insertBefore(row, expected);
-    prev = row;
+    return row;
+  };
+
+  if (state.sheets.length < 2) {
+    // Una sola hoja: lista plana, como siempre.
+    sync(ui.list, state.items.map(rowOf));
+    groups.clear();
+  } else {
+    const liveSheets = new Set(state.sheets.map((sheet) => sheet.id));
+    for (const id of groups.keys()) if (!liveSheets.has(id)) groups.delete(id);
+    const bySheet = new Map(state.sheets.map((sheet) => [sheet.id, []]));
+    for (const item of state.items) bySheet.get(item.sheet)?.push(item);
+    const nodes = state.sheets.map((sheet, i) => {
+      let g = groups.get(sheet.id);
+      if (!g) {
+        g = createGroup(sheet.id);
+        groups.set(sheet.id, g);
+      }
+      const list = bySheet.get(sheet.id);
+      const title = t('pieces.groupTitle', { i: i + 1 });
+      const count = list.length ? t('pieces.count', { n: list.length }) : t('pieces.groupEmpty');
+      if (g.title.textContent !== title) g.title.textContent = title;
+      if (g.count.textContent !== count) g.count.textContent = count;
+      sync(g.items, list.map(rowOf));
+      return g.group;
+    });
+    sync(ui.list, nodes);
   }
+
   // Foco itinerante: una sola fila en el orden de tabulación (la seleccionada o la primera).
-  const current = rows.get(state.selected) ?? rows.get(state.items[0]?.id);
+  const first = ui.list.querySelector('[role="option"]');
+  const current = rows.get(state.selected) ?? first;
   for (const [, row] of rows) row.tabIndex = row === current ? 0 : -1;
   const active = rows.get(state.selected);
   if (active && active !== lastScrolled) scrollIntoList(active);
