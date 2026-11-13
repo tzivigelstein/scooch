@@ -2,7 +2,7 @@
 // tirador, posición de la barra de la pieza y gestos con el puntero.
 
 import { DRAG_THRESHOLD, NARROW_QUERY } from './config.js';
-import { state, settings, assets, sheetSize, dims, findItem, commit, paperName } from './store.js';
+import { state, settings, assets, sheetSize, dims, findItem, commit, paperName, paperTitle } from './store.js';
 import { overlapsAny, nearestFree, maxGrowth } from './collide.js';
 import { $, clamp, round1, tidy, isTyping } from './util.js';
 import { t } from './copy/index.js';
@@ -78,7 +78,7 @@ export function renderSheetView() {
   ui.empty.hidden = n > 0;
   ui.empty.disabled = state.busy;
   ui.sheet.setAttribute('aria-label', n ? t('sheet.labelCount', { paper: paperName(), n }) : t('sheet.labelEmpty', { paper: paperName() }));
-  ui.paperLabel.textContent = t('sheet.paperLabel', { paper: state.paper, w: W, h: H });
+  ui.paperLabel.textContent = t('sheet.paperLabel', { paper: paperTitle(), w: W, h: H });
 
   renderPieces();
   renderSelection();

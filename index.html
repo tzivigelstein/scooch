@@ -241,6 +241,22 @@
                 </div>
               </fieldset>
             </div>
+            <div id="custom-paper" class="custom-paper" hidden>
+              <div class="prop-grid">
+                <label class="num-field prefixed">
+                  <span class="num-prefix" aria-hidden="true"><span data-icon="move-horizontal"></span></span>
+                  <input id="paper-w" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-i18n-label="papers.widthLabel" data-i18n-tip="papers.width" />
+                  <span class="num-unit" aria-hidden="true" data-i18n="units.mm"></span>
+                </label>
+                <label class="num-field prefixed">
+                  <span class="num-prefix" aria-hidden="true"><span data-icon="move-vertical"></span></span>
+                  <input id="paper-h" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-i18n-label="papers.heightLabel" data-i18n-tip="papers.height" />
+                  <span class="num-unit" aria-hidden="true" data-i18n="units.mm"></span>
+                </label>
+              </div>
+              <p id="paper-error" class="field-error" hidden></p>
+              <p id="paper-match" class="field-note" hidden></p>
+            </div>
             <label class="field inline">
               <span class="field-label"><span data-i18n="props.margin"></span><span class="sr-only" data-i18n="props.marginUnit"></span></span>
               <span class="num-field">

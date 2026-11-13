@@ -4,12 +4,12 @@
 // eso también está bloqueado, lo descarga).
 
 import { APP_NAME } from './config.js';
-import { state, assets, sheetSize, dims, paperName } from './store.js';
+import { state, assets, sheetSize, dims, paperName, paperSlug } from './store.js';
 import { buildPdf } from './export.js';
 import { slug } from './util.js';
 import { t } from './copy/index.js';
 
-export const pdfFileName = () => `${slug(APP_NAME, t('print.fallbackName'))}-${state.paper.toLowerCase()}.pdf`;
+export const pdfFileName = () => `${slug(APP_NAME, t('print.fallbackName'))}-${paperSlug()}.pdf`;
 
 /** Bytes del PDF de la hoja actual (una página del tamaño del papel). */
 export function makePdf() {

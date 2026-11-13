@@ -1,8 +1,9 @@
 // Estado de la hoja, assets cargados e historial de deshacer/rehacer.
 // Todas las medidas internas en mm.
 
-import { PAPERS, MAX_UNDO, GRID_STORAGE, GRID_DEFAULTS, GRID_MIN, GRID_MAX, PIECES_STORAGE } from './config.js';
-import { storageGet, storageSet, clamp } from './util.js';
+import { MAX_UNDO, GRID_STORAGE, GRID_DEFAULTS, GRID_MIN, GRID_MAX, PIECES_STORAGE } from './config.js';
+import { sizeOf, describe } from './papers.js';
+import { storageGet, storageSet, clamp, slug } from './util.js';
 import { t } from './copy/index.js';
 
 export const assets = new Map();
@@ -10,7 +11,7 @@ export const assets = new Map();
 export const state = {
   items: [],
   selected: null,
-  paper: 'A4',
+  paper: 'A4', // id de un preset de papers.js o {custom: true, w, h}
   landscape: false,
   margin: 10,
   gap: 5,
@@ -70,8 +71,8 @@ export const render = () => renderer();
 // ---------- Geometría ----------
 
 export function sheetSize() {
-  const [, w, h] = PAPERS.find(([name]) => name === state.paper);
-  return state.landscape ? [h, w] : [w, h];
+  const size = sizeOf(state.paper, state.landscape) ?? sizeOf('A4', state.landscape);
+  return [size.w, size.h];
 }
 
 /** Hoja, margen y área útil (hoja menos margen). */
@@ -107,9 +108,36 @@ export function rects(items, k = 1) {
   });
 }
 
-/** Papel y orientación para mostrar: «A4», «A4 horizontal». */
+// ---------- Nombres del papel ----------
+
+const presetName = (id) => t(`papers.names.${id}`);
+
+/**
+ * Nombre corto del papel, sin orientación: «A4», «Carta»; un personalizado con
+ * las medidas de un preset se llama como el preset y si no, «Personalizado».
+ */
+export function paperTitle() {
+  const info = describe(state.paper, state.landscape);
+  if (!info) return presetName('A4');
+  return info.match ? presetName(info.match) : t('papers.custom');
+}
+
+/**
+ * Papel y orientación para una frase: «A4», «A4 horizontal»; un personalizado
+ * sin preset que coincida, por sus medidas: «216 × 330 mm».
+ */
 export function paperName() {
-  return state.landscape ? t('sheet.landscapeName', { paper: state.paper }) : state.paper;
+  const info = describe(state.paper, state.landscape);
+  if (info && !info.match) return t('papers.customName', { w: info.w, h: info.h });
+  const name = paperTitle();
+  return state.landscape ? t('sheet.landscapeName', { paper: name }) : name;
+}
+
+/** Para el nombre del archivo: «a4», «carta»; un personalizado, «216x330mm». */
+export function paperSlug() {
+  const info = describe(state.paper, state.landscape);
+  if (info && !info.match) return `${Math.round(info.w)}x${Math.round(info.h)}mm`;
+  return slug(paperTitle(), 'hoja');
 }
 
 // ---------- Deshacer / rehacer ----------

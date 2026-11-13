@@ -1,12 +1,15 @@
 // Panel «Propiedades»: sección Pieza (solo con selección) y secciones
 // plegables Hoja, Acomodo y Grilla, que recuerdan si están abiertas.
 
-import { PAPERS, GRID_MIN, GRID_MAX, SECTIONS_STORAGE } from './config.js';
-import { state, settings, assets, dims, selectedItem, commit, endEdit, render, setGrid, setAllowOverlap } from './store.js';
+import { GRID_MIN, GRID_MAX, SECTIONS_STORAGE, CUSTOM_PAPER_STORAGE } from './config.js';
+import { PAPERS, PAPER_GROUPS, CUSTOM_MIN, CUSTOM_MAX, customPaper, validateSide, matchPreset } from './papers.js';
+import { formatLength, parseLength } from './units.js';
+import { state, settings, assets, dims, selectedItem, commit, endEdit, render, setGrid, setAllowOverlap, sheetSize } from './store.js';
 import { keepCenter, fillSummary, printResolution } from './layout.js';
+import { announce } from './live.js';
 import { icon } from './icons.js';
 import { $, clamp, num, storageGet, storageSet } from './util.js';
-import { t, hasText } from './copy/index.js';
+import { t, asSentence } from './copy/index.js';
 
 let ui = {};
 
@@ -39,6 +42,11 @@ export function initPanels(actions) {
     remove: $('piece-remove'),
     // Hoja
     paper: $('paper'),
+    customPaper: $('custom-paper'),
+    paperW: $('paper-w'),
+    paperH: $('paper-h'),
+    paperError: $('paper-error'),
+    paperMatch: $('paper-match'),
     portrait: $('portrait'),
     landscape: $('landscape'),
     margin: $('margin'),
@@ -78,13 +86,31 @@ export function initPanels(actions) {
   ui.remove.addEventListener('click', (e) => actions.remove({ viaKeyboard: e.detail === 0 }));
 
   // Hoja
-  ui.paper.replaceChildren(...PAPERS.map(([name, w, h]) => new Option(t('sheet.paperOption', { paper: paperLabel(name), w, h }), name)));
+  fillPaperOptions();
   ui.paper.addEventListener('change', () => {
     if (state.busy) return render();
-    commit();
-    state.paper = ui.paper.value;
+    if (ui.paper.value === 'custom') {
+      // El último personalizado (preferencia local) o, si no hay, el tamaño de ahora.
+      const [W, H] = sheetSize();
+      const saved = loadCustomPaper();
+      const next = (saved && customPaper(saved.w, saved.h)) ?? customPaper(W, H);
+      if (!next) return render();
+      commit();
+      state.paper = next.paper;
+      state.landscape = next.landscape;
+    } else {
+      commit();
+      state.paper = ui.paper.value;
+    }
     actions.sheetChanged();
   });
+  for (const [input, side] of [
+    [ui.paperW, 'w'],
+    [ui.paperH, 'h'],
+  ]) {
+    input.addEventListener('input', () => applyCustomSide(input, side, false, actions));
+    input.addEventListener('change', () => applyCustomSide(input, side, true, actions));
+  }
   for (const radio of [ui.portrait, ui.landscape]) {
     radio.addEventListener('change', () => {
       if (radio.checked) actions.setOrientation(radio === ui.landscape);
@@ -170,8 +196,119 @@ const sizeText = (item) => {
   return t('units.size', { w, h });
 };
 
-/** Nombre visible de un papel (algunos se traducen: Carta, Oficio). */
-const paperLabel = (name) => (hasText(`sheet.papers.${name}`) ? t(`sheet.papers.${name}`) : name);
+// ---------- Papel ----------
+
+/** Presets agrupados (<optgroup>) y, al final, «Personalizado». */
+function fillPaperOptions() {
+  const groups = PAPER_GROUPS.map((id) => {
+    const group = document.createElement('optgroup');
+    group.label = t(`papers.groups.${id}`);
+    group.append(
+      ...PAPERS.filter((p) => p.group === id).map(
+        (p) => new Option(t('papers.option', { paper: t(`papers.names.${p.id}`), w: p.w, h: p.h }), p.id)
+      )
+    );
+    return group;
+  });
+  ui.paper.replaceChildren(...groups, new Option(t('papers.custom'), 'custom'));
+}
+
+function loadCustomPaper() {
+  try {
+    const saved = JSON.parse(storageGet(CUSTOM_PAPER_STORAGE) ?? 'null');
+    return saved && Number.isFinite(saved.w) && Number.isFinite(saved.h) ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+const paperText = (mm) => formatLength(mm, 'mm', { withUnit: false });
+
+// Problema de un lado → clave del mensaje (papers.errors.*).
+const PAPER_ERRORS = {
+  w: { invalid: 'widthInvalid', 'too-small': 'widthTooSmall', 'too-large': 'widthTooLarge' },
+  h: { invalid: 'heightInvalid', 'too-small': 'heightTooSmall', 'too-large': 'heightTooLarge' },
+};
+
+function paperErrorText(side, problem) {
+  return t(`papers.errors.${PAPER_ERRORS[side][problem]}`, { min: CUSTOM_MIN, max: CUSTOM_MAX });
+}
+
+// El mensaje de error se asocia al campo solo mientras se ve.
+function showPaperError(input, text) {
+  ui.paperError.hidden = !text;
+  ui.paperError.textContent = text ?? '';
+  for (const field of [ui.paperW, ui.paperH]) {
+    if (text && field === input) field.setAttribute('aria-invalid', 'true');
+    else field.removeAttribute('aria-invalid');
+    describePaperField(field);
+  }
+}
+
+function describePaperField(field) {
+  const ids = [];
+  if (!ui.paperError.hidden && field.getAttribute('aria-invalid') === 'true') ids.push('paper-error');
+  if (!ui.paperMatch.hidden) ids.push('paper-match');
+  if (ids.length) field.setAttribute('aria-describedby', ids.join(' '));
+  else field.removeAttribute('aria-describedby');
+}
+
+/**
+ * Ancho o alto del papel personalizado. Mientras se escribe, aplica lo que
+ * vale y marca lo que no; al confirmar (`final`), si no vale, vuelve al valor
+ * anterior y lo anuncia.
+ */
+function applyCustomSide(input, side, final, actions) {
+  if (state.busy) return;
+  const [W, H] = sheetSize();
+  const value = parseLength(input.value, 'mm');
+  const problem = value === null ? 'invalid' : validateSide(value);
+  if (problem) {
+    const text = paperErrorText(side, problem);
+    if (!final) return showPaperError(input, text);
+    const current = side === 'w' ? W : H;
+    input.value = paperText(current);
+    showPaperError(input, null);
+    announce(t('papers.errors.restored', { text: asSentence(text), value: paperText(current) }), { assertive: true });
+    return;
+  }
+  showPaperError(input, null);
+  const next = customPaper(side === 'w' ? value : W, side === 'h' ? value : H);
+  const changed = next.paper.w !== state.paper.w || next.paper.h !== state.paper.h || next.landscape !== state.landscape;
+  if (changed || typeof state.paper === 'string') {
+    commit('paper:custom');
+    state.paper = next.paper;
+    state.landscape = next.landscape;
+    storageSet(CUSTOM_PAPER_STORAGE, JSON.stringify({ w: side === 'w' ? value : W, h: side === 'h' ? value : H }));
+  }
+  if (final) {
+    endEdit();
+    input.value = paperText(value);
+    actions.sheetChanged();
+  } else render();
+}
+
+function renderPaper() {
+  const custom = typeof state.paper !== 'string';
+  ui.paper.value = custom ? 'custom' : state.paper;
+  ui.customPaper.hidden = !custom;
+  if (!custom) return;
+  const [W, H] = sheetSize();
+  for (const [input, value] of [
+    [ui.paperW, W],
+    [ui.paperH, H],
+  ]) {
+    if (document.activeElement === input) continue;
+    input.value = paperText(value);
+    if (input.getAttribute('aria-invalid') === 'true') showPaperError(input, null);
+  }
+  const match = matchPreset(W, H);
+  const name = match && t(`papers.names.${match.id}`);
+  const text = match ? t('papers.match', { paper: match.landscape ? t('sheet.landscapeName', { paper: name }) : name }) : '';
+  ui.paperMatch.hidden = !match;
+  if (ui.paperMatch.textContent !== text) ui.paperMatch.textContent = text;
+  for (const field of [ui.paperW, ui.paperH]) describePaperField(field);
+}
 
 /** Input numérico de la pieza: `patch(item, valor)` devuelve los cambios o null si no vale. */
 function bindItemNumber(input, name, patch) {
@@ -270,8 +407,8 @@ export function renderPanels(draft = null) {
 
 function renderSettings() {
   const busy = state.busy;
-  for (const el of [ui.paper, ui.portrait, ui.landscape, ui.margin, ui.gap]) setDisabled(el, busy);
-  ui.paper.value = state.paper;
+  for (const el of [ui.paper, ui.paperW, ui.paperH, ui.portrait, ui.landscape, ui.margin, ui.gap]) setDisabled(el, busy);
+  renderPaper();
   ui.portrait.checked = !state.landscape;
   ui.landscape.checked = state.landscape;
   setValue(ui.margin, num(state.margin));

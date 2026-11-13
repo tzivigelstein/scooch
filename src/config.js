@@ -1,21 +1,8 @@
 // Configuración general. Para renombrar la app alcanza con cambiar APP_NAME:
 // los textos (src/copy) lo usan con {app}, también en el HTML generado.
+// Los papeles están en papers.js (ids estables; los nombres, en src/copy).
 
 export const APP_NAME = 'Pliego';
-
-export const PAPERS = [
-  ['A4', 210, 297],
-  ['A3', 297, 420],
-  ['A5', 148, 210],
-  ['A6', 105, 148],
-  ['A2', 420, 594],
-  ['A1', 594, 841],
-  ['A0', 841, 1189],
-  ['Carta', 215.9, 279.4],
-  ['Oficio', 215.9, 355.6],
-  ['B5', 176, 250],
-  ['B4', 250, 353],
-];
 
 export const MAX_ITEMS = 200;
 export const MAX_UNDO = 50;
@@ -39,6 +26,8 @@ export const GRID_DEFAULTS = { show: false, size: 1, snap: true };
 export const GRID_MIN = 0.5;
 export const GRID_MAX = 50;
 export const PIECES_STORAGE = 'piece-preferences';
+/** Último papel personalizado ({w, h} en mm, como se cargó): preferencia local. */
+export const CUSTOM_PAPER_STORAGE = 'custom-paper';
 
 // ---------- Donaciones ----------
 

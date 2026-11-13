@@ -808,7 +808,8 @@ fieldset.field > legend {
 }
 
 select,
-input[type="number"] {
+input[type="number"],
+input[type="text"] {
   width: 100%;
   height: 34px;
   padding: 0 8px;
@@ -821,7 +822,8 @@ input[type="number"] {
 }
 
 select:hover:not(:disabled),
-input[type="number"]:hover:not(:disabled) {
+input[type="number"]:hover:not(:disabled),
+input[type="text"]:hover:not(:disabled) {
   border-color: var(--text);
 }
 
@@ -838,7 +840,8 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 select:focus-visible,
-input[type="number"]:focus-visible {
+input[type="number"]:focus-visible,
+input[type="text"]:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 0;
   border-color: var(--focus);
@@ -848,6 +851,28 @@ select:disabled,
 input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Medida que no vale: borde y mensaje (no solo color: el mensaje lo dice). */
+input[aria-invalid="true"],
+input[aria-invalid="true"]:hover:not(:disabled) {
+  border-color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--danger);
+}
+
+.field-error {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  color: var(--danger);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.custom-paper {
+  display: grid;
+  gap: 8px;
 }
 
 /* Campo numérico compacto: etiqueta/ícono adentro a la izquierda, unidad a la derecha. */
