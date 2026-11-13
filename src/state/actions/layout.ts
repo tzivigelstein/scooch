@@ -3,9 +3,10 @@
 // core/sheets.js.
 
 import { CROWD_LIMIT, MAX_ITEMS } from '../../config.ts';
+import { overlapsAny } from '../../core/collide.js';
 import { isIdentity, pieceSize } from '../../core/crop.js';
 import { fitScale, pack } from '../../core/pack.js';
-import { arrangeSheets, placeIntoSheets, samePlan, type ArrangePlan } from '../../core/sheets.js';
+import { arrangeSheets, freeSpotNear, keepCenterInside, placeIntoSheets, samePlan, type ArrangePlan } from '../../core/sheets.js';
 import type { Item } from '../../core/types.ts';
 import { clamp, tidy } from '../../core/util.ts';
 import { formatList, t } from '../../copy/index.ts';
@@ -13,6 +14,7 @@ import { paperName } from '../../services/measure.ts';
 import { getAsset } from '../assets.ts';
 import { getDocument, newItem, newItemId, newSheetId, setDocument, type Piece } from '../document.ts';
 import { commit } from '../history.ts';
+import { getPrefs } from '../prefs.ts';
 import { area, boxOf, currentSheet, dims, findItem, itemsOn, pieceName, selectedItem, sheetIndex } from '../selectors.ts';
 import { animateNext } from '../view.ts';
 import { say } from './notify.ts';
@@ -281,6 +283,53 @@ export function duplicatePieces(items: readonly Piece[], times = 1, from = sheet
   }
   setDocument({ items: [...getDocument().items, ...copies] });
   return copies;
+}
+
+// ---------- Pieces that changed size ----------
+
+/**
+ * Applies pieces that changed size (same ids, already with their new values)
+ * so they stay valid: each center stays on its sheet and, unless overlaps are
+ * allowed, a piece that would land on another moves to the closest free spot
+ * of its sheet or, without room there, to the free gaps of the next sheets
+ * (adding one if needed). One that doesn't fit even alone stays where it is.
+ * Returns the ids that moved aside. Changes the document: commit before.
+ */
+export function settle(changed: readonly Item[]): number[] {
+  const { W, H, m } = area();
+  const next = new Map(changed.map((item) => [item.id, { ...item }]));
+  for (const item of next.values()) {
+    const [w, h] = dims(item);
+    Object.assign(item, keepCenterInside({ x: item.x, y: item.y, w, h }, W, H));
+  }
+  let items = getDocument().items.map((item) => next.get(item.id) ?? item);
+  const moved: number[] = [];
+  const homeless = new Set<number>();
+  if (!getPrefs().allowOverlap) {
+    for (const item of next.values()) {
+      const rect = boxOf(item);
+      const others = items.filter((other) => other.sheet === item.sheet && other.id !== item.id && !homeless.has(other.id)).map(boxOf);
+      if (!overlapsAny(rect, others)) continue;
+      const spot = freeSpotNear(rect, others, { W, H, margin: m });
+      if (spot) {
+        item.x = tidy(spot.x);
+        item.y = tidy(spot.y);
+        moved.push(item.id);
+      } else homeless.add(item.id);
+      items = items.map((other) => (other.id === item.id ? item : other));
+    }
+  }
+  if (!homeless.size) {
+    setDocument({ items });
+    return moved;
+  }
+  // Without room on their sheet: placed like new pieces from that sheet on.
+  setDocument({ items: items.filter((item) => !homeless.has(item.id)) });
+  const away = items.filter((item) => homeless.has(item.id)).map((item) => ({ ...item }));
+  const unplaced = new Set(placeInto(away, sheetIndex(away[0].sheet), { rotate: false }));
+  const placed = new Map(away.filter((item) => !unplaced.has(item.id)).map((item) => [item.id, item]));
+  setDocument({ items: items.map((item) => placed.get(item.id) ?? item) });
+  return [...moved, ...placed.keys()];
 }
 
 // ---------- Print resolution ----------
