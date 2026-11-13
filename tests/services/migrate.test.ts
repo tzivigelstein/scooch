@@ -99,13 +99,14 @@ describe('the app keys', () => {
 });
 
 const blob = (text: string) => new Blob([text]);
+const file = (text: string) => ({ blob: blob(text), hash: `h-${text}` });
 
 async function seeded(storage: ProjectStorage, names: string[]) {
   const records: ProjectRecord[] = [];
   for (const [i, name] of names.entries()) {
     const doc = emptyDoc();
     records.push(await createProject(storage, { id: `p${i}`, name, now: 1000 + i, doc }));
-    await storage.write(records[i], { put: new Map([[`f${i}`, blob(`bytes of ${name}`)]]) });
+    await storage.write(records[i], { put: new Map([[`f${i}`, file(`bytes of ${name}`)]]) });
   }
   return records;
 }
@@ -123,7 +124,7 @@ describe('migrateProjects', () => {
       expect(await to.get(record.id)).toEqual(record);
       const files = await to.files(record.id);
       expect([...files.keys()]).toEqual([`f${i}`]);
-      expect(files.get(`f${i}`)).toBe(legacyFiles[i].get(`f${i}`));
+      expect(files.get(`f${i}`)).toEqual(legacyFiles[i].get(`f${i}`));
     }
     // And they open like any other project.
     expect((await loadProject(to, 'p0')).record.name).toBe('Tarjetas');
@@ -134,7 +135,7 @@ describe('migrateProjects', () => {
     const to = memoryStorage();
     await seeded(from, ['Viejo']);
     const edited = { ...(await from.get('p0'))!, name: 'Editado después' };
-    await to.write(edited);
+    await to.write(edited, { create: true });
     expect(await migrateProjects(from, to)).toBe(0);
     expect((await to.get('p0'))!.name).toBe('Editado después');
     expect(await from.list()).toEqual([]);

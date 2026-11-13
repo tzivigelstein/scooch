@@ -166,11 +166,46 @@ export interface ProjectRecord {
   id: string;
   name: string;
   created: number;
+  /** When its document was last saved. */
   modified: number;
   version: number;
   doc: ProjectDoc;
   counts: { sheets: number; pieces: number };
   thumb: Blob | null;
+}
+
+/**
+ * A stored binary and its content's hash: SHA-256 in hex or, where the
+ * browser can't hash (an insecure context), a unique id starting with «u».
+ * Equal hashes are equal content, stored once.
+ */
+export interface StoredFile {
+  blob: Blob;
+  hash: string;
+}
+
+/** What a saved undo history or clipboard references: its assets and their files (core/undostore.js). */
+export interface StoredAssets {
+  /** The assets, by key, as a document keeps them. */
+  assets: Record<string, AssetMeta>;
+  /** projectdoc.fileKeys of those assets → hash. */
+  files: Record<string, string>;
+  /** Every hash in `files` (indexed: what keeps those binaries stored). */
+  hashes: string[];
+}
+
+/** A project's undo history as stored (core/undostore.js). */
+export interface StoredHistory extends StoredAssets {
+  project: string;
+  v: number;
+  [field: string]: unknown;
+}
+
+/** The pieces cut and not pasted yet, as stored (core/undostore.js). */
+export interface StoredClip extends StoredAssets {
+  id: 'cut';
+  v: number;
+  [field: string]: unknown;
 }
 
 /**
@@ -182,11 +217,46 @@ export interface ListedProject extends ProjectRecord {
   newer?: boolean;
 }
 
-/** Minimal storage behind projectstore.js (IndexedDB in the browser, memory in tests). */
+/** What a write changes besides the record (see ProjectStorage.write). */
+export interface WriteChanges {
+  /** Files to reference by key; each blob is stored unless its hash already is. */
+  put?: ReadonlyMap<string, StoredFile>;
+  /** Keys that stop being referenced (their binaries go when nothing else references them). */
+  remove?: readonly string[];
+  /** The project's undo history (null: none). Left as it is when undefined. */
+  history?: StoredHistory | null;
+  /** Binaries the history references, by hash: stored unless already. */
+  blobs?: ReadonlyMap<string, Blob>;
+  /** The record is new: write it even though it isn't stored yet (otherwise a write to a missing project fails with 'missing'). */
+  create?: boolean;
+}
+
+/**
+ * The storage behind projectstore.js (IndexedDB in the browser, memory in
+ * tests). Binaries are stored once per content (by hash) and referenced by
+ * the projects' files, the saved undo histories and the saved clipboard; a
+ * binary is deleted only by collectGarbage, when nothing references it.
+ * Writes are atomic: a reference and the binary it needs are written together.
+ */
 export interface ProjectStorage {
   list(): Promise<ProjectRecord[]>;
   get(id: string): Promise<ProjectRecord | null>;
-  files(id: string): Promise<Map<string, Blob>>;
-  write(record: ProjectRecord, changes?: { put?: Map<string, Blob>; remove?: string[] }): Promise<void>;
+  /** The project's files by key (projectdoc.fileKeys). */
+  files(id: string): Promise<Map<string, StoredFile>>;
+  /** Writes the record and `changes` in one operation (all or nothing). */
+  write(record: ProjectRecord, changes?: WriteChanges): Promise<void>;
+  /** Changes some fields of a stored record (read and written in one operation); null if it isn't there. */
+  update(id: string, patch: Partial<Pick<ProjectRecord, 'name' | 'modified'>>): Promise<ProjectRecord | null>;
+  /** Stores `record` (a new id) with the same files as project `id`: references, no binary is copied. */
+  copy(id: string, record: ProjectRecord): Promise<void>;
+  /** The record, its file references and its undo history. */
   remove(id: string): Promise<void>;
+  history(id: string): Promise<StoredHistory | null>;
+  clip(): Promise<StoredClip | null>;
+  /** Stores the clipboard (null: none) and, unless already stored, the binaries it references. */
+  setClip(clip: StoredClip | null, blobs?: ReadonlyMap<string, Blob>): Promise<void>;
+  /** Stored binaries by hash (the ones there are). */
+  blobs(hashes: readonly string[]): Promise<Map<string, Blob>>;
+  /** Deletes the binaries nothing references. Returns how many. */
+  collectGarbage(): Promise<number>;
 }

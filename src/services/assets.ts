@@ -8,8 +8,9 @@
 
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import type { ProjectDoc } from '../core/types.ts';
+import type { AssetMeta, StoredFile } from '../core/types.ts';
 import { t } from '../copy/index.ts';
+import { hashBlob, hashBytes } from './storage/hash.ts';
 
 export const MAX_FILE_BYTES = 40 * 1024 * 1024;
 export const DEFAULT_DPI = 300;
@@ -30,6 +31,18 @@ interface AssetBase {
   bytes: Uint8Array;
   preview: Blob;
   url: string;
+  /**
+   * The content hashes of its binaries (see storage/hash.ts), by the kind of
+   * file (projectdoc.fileKeys): its source file, the bytes embedded when they
+   * aren't the source (`derived` images) and the preview. Known once added.
+   */
+  hashes?: AssetHashes;
+}
+
+export interface AssetHashes {
+  src: string;
+  bytes?: string;
+  preview: string;
 }
 
 export interface ImageAsset extends AssetBase {
@@ -53,12 +66,27 @@ export type AppAsset = ImageAsset | PdfAsset;
 
 let lastSource = 0;
 
-/** Reads a File into an image asset or a PDF asset (page 1). */
+/** Reads a File into an image asset or a PDF asset (page 1), with its hashes. */
 export async function readFile(file: File): Promise<AppAsset> {
   if (file.size > MAX_FILE_BYTES) throw new Error(t('errors.file.tooHeavy'));
   const bytes = new Uint8Array(await file.arrayBuffer());
   const name = file.name || t('pieces.pastedName');
-  return looksLikePdf(file, bytes) ? readPdf(name, bytes) : readImage(name, file, bytes);
+  return withHashes(await (looksLikePdf(file, bytes) ? readPdf(name, bytes) : readImage(name, file, bytes)));
+}
+
+/**
+ * The asset with the hashes of its binaries (the ones it already has are
+ * kept: a PDF's pages share their source file's).
+ */
+export async function withHashes<A extends AppAsset>(asset: A): Promise<A> {
+  const derived = asset.kind === 'image' && asset.derived;
+  const [src, bytes, preview] = await Promise.all([
+    asset.hashes?.src || (derived && asset.original ? hashBlob(asset.original) : hashBytes(asset.bytes)),
+    derived ? asset.hashes?.bytes || hashBytes(asset.bytes) : undefined,
+    asset.hashes?.preview || hashBlob(asset.preview),
+  ]);
+  asset.hashes = bytes ? { src, bytes, preview } : { src, preview };
+  return asset;
 }
 
 /** The same image asset with another resolution (its size in mm changes). */
@@ -302,11 +330,12 @@ export function assetBlob(asset: AppAsset, kind: 'original' | 'bytes' | 'preview
 }
 
 /**
- * The assets of a saved document (projectdoc) from its files (Map key →
- * Blob). Pages of the same PDF share their bytes; pdf.js is not loaded. If
- * something fails, it releases what it created and throws.
+ * The assets of a saved document (projectdoc), an undo history or the
+ * clipboard (their `assets`) from their files (key → StoredFile). Pages of
+ * the same PDF share their bytes; pdf.js is not loaded. If something fails,
+ * it releases what it created and throws.
  */
-export async function restoreAssets(doc: ProjectDoc, files: ReadonlyMap<string, Blob>): Promise<Map<string, AppAsset>> {
+export async function restoreAssets(doc: { assets: Record<string, AssetMeta> }, files: ReadonlyMap<string, StoredFile>): Promise<Map<string, AppAsset>> {
   const read = (blob: Blob) => blob.arrayBuffer().then((buffer) => new Uint8Array(buffer));
   const shared = new Map<string, Promise<Uint8Array>>(); // binary key → its bytes
   const out = new Map<string, AppAsset>();
@@ -314,13 +343,15 @@ export async function restoreAssets(doc: ProjectDoc, files: ReadonlyMap<string, 
     for (const [key, meta] of Object.entries(doc.assets)) {
       const derived = meta.kind === 'image' && meta.derived;
       const bytesKey = derived ? `bytes:${meta.src}` : `src:${meta.src}`;
-      if (!shared.has(bytesKey)) shared.set(bytesKey, read(files.get(bytesKey)!));
+      if (!shared.has(bytesKey)) shared.set(bytesKey, read(files.get(bytesKey)!.blob));
       const preview = files.get(`preview:${key}`)!;
-      const common = { px: [...meta.px] as [number, number], bytes: await shared.get(bytesKey)!, preview, url: URL.createObjectURL(preview) };
+      const source = files.get(`src:${meta.src}`)!;
+      const hashes: AssetHashes = derived ? { src: source.hash, bytes: files.get(bytesKey)!.hash, preview: preview.hash } : { src: source.hash, preview: preview.hash };
+      const common = { px: [...meta.px] as [number, number], bytes: await shared.get(bytesKey)!, preview: preview.blob, url: URL.createObjectURL(preview.blob), hashes };
       out.set(
         key,
         meta.kind === 'image'
-          ? { ...meta, ...common, original: derived ? files.get(`src:${meta.src}`) : undefined }
+          ? { ...meta, ...common, original: derived ? source.blob : undefined }
           : { ...meta, ...common, view: [...meta.view] as [number, number, number, number], pdf: null }
       );
     }

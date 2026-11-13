@@ -134,10 +134,13 @@ export const seedBlob = (name: string, type: string): SeedBlob => ({ $blob: read
 export interface Seed {
   /** The database: «scooch», or the legacy «pliego». */
   db: string;
+  /** 1: «projects» and «files» (each binary inside its row); 2: also «blobs», «history» and «clipboard». */
   version: number;
   projects: unknown[];
-  /** Rows of the «files» store: {project, key, blob}. */
+  /** Rows of the «files» store: {project, key, blob} (version 1) or {project, key, hash}. */
   files: unknown[];
+  /** Rows of the «blobs» store (version 2): {hash, blob}. */
+  blobs?: unknown[];
   /** localStorage, as is. */
   storage: Record<string, string>;
 }
@@ -163,16 +166,26 @@ export async function seedStorage(page: Page, seed: Seed) {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(seed.db, seed.version);
       request.onupgradeneeded = () => {
-        request.result.createObjectStore('projects', { keyPath: 'id' });
-        request.result.createObjectStore('files', { keyPath: ['project', 'key'] }).createIndex('project', 'project');
+        // The stores of each layout, as the app at that version made them (src/services/storage/idb.ts).
+        const db = request.result;
+        db.createObjectStore('projects', { keyPath: 'id' });
+        const files = db.createObjectStore('files', { keyPath: ['project', 'key'] });
+        files.createIndex('project', 'project');
+        if (seed.version < 2) return;
+        files.createIndex('hash', 'hash');
+        db.createObjectStore('blobs', { keyPath: 'hash' });
+        db.createObjectStore('history', { keyPath: 'project' }).createIndex('hashes', 'hashes', { multiEntry: true });
+        db.createObjectStore('clipboard', { keyPath: 'id' }).createIndex('hashes', 'hashes', { multiEntry: true });
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
     await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(['projects', 'files'], 'readwrite');
+      const stores = seed.version < 2 ? ['projects', 'files'] : ['projects', 'files', 'blobs'];
+      const tx = db.transaction(stores, 'readwrite');
       for (const record of decode(seed.projects) as unknown[]) tx.objectStore('projects').put(record);
       for (const row of decode(seed.files) as unknown[]) tx.objectStore('files').put(row);
+      for (const row of decode(seed.blobs ?? []) as unknown[]) tx.objectStore('blobs').put(row);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
@@ -199,7 +212,11 @@ export const databases = (page: Page) =>
     return list.map((d) => d.name ?? '').sort();
   });
 
-/** What the «scooch» database holds: each project (id, name, has a thumbnail) and how many files. */
+/**
+ * What the «scooch» database holds: each project (id, name, has a
+ * thumbnail), how many file rows (and how many still keep their binary
+ * inside, as layout version 1 did), and how many binaries.
+ */
 export const storedProjects = (page: Page) =>
   page.evaluate(async (name) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -207,12 +224,20 @@ export const storedProjects = (page: Page) =>
       r.onsuccess = () => resolve(r.result);
       r.onerror = () => reject(r.error);
     });
-    const out = { projects: [] as { id: string; name: string; thumb: boolean }[], files: 0 };
+    const out = { projects: [] as { id: string; name: string; thumb: boolean }[], files: 0, unconverted: 0, blobs: 0, hashes: [] as string[] };
     await new Promise<void>((resolve) => {
-      const tx = db.transaction(['projects', 'files']);
+      const tx = db.transaction(['projects', 'files', 'blobs']);
       tx.objectStore('projects').getAll().onsuccess = (e) =>
         (out.projects = ((e.target as IDBRequest).result as { id: string; name: string; thumb: unknown }[]).map((r) => ({ id: r.id, name: r.name, thumb: r.thumb instanceof Blob })));
-      tx.objectStore('files').count().onsuccess = (e) => (out.files = (e.target as IDBRequest<number>).result);
+      tx.objectStore('files').getAll().onsuccess = (e) => {
+        const rows = (e.target as IDBRequest).result as { blob?: Blob; hash?: string }[];
+        out.files = rows.length;
+        out.unconverted = rows.filter((row) => row.blob || !row.hash).length;
+      };
+      tx.objectStore('blobs').getAllKeys().onsuccess = (e) => {
+        out.hashes = ((e.target as IDBRequest).result as string[]).sort();
+        out.blobs = out.hashes.length;
+      };
       tx.oncomplete = () => resolve();
     });
     db.close();

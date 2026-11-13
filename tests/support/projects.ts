@@ -23,9 +23,12 @@ export function oneImageDoc(name: string, x: number, sheets = 1): ProjectDoc {
   };
 }
 
+/** A stored file whose hash is its text (tests don't hash). */
+export const textFile = (text: string) => ({ blob: readableBlob(text), hash: `h-${text}` });
+
 /** A project in storage with one image piece at `x` (on each of `sheets` sheets), and its files. */
 export async function storedProject(storage: ProjectStorage, id: string, name: string, x: number, now: number, { sheets = 1 } = {}) {
   const record = await createProject(storage, { id, name, now, doc: oneImageDoc(name, x, sheets) });
-  await storage.write(record, { put: new Map([['src:1', readableBlob('png')], ['preview:a1', readableBlob('preview')]]) });
+  await storage.write(record, { put: new Map([['src:1', textFile('png')], ['preview:a1', textFile('preview')]]) });
   return record;
 }

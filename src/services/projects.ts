@@ -15,7 +15,7 @@
 // answer (frozen), it waits 3 s: it saved when it got hidden anyway.
 
 import { JOURNAL_PREFIX, JOURNAL_STORAGE, LAST_PROJECT_STORAGE, TABS_CHANNEL } from '../config.ts';
-import { DEFAULT_CUTS, fileKeys, nextIds, serialize } from '../core/projectdoc.js';
+import { DEFAULT_CUTS, ProjectError, fileKeys, nextIds, serialize } from '../core/projectdoc.js';
 import {
   cleanName,
   createProject,
@@ -31,7 +31,7 @@ import {
   saveProject,
   type Journal,
 } from '../core/projectstore.js';
-import type { ProjectDoc, ProjectRecord, ProjectStorage } from '../core/types.ts';
+import type { ProjectDoc, ProjectRecord, ProjectStorage, StoredFile } from '../core/types.ts';
 import { t } from '../copy/index.ts';
 import { allAssets, findAsset, replaceAssets } from '../state/assets.ts';
 import { getDocument, resetIds, setDocument, useDocument, type Piece } from '../state/document.ts';
@@ -40,7 +40,7 @@ import { legacyAllowOverlap } from '../state/prefs.ts';
 import { useProject, type SaveStatus } from '../state/project.ts';
 import { itemsOn, sheetSize } from '../state/selectors.ts';
 import { setView } from '../state/view.ts';
-import { assetBlob, restoreAssets, type AppAsset } from './assets.ts';
+import { assetBlob, restoreAssets, withHashes, type AppAsset } from './assets.ts';
 import { openIdbStorage } from './storage/idb.ts';
 import { migrateLegacyProjects } from './storage/migrate.ts';
 import { storageGet, storageJson, storageKeys, storageRemove, storageSet } from './storage/local.ts';
@@ -65,7 +65,7 @@ export interface ProjectHooks {
 const session = {
   storage: null as ProjectStorage | null,
   record: null as ProjectRecord | null,
-  stored: new Set<string>(), // keys of the binaries already saved
+  stored: new Map<string, string>(), // key → hash of the files already saved
   savedSig: '',
   failedSig: '', // what couldn't be saved: it isn't retried on its own until something changes
   thumbSig: '',
@@ -160,8 +160,10 @@ export async function initProjects(h: ProjectHooks) {
     writeJournal();
     void flush({ quick: true });
   });
+  let idb: Awaited<ReturnType<typeof openIdbStorage>>;
   try {
-    session.storage = await openIdbStorage();
+    idb = await openIdbStorage();
+    session.storage = idb;
   } catch (err) {
     console.warn('This browser cannot save projects.', err);
     return startUnsaved();
@@ -177,6 +179,12 @@ export async function initProjects(h: ProjectHooks) {
     hooks.notify = notify;
     for (const args of later) notify(...args);
   }
+  // Once open: the rest of the files saved before binaries were shared become
+  // shared (the open project's already did, see storage/idb.ts), then what
+  // nothing references goes.
+  void Promise.resolve(idb.convertAll?.())
+    .then(() => idb.collectGarbage())
+    .catch((err: unknown) => console.warn('The saved files could not be tidied.', err));
 }
 
 async function restoreLast() {
@@ -239,7 +247,7 @@ async function startNew({ remember = true } = {}) {
   try {
     replaceDocument(doc);
     const record = await createProject(session.storage!, { id: newProjectId(), name: untitled(), now: now(), doc });
-    adopt(record, new Set(), { remember });
+    adopt(record, new Map(), { remember });
   } finally {
     replacing = false;
   }
@@ -247,7 +255,7 @@ async function startNew({ remember = true } = {}) {
 
 // The project becomes the open one (saved just as the document is) and, with
 // `remember`, the one to open on the next start.
-function adopt(record: ProjectRecord, stored: Set<string>, { remember = true } = {}) {
+function adopt(record: ProjectRecord, stored: Map<string, string>, { remember = true } = {}) {
   session.record = record;
   session.stored = stored;
   session.savedSig = docSignature();
@@ -315,17 +323,18 @@ export function save({ quick = false } = {}): Promise<void> {
       const doc = serialized();
       const sig = JSON.stringify(doc);
       session.failedSig = sig;
-      const blobs = blobsFor(doc);
+      const files = filesFor(doc) ?? (await hashMissing(doc), filesFor(doc)!);
       setStatus('saving');
       // The document first, in a transaction that starts now (if the tab closes
       // right now, what matters is kept); the thumbnail goes after.
-      const result = await saveProject(storage, { record: session.record!, doc, blobs, stored: session.stored, now: now() });
+      const result = await saveProject(storage, { record: session.record!, doc, files, stored: session.stored, now: now() });
       if (session.record?.id !== id) return; // the project changed meanwhile
+      if ([...session.stored.keys()].some((key) => !result.stored.has(key))) scheduleGarbage();
       session.stored = result.stored;
       const thumb = quick ? undefined : await thumbnail();
       if (thumb && session.record?.id === id) {
         const withThumb = { ...result.record, name: session.record.name, thumb };
-        await storage.write(withThumb, { put: new Map(), remove: [] });
+        await storage.write(withThumb);
         result.record = withThumb;
       }
       if (session.record?.id !== id) return;
@@ -339,8 +348,9 @@ export function save({ quick = false } = {}): Promise<void> {
       post({ type: 'changed' });
       askPersist(doc);
     } catch (err) {
-      console.error('The project could not be saved.', err);
       if (session.record?.id !== id) return;
+      if (err instanceof ProjectError && err.code === 'missing') return deletedElsewhere();
+      console.error('The project could not be saved.', err);
       setStatus('error', err);
       hooks.notify('saveFailed', { error: err });
     }
@@ -382,17 +392,33 @@ function forgetJournalsOtherThan(list: readonly Pick<ProjectRecord, 'id'>[]) {
 /** Retry after an error. */
 export const retry = () => save();
 
-// Binaries not saved yet (created only now).
-function blobsFor(doc: ProjectDoc) {
-  const blobs = new Map<string, Blob>();
+// The files of the document that aren't saved yet (created only now), with
+// their hashes; null when an asset doesn't know its hashes yet (hashMissing).
+function filesFor(doc: ProjectDoc) {
+  const files = new Map<string, StoredFile>();
   for (const key of fileKeys(doc)) {
     if (session.stored.has(key)) continue;
-    const [kind, ref] = key.split(':');
-    const asset =
-      kind === 'preview' ? findAsset(ref) : [...allAssets().values()].find((a) => String(a.src) === ref && (kind !== 'bytes' || (a.kind === 'image' && a.derived)));
-    if (asset) blobs.set(key, assetBlob(asset, kind === 'src' ? 'original' : (kind as 'bytes' | 'preview')));
+    const found = assetOfFile(key);
+    if (!found) continue;
+    const hash = found.asset.hashes?.[found.kind === 'original' ? 'src' : found.kind];
+    if (!hash) return null;
+    files.set(key, { blob: assetBlob(found.asset, found.kind), hash });
   }
-  return blobs;
+  return files;
+}
+
+// The asset a file key belongs to, and which of its binaries it is.
+function assetOfFile(key: string) {
+  const [kind, ref] = key.split(':');
+  const asset =
+    kind === 'preview' ? findAsset(ref) : [...allAssets().values()].find((a) => String(a.src) === ref && (kind !== 'bytes' || (a.kind === 'image' && a.derived)));
+  return asset ? { asset, kind: kind === 'src' ? ('original' as const) : (kind as 'bytes' | 'preview') } : null;
+}
+
+// Hashes the binaries of the document's assets that don't have them yet.
+async function hashMissing(doc: ProjectDoc) {
+  const assets = new Set(fileKeys(doc).map((key) => assetOfFile(key)?.asset).filter((asset) => !!asset && !asset.hashes));
+  await Promise.all([...assets].map((asset) => withHashes(asset!)));
 }
 
 // Asks for persistent storage (so the browser doesn't clear it on its own) the
@@ -438,7 +464,7 @@ export async function openProject(id: string, { remember = true } = {}) {
     const use = recovered?.doc ?? doc;
     const loaded = await restoreAssets(use, files);
     replaceDocument(use, loaded);
-    adopt(recovered ? { ...record, name: recovered.name } : record, new Set([...files.keys()]), { remember });
+    adopt(recovered ? { ...record, name: recovered.name } : record, new Map([...files].map(([key, file]) => [key, file.hash])), { remember });
     if (recovered) {
       // It differs from what was saved: autosave writes it.
       session.savedSig = JSON.stringify(doc);
@@ -516,6 +542,7 @@ export async function remove(id: string) {
   const storage = session.storage!;
   await deleteProject(storage, id);
   clearJournal(id);
+  scheduleGarbage();
   post({ type: 'deleted', project: id });
   if (!wasOpen) return;
   const next = pickProject(await listProjects(storage), null);
@@ -547,12 +574,36 @@ export const takeOver = () => openProject(session.record!.id);
 export async function saveAsNew() {
   const record = await createProject(session.storage!, { id: newProjectId(), name: session.record?.name ?? untitled(), now: now() });
   session.record = record;
-  session.stored = new Set();
+  session.stored = new Map();
   session.savedSig = '';
   storageSet(LAST_PROJECT_STORAGE, record.id);
   setStatus('pending');
   await save();
   post({ type: 'changed' });
+}
+
+// The open project was deleted in another tab: this one stops saving it (and
+// can save what it shows as a new project).
+function deletedElsewhere() {
+  clearTimeout(timer);
+  session.stored = new Map();
+  setStatus('readonly');
+  hooks.notify('deletedElsewhere');
+}
+
+// ---------- Unused binaries ----------
+
+const GARBAGE_DELAY = 3000;
+let garbageTimer: ReturnType<typeof setTimeout> | undefined;
+
+/**
+ * Something stopped referencing binaries (a save, a deleted project): a few
+ * seconds later, the ones nothing references any more are deleted (see
+ * storage/idb.ts: it can't delete one in use, whatever other tabs do).
+ */
+function scheduleGarbage() {
+  clearTimeout(garbageTimer);
+  garbageTimer = setTimeout(() => void session.storage?.collectGarbage().catch((err: unknown) => console.warn('Unused files could not be deleted.', err)), GARBAGE_DELAY);
 }
 
 // ---------- Several tabs ----------
@@ -603,10 +654,7 @@ async function onMessage(e: MessageEvent<TabMessage>) {
       post({ type: 'released', project: m.project });
     }
   } else if (m.type === 'deleted' && mine) {
-    clearTimeout(timer);
-    session.stored = new Set();
-    setStatus('readonly');
-    hooks.notify('deletedElsewhere');
+    deletedElsewhere();
   } else if (m.type === 'renamed' && mine) {
     session.record = { ...session.record!, name: m.name ?? session.record!.name };
     publish();

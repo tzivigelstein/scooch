@@ -12,6 +12,10 @@ import type { ImageAsset, PdfAsset } from '../../src/services/assets.ts';
 
 const MM_PER_INCH = 25.4;
 
+// The binaries of fake assets aren't hashed (jsdom's Blob can't be read): each gets hashes of its own.
+let fakes = 0;
+const fakeHashes = (src: number) => ({ src: `fake-src-${src}`, preview: `fake-preview-${++fakes}` });
+
 /** Adds a fake image asset of `px` pixels at `dpi` (300 by default) and returns its key. */
 export function fakeImage({ name = 'foto.png', src = 1, px = [600, 400] as [number, number], dpi = 300, format = 'png' as 'png' | 'jpg' } = {}) {
   const asset: ImageAsset = {
@@ -27,6 +31,7 @@ export function fakeImage({ name = 'foto.png', src = 1, px = [600, 400] as [numb
     format,
     dpi,
     derived: false,
+    hashes: fakeHashes(src),
   };
   return addAsset(asset);
 }
@@ -53,6 +58,7 @@ export function fakePdf({ name = 'doc.pdf', src = 1, w = 148, h = 210, page = 1,
     preview: new Blob(),
     url: 'blob:test',
     pdf: null,
+    hashes: fakeHashes(src),
   };
   return addAsset(asset);
 }

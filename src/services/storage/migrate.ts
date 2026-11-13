@@ -4,7 +4,8 @@
 // loses nothing: the next start picks up from where it stopped.
 
 import { LEGACY_PROJECTS_DB } from '../../config.ts';
-import type { ProjectStorage } from '../../core/types.ts';
+import type { ProjectStorage, StoredFile } from '../../core/types.ts';
+import { hashBlob } from './hash.ts';
 import { deleteIdb, openExistingIdbStorage } from './idb.ts';
 
 /** The part of the Storage interface the move uses. */
@@ -37,14 +38,17 @@ export function migrateKeys(store: KeyStore, mapping: Readonly<Record<string, st
  * Copies every project (record and binaries) from `from` to `to` and only
  * then removes them from `from`. A project `to` already has is left as it is
  * there (copied by an earlier, interrupted move and maybe edited since).
- * Returns how many were copied.
+ * Binaries `from` kept without a hash (its rows of layout version 1) are
+ * hashed on the way. Returns how many were copied.
  */
 export async function migrateProjects(from: ProjectStorage, to: ProjectStorage): Promise<number> {
   const records = await from.list();
   let copied = 0;
   for (const record of records) {
     if (await to.get(record.id)) continue;
-    await to.write(record, { put: await from.files(record.id) });
+    const put = new Map<string, StoredFile>();
+    for (const [key, file] of await from.files(record.id)) put.set(key, { blob: file.blob, hash: file.hash || (await hashBlob(file.blob)) });
+    await to.write(record, { put, create: true });
     copied++;
   }
   for (const record of records) await from.remove(record.id);

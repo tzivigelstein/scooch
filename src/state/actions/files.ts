@@ -3,7 +3,7 @@
 import { MAX_ITEMS } from '../../config.ts';
 import { t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
-import { openPdf, pdfPage, readFile } from '../../services/assets.ts';
+import { openPdf, pdfPage, readFile, withHashes } from '../../services/assets.ts';
 import { addAsset, assetEntries, getAsset } from '../assets.ts';
 import { getDocument, patchItems, setDocument } from '../document.ts';
 import { commit } from '../history.ts';
@@ -78,7 +78,8 @@ export async function changePage(n: number) {
       for (const [, other] of assetEntries()) if (other.kind === 'pdf' && other.src === asset.src) other.pdf = pdf;
     }
     let key = assetEntries().find(([, a]) => a.kind === 'pdf' && a.src === asset.src && a.page === n)?.[0];
-    key ??= addAsset(await pdfPage({ name: asset.name, src: asset.src, pdf: asset.pdf!, bytes: asset.bytes }, n));
+    // Another page shares its source file (and its hash).
+    key ??= addAsset(await withHashes({ ...(await pdfPage({ name: asset.name, src: asset.src, pdf: asset.pdf!, bytes: asset.bytes }, n)), hashes: asset.hashes && { src: asset.hashes.src, preview: '' } }));
     // The crop stays when the new page has the same size; otherwise it would frame something else.
     const page = getAsset(key);
     const sameSize = Math.abs(page.w - asset.w) < PAGE_SIZE_TOLERANCE && Math.abs(page.h - asset.h) < PAGE_SIZE_TOLERANCE;

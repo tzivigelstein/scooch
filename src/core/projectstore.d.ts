@@ -1,5 +1,5 @@
 import type { MigrationContext } from './projectdoc';
-import type { ListedProject, ProjectDoc, ProjectRecord, ProjectStorage } from './types';
+import type { ListedProject, ProjectDoc, ProjectRecord, ProjectStorage, StoredClip, StoredFile, StoredHistory } from './types';
 
 export const NAME_MAX: number;
 
@@ -14,19 +14,30 @@ export function createProject(
 
 export function saveProject(
   storage: ProjectStorage,
-  save: { record: ProjectRecord; doc: ProjectDoc; blobs: ReadonlyMap<string, Blob>; stored?: ReadonlySet<string>; thumb?: Blob | null; now: number }
-): Promise<{ record: ProjectRecord; stored: Set<string> }>;
+  save: {
+    record: ProjectRecord;
+    doc: ProjectDoc;
+    /** The binaries available in memory, by key. */
+    files: ReadonlyMap<string, StoredFile>;
+    /** Key → hash of the files already stored. */
+    stored?: ReadonlyMap<string, string>;
+    history?: StoredHistory | null;
+    blobs?: ReadonlyMap<string, Blob>;
+    thumb?: Blob | null;
+    now: number;
+  }
+): Promise<{ record: ProjectRecord; stored: Map<string, string> }>;
 
-export function loadProject(storage: ProjectStorage, id: string, context?: MigrationContext): Promise<{ record: ProjectRecord; doc: ProjectDoc; files: Map<string, Blob> }>;
+export function loadProject(storage: ProjectStorage, id: string, context?: MigrationContext): Promise<{ record: ProjectRecord; doc: ProjectDoc; files: Map<string, StoredFile> }>;
 export function duplicateProject(storage: ProjectStorage, id: string, copy: { newId: string; name: string; now: number }): Promise<ProjectRecord>;
 export function renameProject(storage: ProjectStorage, id: string, name: string, now: number): Promise<ProjectRecord>;
 export function deleteProject(storage: ProjectStorage, id: string): Promise<void>;
 /** Why a record's document can't be opened: null, 'corrupt' or 'newer' (saved by a newer version of the app). */
 export function openProblem(record: ProjectRecord): 'corrupt' | 'newer' | null;
 export function isDamaged(record: ProjectRecord): boolean;
-/** Every project, newest first, with `damaged` and `newer`. */
+/** Every project, the most recently saved first, with `damaged` and `newer`. */
 export function listProjects(storage: ProjectStorage): Promise<ListedProject[]>;
-/** Which project to open on start: the last one if it can be opened, else the newest (or null). */
+/** Which project to open on start: the last one if it can be opened, else the newest of the rest (or null). */
 export function pickProject(list: readonly ListedProject[], lastId: string | null): string | null;
 
 /** Last-moment copy of the open document, written synchronously when the tab goes away. */
@@ -35,5 +46,7 @@ export type Journal =
   /** Version 1 (one key for every tab): used when `at` is later than the save, by the clock. */
   | { v?: undefined; id: string; at: number; name: unknown; doc: unknown };
 
-export function recoverJournal(record: ProjectRecord, files: ReadonlyMap<string, Blob>, journal: Journal | null, context?: MigrationContext): { doc: ProjectDoc; name: string } | null;
-export function memoryStorage(options?: { fail?: (op: string) => Error | null | undefined }): ProjectStorage;
+export function recoverJournal(record: ProjectRecord, files: ReadonlyMap<string, unknown>, journal: Journal | null, context?: MigrationContext): { doc: ProjectDoc; name: string } | null;
+export function memoryStorage(options?: { fail?: (op: string) => Error | null | undefined }): ProjectStorage & { blobCount(): number };
+/** The hashes something references (projects' files, saved undo histories, the saved clipboard). */
+export function liveHashes(refs: { files?: Iterable<string>; histories?: readonly Pick<StoredHistory, 'hashes'>[]; clip?: Pick<StoredClip, 'hashes'> | null }): Set<string>;

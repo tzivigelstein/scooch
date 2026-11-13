@@ -42,12 +42,14 @@ function docWith(items = 2) {
   return doc;
 }
 
-const blobsFor = (doc) => new Map(fileKeys(doc).map((key) => [key, blob(key)]));
+/** A stored file whose hash stands for its content (the text). */
+const file = (text) => ({ blob: blob(text), hash: `h-${text}` });
+const filesFor = (doc) => new Map(fileKeys(doc).map((key) => [key, file(key)]));
 
 async function saved(storage, id = 'p1', now = 1000) {
   const record = await createProject(storage, { id, name: 'Sin título', now });
   const doc = docWith();
-  const result = await saveProject(storage, { record, doc, blobs: blobsFor(doc), now: now + 1 });
+  const result = await saveProject(storage, { record, doc, files: filesFor(doc), now: now + 1 });
   return { ...result, doc };
 }
 
@@ -70,13 +72,15 @@ describe('guardar y abrir', () => {
   test('crear, guardar con archivos y abrir de nuevo', async () => {
     const storage = memoryStorage();
     const { record, stored, doc } = await saved(storage);
-    assert.deepEqual([...stored].sort(), ['bytes:1', 'preview:a1', 'preview:a2', 'src:1', 'src:2']);
+    assert.deepEqual([...stored.keys()].sort(), ['bytes:1', 'preview:a1', 'preview:a2', 'src:1', 'src:2']);
+    assert.equal(stored.get('src:2'), 'h-src:2');
     assert.deepEqual(record.counts, { sheets: 2, pieces: 2 });
     assert.equal(record.modified, 1001);
     const loaded = await loadProject(storage, 'p1');
     assert.deepEqual(loaded.doc, doc);
     assert.equal(loaded.record.name, 'Sin título');
-    assert.equal(await loaded.files.get('src:2').text(), 'src:2');
+    assert.equal(await loaded.files.get('src:2').blob.text(), 'src:2');
+    assert.equal(loaded.files.get('src:2').hash, 'h-src:2');
   });
 
   test('solo escribe lo que falta y borra lo que ya no se usa', async () => {
@@ -85,12 +89,12 @@ describe('guardar y abrir', () => {
     const storage = { ...base, write: (record, change) => (writes.push(change), base.write(record, change)) };
     const { record, stored } = await saved(storage);
     const smaller = docWith(1);
-    // Sin blobs en memoria para lo que ya está guardado: no hacen falta.
-    const result = await saveProject(storage, { record, doc: smaller, blobs: new Map(), stored, now: 5000 });
+    // Without binaries in memory for what is already stored: they aren't needed.
+    const result = await saveProject(storage, { record, doc: smaller, files: new Map(), stored, now: 5000 });
     const last = writes.at(-1);
     assert.equal(last.put.size, 0);
     assert.deepEqual(last.remove.sort(), ['preview:a2', 'src:2']);
-    assert.deepEqual([...result.stored].sort(), ['bytes:1', 'preview:a1', 'src:1']);
+    assert.deepEqual([...result.stored.keys()].sort(), ['bytes:1', 'preview:a1', 'src:1']);
     const files = await storage.files('p1');
     assert.deepEqual([...files.keys()].sort(), ['bytes:1', 'preview:a1', 'src:1']);
   });
@@ -99,9 +103,9 @@ describe('guardar y abrir', () => {
     const storage = memoryStorage();
     const record = await createProject(storage, { id: 'p1', name: 'X', now: 1 });
     const doc = docWith();
-    const blobs = blobsFor(doc);
-    blobs.delete('src:2');
-    await assert.rejects(saveProject(storage, { record, doc, blobs, now: 2 }), ProjectError);
+    const files = filesFor(doc);
+    files.delete('src:2');
+    await assert.rejects(saveProject(storage, { record, doc, files, now: 2 }), ProjectError);
     assert.deepEqual((await storage.get('p1')).doc.items, []);
   });
 
@@ -112,9 +116,9 @@ describe('guardar y abrir', () => {
     const record = await createProject(storage, { id: 'p1', name: 'X', now: 1 });
     full = true;
     const doc = docWith();
-    await assert.rejects(saveProject(storage, { record, doc, blobs: blobsFor(doc), now: 2 }), /lleno/);
+    await assert.rejects(saveProject(storage, { record, doc, files: filesFor(doc), now: 2 }), /lleno/);
     full = false;
-    await saveProject(storage, { record, doc, blobs: blobsFor(doc), now: 3 }); // reintentar funciona
+    await saveProject(storage, { record, doc, files: filesFor(doc), now: 3 }); // reintentar funciona
     assert.equal((await storage.get('p1')).doc.items.length, 2);
   });
 
@@ -122,9 +126,9 @@ describe('guardar y abrir', () => {
     const storage = memoryStorage();
     await saved(storage);
     const record = await storage.get('p1');
-    await storage.write({ ...record, id: 'roto', doc: { ...record.doc, sheets: 'nada' } });
+    await storage.write({ ...record, id: 'roto', doc: { ...record.doc, sheets: 'nada' } }, { create: true });
     await assert.rejects(loadProject(storage, 'roto'), (err) => err.code === 'corrupt');
-    await storage.write({ ...record, id: 'sinarchivos' }, { put: new Map([['src:1', blob('x')]]) });
+    await storage.write({ ...record, id: 'sinarchivos' }, { put: new Map([['src:1', file('x')]]), create: true });
     await assert.rejects(loadProject(storage, 'sinarchivos'), (err) => err.code === 'corrupt' && /preview:a1/.test(err.message));
     await assert.rejects(loadProject(storage, 'nada'), (err) => err.code === 'missing');
     const list = await listProjects(storage);
@@ -140,20 +144,64 @@ describe('guardar y abrir', () => {
 });
 
 describe('duplicar, renombrar, eliminar y listar', () => {
-  test('duplicar copia el documento y los archivos; los dos quedan independientes', async () => {
+  test('a copy has the same document and files, sharing every binary; deleting either never touches the other', async () => {
     const storage = memoryStorage();
     await saved(storage);
+    const binaries = storage.blobCount();
     const copy = await duplicateProject(storage, 'p1', { newId: 'p2', name: 'Sin título (copia)', now: 9000 });
     assert.equal(copy.name, 'Sin título (copia)');
     assert.equal(copy.created, 9000);
+    assert.equal(storage.blobCount(), binaries, 'no binary is copied');
     const a = await loadProject(storage, 'p1');
     const b = await loadProject(storage, 'p2');
     assert.deepEqual(b.doc, a.doc);
     assert.deepEqual([...b.files.keys()].sort(), [...a.files.keys()].sort());
     await deleteProject(storage, 'p1');
+    assert.equal(await storage.collectGarbage(), 0, 'the copy still uses them');
     assert.equal(await storage.get('p1'), null);
-    assert.equal((await storage.files('p1')).size, 0, 'se borran sus archivos');
-    assert.equal((await loadProject(storage, 'p2')).files.size, 5, 'la copia sigue entera');
+    assert.equal((await storage.files('p1')).size, 0, 'its file references go');
+    assert.equal((await loadProject(storage, 'p2')).files.size, 5, 'the copy is whole');
+    await deleteProject(storage, 'p2');
+    assert.equal(await storage.collectGarbage(), binaries, 'with nothing referencing them, they go');
+  });
+
+  test('the same content is stored once, whoever adds it; removing it from one project leaves it to the others', async () => {
+    const storage = memoryStorage();
+    const doc = docWith(1);
+    const same = (key) => ({ blob: blob('the same photo'), hash: 'h-photo' });
+    for (const id of ['a', 'b']) {
+      const record = await createProject(storage, { id, name: id, now: 1 });
+      await saveProject(storage, { record, doc, files: new Map(fileKeys(doc).map((key) => [key, same(key)])), now: 2 });
+    }
+    assert.equal(storage.blobCount(), 1);
+    // Project a drops its piece.
+    const a = await storage.get('a');
+    await saveProject(storage, { record: a, doc: emptyDoc(), files: new Map(), stored: new Map(fileKeys(doc).map((key) => [key, 'h-photo'])), now: 3 });
+    assert.equal(await storage.collectGarbage(), 0);
+    assert.equal(await (await loadProject(storage, 'b')).files.get('src:1').blob.text(), 'the same photo');
+  });
+
+  test('a saved undo history or clipboard keeps the binaries it references; replacing them lets them go', async () => {
+    const storage = memoryStorage();
+    const record = await createProject(storage, { id: 'p1', name: 'X', now: 1 });
+    const history = { project: 'p1', v: 1, assets: {}, files: { 'src:9': 'h-old' }, hashes: ['h-old'] };
+    await storage.write(record, { history, blobs: new Map([['h-old', blob('removed piece')]]) });
+    await storage.setClip({ id: 'cut', v: 1, assets: {}, files: { 'src:8': 'h-cut' }, hashes: ['h-cut'] }, new Map([['h-cut', blob('cut piece')]]));
+    assert.equal(await storage.collectGarbage(), 0);
+    assert.equal((await storage.blobs(['h-old', 'h-cut'])).size, 2);
+    await storage.write(record, { history: null });
+    await storage.setClip(null);
+    assert.equal(await storage.collectGarbage(), 2);
+    assert.equal((await storage.blobs(['h-old', 'h-cut'])).size, 0);
+  });
+
+  test('saving a project deleted meanwhile (in another tab) fails with «missing» and changes nothing', async () => {
+    const storage = memoryStorage();
+    const { record, doc } = await saved(storage);
+    await deleteProject(storage, 'p1');
+    await assert.rejects(saveProject(storage, { record, doc, files: filesFor(doc), now: 5 }), (err) => err.code === 'missing');
+    assert.equal(await storage.get('p1'), null);
+    assert.equal((await storage.files('p1')).size, 0);
   });
 
   test('renombrar cambia el nombre y la fecha', async () => {
@@ -183,7 +231,7 @@ describe('duplicar, renombrar, eliminar y listar', () => {
     const storage = memoryStorage();
     await saved(storage);
     const record = await storage.get('p1');
-    await storage.write({ ...record, id: 'future', version: 99, doc: { ...record.doc, version: 99, somethingNew: true } });
+    await storage.write({ ...record, id: 'future', version: 99, doc: { ...record.doc, version: 99, somethingNew: true } }, { create: true });
     const list = await listProjects(storage);
     const future = list.find((r) => r.id === 'future');
     assert.equal(future.damaged, false);

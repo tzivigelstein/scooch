@@ -23,7 +23,9 @@ vi.mock('../../src/services/assets.ts', async (importOriginal) => {
     openPdf: async () => ({ numPages: 2, destroy: async () => {} }),
     pdfPage: async (base: { name: string; src: number; pdf: PdfAsset['pdf']; bytes: Uint8Array }, n: number): Promise<PdfAsset> => {
       const [w, h] = pageSizes.get(n)!;
-      return { kind: 'pdf', name: base.name, src: base.src, pdf: base.pdf, bytes: base.bytes, page: n, pages: 2, preview: new Blob(), url: 'blob:test', pageRotation: 0, view: [0, 0, pt(w), pt(h)], px: [Math.round(pt(w) * 2), Math.round(pt(h) * 2)], w, h };
+      // A preview that can be read back (it gets hashed): jsdom's Blob has no arrayBuffer().
+      const preview = Object.assign(new Blob([`page ${n}`]), { arrayBuffer: async () => new TextEncoder().encode(`page ${n}`).buffer });
+      return { kind: 'pdf', name: base.name, src: base.src, pdf: base.pdf, bytes: base.bytes, page: n, pages: 2, preview, url: 'blob:test', pageRotation: 0, view: [0, 0, pt(w), pt(h)], px: [Math.round(pt(w) * 2), Math.round(pt(h) * 2)], w, h };
     },
   };
 });

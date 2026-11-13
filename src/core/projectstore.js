@@ -1,20 +1,14 @@
-// Proyectos guardados: la lógica (crear, guardar, abrir, duplicar, renombrar,
-// eliminar, listar) sobre una interfaz chica de almacenamiento, para poder
-// probarla en Node con memoryStorage(). En el navegador el almacenamiento es
-// IndexedDB (idbstorage.js). Sin DOM ni textos de interfaz.
+// Saved projects: the logic (create, save, open, duplicate, rename, delete,
+// list) over a small storage interface (ProjectStorage in types.ts), so it
+// runs in Node with memoryStorage(). In the browser the storage is IndexedDB
+// (services/storage/idb.ts). No DOM, no interface texts.
 //
-// Interfaz de almacenamiento:
-//   list(): Promise<registro[]>
-//   get(id): Promise<registro | null>
-//   files(id): Promise<Map<clave, Blob>>
-//   write(registro, {put: Map<clave, Blob>, remove: clave[]}): Promise<void>
-//       guarda el registro y sus archivos en una sola operación (todo o nada)
-//   remove(id): Promise<void>    el registro y todos sus archivos
-//
-// Registro: {id, name, created, modified, version, doc, counts, thumb}
-//   doc: el documento de projectdoc.js; counts: {sheets, pieces}; thumb: Blob
-//   (miniatura de la primera hoja) o null. Los archivos van por proyecto con
-//   las claves de projectdoc.fileKeys().
+// Record: {id, name, created, modified, opened, version, doc, counts, thumb}
+//   doc: the document of projectdoc.js; counts: {sheets, pieces}; thumb: a
+//   Blob (thumbnail of the first sheet) or null; opened: when it was last
+//   opened. A project's files are referenced by the keys of
+//   projectdoc.fileKeys(); each binary is stored once per content (its hash),
+//   whoever references it.
 
 import { DOC_VERSION, DEFAULT_CUTS, ProjectError, deserialize, fileKeys, counts } from './projectdoc.js';
 
@@ -42,30 +36,31 @@ export function emptyDoc({ paper = 'A4', landscape = false, margin = 10, gap = 5
   return { version: DOC_VERSION, paper, landscape, margin, gap, rotate, allowOverlap, cuts: { ...cuts }, sheets: [{ id: 1 }], items: [], assets: {} };
 }
 
-/** Crea y guarda un proyecto (por omisión, vacío). Devuelve el registro. */
+/** Creates and stores a project (empty by default). Returns the record. */
 export async function createProject(storage, { id, name, now, doc = emptyDoc(), thumb = null }) {
   const record = { id, name, created: now, modified: now, version: doc.version, doc, counts: counts(doc), thumb };
-  await storage.write(record, { put: new Map(), remove: [] });
+  await storage.write(record, { create: true });
   return record;
 }
 
 /**
- * Guarda el documento de un proyecto. `blobs`: Map clave → Blob con los
- * binarios disponibles en memoria; `stored`: las claves que ya están guardadas
- * (no se vuelven a escribir). Escribe solo lo que falta y borra lo que ya no
- * se usa, junto con el registro. `thumb`: miniatura nueva (undefined: se deja
- * la que había). Devuelve {record, stored} (las claves guardadas ahora).
+ * Saves a project's document. `files`: key → StoredFile of the binaries
+ * available in memory; `stored`: key → hash of the files already stored (not
+ * written again). Writes only what is missing and drops the references that
+ * aren't used any more, with the record (and `history`, if given: see
+ * WriteChanges) in one operation. `thumb`: a new thumbnail (undefined: keeps
+ * the one there was). Returns {record, stored} (the files stored now).
  */
-export async function saveProject(storage, { record, doc, blobs, stored = new Set(), thumb, now }) {
+export async function saveProject(storage, { record, doc, files, stored = new Map(), history, blobs, thumb, now }) {
   const needed = fileKeys(doc);
   const put = new Map();
   for (const key of needed) {
     if (stored.has(key)) continue;
-    const blob = blobs.get(key);
-    if (!blob) throw new ProjectError('corrupt', `falta el archivo ${key}`);
-    put.set(key, blob);
+    const file = files.get(key);
+    if (!file) throw new ProjectError('corrupt', `missing file ${key}`);
+    put.set(key, file);
   }
-  const remove = [...stored].filter((key) => !needed.includes(key));
+  const remove = [...stored.keys()].filter((key) => !needed.includes(key));
   const next = {
     ...record,
     modified: now,
@@ -74,45 +69,46 @@ export async function saveProject(storage, { record, doc, blobs, stored = new Se
     counts: counts(doc),
     thumb: thumb === undefined ? (record.thumb ?? null) : thumb,
   };
-  await storage.write(next, { put, remove });
-  return { record: next, stored: new Set(needed) };
+  await storage.write(next, { put, remove, history, blobs });
+  return { record: next, stored: new Map(needed.map((key) => [key, put.get(key)?.hash ?? stored.get(key)])) };
 }
 
 /**
- * Abre un proyecto: {record, doc, files}. Lanza ProjectError 'missing' si no
- * existe, 'newer' si es de una versión futura y 'corrupt' si el documento no
- * vale o le faltan archivos. `context`: what migrating needs (projectdoc.migrate).
+ * Opens a project: {record, doc, files}. Throws ProjectError 'missing' if it
+ * isn't there, 'newer' if a newer version of the app saved it and 'corrupt'
+ * if its document can't be read or a file is missing. `context`: what
+ * migrating needs (projectdoc.migrate).
  */
 export async function loadProject(storage, id, context = {}) {
   const record = await storage.get(id);
   if (!record) throw new ProjectError('missing', id);
   const doc = deserialize(record.doc, context);
   const files = await storage.files(id);
-  const missing = fileKeys(doc).filter((key) => !(files.get(key) instanceof Blob));
-  if (missing.length) throw new ProjectError('corrupt', `faltan archivos: ${missing.join(', ')}`);
+  const missing = fileKeys(doc).filter((key) => !files.has(key));
+  if (missing.length) throw new ProjectError('corrupt', `missing files: ${missing.join(', ')}`);
   return { record, doc, files };
 }
 
-/** Copia un proyecto con sus archivos. Devuelve el registro nuevo. */
+/**
+ * Copies a project: the same files (references: no binary is copied) and no
+ * undo history. Returns the new record.
+ */
 export async function duplicateProject(storage, id, { newId, name, now }) {
   const record = await storage.get(id);
   if (!record) throw new ProjectError('missing', id);
-  const files = await storage.files(id);
   const copy = { ...record, id: newId, name, created: now, modified: now };
-  await storage.write(copy, { put: files, remove: [] });
+  await storage.copy(id, copy);
   return copy;
 }
 
-/** Cambia el nombre (ya limpio) y la fecha de modificación. Devuelve el registro. */
+/** Changes the name (already clean) and the date of modification, in one operation. Returns the record. */
 export async function renameProject(storage, id, name, now) {
-  const record = await storage.get(id);
+  const record = await storage.update(id, { name, modified: now });
   if (!record) throw new ProjectError('missing', id);
-  const next = { ...record, name, modified: now };
-  await storage.write(next, { put: new Map(), remove: [] });
-  return next;
+  return record;
 }
 
-/** Elimina el proyecto y sus archivos (no se puede deshacer). */
+/** Deletes the project, its file references and its undo history (can't be undone). */
 export const deleteProject = (storage, id) => storage.remove(id);
 
 /**
@@ -133,8 +129,8 @@ export function openProblem(record) {
 export const isDamaged = (record) => openProblem(record) === 'corrupt';
 
 /**
- * Todos los proyectos, del más reciente al más viejo, con `damaged` y
- * `newer` (de una versión más nueva de la app: no se toca).
+ * Every project, the most recently saved first, with `damaged` and `newer`
+ * (saved by a newer version of the app: left alone).
  */
 export async function listProjects(storage) {
   const records = await storage.list();
@@ -146,7 +142,7 @@ export async function listProjects(storage) {
     .sort((a, b) => (b.modified ?? 0) - (a.modified ?? 0));
 }
 
-/** Qué proyecto abrir al empezar: el último abierto si existe, si no el más reciente (o null). */
+/** Which project to open on start: the last one if it can be opened, else the newest of the rest (or null). */
 export function pickProject(list, lastId) {
   const usable = list.filter((record) => !record.damaged && !record.newer);
   return (usable.find((record) => record.id === lastId) ?? usable[0])?.id ?? null;
@@ -180,7 +176,7 @@ export function recoverJournal(record, files, journal, context = {}) {
   } catch {
     return null;
   }
-  const has = (key) => files.get(key) instanceof Blob;
+  const has = (key) => files.has(key);
   const usable = new Set(
     Object.entries(doc.assets)
       .filter(([key, a]) => has(`src:${a.src}`) && has(`preview:${key}`) && (!(a.kind === 'image' && a.derived) || has(`bytes:${a.src}`)))
@@ -192,15 +188,23 @@ export function recoverJournal(record, files, journal, context = {}) {
 }
 
 /**
- * Almacenamiento en memoria con la misma interfaz (para pruebas). `fail(op)`
- * puede devolver un error para simular fallas (p. ej. cuota excedida).
+ * A storage in memory with the same interface and guarantees (for tests):
+ * binaries once per hash, deleted only by collectGarbage when nothing
+ * references them. `fail(op)` may return an error to simulate failures (e.g.
+ * over quota); the operation then changes nothing.
  */
 export function memoryStorage({ fail = () => null } = {}) {
   const records = new Map();
-  const files = new Map(); // id → Map clave → Blob
+  const refs = new Map(); // project id → Map key → hash
+  const blobs = new Map(); // hash → Blob
+  const histories = new Map(); // project id → stored history
+  let clip = null;
   const check = (op) => {
     const error = fail(op);
     if (error) throw error;
+  };
+  const keep = (hash, blob) => {
+    if (!blobs.has(hash)) blobs.set(hash, blob);
   };
   return {
     async list() {
@@ -213,20 +217,82 @@ export function memoryStorage({ fail = () => null } = {}) {
     },
     async files(id) {
       check('files');
-      return new Map(files.get(id) ?? []);
+      return new Map([...(refs.get(id) ?? [])].map(([key, hash]) => [key, { blob: blobs.get(hash), hash }]));
     },
-    async write(record, { put = new Map(), remove = [] } = {}) {
+    async write(record, { put = new Map(), remove = [], history, blobs: extra = new Map(), create = false } = {}) {
       check('write');
-      const next = new Map(files.get(record.id) ?? []);
-      for (const [key, blob] of put) next.set(key, blob);
+      if (!create && !records.has(record.id)) throw new ProjectError('missing', record.id);
+      const next = new Map(refs.get(record.id) ?? []);
+      for (const [key, file] of put) {
+        keep(file.hash, file.blob);
+        next.set(key, file.hash);
+      }
       for (const key of remove) next.delete(key);
+      for (const [hash, blob] of extra) keep(hash, blob);
+      if (history === null) histories.delete(record.id);
+      else if (history) histories.set(record.id, structuredClone(history));
       records.set(record.id, structuredClone(record));
-      files.set(record.id, next);
+      refs.set(record.id, next);
+    },
+    async update(id, patch) {
+      check('update');
+      if (!records.has(id)) return null;
+      const next = { ...records.get(id), ...patch };
+      records.set(id, next);
+      return structuredClone(next);
+    },
+    async copy(id, record) {
+      check('copy');
+      if (!records.has(id)) throw new ProjectError('missing', id);
+      records.set(record.id, structuredClone(record));
+      refs.set(record.id, new Map(refs.get(id)));
     },
     async remove(id) {
       check('remove');
       records.delete(id);
-      files.delete(id);
+      refs.delete(id);
+      histories.delete(id);
     },
+    async history(id) {
+      check('history');
+      return histories.has(id) ? structuredClone(histories.get(id)) : null;
+    },
+    async clip() {
+      check('clip');
+      return clip ? structuredClone(clip) : null;
+    },
+    async setClip(next, extra = new Map()) {
+      check('setClip');
+      for (const [hash, blob] of extra) keep(hash, blob);
+      clip = next ? structuredClone(next) : null;
+    },
+    async blobs(hashes) {
+      check('blobs');
+      return new Map(hashes.filter((hash) => blobs.has(hash)).map((hash) => [hash, blobs.get(hash)]));
+    },
+    async collectGarbage() {
+      check('collectGarbage');
+      const live = liveHashes({ files: [...refs.values()].flatMap((map) => [...map.values()]), histories: [...histories.values()], clip });
+      let deleted = 0;
+      for (const hash of [...blobs.keys()]) {
+        if (live.has(hash)) continue;
+        blobs.delete(hash);
+        deleted++;
+      }
+      return deleted;
+    },
+    /** For tests: how many binaries are stored. */
+    blobCount: () => blobs.size,
   };
+}
+
+/**
+ * The hashes something references: the projects' files, the saved undo
+ * histories and the saved clipboard. A binary outside this set can go.
+ */
+export function liveHashes({ files = [], histories = [], clip = null }) {
+  const live = new Set(files);
+  for (const history of histories) for (const hash of history.hashes ?? []) live.add(hash);
+  for (const hash of clip?.hashes ?? []) live.add(hash);
+  return live;
 }

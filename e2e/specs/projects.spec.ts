@@ -19,6 +19,7 @@ import {
   renameInBar,
   saved,
   status,
+  storedProjects,
   storedRecord,
   trackObjectUrls,
 } from '../support/projects.ts';
@@ -348,6 +349,37 @@ test.describe('the projects dialog', () => {
       expect(await labels(page)).toEqual(y);
     }
     expect(await liveObjectUrls(page), `object URLs alive (${baseline} before)`).toBeLessThanOrEqual(baseline);
+  });
+});
+
+test.describe('files shared between projects', () => {
+  test('a photo added to two projects is stored once; deleting one project leaves it to the other, and what nothing uses goes', async ({ page, app }) => {
+    await app.addFiles(['card01.png', 'card02.png']);
+    await renameInBar(page, 'Con dos');
+    await saved(page);
+    const single = await storedProjects(page);
+    await openProjects(page);
+    await page.locator('#project-new').click();
+    await expect(page.locator('#project-name-text')).toHaveText('Sin título');
+    await saved(page);
+    await app.addFiles(['card01.png']);
+    await renameInBar(page, 'Con una');
+    await saved(page);
+    // card01.png's bytes are already stored: only the second project's own files are new rows.
+    const both = await storedProjects(page);
+    expect(both.files).toBe(single.files + 2);
+    expect(both.blobs, 'the same original and preview, stored once').toBe(single.blobs);
+
+    await openProjects(page);
+    await card(page, 'Con dos').locator('[data-act="delete"]').click();
+    await page.locator('#confirm-ok').click();
+    await expect(card(page, 'Con dos')).toHaveCount(0);
+    // card02.png's binaries go a few seconds later; card01.png's stay.
+    await expect.poll(() => storedProjects(page), { timeout: 15_000 }).toMatchObject({ files: 2, blobs: 2 });
+    await page.reload();
+    await app.ready();
+    await expect(page.locator('#project-name-text')).toHaveText('Con una');
+    await expect.poll(() => app.pieces().first().locator('img').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
   });
 });
 
