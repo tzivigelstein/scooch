@@ -1,0 +1,118 @@
+/* ---------- Base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+/* Interface scale: the browser's font size (100 %) up to 1600 px wide; from
+   there it grows little by little up to 1.25 × towards 2800 px. Everything in
+   the interface is in rem, so it grows with this (the sheet has its own zoom).
+   To change it: the divisor (300: how many px of width per px of font) and
+   the cap (125 %). */
+html {
+  font-size: clamp(100%, calc(100% + (100vw - 1600px) / 300), 125%);
+}
+
+/* React's root takes no box: the top bar and the workspace stay body's flex children. */
+#root {
+  display: contents;
+}
+
+body {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font: 0.875rem/1.45 var(--font);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button,
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+button[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:focus-visible {
+  outline: 0.125rem solid var(--focus);
+  outline-offset: 0.125rem;
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+  display: block;
+}
+
+.skip-link {
+  position: fixed;
+  left: 0.5rem;
+  top: 0.5rem;
+  z-index: 300;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius-sm);
+  background: var(--primary-bg);
+  color: var(--primary-ink);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-160%);
+}
+
+.skip-link:focus {
+  transform: none;
+  outline-offset: 0.1875rem;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.375rem;
+  padding: 1px 0.375rem;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 0.125rem;
+  border-radius: 0.3125rem;
+  background: var(--surface-2);
+  color: var(--text);
+  font: 600 0.75rem/1.5 var(--font);
+  text-align: center;
+  white-space: nowrap;
+}

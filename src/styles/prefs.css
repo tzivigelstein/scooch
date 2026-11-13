@@ -1,0 +1,36 @@
+/* ---------- Preferences ---------- */
+
+.dialog.prefs {
+  width: min(28.75rem, calc(100vw - 1.5rem));
+}
+
+/* Each section: title and content, no card; a divider between sections. */
+.pref-section {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.pref-section + .pref-section {
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.pref-section > p {
+  margin: 0;
+}
+
+.pref-title {
+  margin: 0 0 0.125rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.segmented.units {
+  max-width: 17.5rem;
+}
+
+.segmented.units .seg > span {
+  height: 2.125rem;
+  font-size: 0.84375rem;
+}

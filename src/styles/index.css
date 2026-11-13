@@ -1,0 +1,24 @@
+/* The stylesheet, by area. The order is the cascade order: the screen-size
+   overrides, printing and the system preferences go last. */
+
+/* Inter variable, self-hosted (with unicode-range: the browser downloads only the subsets it uses). */
+@import "@fontsource-variable/inter";
+
+@import "./tokens.css";
+@import "./base.css";
+@import "./buttons.css";
+@import "./topbar.css";
+@import "./workspace.css";
+@import "./properties.css";
+@import "./controls.css";
+@import "./canvas.css";
+@import "./notice.css";
+@import "./tooltip.css";
+@import "./dialogs.css";
+@import "./projects.css";
+@import "./prefs.css";
+@import "./donate.css";
+@import "./medium-screens.css";
+@import "./narrow-screens.css";
+@import "./print.css";
+@import "./system.css";

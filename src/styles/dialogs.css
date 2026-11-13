@@ -1,0 +1,144 @@
+/* ---------- Dialogs: the shell and the shortcuts ---------- */
+
+.dialog {
+  width: min(37.5rem, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 3rem);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.875rem;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  animation: pop-in 160ms var(--ease);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.98);
+  }
+}
+
+.dialog::backdrop {
+  background: rgb(8 10 14 / 0.5);
+}
+
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 0.75rem 0.625rem 1.25rem;
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+  padding: 0.25rem 1.25rem 1rem;
+  overflow: auto;
+}
+
+.dialog-body > * {
+  flex: none;
+}
+
+.dialog-foot {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.78125rem;
+}
+
+.dialog-foot p {
+  margin: 0;
+}
+
+.keys {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.keys th {
+  padding: 0.375rem 0.625rem 0.375rem 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.keys td {
+  padding: 0.5rem 0.625rem 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.keys td:first-child {
+  width: 40%;
+  color: var(--muted);
+}
+
+.keys tr:last-child td {
+  border-bottom: 0;
+}
+
+.off-badge {
+  display: none;
+  margin-left: 0.25rem;
+  padding: 0 0.4375rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 62.4375rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+.single-off .off-badge {
+  display: inline-block;
+}
+
+.single-off tr[data-single] td:last-child {
+  color: var(--muted);
+}
+
+/* Supporting text inside a dialog (may carry a link). */
+.dialog-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+/* Link inside a sentence: a button (opens something, doesn't navigate) that looks like a link. */
+.link-btn {
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 0.1875rem;
+  background: none;
+  color: var(--accent-strong);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.1875rem;
+}
+
+.link-btn:hover {
+  text-decoration-thickness: 0.125rem;
+}
