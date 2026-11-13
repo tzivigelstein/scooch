@@ -10,9 +10,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test",
+    "e2e": "node e2e/run.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.60.0",
     "vite": "8.3.8"
   },
   "dependencies": {
