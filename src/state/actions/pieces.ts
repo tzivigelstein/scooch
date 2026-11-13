@@ -44,6 +44,8 @@ import type { IdRect, Item } from '../../core/types.ts';
 import { clamp, round1 } from '../../core/util.ts';
 import { t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
+import { revealPieces } from '../../components/canvas/viewport.ts';
+import { flushUi } from '../flush.ts';
 import { lengthText, sizeText } from '../../services/measure.ts';
 import { getDocument, patchItems, setDocument, type Piece } from '../document.ts';
 import { cancelEdit, commit, endEdit } from '../history.ts';
@@ -189,6 +191,8 @@ export function duplicate(times = 1, { focus = false }: FocusOption = {}) {
     { pinned: copies.length > 1 }
   );
   setView({ sheet: copies.at(-1)!.sheet });
+  flushUi();
+  revealPieces(copies.map((copy) => copy.id), copies.at(-1)!.id);
   const n = copies.length;
   const sheets = new Set(copies.map((copy) => copy.sheet)).size;
   const total = getDocument().items.length;
