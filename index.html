@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <!-- El nombre de la app vive en src/config.js (APP_NAME); este título es solo el de arranque. -->
+    <title>Pliego — Armá hojas para imprimir</title>
+    <meta
+      name="description"
+      content="Acomodá imágenes y páginas de PDF en una hoja, a tamaño exacto, y descargá un PDF listo para imprimir."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121418" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='7' y='2.5' width='14' height='17' rx='2.5' fill='%230066ff' opacity='.3'/><rect x='3' y='5' width='14' height='17' rx='2.5' fill='%230066ff'/><rect x='6' y='8.5' width='4' height='5' rx='1' fill='white'/><rect x='11' y='8.5' width='3' height='3' rx='.8' fill='white'/><rect x='11' y='12.5' width='3' height='6' rx='.8' fill='white'/><rect x='6' y='14.5' width='4' height='4' rx='1' fill='white'/></svg>" />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="src/app.js"></script>
+  </head>
+  <body>
+    <a id="skip" class="skip-link" href="#sheet">Saltar a la hoja</a>
+
+    <header class="topbar">
+      <a class="brand" href="./">
+        <svg class="brand-mark" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+          <rect x="7" y="2.5" width="14" height="17" rx="2.5" fill="currentColor" opacity=".28" />
+          <rect x="3" y="5" width="14" height="17" rx="2.5" fill="currentColor" />
+          <rect x="6" y="8.5" width="4" height="5" rx="1" fill="#fff" />
+          <rect x="11" y="8.5" width="3" height="3" rx=".8" fill="#fff" />
+          <rect x="11" y="12.5" width="3" height="6" rx=".8" fill="#fff" />
+          <rect x="6" y="14.5" width="4" height="4" rx="1" fill="#fff" />
+        </svg>
+        <span class="brand-name" data-app-name>Pliego</span>
+      </a>
+
+      <div class="bar-group">
+        <button type="button" id="add" class="btn ghost" data-tip="Agregar imágenes o PDF" data-kbd="O" data-aks="O" data-single>
+          <span data-icon="image-plus"></span><span class="btn-label">Agregar</span>
+        </button>
+        <button type="button" id="arrange" class="btn accent" data-tip="Acomodar todo sin superponer" data-kbd="A" data-aks="A" data-single>
+          <span data-icon="layout-dashboard"></span><span class="btn-label">Acomodar</span>
+        </button>
+        <span class="tool-sep" aria-hidden="true"></span>
+        <button type="button" id="undo" class="tool" aria-label="Deshacer" data-tip="Deshacer" data-kbd="Ctrl+Z" data-aks="Control+Z Meta+Z">
+          <span data-icon="undo-2"></span>
+        </button>
+        <button type="button" id="redo" class="tool" aria-label="Rehacer" data-tip="Rehacer" data-kbd="Ctrl+Shift+Z" data-aks="Control+Shift+Z Meta+Shift+Z Control+Y">
+          <span data-icon="redo-2"></span>
+        </button>
+      </div>
+
+      <div class="bar-group end">
+        <button type="button" id="help" class="tool" aria-haspopup="dialog" aria-label="Atajos de teclado" data-tip="Atajos de teclado" data-kbd="?" data-aks="?" data-single>
+          <span data-icon="keyboard"></span>
+        </button>
+        <button type="button" id="export" class="tool" aria-label="Descargar PDF" data-tip="Descargar PDF" data-tip-note="Al imprimirlo, elegí «Tamaño real» o «100 %»." data-kbd="Ctrl+S" data-aks="Control+S Meta+S Control+E Meta+E">
+          <span data-icon="download"></span>
+        </button>
+        <button type="button" id="print" class="btn primary" data-tip="Imprimir" data-tip-note="En el diálogo, elegí «Tamaño real» o «100 %»." data-kbd="Ctrl+P" data-aks="Control+P Meta+P">
+          <span data-icon="printer"></span><span class="btn-label">Imprimir</span>
+        </button>
+      </div>
+      <input type="file" id="file" multiple accept="image/*,application/pdf" hidden />
+    </header>
+
+    <div id="workspace" class="workspace">
+      <!-- Franja con el botón del panel de piezas (pantallas medianas) -->
+      <div class="rail">
+        <button type="button" id="pieces-toggle" class="tool" aria-expanded="false" aria-controls="pieces-panel" aria-label="Piezas" data-tip="Piezas" data-kbd="P">
+          <span data-icon="list"></span>
+        </button>
+      </div>
+
+      <aside id="pieces-panel" class="panel panel-left" aria-labelledby="pieces-title">
+        <div class="panel-head">
+          <h2 id="pieces-title" class="panel-title">Piezas</h2>
+          <button type="button" class="icon-btn small drawer-close" data-close-panel aria-label="Cerrar el panel de piezas" data-tip="Cerrar" data-kbd="Esc">
+            <span data-icon="x"></span>
+          </button>
+        </div>
+        <button type="button" id="addzone" class="addzone">
+          <span data-icon="upload"></span>
+          <span class="addzone-text"><span class="addzone-title">Agregar imágenes o PDF</span><span class="addzone-sub">o soltalos acá</span></span>
+        </button>
+        <div id="list-empty" class="panel-empty">
+          <p>Todavía no hay piezas.</p>
+          <p class="panel-tip">Sumá imágenes (JPG, PNG, WebP…) o PDF: cada página es una pieza que podés mover, girar y escalar a tamaño real.</p>
+        </div>
+        <ul id="piece-list" class="piece-list" role="listbox" aria-labelledby="pieces-title" aria-describedby="list-hint" hidden></ul>
+        <p id="list-hint" class="sr-only">Flechas arriba y abajo para elegir; Enter para ir a la pieza en la hoja; Supr para quitarla.</p>
+        <div class="panel-foot">
+          <span id="piece-total" class="foot-count">0 piezas</span>
+          <button type="button" id="clear" class="text-btn danger">Vaciar la hoja</button>
+        </div>
+      </aside>
+
+      <main id="canvas" class="canvas">
+        <h1 class="sr-only"><span data-app-name>Pliego</span>: armá hojas para imprimir</h1>
+
+        <div id="stage" class="stage">
+          <div class="sheet-wrap">
+            <div id="sheet-box" class="sheet-box">
+              <div id="sheet" class="sheet" role="group" aria-label="Hoja" tabindex="-1">
+                <div id="grid" class="grid-layer" aria-hidden="true" hidden></div>
+                <div id="safe" class="safe" aria-hidden="true"></div>
+                <button type="button" id="empty" class="dropzone" data-aks="O" data-single>
+                  <span class="dropzone-icon"><span data-icon="upload"></span></span>
+                  <span id="empty-text" class="dropzone-title">Soltá imágenes o PDF, pegá con Ctrl+V o apretá O</span>
+                  <span id="empty-sub" class="dropzone-sub">Tus archivos no salen del navegador.</span>
+                </button>
+              </div>
+              <div id="frame" class="frame" aria-hidden="true" hidden><span id="handle" class="handle"></span></div>
+            </div>
+            <p id="paper-label" class="paper-label">A4 · 210 × 297 mm</p>
+          </div>
+        </div>
+
+        <div id="piecebar" class="piecebar" role="toolbar" aria-label="Acciones de la pieza" hidden>
+          <span id="piece-size" class="piecebar-size" aria-hidden="true"></span>
+          <button type="button" class="icon-btn" data-action="rotate-left" aria-label="Girar 90° a la izquierda" data-tip="Girar a la izquierda" data-kbd="Shift+R" data-aks="Shift+R" data-single><span data-icon="rotate-ccw"></span></button>
+          <button type="button" class="icon-btn" data-action="rotate-right" aria-label="Girar 90° a la derecha" data-tip="Girar a la derecha" data-kbd="R" data-aks="R" data-single><span data-icon="rotate-cw"></span></button>
+          <button type="button" class="icon-btn" data-action="duplicate" aria-label="Duplicar" data-tip="Duplicar" data-kbd="D" data-aks="D" data-single><span data-icon="copy"></span></button>
+          <span class="piecebar-sep" aria-hidden="true"></span>
+          <button type="button" class="icon-btn danger" data-action="remove" aria-label="Quitar" data-tip="Quitar de la hoja" data-kbd="Supr" data-aks="Delete Backspace"><span data-icon="trash-2"></span></button>
+        </div>
+
+        <div class="dock">
+          <button type="button" id="pieces-dock" class="dock-btn" aria-expanded="false" aria-controls="pieces-panel">
+            <span data-icon="list"></span><span>Piezas</span><span id="dock-count" class="dock-count"></span>
+          </button>
+          <button type="button" id="props-toggle" class="dock-btn" aria-expanded="false" aria-controls="props-panel">
+            <span data-icon="sliders-horizontal"></span><span>Propiedades</span>
+          </button>
+        </div>
+
+        <div id="pill" class="pill" hidden>
+          <span id="pill-icon" class="pill-icon"></span>
+          <span id="pill-text" class="pill-text"></span>
+          <button type="button" id="pill-action" class="pill-action" hidden></button>
+          <button type="button" id="pill-close" class="pill-close" aria-label="Cerrar aviso" hidden><span data-icon="x"></span></button>
+        </div>
+
+        <p id="piece-hint" class="sr-only"></p>
+        <div id="live-polite" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+        <div id="live-assertive" class="sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
+        <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+      </main>
+
+      <aside id="props-panel" class="panel panel-right" aria-label="Propiedades">
+        <div class="panel-head drawer-head">
+          <p class="panel-title">Propiedades</p>
+          <button type="button" class="icon-btn small drawer-close" data-close-panel aria-label="Cerrar el panel de propiedades" data-tip="Cerrar" data-kbd="Esc">
+            <span data-icon="x"></span>
+          </button>
+        </div>
+
+        <!-- 1. Pieza (solo con selección) -->
+        <div class="prop-section" id="section-piece">
+          <h2 class="section-title static">Pieza</h2>
+          <p id="piece-empty" class="panel-empty">Seleccioná una pieza para editarla.</p>
+          <div id="piece-props" class="section-body" hidden>
+            <p id="piece-name" class="piece-name"></p>
+            <div class="prop-grid">
+              <label class="num-field prefixed">
+                <span class="num-prefix" aria-hidden="true">X</span>
+                <input id="pos-x" type="number" step="0.1" inputmode="decimal" aria-label="X: posición desde la izquierda, en milímetros" data-tip="X: desde el borde izquierdo" />
+                <span class="num-unit" aria-hidden="true">mm</span>
+              </label>
+              <label class="num-field prefixed">
+                <span class="num-prefix" aria-hidden="true">Y</span>
+                <input id="pos-y" type="number" step="0.1" inputmode="decimal" aria-label="Y: posición desde arriba, en milímetros" data-tip="Y: desde el borde superior" />
+                <span class="num-unit" aria-hidden="true">mm</span>
+              </label>
+              <label class="num-field prefixed">
+                <span class="num-prefix" aria-hidden="true"><span data-icon="move-horizontal"></span></span>
+                <input id="width" type="number" min="1" step="0.1" inputmode="decimal" aria-label="Ancho en milímetros" data-tip="Ancho" />
+                <span class="num-unit" aria-hidden="true">mm</span>
+              </label>
+              <label class="num-field prefixed">
+                <span class="num-prefix" aria-hidden="true"><span data-icon="move-vertical"></span></span>
+                <input id="height" type="number" min="1" step="0.1" inputmode="decimal" aria-label="Alto en milímetros" data-tip="Alto" />
+                <span class="num-unit" aria-hidden="true">mm</span>
+              </label>
+            </div>
+            <div class="scale-row">
+              <label class="num-field prefixed">
+                <span class="num-prefix" aria-hidden="true"><span data-icon="scaling"></span></span>
+                <input id="scale" type="number" min="1" max="1000" step="0.1" inputmode="decimal" aria-label="Escala en %" data-tip="Escala" />
+                <span class="num-unit" aria-hidden="true">%</span>
+              </label>
+              <input id="slider" type="range" min="1" max="200" step="0.1" aria-label="Escala" data-tip="Escala" />
+            </div>
+            <p id="resolution-note" class="field-note quality">
+              <span id="resolution-icon" class="quality-icon"></span><span id="resolution-text"></span>
+            </p>
+            <p id="rotation-note" class="field-note" hidden>
+              <span data-icon="rotate-cw"></span><span><strong id="rotation-angle">Girada 90°</strong>: ancho y alto son los que ocupa en la hoja.</span>
+            </p>
+            <div class="action-row" role="group" aria-label="Ajustes rápidos de la pieza">
+              <button type="button" id="actual" class="chip-btn" aria-label="100 %: tamaño real" data-tip="Tamaño real">100 %</button>
+              <button type="button" id="piece-fit" class="icon-btn" aria-label="Ajustar a la hoja" data-tip="Ajustar a la hoja" data-kbd="F" data-aks="F" data-single><span data-icon="maximize-2"></span></button>
+              <button type="button" id="piece-center" class="icon-btn" aria-label="Centrar en la hoja" data-tip="Centrar en la hoja" data-kbd="C" data-aks="C" data-single><span data-icon="crosshair"></span></button>
+              <button type="button" id="piece-front" class="icon-btn" aria-label="Traer al frente" data-tip="Traer al frente" data-kbd="]" data-aks="]" data-single><span data-icon="bring-to-front"></span></button>
+            </div>
+            <label id="page-row" class="field" hidden>
+              <span class="field-label">Página del PDF</span>
+              <select id="page"></select>
+            </label>
+            <details id="fill-details" class="fill-details">
+              <summary><span data-icon="grid-2x2-plus"></span>Rellenar con copias</summary>
+              <div class="fill-body">
+                <p id="fill-summary" class="fill-summary" aria-live="polite"></p>
+                <p class="callout"><span data-icon="triangle-alert"></span><span>Reemplaza todo lo que hay en la hoja por copias de esta pieza. Se puede deshacer.</span></p>
+                <button type="button" id="fill" class="btn primary block">Rellenar con copias</button>
+              </div>
+            </details>
+            <button type="button" id="piece-remove" class="text-btn danger remove-btn"><span data-icon="trash-2"></span>Quitar de la hoja</button>
+          </div>
+        </div>
+
+        <!-- 2. Hoja -->
+        <div class="prop-section" data-section="sheet">
+          <h2 class="section-title">
+            <button type="button" class="section-toggle" aria-expanded="true" aria-controls="section-sheet">Hoja<span data-icon="chevron-down" class="chevron"></span></button>
+          </h2>
+          <div id="section-sheet" class="section-body">
+            <div class="paper-row">
+              <label class="field">
+                <span class="field-label">Tamaño</span>
+                <select id="paper"></select>
+              </label>
+              <fieldset class="field">
+                <legend class="field-label">Orientación</legend>
+                <div class="segmented icons">
+                  <label class="seg">
+                    <input type="radio" name="orientation" id="portrait" value="portrait" data-tip="Vertical" checked />
+                    <span><span data-icon="rectangle-vertical"></span><span class="sr-only">Vertical</span></span>
+                  </label>
+                  <label class="seg">
+                    <input type="radio" name="orientation" id="landscape" value="landscape" data-tip="Horizontal" data-kbd="L" data-aks="L" data-single />
+                    <span><span data-icon="rectangle-horizontal"></span><span class="sr-only">Horizontal</span></span>
+                  </label>
+                </div>
+              </fieldset>
+            </div>
+            <label class="field inline">
+              <span class="field-label">Margen<span class="sr-only"> en milímetros</span></span>
+              <span class="num-field">
+                <input id="margin" type="number" min="0" max="50" step="1" inputmode="decimal" />
+                <span class="num-unit" aria-hidden="true">mm</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. Acomodo -->
+        <div class="prop-section" data-section="arrange">
+          <h2 class="section-title">
+            <button type="button" class="section-toggle" aria-expanded="true" aria-controls="section-arrange">Acomodo<span data-icon="chevron-down" class="chevron"></span></button>
+          </h2>
+          <div id="section-arrange" class="section-body">
+            <label class="field inline">
+              <span class="field-label">Separación<span class="sr-only"> entre piezas al acomodar, en milímetros</span></span>
+              <span class="num-field">
+                <input id="gap" type="number" min="0" max="50" step="1" inputmode="decimal" />
+                <span class="num-unit" aria-hidden="true">mm</span>
+              </span>
+            </label>
+            <div class="switch-row">
+              <label for="allow-rotate"><span>Rotar si conviene</span><span class="switch-hint" id="allow-rotate-hint">Al acomodar y al rellenar</span></label>
+              <input type="checkbox" role="switch" id="allow-rotate" aria-describedby="allow-rotate-hint" checked />
+            </div>
+            <div class="switch-row">
+              <label for="allow-overlap"><span>Permitir superposición</span><span class="switch-hint" id="allow-overlap-hint">Apagado, al mover o agrandar una pieza no pisa a las demás</span></label>
+              <input type="checkbox" role="switch" id="allow-overlap" aria-describedby="allow-overlap-hint" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Grilla -->
+        <div class="prop-section" data-section="grid">
+          <h2 class="section-title">
+            <button type="button" class="section-toggle" aria-expanded="true" aria-controls="section-grid">Grilla<span data-icon="chevron-down" class="chevron"></span></button>
+          </h2>
+          <div id="section-grid" class="section-body">
+            <div class="switch-row">
+              <label for="grid-show"><span>Mostrar grilla <kbd class="inline-kbd" data-single-hint>G</kbd></span><span class="switch-hint" id="grid-show-hint">Solo en pantalla: no sale en el PDF</span></label>
+              <input type="checkbox" role="switch" id="grid-show" aria-describedby="grid-show-hint" data-aks="G" data-single />
+            </div>
+            <fieldset class="field">
+              <legend class="field-label">Tamaño de la grilla</legend>
+              <div class="grid-size">
+                <div class="segmented chips">
+                  <label class="seg"><input type="radio" name="grid-size" value="1" /><span>1 mm</span></label>
+                  <label class="seg"><input type="radio" name="grid-size" value="5" /><span>5 mm</span></label>
+                  <label class="seg"><input type="radio" name="grid-size" value="10" /><span>10 mm</span></label>
+                </div>
+                <span class="num-field">
+                  <input id="grid-size" type="number" min="0.5" max="50" step="0.5" inputmode="decimal" aria-label="Otro tamaño de grilla, en milímetros" />
+                  <span class="num-unit" aria-hidden="true">mm</span>
+                </span>
+              </div>
+            </fieldset>
+            <div class="switch-row">
+              <label for="grid-snap"><span class="with-icon"><span data-icon="magnet"></span>Imán</span><span class="switch-hint" id="grid-snap-hint">Al arrastrar, las piezas se pegan a la grilla</span></label>
+              <input type="checkbox" role="switch" id="grid-snap" aria-describedby="grid-snap-hint" checked />
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <p class="print-only">Para imprimir a tamaño real, usá el botón «Imprimir» de <span data-app-name>Pliego</span>.</p>
+
+    <dialog id="donate" class="donate" aria-labelledby="donate-title" aria-describedby="donate-body">
+      <div class="donate-hero" aria-hidden="true">
+        <svg class="donate-art" viewBox="0 0 240 132" width="240" height="132" focusable="false">
+          <g transform="rotate(-7 120 80)">
+            <rect x="70" y="18" width="104" height="134" rx="7" fill="#fff" />
+            <rect x="81" y="29" width="40" height="50" rx="3.5" fill="#8fb4ff" />
+            <rect x="125" y="29" width="38" height="30" rx="3.5" fill="#ffb59c" />
+            <rect x="125" y="63" width="38" height="44" rx="3.5" fill="#c9bcff" />
+            <rect x="81" y="83" width="40" height="24" rx="3.5" fill="#ffd77f" />
+            <rect x="81" y="111" width="82" height="22" rx="3.5" fill="#9fe0c4" />
+          </g>
+        </svg>
+        <span class="donate-heart"><span data-icon="heart"></span></span>
+      </div>
+      <button type="button" id="donate-close" class="icon-btn donate-close" aria-label="Cerrar y seguir sin donar"><span data-icon="x"></span></button>
+      <div class="donate-content">
+        <h2 id="donate-title" class="donate-title" tabindex="-1"></h2>
+        <div id="donate-body" class="donate-body"></div>
+        <ul id="donate-benefits" class="donate-benefits"></ul>
+        <a id="donate-cta" class="donate-cta" href="#" target="_blank" rel="noopener noreferrer">
+          <span data-icon="heart"></span><span id="donate-cta-text"></span>
+        </a>
+        <p id="donate-note" class="donate-note"></p>
+        <button type="button" id="donate-skip" class="donate-skip"></button>
+        <label class="donate-never"><input type="checkbox" id="donate-never" /><span id="donate-never-text"></span></label>
+        <p id="donate-thanks" class="donate-thanks"></p>
+      </div>
+    </dialog>
+
+    <dialog id="shortcuts" class="dialog" aria-labelledby="shortcuts-title">
+      <div class="dialog-head">
+        <h2 id="shortcuts-title" class="dialog-title">Atajos de teclado</h2>
+        <button type="button" id="shortcuts-close" class="icon-btn" aria-label="Cerrar"><span data-icon="x"></span></button>
+      </div>
+      <div class="dialog-body">
+        <div class="switch-row boxed">
+          <label for="single-keys"><span>Atajos de una tecla</span><span class="switch-hint" id="single-keys-hint">Apagalos si usás control por voz o se te disparan sin querer. Los atajos con Ctrl y las flechas o Supr sobre una pieza siguen funcionando.</span></label>
+          <input type="checkbox" role="switch" id="single-keys" aria-describedby="single-keys-hint" checked />
+        </div>
+        <table class="keys">
+          <caption class="sr-only">Atajos de teclado</caption>
+          <thead>
+            <tr>
+              <th scope="col">Tecla</th>
+              <th scope="col">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="shortcuts-rows"></tbody>
+        </table>
+      </div>
+      <div class="dialog-foot">
+        <p><strong>Para imprimir:</strong> en el diálogo de impresión elegí «Tamaño real» o «100 %», así las medidas salen exactas.</p>
+        <p>Tus archivos no salen del navegador.</p>
+      </div>
+    </dialog>
+  </body>
+</html>

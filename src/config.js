@@ -1,0 +1,70 @@
+// Configuración general. Para renombrar la app alcanza con cambiar APP_NAME
+// (y el <title> estático de index.html).
+
+export const APP_NAME = 'Pliego';
+export const APP_TAGLINE = 'Armá hojas para imprimir';
+
+export const PAPERS = [
+  ['A4', 210, 297],
+  ['A3', 297, 420],
+  ['A5', 148, 210],
+  ['A6', 105, 148],
+  ['A2', 420, 594],
+  ['A1', 594, 841],
+  ['A0', 841, 1189],
+  ['Carta', 215.9, 279.4],
+  ['Oficio', 215.9, 355.6],
+  ['B5', 176, 250],
+  ['B4', 250, 353],
+];
+
+export const MAX_ITEMS = 200;
+export const MAX_UNDO = 50;
+export const EPS = 0.01; // tolerancia en mm para bordes y superposiciones
+export const CROWD_LIMIT = 0.48; // tamaño máximo de lo nuevo cuando ya hay cosas
+export const DRAG_THRESHOLD = 3; // px antes de considerar que hubo arrastre
+
+/** Pantallas angostas: sin columnas; barra de solo íconos; propiedades como hoja inferior. */
+export const NARROW_QUERY = '(max-width: 799.98px)';
+/** Desde acá para abajo, el panel de piezas se pliega a una franja y se abre superpuesto. */
+export const LEFT_DRAWER_QUERY = '(max-width: 1099.98px)';
+/** Clave de localStorage de las secciones plegadas del panel de propiedades. */
+export const SECTIONS_STORAGE = 'panel-sections';
+
+/** Clave de localStorage del interruptor «Atajos de una tecla». */
+export const SINGLE_KEYS_STORAGE = 'single-key-shortcuts';
+
+/** Preferencias de la grilla (vista, no documento: no entran en el historial). */
+export const GRID_STORAGE = 'grid-preferences';
+export const GRID_DEFAULTS = { show: false, size: 1, snap: true };
+export const GRID_MIN = 0.5;
+export const GRID_MAX = 50;
+export const PIECES_STORAGE = 'piece-preferences';
+
+// ---------- Donaciones ----------
+
+/** Página de Patreon. Vacía: el modal no aparece nunca y exportar es como siempre. */
+export const DONATE_URL = '';
+/** 'session': solo la primera impresión/descarga de cada carga de página; 'always': todas. */
+export const DONATE_EVERY = 'session';
+/** Clave de localStorage de «No volver a mostrar en este dispositivo». */
+export const DONATE_STORAGE = 'donate-dismissed';
+
+/** Textos del modal (para retocarlos en un solo lugar). `{app}` es el nombre de la app. */
+export const DONATE_COPY = {
+  title: '¿Te ahorró tiempo y papel?',
+  body: [
+    '{app} es gratis: sin anuncios, sin marcas de agua y sin cuentas. Lo mantengo con el aporte de quienes lo usan.',
+    'Si te sirvió, un aporte en Patreon me ayuda a seguir mejorándolo.',
+  ],
+  benefits: [
+    { icon: 'megaphone-off', text: 'Sin anuncios' },
+    { icon: 'droplet-off', text: 'Sin marca de agua' },
+    { icon: 'shield-check', text: 'Tus archivos no salen de tu navegador' },
+  ],
+  cta: 'Apoyar en Patreon',
+  ctaNote: 'Se abre en otra pestaña. Tu PDF sigue su curso.',
+  skip: 'Seguir sin donar',
+  never: 'No volver a mostrar en este dispositivo',
+  thanks: 'Gracias por usarlo, con o sin aporte.',
+};
