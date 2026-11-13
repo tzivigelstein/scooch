@@ -12,7 +12,7 @@ import { getDocument } from '../state/document.ts';
 import { flushUi } from '../state/flush.ts';
 import { endEdit } from '../state/history.ts';
 import { getPrefs } from '../state/prefs.ts';
-import { primaryItem } from '../state/selectors.ts';
+import { currentSheet, primaryItem } from '../state/selectors.ts';
 import { openProjects, openShortcuts } from '../state/actions/dialogs.ts';
 import { closeDrawer, drawerOf, isCollapsible, isDrawerOpen, revealPanel } from '../state/actions/drawers.ts';
 import { arrangeAll, redoLast, undoLast } from '../state/actions/edit.ts';
@@ -22,6 +22,8 @@ import { exportPdf, printPdf } from '../state/actions/output.ts';
 import { showPropsTab } from '../state/actions/panels.ts';
 import { startCrop } from '../components/canvas/cropMode.ts';
 import { openContextMenuFromKeyboard } from '../components/canvas/contextMenu.ts';
+import { fitSheet, stepZoom } from '../components/canvas/viewport.ts';
+import { holdSpace, isPointerOnCanvas, isSpaceHeld as space, releaseSpace } from './useCanvasGestures.ts';
 import {
   alignSelection,
   bringToFront,
@@ -46,6 +48,10 @@ const DISTRIBUTES: Record<string, 'x' | 'y'> = { KeyX: 'x', KeyY: 'y' };
 // Single keys that act on the selection (see the piece keys below).
 const PIECE_KEYS = new Set(['r', 'd', 'f', 'c', ']', 'i', 'k']);
 const GROWS = new Set(['+', '=', '*']);
+// Ctrl/⌘ + these zoom the canvas in or out (Ctrl/⌘ 0 stays the browser's).
+const ZOOM_KEYS: Record<string, 1 | -1> = { '+': 1, '=': 1, '-': -1, _: -1 };
+// A Space press that started a pan over the canvas, on this piece (it acts on release if it didn't pan).
+let spaceOn: HTMLElement | null = null;
 const SHRINKS = new Set(['-', '_', '−']);
 
 const busy = () => getDocument().busy;
@@ -153,6 +159,10 @@ function onKeyDown(e: KeyboardEvent) {
     } else if (!typing && lower === 'y') {
       e.preventDefault();
       redoLast();
+    } else if (ZOOM_KEYS[key] && (isPointerOnCanvas() || !!target.closest('#canvas')) && !typing) {
+      // With the pointer or the focus on the canvas, Ctrl/⌘ + / − zoom the sheets, not the page.
+      e.preventDefault();
+      stepZoom(ZOOM_KEYS[key]);
     } else if (!typing && lower === 'd' && !e.shiftKey) {
       // Duplicates (never the browser's bookmark dialog).
       e.preventDefault();
@@ -219,6 +229,15 @@ function onKeyDown(e: KeyboardEvent) {
     if (!e.repeat) remove({ focus: true });
     return;
   }
+  // Space held with the pointer over the canvas: dragging pans the sheets. On
+  // a piece, Space still goes to its toolbar when released without panning;
+  // buttons keep their own Space.
+  const panTarget = target === document.body || onPiece || target.classList.contains('sheet');
+  if (key === ' ' && !e.shiftKey && panTarget && (space() || (!e.repeat && holdSpace()))) {
+    e.preventDefault();
+    if (!e.repeat) spaceOn = onPiece ? (target as HTMLElement) : null;
+    return;
+  }
   // Shift+Space or Shift+Enter: adds the focused piece to the selection or removes it.
   if (onPiece && e.shiftKey && (key === 'Enter' || key === ' ')) {
     e.preventDefault();
@@ -242,6 +261,12 @@ function onKeyDown(e: KeyboardEvent) {
   if (key === '?') {
     e.preventDefault();
     openShortcuts();
+    return;
+  }
+  // Shift+1: fit the sheet; Shift+2: its width (by position: any layout).
+  if (e.shiftKey && (e.code === 'Digit1' || e.code === 'Digit2') && !e.repeat) {
+    e.preventDefault();
+    fitSheet(e.code === 'Digit1' ? 'fit' : 'width', currentSheet());
     return;
   }
   const global: Record<string, () => void> = {
@@ -288,6 +313,15 @@ function onKeyDown(e: KeyboardEvent) {
 // Releasing an arrow, + or − ends the step those keys share on a piece. A
 // field's arrows belong to its own edit, which ends when it is confirmed.
 function onKeyUp(e: KeyboardEvent) {
+  if (e.key === ' ') {
+    const piece = spaceOn;
+    spaceOn = null;
+    if (!releaseSpace() && piece?.isConnected && document.activeElement === piece) {
+      adopt(piece);
+      flushUi();
+      focusToolbar();
+    }
+  }
   if (isTyping(e.target as Element)) return;
   if (NUDGES[e.key] || GROWS.has(e.key) || SHRINKS.has(e.key)) endEdit();
 }
@@ -295,11 +329,18 @@ function onKeyUp(e: KeyboardEvent) {
 /** Listens to the keyboard on the whole document. */
 export function useGlobalShortcuts() {
   useEffect(() => {
+    // Leaving the window with Space held (its keyup goes elsewhere): no longer held.
+    const blur = () => {
+      spaceOn = null;
+      releaseSpace();
+    };
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', blur);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', blur);
     };
   }, []);
 }

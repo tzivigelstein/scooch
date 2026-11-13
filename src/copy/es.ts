@@ -66,6 +66,7 @@ const es = {
     Minus: '−',
     Click: 'clic',
     ContextMenu: 'Menú',
+    Drag: 'arrastrar',
   },
 
   // Top bar
@@ -391,6 +392,23 @@ const es = {
     gapNote: 'Con una separación menor que {value}, las marcas tocan las piezas vecinas',
     gapFix: 'Usar {value}',
     gapFixed: 'Se cambió la separación a {value}. Acomoda las piezas para aplicarla.',
+  },
+
+  // The canvas zoom (a screen measure: 100 % is not the printed size)
+  zoom: {
+    control: 'Zoom',
+    zoomIn: 'Acercar',
+    zoomOut: 'Alejar',
+    level: '{pct} %',
+    levelLabel: '{pct} %: zoom de la vista',
+    levelTip: 'Zoom de la vista (no cambia el PDF)',
+    menu: 'Zoom',
+    fit: 'Ajustar hoja',
+    width: 'Ajustar ancho',
+    preset: '{pct} %',
+    fitDone: 'Se ve la hoja entera',
+    widthDone: 'Se ve el ancho de la hoja',
+    changed: 'Zoom {pct} %',
   },
 
   // Context menus (pieces, an empty sheet) and their shortcuts; disabled items say why
@@ -771,6 +789,9 @@ const es = {
       rotate: 'Girar 90° a la derecha o a la izquierda',
       duplicate: 'Duplicar la pieza',
       duplicateMod: 'Duplicar la selección (siempre, también con los atajos de 1 tecla desactivados)',
+      zoom: 'Acercar o alejar la vista (también con {mod} y la rueda, o pellizcando el trackpad)',
+      zoomFit: 'Ajustar la hoja entera o su ancho a la vista',
+      pan: 'Mover la vista (también con el botón del medio o desplazando con dos dedos)',
       menu: 'Abrir el menú de la pieza o de la hoja (también con clic derecho o manteniendo presionado)',
       clipboard: 'Copiar, cortar o pegar piezas. Si copiaste una imagen en otra app, la pega como pieza nueva.',
       fit: 'Ajustar a la hoja',

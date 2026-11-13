@@ -14,14 +14,28 @@ import { DRAG_THRESHOLD } from '../config.ts';
 import { bounds, scaleGroup } from '../core/align.js';
 import { maxGrowth, overlapsAny } from '../core/collide.js';
 import { planDrag, planDrop, planScale, scaleBounds, touchedBy, type Drag } from '../core/group.js';
-import { keepCenterInside, sheetAt } from '../core/sheets.js';
+import { keepCenterInside } from '../core/sheets.js';
 import type { Box, Rect } from '../core/types.ts';
+import { wheelFactor } from '../core/zoom.js';
 import { clamp, round1, tidy } from '../core/util.ts';
 import { t } from '../copy/index.ts';
 import { announce } from '../components/feedback/announcer.ts';
 import { paintPiece, pieceView } from '../components/canvas/pieceView.ts';
 import { groupBoxes, paintSelection, placePiecebar, selectionTarget } from '../components/canvas/selection.ts';
-import { measureBoxes, sheetBoxes, visibleSheet, type BoxOffset } from '../components/canvas/viewport.ts';
+import {
+  clientToLayer,
+  layerToSheet,
+  measureBoxes,
+  mmToPx,
+  pxToMm,
+  sheetAtLayerY,
+  sheetBoxes,
+  toLayer,
+  viewZoom,
+  visibleSheet,
+  zoomBy,
+  type BoxOffset,
+} from '../components/canvas/viewport.ts';
 import { getAsset } from '../state/assets.ts';
 import { getDocument, patchItems, useDocument, type Piece } from '../state/document.ts';
 import { flushUi } from '../state/flush.ts';
@@ -58,6 +72,7 @@ interface Pointer {
   lastX: number;
   lastY: number;
   scroll0: number;
+  scrollLeft0: number;
   moved: boolean;
 }
 
@@ -164,11 +179,10 @@ function restore() {
   }
   travels = [];
   const { items, selection } = getDocument();
-  const zoom = getView().zoom;
   const marked = selection.length > 1 || getView().pinned;
   for (const item of items) {
     const node = pieceNode(item.id);
-    if (node) paintPiece(node, pieceView(item, getAsset(item.asset), zoom, marked && selection.includes(item.id)));
+    if (node) paintPiece(node, pieceView(item, getAsset(item.asset), viewZoom(), marked && selection.includes(item.id)));
   }
 }
 
@@ -188,6 +202,7 @@ const pointer = (e: PointerEvent): Pointer => ({
   lastX: e.clientX,
   lastY: e.clientY,
   scroll0: el('stage').scrollTop,
+  scrollLeft0: el('stage').scrollLeft,
   moved: false,
 });
 
@@ -205,7 +220,9 @@ function begin(next: Gesture) {
 }
 
 function onPointerDown(e: PointerEvent) {
-  if (getDocument().busy || e.button !== 0 || gesture) return;
+  if (pan || gesture) return;
+  if (e.button === 1 || (e.button === 0 && space.held)) return startPan(e);
+  if (getDocument().busy || e.button !== 0) return;
   if (e.pointerType === 'touch') startLongPress(e);
   const target = e.target as Element;
   if (target.closest('.dropzone, .page-head, .sheets-foot')) return;
@@ -316,14 +333,8 @@ function startMarquee(e: PointerEvent, additive: boolean) {
   const page = (e.target as Element).closest<HTMLElement>('.page');
   capture(e);
   measureBoxes();
-  const origin = toSheets(e.clientX, e.clientY);
+  const origin = clientToLayer(e.clientX, e.clientY);
   begin({ kind: 'marquee', ...pointer(e), origin, additive, sheetId: page ? Number(page.dataset.sheet) : null, touched: [] });
-}
-
-// From window coordinates to #sheets' (the frames' and the drag layer's).
-function toSheets(clientX: number, clientY: number) {
-  const r = el('sheets').getBoundingClientRect();
-  return { x: clientX - r.left, y: clientY - r.top };
 }
 
 function cachedOthers(g: MoveGesture, sheetId: number) {
@@ -332,6 +343,7 @@ function cachedOthers(g: MoveGesture, sheetId: number) {
 }
 
 function onPointerMove(e: PointerEvent) {
+  if (pan && e.pointerId === pan.pointerId) return movePan(e);
   if (longPress && e.pointerId === longPress.pointerId && Math.hypot(e.clientX - longPress.x, e.clientY - longPress.y) > DRAG_THRESHOLD * 3) cancelLongPress();
   const g = gesture;
   if (!g || e.pointerId !== g.pointerId) return;
@@ -356,17 +368,19 @@ function updateGesture() {
     if (g.kind === 'group-move') for (const item of g.items) toDragLayer(pieceNode(item.id)!);
     startAutoScroll();
   }
+  // What the stage scrolled meanwhile (autoscroll) counts as moving.
+  const dx = px + (el('stage').scrollLeft - g.scrollLeft0);
   const dy = py + (el('stage').scrollTop - g.scroll0);
-  if (g.kind === 'resize') updateResize(g, px, dy);
-  else if (g.kind === 'move') updateMove(g, px, dy);
-  else if (g.kind === 'group-resize') updateGroupResize(g, px, dy);
-  else updateGroupMove(g, px, dy);
+  if (g.kind === 'resize') updateResize(g, dx, dy);
+  else if (g.kind === 'move') updateMove(g, dx, dy);
+  else if (g.kind === 'group-resize') updateGroupResize(g, dx, dy);
+  else updateGroupMove(g, dx, dy);
 }
 
 const marked = () => getDocument().selection.length > 1 || getView().pinned;
 
 function paintDraft(node: HTMLElement | null, draft: Piece, offset: BoxOffset | null = null) {
-  if (node) paintPiece(node, pieceView(draft, getAsset(draft.asset), getView().zoom, marked(), offset));
+  if (node) paintPiece(node, pieceView(draft, getAsset(draft.asset), viewZoom(), marked(), offset));
 }
 
 function preview(drafts: readonly Piece[]) {
@@ -376,9 +390,8 @@ function preview(drafts: readonly Piece[]) {
 
 function updateResize(g: ResizeGesture, px: number, dy: number) {
   // The drag projected on the diagonal: proportional scale.
-  const zoom = getView().zoom;
   const [w, h] = g.size;
-  const factor = ((w + px / zoom) * w + (h + dy / zoom) * h) / (w * w + h * h);
+  const factor = ((w + pxToMm(px)) * w + (h + pxToMm(dy)) * h) / (w * w + h * h);
   let scale = clamp(round1(g.item.scale * factor), 1, 1000);
   if (scale > g.item.scale && Number.isFinite(g.growth)) {
     // Rounded down to 0.1 % so it doesn't go past the contact.
@@ -391,40 +404,38 @@ function updateResize(g: ResizeGesture, px: number, dy: number) {
 
 function updateMove(g: MoveGesture, px: number, dy: number) {
   // Where the piece is in #sheets and which sheet it belongs to (the one with its center).
-  const zoom = getView().zoom;
   const [W, H] = sheetSize();
-  const start = sheetBoxes().get(g.item.sheet)!;
-  const ax = start.left + g.item.x * zoom + px;
-  const ay = start.top + g.item.y * zoom + dy;
   const [w, h] = g.size;
-  const target = sheetUnder(ay + (h * zoom) / 2);
-  const box = sheetBoxes().get(target)!;
+  const start = toLayer(g.item.sheet, rectOf(g.item))!;
+  const ax = start.left + px;
+  const ay = start.top + dy;
+  const target = sheetAtLayerY(ay + mmToPx(h) / 2);
+  const at = layerToSheet(target, ax, ay)!;
   // Snapping: to the nearest multiple of the grid, which starts at the sheet's
   // corner. It may stick out of the sheet, but not more than half (the center stays in).
   const { grid } = getPrefs();
   const step = grid.size;
   const snap = grid.snap ? (v: number) => tidy(Math.round(v / step) * step) : (v: number) => v;
-  const spot = keepCenterInside({ x: snap((ax - box.left) / zoom), y: snap((ay - box.top) / zoom), w, h }, W, H);
+  const spot = keepCenterInside({ x: snap(at.x), y: snap(at.y), w, h }, W, H);
   g.draft = { ...g.draft, x: spot.x, y: spot.y, sheet: target };
   markTarget(g, target);
   // Moving is free, but it shows when dropping there wouldn't be valid.
   setBlocked(g, !getPrefs().allowOverlap && overlapsAny(boxOf(g.draft), cachedOthers(g, target)), [g.node]);
-  paintDraft(g.node, g.draft, box);
+  paintDraft(g.node, g.draft, sheetBoxes().get(target));
   preview([g.draft]);
 }
 
 function updateGroupMove(g: GroupMoveGesture, px: number, dy: number) {
-  const zoom = getView().zoom;
   let target: number | null = null;
   let offsetY = 0;
   if (g.oneSheet !== null) {
     // The sheet with the center of the group's box.
-    const start = sheetBoxes().get(g.oneSheet)!;
-    target = sheetUnder(start.top + (g.box.y + g.box.h / 2) * zoom + dy);
-    offsetY = (start.top - sheetBoxes().get(target)!.top) / zoom;
+    const start = toLayer(g.oneSheet, g.box)!;
+    target = sheetAtLayerY(start.top + start.height / 2 + dy);
+    offsetY = pxToMm(sheetBoxes().get(g.oneSheet)!.top - sheetBoxes().get(target)!.top);
     markTarget(g, target);
   }
-  g.drag = planDrag(g.all, new Set(g.items.map((item) => item.id)), px / zoom, dy / zoom, { ...groupOptions(), target, offsetY });
+  g.drag = planDrag(g.all, new Set(g.items.map((item) => item.id)), pxToMm(px), pxToMm(dy), { ...groupOptions(), target, offsetY });
   g.dropTarget = target;
   const { plan } = g.drag;
   for (const item of g.items) {
@@ -442,9 +453,8 @@ function updateGroupMove(g: GroupMoveGesture, px: number, dy: number) {
 }
 
 function updateGroupResize(g: GroupResizeGesture, px: number, dy: number) {
-  const zoom = getView().zoom;
   const { w, h } = g.frame;
-  const wanted = ((w + px / zoom) * w + (h + dy / zoom) * h) / (w * w + h * h);
+  const wanted = ((w + pxToMm(px)) * w + (h + pxToMm(dy)) * h) / (w * w + h * h);
   const k = g.range.min <= g.range.max ? Math.min(Math.max(wanted, g.range.min), g.range.max) : 1;
   g.k = k;
   // Each part from its box's top left corner, on its sheet.
@@ -474,28 +484,16 @@ function updateMarquee(g: MarqueeGesture, first: boolean) {
     marquee.hidden = false;
     startAutoScroll();
   }
-  const zoom = getView().zoom;
-  const now = toSheets(g.lastX, g.lastY);
+  const now = clientToLayer(g.lastX, g.lastY);
   const area = { x: Math.min(g.origin.x, now.x), y: Math.min(g.origin.y, now.y), w: Math.abs(now.x - g.origin.x), h: Math.abs(now.y - g.origin.y) };
   Object.assign(marquee.style, { left: `${area.x}px`, top: `${area.y}px`, width: `${area.w}px`, height: `${area.h}px` });
-  const placed = getDocument()
-    .items.filter((item) => sheetBoxes().has(item.sheet))
-    .map((item) => {
-      const r = rectOf(item);
-      const box = sheetBoxes().get(item.sheet)!;
-      return { id: item.id, x: box.left + r.x * zoom, y: box.top + r.y * zoom, w: r.w * zoom, h: r.h * zoom };
-    });
+  const placed = getDocument().items.flatMap((item) => {
+    const r = toLayer(item.sheet, rectOf(item));
+    return r ? [{ id: item.id, x: r.left, y: r.top, w: r.width, h: r.height }] : [];
+  });
   g.touched = touchedBy(area, placed);
   const touched = new Set(g.touched);
   for (const node of document.querySelectorAll<HTMLElement>('#sheets .piece')) node.classList.toggle('is-marked', touched.has(Number(node.dataset.id)));
-}
-
-// The sheet that contains height `y` (in #sheets) or the nearest one.
-function sheetUnder(y: number) {
-  const [, H] = sheetSize();
-  const { sheets } = getDocument();
-  const tops = sheets.map((s) => sheetBoxes().get(s.id)!.top);
-  return sheets[sheetAt(y, tops, H * getView().zoom)].id;
 }
 
 const pageOf = (id: number) => document.querySelector<HTMLElement>(`#sheets .page[data-sheet="${id}"]`);
@@ -531,10 +529,17 @@ function startAutoScroll() {
     let delta = 0;
     if (g.lastY < r.top + zone) delta = -speed(Math.max(0, g.lastY - r.top));
     else if (g.lastY > r.bottom - zone) delta = speed(Math.max(0, r.bottom - g.lastY));
-    if (delta) {
-      const before = stage.scrollTop;
+    // Sideways too, when zoomed in past the stage's width.
+    let side = 0;
+    if (stage.classList.contains('is-wide')) {
+      if (g.lastX < r.left + zone) side = -speed(Math.max(0, g.lastX - r.left));
+      else if (g.lastX > r.right - zone) side = speed(Math.max(0, r.right - g.lastX));
+    }
+    if (delta || side) {
+      const before = [stage.scrollTop, stage.scrollLeft];
       stage.scrollTop += delta;
-      if (stage.scrollTop !== before) updateGesture();
+      stage.scrollLeft += side;
+      if (stage.scrollTop !== before[0] || stage.scrollLeft !== before[1]) updateGesture();
     }
     autoFrame = requestAnimationFrame(tick);
   };
@@ -542,6 +547,7 @@ function startAutoScroll() {
 }
 
 function onPointerUp(e: PointerEvent) {
+  if (pan && e.pointerId === pan.pointerId) return endPan();
   if (longPress && e.pointerId === longPress.pointerId) cancelLongPress();
   const g = gesture;
   if (!g || e.pointerId !== g.pointerId) return;
@@ -699,9 +705,10 @@ function endMarquee(g: MarqueeGesture, done: boolean) {
 
 function onScroll() {
   const stage = el('stage');
-  // The canvas never scrolls sideways (something sticking out of the sheets,
-  // like the frame of a piece that sticks out, must not shift them).
-  if (stage.scrollLeft) stage.scrollLeft = 0;
+  // Unless zoomed in past its width, the canvas never scrolls sideways
+  // (something sticking out of the sheets, like the frame of a piece that
+  // sticks out, must not shift them).
+  if (stage.scrollLeft && !stage.classList.contains('is-wide')) stage.scrollLeft = 0;
   if (scrollFrame) return;
   scrollFrame = requestAnimationFrame(() => {
     scrollFrame = 0;
@@ -711,6 +718,79 @@ function onScroll() {
       const id = visibleSheet();
       if (id !== null && id !== getView().sheet && sheetIndex(id) >= 0) setView({ sheet: id });
     } else placePiecebar(target);
+  });
+}
+
+// ---------- Zoom and pan ----------
+
+/** The stage scrolls by hand: Space + drag, the middle button. */
+let pan: { pointerId: number; x: number; y: number; left: number; top: number } | null = null;
+let pointerOnCanvas = false;
+const space = { held: false, used: false };
+
+/** Is the pointer over the canvas (Ctrl/⌘ + / − and the wheel zoom it instead of the page)? */
+export const isPointerOnCanvas = () => pointerOnCanvas;
+
+/** Space held over the canvas: dragging pans. Returns whether it took the key. */
+export function holdSpace() {
+  if (!pointerOnCanvas || space.held) return space.held;
+  space.held = true;
+  space.used = false;
+  el('canvas').classList.add('is-pan-ready');
+  return true;
+}
+
+/** Is Space held for panning? */
+export const isSpaceHeld = () => space.held;
+
+/** Space released: whether it panned (then it does nothing else). */
+export function releaseSpace() {
+  const used = space.used;
+  space.held = false;
+  space.used = false;
+  el('canvas').classList.remove('is-pan-ready');
+  return used;
+}
+
+function startPan(e: PointerEvent) {
+  e.preventDefault();
+  const stage = el('stage');
+  pan = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, left: stage.scrollLeft, top: stage.scrollTop };
+  space.used ||= space.held;
+  try {
+    stage.setPointerCapture(e.pointerId);
+  } catch {
+    // a synthetic pointer: it pans without capture
+  }
+  el('canvas').classList.add('is-panning');
+}
+
+function movePan(e: PointerEvent) {
+  const stage = el('stage');
+  stage.scrollLeft = pan!.left - (e.clientX - pan!.x);
+  stage.scrollTop = pan!.top - (e.clientY - pan!.y);
+}
+
+function endPan() {
+  pan = null;
+  el('canvas').classList.remove('is-panning');
+}
+
+// Ctrl/⌘ + wheel and a trackpad pinch: zoom around the pointer, at most once a frame.
+let pendingZoom: { factor: number; at: { x: number; y: number } } | null = null;
+let zoomFrame = 0;
+
+function onWheel(e: WheelEvent) {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  // Never the browser's page zoom over the canvas.
+  e.preventDefault();
+  pendingZoom = { factor: (pendingZoom?.factor ?? 1) * wheelFactor(e.deltaY, e.deltaMode), at: { x: e.clientX, y: e.clientY } };
+  if (zoomFrame) return;
+  zoomFrame = requestAnimationFrame(() => {
+    zoomFrame = 0;
+    const next = pendingZoom;
+    pendingZoom = null;
+    if (next && !gesture) zoomBy(next.factor, next.at);
   });
 }
 
@@ -755,12 +835,21 @@ function onDoubleClick(e: MouseEvent) {
   startCrop(Number(node.dataset.id));
 }
 
-/** Wires the gestures and the scroll handling to #stage. */
+/** Wires the gestures and the scroll handling to #stage (the zoom: to the whole canvas). */
 export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const node = stage.current!;
+    const canvas = node.parentElement!;
     node.addEventListener('dblclick', onDoubleClick);
     node.addEventListener('contextmenu', onContextMenu);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    const enter = () => (pointerOnCanvas = true);
+    const leave = () => (pointerOnCanvas = false);
+    // The middle button pans instead of the browser's autoscroll.
+    const middle = (e: MouseEvent) => e.button === 1 && e.preventDefault();
+    canvas.addEventListener('pointerenter', enter);
+    canvas.addEventListener('pointerleave', leave);
+    node.addEventListener('mousedown', middle);
     node.addEventListener('pointerdown', onPointerDown);
     node.addEventListener('pointermove', onPointerMove);
     node.addEventListener('pointerup', onPointerUp);
@@ -769,6 +858,10 @@ export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
     return () => {
       node.removeEventListener('dblclick', onDoubleClick);
       node.removeEventListener('contextmenu', onContextMenu);
+      canvas.removeEventListener('wheel', onWheel);
+      canvas.removeEventListener('pointerenter', enter);
+      canvas.removeEventListener('pointerleave', leave);
+      node.removeEventListener('mousedown', middle);
       node.removeEventListener('pointerdown', onPointerDown);
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);

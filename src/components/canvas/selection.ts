@@ -13,9 +13,8 @@ import { t } from '../../copy/index.ts';
 import { sizeText } from '../../services/measure.ts';
 import type { Piece } from '../../state/document.ts';
 import { getDocument } from '../../state/document.ts';
-import { dims, itemsOn } from '../../state/selectors.ts';
-import { getView } from '../../state/view.ts';
-import { measureBoxes, pageNode, sheetBoxes } from './viewport.ts';
+import { dims, itemsOn, sheetSize } from '../../state/selectors.ts';
+import { layerStyle, measureBoxes, mmToPx, pageNode, sheetBoxes, toClient } from './viewport.ts';
 
 const rectOf = (item: Piece): Rect => {
   const [w, h] = dims(item);
@@ -50,37 +49,29 @@ export function selectionTarget(list: readonly Piece[], bySheet = list.length > 
   return { sheet: primary.sheet, x: rect.x, y: rect.y, w: rect.w, h: rect.h, ids: new Set(list.map((item) => item.id)) };
 }
 
-const px = (r: Rect, offset: { left: number; top: number }, zoom: number) => ({
-  left: `${offset.left + r.x * zoom}px`,
-  top: `${offset.top + r.y * zoom}px`,
-  width: `${r.w * zoom}px`,
-  height: `${r.h * zoom}px`,
-});
-
 /**
  * Paints the frames and the toolbar's size for `list` (the selected pieces, or
  * their live copies during a gesture). `place`: also places the toolbar.
  */
 export function paintSelection(list: readonly Piece[], { place = true } = {}) {
-  const zoom = getView().zoom;
   const group = list.length > 1;
   const single = !group ? list[0] : undefined;
   const frame = document.getElementById('frame');
-  const box = single && sheetBoxes().get(single.sheet);
+  const style = single && layerStyle(single.sheet, rectOf(single));
   if (frame) {
-    frame.hidden = !box;
-    if (single && box) Object.assign(frame.style, px(rectOf(single), box, zoom));
+    frame.hidden = !style;
+    if (style) Object.assign(frame.style, style);
     // The cut box, faint, while cut lines are on and the cut margin moves them off the image.
     const { mode, margin } = getDocument().cuts;
     const cut = mode !== 'none' && margin !== 0;
     frame.toggleAttribute('data-cut', cut);
-    if (cut) frame.style.setProperty('--cut', `${margin * zoom}px`);
+    if (cut) frame.style.setProperty('--cut', `${mmToPx(margin)}px`);
   }
   const bySheet = group ? groupBoxes(list) : new Map<number, Rect>();
   const frames = [...document.querySelectorAll<HTMLElement>('#sheets > .group-frame')];
   [...bySheet].forEach(([sheet, rect], i) => {
-    const offset = sheetBoxes().get(sheet);
-    if (offset && frames[i]) Object.assign(frames[i].style, px(rect, offset, zoom));
+    const groupStyle = layerStyle(sheet, rect);
+    if (groupStyle && frames[i]) Object.assign(frames[i].style, groupStyle);
   });
   const target = selectionTarget(list, bySheet);
   const size = document.getElementById('piece-size');
@@ -121,13 +112,16 @@ export function placeBar(bar: HTMLElement, target: Pick<SelectionTarget, 'sheet'
     return;
   }
   const page = pageNode(target.sheet);
-  if (!page) return;
-  const zoom = getView().zoom;
+  if (!page || !sheetBoxes().has(target.sheet)) return;
   const canvas = canvasEl.getBoundingClientRect();
   const stage = stageEl.getBoundingClientRect();
-  const box = page.querySelector('.sheet-box')!.getBoundingClientRect();
-  const sheet = { x: box.left - canvas.left, y: box.top - canvas.top, w: box.width, h: box.height };
-  const onCanvas = (r: Rect) => ({ x: sheet.x + r.x * zoom, y: sheet.y + r.y * zoom, w: r.w * zoom, h: r.h * zoom });
+  // Rectangles in mm on the sheet → px on the canvas (the bar's coordinates).
+  const onCanvas = (r: Rect) => {
+    const c = toClient(target.sheet, r)!;
+    return { x: c.x - canvas.left, y: c.y - canvas.top, w: c.w, h: c.h };
+  };
+  const [W, H] = sheetSize();
+  const sheet = onCanvas({ x: 0, y: 0, w: W, h: H });
   const piece = onCanvas(target);
   const visible = { x: stage.left - canvas.left, y: stage.top - canvas.top, w: stage.width, h: stage.height };
   const offscreen = !clip(piece, visible) && !bar.contains(document.activeElement);
@@ -147,6 +141,9 @@ export function placeBar(bar: HTMLElement, target: Pick<SelectionTarget, 'sheet'
     h: panel.offsetHeight,
   }));
   const minX = Math.max(edge, ...panels.filter((r) => r.x <= edge).map((r) => r.x + r.w + edge));
+  // The zoom control floats in a corner of the canvas: the bar never covers it.
+  const zoomControl = document.querySelector('.zoom-control')?.getBoundingClientRect();
+  if (zoomControl?.width) panels.push({ x: zoomControl.left - canvas.left, y: zoomControl.top - canvas.top, w: zoomControl.width, h: zoomControl.height });
   const area = { x: minX, y: edge, w: canvas.width - edge - minX, h: canvas.height - 2 * edge };
   const inX = (x: number) => clamp(x, area.x, Math.max(area.x, area.x + area.w - w));
   const above = piece.y - h - gap;

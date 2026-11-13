@@ -24,25 +24,8 @@ import { Icon } from '../ui/Icon.tsx';
 import { CropContent } from './cropMode.ts';
 import { CutLayer } from './CutLayer.tsx';
 import { Piece } from './Piece.tsx';
+import { fitZoom, sheetsAreWide } from './viewport.ts';
 import { SelectionOverlay } from './SelectionOverlay.tsx';
-
-/**
- * Zoom so that a sheet (with its heading and, below, the button to add
- * another) fits comfortably in the visible height; the rest scrolls.
- */
-function computeZoom(stage: HTMLElement, W: number, H: number) {
-  const sheets = stage.querySelector<HTMLElement>('#sheets')!;
-  const foot = sheets.querySelector<HTMLElement>('.sheets-foot')!;
-  const style = getComputedStyle(stage);
-  const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-  const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-  const head = sheets.querySelector<HTMLElement>('.page-head')?.offsetHeight ?? 0;
-  const gap = parseFloat(getComputedStyle(sheets).rowGap) || 0;
-  const footSpace = foot.offsetHeight + gap + parseFloat(getComputedStyle(foot).marginTop || '0');
-  const availW = stage.clientWidth - padX;
-  const availH = stage.clientHeight - padY - head - footSpace;
-  return Math.max(0.05, Math.min(availW / W, availH / H));
-}
 
 /**
  * Fine lines every `size` mm and stronger ones every 5 or 10 cells, drawn with
@@ -188,12 +171,18 @@ export function Stage() {
     return map;
   }, [items, sheets]);
   const gridCss = useMemo(() => gridStyle(grid, zoom), [grid, zoom]);
+  // Zoomed in past the stage's width: it scrolls sideways too.
+  const wide = layout >= 0 && stage.current !== null && sheetsAreWide(zoom);
 
-  // The zoom follows the paper and the stage's size (not while dragging).
+  // A fitted zoom follows the paper and the stage's size (not while dragging);
+  // one the person chose stays as it is.
   const updateZoom = useCallback(() => {
     if (!stage.current) return;
-    const next = computeZoom(stage.current, ...sheetSize());
-    if (next !== getView().zoom) setView({ zoom: next });
+    const { zoomMode } = getView();
+    if (zoomMode !== 'manual') {
+      const next = fitZoom(zoomMode);
+      if (next !== getView().zoom) setView({ zoom: next });
+    }
     setLayout((n) => n + 1);
   }, []);
   useLayoutEffect(updateZoom, [W, H, besideList, updateZoom]);
@@ -221,7 +210,7 @@ export function Stage() {
   };
 
   return (
-    <div id="stage" className={besideList ? 'stage beside-list' : 'stage'} ref={stage}>
+    <div id="stage" className={`stage${besideList ? ' beside-list' : ''}${wide ? ' is-wide' : ''}`} ref={stage}>
       <div id="sheets" className={animating ? 'sheets is-animating' : 'sheets'} data-many={sheets.length > 1 ? '' : undefined} onFocus={onFocus}>
         {sheets.map((sheet, i) => (
           <Page

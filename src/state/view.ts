@@ -23,6 +23,9 @@ export interface Flash {
 
 export type DrawerName = 'pieces' | 'props';
 
+/** How the zoom is chosen: fitting the sheet or its width (again when the window changes), or the person's. */
+export type ZoomMode = 'fit' | 'width' | 'manual';
+
 /** The tabs of the properties panel: the selection's properties or the document's settings. */
 export type PropsTab = 'piece' | 'sheet';
 
@@ -42,6 +45,8 @@ export interface ViewState {
   distribute: DistributeMode;
   /** px per mm of the sheets on screen. */
   zoom: number;
+  /** How the zoom is chosen (a fit follows the window; the person's stays). */
+  zoomMode: ZoomMode;
   /** Which collapsible panel is open (only on narrow screens). */
   drawer: DrawerName | null;
   /** The properties panel's tab: follows the selection, and the person can switch it. */
@@ -64,6 +69,7 @@ export const useView = create<ViewState>()(() => ({
   alignTo: 'selection',
   distribute: 'gap',
   zoom: 1,
+  zoomMode: 'fit',
   drawer: null,
   propsTab: 'sheet',
   animating: false,

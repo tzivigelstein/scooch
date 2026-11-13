@@ -244,6 +244,21 @@
     transform: translateX(1.125rem);
   }
 
+  /* At the top: the bottom belongs to the panel buttons and the piece's toolbar. */
+  .zoom-control {
+    top: 0.75rem;
+    bottom: auto;
+  }
+
+  .zoom-control .icon-btn,
+  .zoom-level {
+    height: 2.5rem;
+  }
+
+  .zoom-control .icon-btn {
+    width: 2.5rem;
+  }
+
   .dock {
     position: absolute;
     left: 0.75rem;

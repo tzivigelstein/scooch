@@ -6,6 +6,7 @@ import { LEFT_DRAWER_QUERY, NARROW_QUERY } from './config.ts';
 import { t } from './copy/index.ts';
 import { Dock, Rail } from './components/canvas/Dock.tsx';
 import { PieceToolbar } from './components/canvas/PieceToolbar.tsx';
+import { ZoomControl } from './components/canvas/ZoomControl.tsx';
 import { Stage } from './components/canvas/Stage.tsx';
 import { Dialogs } from './components/dialogs/Dialogs.tsx';
 import { preloadDialogs } from './components/dialogs/lazy.ts';
@@ -169,6 +170,7 @@ export function App() {
           <h1 className="sr-only">{t('app.heading')}</h1>
           <Stage />
           <PieceToolbar />
+          <ZoomControl />
           <Dock />
           <NoticePill />
           <PieceHint />
