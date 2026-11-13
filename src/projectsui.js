@@ -74,6 +74,8 @@ export function renderProjectBar() {
   ui.box.hidden = !record;
   if (!record) return;
   if (ui.nameText.textContent !== record.name) ui.nameText.textContent = record.name;
+  // El tooltip muestra el nombre entero (en la barra puede quedar cortado).
+  ui.name.dataset.tip = record.name;
   const label = t('projects.nameLabel', { name: record.name });
   if (ui.name.getAttribute('aria-label') !== label) ui.name.setAttribute('aria-label', label);
   const status = session.status;
@@ -191,6 +193,7 @@ function renderList(records) {
       const title = document.createElement('span');
       title.className = 'project-title';
       title.textContent = record.name;
+      open.dataset.tip = record.name;
       open.append(thumb, title);
       const meta = document.createElement('p');
       meta.className = 'project-meta';

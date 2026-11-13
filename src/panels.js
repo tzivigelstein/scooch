@@ -342,10 +342,12 @@ const PAPER_ERRORS = {
   h: { 'too-small': 'heightTooSmall', 'too-large': 'heightTooLarge' },
 };
 
-// El mensaje de error se asocia al campo solo mientras se ve.
+// El mensaje de error se asocia al campo solo mientras se ve (y mientras tanto
+// no se dice con qué preset coincide: sería el tamaño anterior, no el escrito).
 function showPaperError(input, text) {
   ui.paperError.hidden = !text;
   ui.paperError.textContent = text ?? '';
+  if (text) ui.paperMatch.hidden = true;
   for (const field of [ui.paperW, ui.paperH]) {
     if (text && field === input) field.setAttribute('aria-invalid', 'true');
     else field.removeAttribute('aria-invalid');
@@ -417,7 +419,7 @@ function renderPaper() {
   const match = matchPreset(W, H);
   const name = match && t(`papers.names.${match.id}`);
   const text = match ? t('papers.match', { paper: match.landscape ? t('sheet.landscapeName', { paper: name }) : name }) : '';
-  ui.paperMatch.hidden = !match;
+  ui.paperMatch.hidden = !match || !ui.paperError.hidden;
   if (ui.paperMatch.textContent !== text) ui.paperMatch.textContent = text;
   for (const field of [ui.paperW, ui.paperH]) describePaperField(field);
 }

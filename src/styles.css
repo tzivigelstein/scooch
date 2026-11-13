@@ -2320,6 +2320,39 @@ input.project-title-input {
   height: 16px;
 }
 
+/* En pantallas angostas, dos columnas de tarjetas más bajas. */
+@media (max-width: 559.98px) {
+  .project-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .project-card {
+    padding: 6px 6px 4px;
+  }
+
+  .project-thumb {
+    height: 96px;
+  }
+
+  .project-thumb img {
+    max-height: 82px;
+  }
+
+  .project-thumb .blank-page {
+    height: 82px;
+  }
+
+  .project-badges {
+    top: 10px;
+    left: 10px;
+  }
+
+  .project-actions {
+    justify-content: space-between;
+  }
+}
+
 /* Botones al pie de un diálogo breve (confirmar). */
 .dialog-actions {
   display: flex;
