@@ -17,6 +17,7 @@ import { PiecesPanel } from './components/pieces-panel/PiecesPanel.tsx';
 import { PropertiesPanel } from './components/properties-panel/PropertiesPanel.tsx';
 import { Topbar } from './components/topbar/Topbar.tsx';
 import { useFocusRescue } from './hooks/useFocusRescue.ts';
+import { useClipboard } from './hooks/useClipboard.ts';
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts.ts';
 import { stepTexts } from './services/measure.ts';
 import { usePrefs } from './state/prefs.ts';
@@ -86,6 +87,7 @@ export function App() {
   const singleKeys = usePrefs((s) => s.singleKeys);
   const drop = useDropZone();
   useGlobalShortcuts();
+  useClipboard();
 
   useEffect(() => {
     document.body.classList.toggle('is-loading', loading);
@@ -102,13 +104,6 @@ export function App() {
     const prevent = (e: Event) => e.preventDefault();
     window.addEventListener('dragover', prevent);
     window.addEventListener('drop', prevent);
-    const paste = (e: ClipboardEvent) => {
-      const files = filesFrom(e.clipboardData);
-      if (!files.length) return;
-      e.preventDefault();
-      void loadFiles(files);
-    };
-    document.addEventListener('paste', paste);
     // A click outside an open overlay panel closes it.
     const outside = (e: PointerEvent) => {
       const name = getView().drawer;
@@ -136,7 +131,6 @@ export function App() {
       stopFollowing();
       window.removeEventListener('dragover', prevent);
       window.removeEventListener('drop', prevent);
-      document.removeEventListener('paste', paste);
       document.removeEventListener('pointerdown', outside, true);
       for (const list of lists) list.removeEventListener('change', changed);
     };

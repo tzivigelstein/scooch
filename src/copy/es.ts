@@ -497,6 +497,10 @@ const es = {
       one: 'Se admiten hasta {max} piezas en total, así que solo entra 1 copia más de cada una',
       other: 'Se admiten hasta {max} piezas en total, así que solo entran {n} copias más de cada una',
     },
+    maxPaste: {
+      one: 'Se admiten hasta {max} piezas en total, así que solo entra 1 pieza más',
+      other: 'Se admiten hasta {max} piezas en total, así que solo entran {n} piezas más',
+    },
     page: 'No se pudo cargar la página {page}. Inténtalo de nuevo.',
     pdf: 'No se pudo crear el PDF. Inténtalo de nuevo.',
     marginTooBig: 'El margen no deja espacio para las piezas. Reduce el margen.',
@@ -560,6 +564,14 @@ const es = {
     projectDeleted: 'Se eliminó «{name}»',
     projectSaved: 'Se guardó el proyecto',
     deselected: 'Ninguna pieza seleccionada',
+    // Clipboard
+    copied: { one: 'Se copió 1 pieza', other: 'Se copiaron {n} piezas' },
+    cut: { one: 'Se cortó 1 pieza', other: 'Se cortaron {n} piezas' },
+    pasted: { one: 'Se pegó 1 pieza en la hoja {i}', other: 'Se pegaron {n} piezas en la hoja {i}' },
+    pastedSheets: { one: 'Se pegó 1 pieza en {sheets} hojas', other: 'Se pegaron {n} piezas en {sheets} hojas' },
+    nothingToPaste: 'No hay piezas copiadas para pegar',
+    // The text that goes to the system clipboard with the copied pieces
+    copiedText: { one: '1 pieza de {app}', other: '{n} piezas de {app}' },
     // The properties panel switched tabs on its own (after a keyboard action)
     propsPiece: 'Propiedades muestra la pieza',
     propsSheet: 'Propiedades muestra la hoja',
@@ -723,6 +735,8 @@ const es = {
       scale: 'Agrandar o reducir 1 % (Shift: 10 %)',
       rotate: 'Girar 90° a la derecha o a la izquierda',
       duplicate: 'Duplicar la pieza',
+      duplicateMod: 'Duplicar la selección (siempre, también con los atajos de 1 tecla desactivados)',
+      clipboard: 'Copiar, cortar o pegar piezas. Si copiaste una imagen en otra app, la pega como pieza nueva.',
       fit: 'Ajustar a la hoja',
       center: 'Centrar en la hoja',
       front: 'Traer al frente',

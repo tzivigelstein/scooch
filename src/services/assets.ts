@@ -280,6 +280,9 @@ export async function pdfPage(base: { name: string; src: number; pdf: PDFDocumen
 
 // ---------- Saved projects ----------
 
+/** A source id no asset of the open project uses (for pieces pasted from another project). */
+export const newSource = () => ++lastSource;
+
 /** New sources don't clash with the ones of a restored project. */
 export function reserveSources(next: number) {
   lastSource = Math.max(lastSource, next - 1);

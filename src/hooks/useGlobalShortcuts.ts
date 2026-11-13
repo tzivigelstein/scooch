@@ -152,6 +152,11 @@ function onKeyDown(e: KeyboardEvent) {
     } else if (!typing && lower === 'y') {
       e.preventDefault();
       redoLast();
+    } else if (!typing && lower === 'd' && !e.shiftKey) {
+      // Duplicates (never the browser's bookmark dialog).
+      e.preventDefault();
+      if (target.classList.contains('piece')) adopt(target);
+      if (hasSelection() && !e.repeat) duplicate(1, { focus: true });
     } else if (!typing && lower === 'a' && !e.shiftKey) {
       // Every piece of the current sheet; again, every piece of every sheet.
       e.preventDefault();

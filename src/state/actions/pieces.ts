@@ -256,7 +256,7 @@ export function actualSize() {
  * to a neighbor on the same sheet (on the sheet, or in the list if it was
  * removed from there); with the mouse, nothing stays selected.
  */
-export function remove({ focus = true, inList = false } = {}) {
+export function remove({ focus = true, inList = false, announced = '' } = {}) {
   const items = selectedItems();
   if (!items.length || busy()) return;
   const primary = primaryItem()!;
@@ -278,7 +278,8 @@ export function remove({ focus = true, inList = false } = {}) {
   } else if (focus) focusSheet();
   else focusSheetNode(primary.sheet);
   const left = getDocument().items.length;
-  if (items.length === 1) announce(t(left ? 'announce.removed' : 'announce.removedLast', { name }));
+  if (announced) announce(announced);
+  else if (items.length === 1) announce(t(left ? 'announce.removed' : 'announce.removedLast', { name }));
   else announce(t(left ? 'announce.removedMany' : 'announce.removedManyLast', { n: items.length }));
 }
 

@@ -6,6 +6,11 @@ import type { AppAsset } from '../services/assets.ts';
 
 const assets = new Map<string, AppAsset>();
 let nextAssetId = 1;
+// Bumped when another project's assets replace these (their keys and sources mean something else).
+let generation = 0;
+
+/** Which set of assets is loaded: it changes when another project opens. */
+export const assetGeneration = () => generation;
 
 /** The asset of a key (pieces always point to a loaded one). */
 export function getAsset(key: string): AppAsset {
@@ -52,4 +57,5 @@ export function replaceAssets(loaded: ReadonlyMap<string, AppAsset>, nextId: num
   for (const [key, asset] of loaded) assets.set(key, asset);
   release(dropped, [...assets.values()]);
   nextAssetId = nextId;
+  generation++;
 }
