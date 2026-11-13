@@ -118,6 +118,38 @@ test.describe('panel layouts', () => {
   });
 });
 
+// A wide screen makes the side panels wider, nothing else: the text and the
+// controls keep the browser's size (the root font is 100 % at every width).
+test.describe('wide screens', () => {
+  const WIDTHS = [1440, 1920, 2560, 3440];
+  /** The panels' widths: their usual size, then a share of the screen, up to a cap (src/styles/tokens.css). */
+  const expected = (w: number) => ({ left: Math.min(Math.max(228, 0.15 * w), 320), right: Math.min(Math.max(288, 0.19 * w), 384) });
+
+  test('only the side panels grow: the root font, a top-bar button and a field stay the same size, with no horizontal scroll', async ({ app, page }) => {
+    await app.addFiles(tiles(0, 2));
+    await app.row((await app.ids())[0]).click();
+    const sizes: Record<string, string | number>[] = [];
+    for (const width of WIDTHS) {
+      await page.setViewportSize({ width, height: 1200 });
+      const panels = expected(width);
+      await expect.poll(() => page.locator('#pieces-panel').evaluate((el) => el.getBoundingClientRect().width), { message: `left panel at ${width}` }).toBeCloseTo(panels.left, 1);
+      await expect.poll(() => page.locator('#props-panel').evaluate((el) => el.getBoundingClientRect().width), { message: `right panel at ${width}` }).toBeCloseTo(panels.right, 1);
+      sizes.push(
+        await page.evaluate(() => ({
+          root: getComputedStyle(document.documentElement).fontSize,
+          button: document.getElementById('export')!.getBoundingClientRect().height,
+          label: getComputedStyle(document.getElementById('export')!).fontSize,
+          field: document.getElementById('pos-x')!.getBoundingClientRect().height,
+          list: getComputedStyle(document.querySelector('#piece-list [role="option"]')!).fontSize,
+        }))
+      );
+      expect(await horizontalOverflow(page), `no horizontal scroll at ${width}`).toBeLessThanOrEqual(0);
+    }
+    expect(sizes[0].root).toBe('16px');
+    for (const [i, size] of sizes.entries()) expect(size, `sizes at ${WIDTHS[i]} px`).toEqual(sizes[0]);
+  });
+});
+
 test.describe('properties tabs', () => {
   test('the sheet’s title: a click, and Enter or Space after Shift+Tab, show Hoja with nothing selected and the focus on the title; Tab onto a piece shows Pieza', async ({ app, page }) => {
     await app.addFiles(['small.jpg', 'square.webp', 'tall.png']);
