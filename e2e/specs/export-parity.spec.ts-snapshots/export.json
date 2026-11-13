@@ -1,0 +1,76 @@
+[
+  {
+    "size": [
+      210,
+      297
+    ],
+    "content": "f1569246a7d7",
+    "xobjects": [
+      {
+        "name": "EmbeddedPdfPage-2000805986",
+        "kind": "vector page",
+        "hash": "4318f4083303"
+      },
+      {
+        "name": "Image-7098480789",
+        "kind": "image",
+        "file": "big.png"
+      },
+      {
+        "name": "Image-7572533686",
+        "kind": "image encoded by the browser",
+        "px": [
+          800,
+          1200
+        ],
+        "filter": "/DCTDecode"
+      },
+      {
+        "name": "Image-9742682568",
+        "kind": "image encoded by the browser",
+        "px": [
+          1000,
+          1000
+        ],
+        "filter": "/FlateDecode"
+      },
+      {
+        "name": "Image-9750469207",
+        "kind": "image encoded by the browser",
+        "px": [
+          893,
+          1259
+        ],
+        "filter": "/FlateDecode"
+      }
+    ]
+  },
+  {
+    "size": [
+      210,
+      297
+    ],
+    "content": "c2651d844cdf",
+    "xobjects": [
+      {
+        "name": "Image-8450180107",
+        "kind": "image",
+        "file": "small.jpg"
+      }
+    ]
+  },
+  {
+    "size": [
+      210,
+      297
+    ],
+    "content": "dc073cdda186",
+    "xobjects": [
+      {
+        "name": "Image-8659871878",
+        "kind": "image",
+        "file": "tall.png"
+      }
+    ]
+  }
+]

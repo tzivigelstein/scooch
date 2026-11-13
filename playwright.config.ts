@@ -33,6 +33,9 @@ const TIMING = /performance\.spec\.ts$/;
 export default defineConfig({
   testDir: 'e2e/specs',
   outputDir: `${OUT}/results`,
+  // Committed references (e2e/specs/<spec>-snapshots/) are the same for every
+  // browser and platform.
+  snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}{ext}',
   fullyParallel: true,
   forbidOnly: CI,
   // A flaky test gets fixed, never retried.
