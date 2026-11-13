@@ -168,6 +168,8 @@ export interface ProjectRecord {
   created: number;
   /** When its document was last saved. */
   modified: number;
+  /** When it was last opened («Proyectos» is sorted by it); records from before layout 2 may not have it. */
+  opened?: number;
   version: number;
   doc: ProjectDoc;
   counts: { sheets: number; pieces: number };
@@ -246,7 +248,7 @@ export interface ProjectStorage {
   /** Writes the record and `changes` in one operation (all or nothing). */
   write(record: ProjectRecord, changes?: WriteChanges): Promise<void>;
   /** Changes some fields of a stored record (read and written in one operation); null if it isn't there. */
-  update(id: string, patch: Partial<Pick<ProjectRecord, 'name' | 'modified'>>): Promise<ProjectRecord | null>;
+  update(id: string, patch: Partial<Pick<ProjectRecord, 'name' | 'opened'>>): Promise<ProjectRecord | null>;
   /** Stores `record` (a new id) with the same files as project `id`: references, no binary is copied. */
   copy(id: string, record: ProjectRecord): Promise<void>;
   /** The record, its file references and its undo history. */

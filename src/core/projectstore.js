@@ -38,7 +38,7 @@ export function emptyDoc({ paper = 'A4', landscape = false, margin = 10, gap = 5
 
 /** Creates and stores a project (empty by default). Returns the record. */
 export async function createProject(storage, { id, name, now, doc = emptyDoc(), thumb = null }) {
-  const record = { id, name, created: now, modified: now, version: doc.version, doc, counts: counts(doc), thumb };
+  const record = { id, name, created: now, modified: now, opened: now, version: doc.version, doc, counts: counts(doc), thumb };
   await storage.write(record, { create: true });
   return record;
 }
@@ -89,24 +89,35 @@ export async function loadProject(storage, id, context = {}) {
   return { record, doc, files };
 }
 
+/** When a project sorts in the list: when it was last opened (or saved, for records from before). */
+export const sortTime = (record) => record.opened ?? record.modified ?? 0;
+
 /**
  * Copies a project: the same files (references: no binary is copied) and no
- * undo history. Returns the new record.
+ * undo history. It sorts right after the original, so nothing else moves in
+ * the list. Returns the new record.
  */
 export async function duplicateProject(storage, id, { newId, name, now }) {
   const record = await storage.get(id);
   if (!record) throw new ProjectError('missing', id);
-  const copy = { ...record, id: newId, name, created: now, modified: now };
+  const copy = { ...record, id: newId, name, created: now, modified: now, opened: sortTime(record) - 1 };
   await storage.copy(id, copy);
   return copy;
 }
 
-/** Changes the name (already clean) and the date of modification, in one operation. Returns the record. */
-export async function renameProject(storage, id, name, now) {
-  const record = await storage.update(id, { name, modified: now });
+/**
+ * Changes the name (already clean), and only the name, in one operation: its
+ * dates stay, so renaming doesn't reorder the list (or make another tab's
+ * last-moment journal look stale). Returns the record.
+ */
+export async function renameProject(storage, id, name) {
+  const record = await storage.update(id, { name });
   if (!record) throw new ProjectError('missing', id);
   return record;
 }
+
+/** Records that the project was opened now (only that: it doesn't count as a change). Returns the record, or null. */
+export const touchProject = (storage, id, now) => storage.update(id, { opened: now });
 
 /** Deletes the project, its file references and its undo history (can't be undone). */
 export const deleteProject = (storage, id) => storage.remove(id);
@@ -129,8 +140,8 @@ export function openProblem(record) {
 export const isDamaged = (record) => openProblem(record) === 'corrupt';
 
 /**
- * Every project, the most recently saved first, with `damaged` and `newer`
- * (saved by a newer version of the app: left alone).
+ * Every project, the last opened first, with `damaged` and `newer` (saved by
+ * a newer version of the app: left alone).
  */
 export async function listProjects(storage) {
   const records = await storage.list();
@@ -139,10 +150,10 @@ export async function listProjects(storage) {
       const problem = openProblem(record);
       return { ...record, damaged: problem === 'corrupt', newer: problem === 'newer' };
     })
-    .sort((a, b) => (b.modified ?? 0) - (a.modified ?? 0));
+    .sort((a, b) => sortTime(b) - sortTime(a));
 }
 
-/** Which project to open on start: the last one if it can be opened, else the newest of the rest (or null). */
+/** Which project to open on start: the last one if it can be opened, else the last opened of the rest (or null). */
 export function pickProject(list, lastId) {
   const usable = list.filter((record) => !record.damaged && !record.newer);
   return (usable.find((record) => record.id === lastId) ?? usable[0])?.id ?? null;

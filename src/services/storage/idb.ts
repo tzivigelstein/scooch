@@ -2,7 +2,7 @@
 // Nothing leaves the browser.
 //
 // Database PROJECTS_DB (config), layout version 2:
-//   «projects»  records, by id ({id, name, created, modified, …}).
+//   «projects»  records, by id ({id, name, created, modified, opened, …}).
 //   «files»     a project's files: {project, key, hash}, by [project, key],
 //               indexed by project and by hash.
 //   «blobs»     every binary once per content: {hash, blob}, by hash.

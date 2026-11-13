@@ -29,6 +29,7 @@ import {
   recoverJournal,
   renameProject,
   saveProject,
+  touchProject,
   type Journal,
 } from '../core/projectstore.js';
 import type { ProjectDoc, ProjectRecord, ProjectStorage, StoredFile } from '../core/types.ts';
@@ -445,7 +446,7 @@ async function thumbnail() {
 
 // ---------- Open, create, duplicate, rename, delete ----------
 
-/** The list for the dialog (newest first). */
+/** The list for the dialog (the last opened first). */
 export const list = () => (session.storage ? listProjects(session.storage) : Promise.resolve([]));
 
 /**
@@ -458,7 +459,10 @@ export async function openProject(id: string, { remember = true } = {}) {
   setStatus('loading');
   try {
     await claim(id);
-    const { record, doc, files } = await loadProject(session.storage!, id, migrationContext());
+    const stored = await loadProject(session.storage!, id, migrationContext());
+    const { doc, files } = stored;
+    // Opened now: first in «Proyectos» (only that changes: it isn't saved as a change).
+    const record = (await touchProject(session.storage!, id, now())) ?? stored.record;
     // What was journaled when the tab closed, if newer than what was saved.
     const recovered = recoverJournal(record, files, readJournal(id), migrationContext());
     const use = recovered?.doc ?? doc;
@@ -526,7 +530,7 @@ export async function rename(id: string, name: string) {
     hooks.statusChanged?.({});
     if (session.storage && session.status !== 'readonly') await save();
   } else {
-    await renameProject(session.storage!, id, clean, now());
+    await renameProject(session.storage!, id, clean);
   }
   post({ type: 'renamed', project: id, name: clean });
   return clean;

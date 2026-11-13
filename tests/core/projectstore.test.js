@@ -14,6 +14,7 @@ import {
   listProjects,
   pickProject,
   recoverJournal,
+  touchProject,
   memoryStorage,
 } from '../../src/core/projectstore.js';
 import { ProjectError, fileKeys } from '../../src/core/projectdoc.js';
@@ -204,22 +205,42 @@ describe('duplicar, renombrar, eliminar y listar', () => {
     assert.equal((await storage.files('p1')).size, 0);
   });
 
-  test('renombrar cambia el nombre y la fecha', async () => {
+  test('renaming changes the name and nothing else: not its dates', async () => {
     const storage = memoryStorage();
     await saved(storage);
-    const record = await renameProject(storage, 'p1', 'Tarjetas', 7777);
+    const before = await storage.get('p1');
+    const record = await renameProject(storage, 'p1', 'Tarjetas');
     assert.equal(record.name, 'Tarjetas');
-    assert.equal((await storage.get('p1')).modified, 7777);
-    await assert.rejects(renameProject(storage, 'no', 'x', 1), (err) => err.code === 'missing');
+    assert.deepEqual(await storage.get('p1'), { ...before, name: 'Tarjetas' });
+    await assert.rejects(renameProject(storage, 'no', 'x'), (err) => err.code === 'missing');
   });
 
-  test('lista del más reciente al más viejo y qué abrir al empezar', async () => {
+  test('the list goes from the last opened; renaming or duplicating moves nothing else', async () => {
+    const storage = memoryStorage();
+    await createProject(storage, { id: 'a', name: 'A', now: 10 });
+    await createProject(storage, { id: 'b', name: 'B', now: 30 });
+    await createProject(storage, { id: 'c', name: 'C', now: 20 });
+    const ids = async () => (await listProjects(storage)).map((r) => r.id);
+    assert.deepEqual(await ids(), ['b', 'c', 'a']);
+    await touchProject(storage, 'a', 40);
+    assert.deepEqual(await ids(), ['a', 'b', 'c'], 'opened: first');
+    await renameProject(storage, 'c', 'Otra C');
+    assert.deepEqual(await ids(), ['a', 'b', 'c'], 'renamed: where it was');
+    await duplicateProject(storage, 'b', { newId: 'b2', name: 'B (copia)', now: 50 });
+    assert.deepEqual(await ids(), ['a', 'b', 'b2', 'c'], 'the copy right after its original');
+    // A record from before «opened» existed sorts by when it was saved.
+    const old = await storage.get('c');
+    delete old.opened;
+    await storage.write({ ...old, modified: 35 });
+    assert.deepEqual(await ids(), ['a', 'c', 'b', 'b2']);
+  });
+
+  test('what to open on start', async () => {
     const storage = memoryStorage();
     await createProject(storage, { id: 'a', name: 'A', now: 10 });
     await createProject(storage, { id: 'b', name: 'B', now: 30 });
     await createProject(storage, { id: 'c', name: 'C', now: 20 });
     const list = await listProjects(storage);
-    assert.deepEqual(list.map((r) => r.id), ['b', 'c', 'a']);
     assert.equal(pickProject(list, 'c'), 'c', 'el último abierto');
     assert.equal(pickProject(list, 'borrado'), 'b', 'si ya no existe, el más reciente');
     assert.equal(pickProject([], 'x'), null);

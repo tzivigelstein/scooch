@@ -236,6 +236,25 @@ describe('the last opened project', () => {
   });
 });
 
+describe('the order of «Proyectos»', () => {
+  test('the last opened project comes first; renaming one doesn’t move it', async () => {
+    const storage = memoryStorage();
+    await storedProject(storage, 'p1', 'Uno', 11, 1000);
+    await storedProject(storage, 'p2', 'Dos', 22, 2000);
+    localStorage.setItem('scooch:last-project', 'p1');
+    const app = await start(storage);
+    const order = async () => (await app.projects.list()).map((record) => record.id);
+    expect(await order(), 'opened on start').toEqual(['p1', 'p2']);
+    await vi.advanceTimersByTimeAsync(10);
+    await app.projects.openProject('p2');
+    expect(await order()).toEqual(['p2', 'p1']);
+    const modified = (await storage.get('p1'))!.modified;
+    await app.projects.rename('p1', 'Otro nombre');
+    expect(await order()).toEqual(['p2', 'p1']);
+    expect((await storage.get('p1'))!).toMatchObject({ name: 'Otro nombre', modified });
+  });
+});
+
 describe('opening and deleting projects', () => {
   test('the last project opens at start, with an empty undo history', async () => {
     const storage = memoryStorage();
