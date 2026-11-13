@@ -121,6 +121,12 @@ gracias a personas como tú», no «Lo mantengo…»).
 | acomodar | ubicar todas las piezas sin superponerlas, en las hojas que hagan falta | autoacomodar, organizar, acomodo (como título) |
 | distribución | la sección del panel con la separación, el giro y la superposición | acomodo |
 | girar | rotar 90° | rotar |
+| seleccionar / selección | elegir piezas para actuar sobre ellas («3 piezas seleccionadas», «agregar a la selección o quitarla») | marcar, elegir (como término) |
+| recuadro | el rectángulo que se arrastra en un lugar vacío para seleccionar | lazo, marquesina |
+| seleccionar iguales | seleccionar las piezas del mismo archivo de origen | similares, duplicados |
+| alinear | llevar las piezas a un mismo borde o centro, de la selección o del área útil | justificar, ajustar |
+| distribuir / repartir parejo | separar las piezas con la separación de Distribución / con el mismo espacio entre la primera y la última | espaciar, equidistar |
+| área útil | la hoja menos el margen | zona imprimible, área segura |
 | quitar | sacar piezas de la hoja («Quitar todas») | eliminar, borrar, vaciar |
 | agregar | sumar archivos a la hoja (mientras tanto, «Cargando…») | sumar, subir, importar |
 | agrandar / reducir | cambiar el tamaño de una pieza | achicar, ampliar, escalar (como verbo) |
@@ -131,11 +137,12 @@ gracias a personas como tú», no «Lo mantengo…»).
 | grilla | la cuadrícula de ayuda | cuadrícula, rejilla |
 | imán | que las piezas se ajusten a la grilla al arrastrar | ajuste, snap |
 | copias | piezas repetidas con «Rellenar con copias» | réplicas, clones |
-| duplicar | hacer una copia de la pieza | clonar |
+| duplicar | hacer una copia de la pieza («Duplicar ×5»: 5 copias de cada seleccionada) | clonar |
 | imprimir | mandar el PDF a la impresora | — |
 | descargar PDF | guardar el PDF | exportar, bajar |
 | deshacer / rehacer | historial | revertir |
 | propiedades | el panel de la derecha | ajustes, inspector |
+| recorte / líneas de corte | la parte de la imagen que se ve / las marcas para cortar las piezas impresas | crop, guías |
 | atajos de teclado | combinaciones de teclas | accesos rápidos, teclas rápidas |
 | barra de acciones | la barra flotante de la pieza | menú, toolbar |
 | aviso | la píldora de mensajes | notificación, toast |
