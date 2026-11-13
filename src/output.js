@@ -4,7 +4,7 @@
 // eso también está bloqueado, lo descarga).
 
 import { APP_NAME } from './config.js';
-import { state, assets, sheetSize, dims } from './store.js';
+import { state, assets, sheetSize, dims, itemsOn } from './store.js';
 import { paperName, paperSlug } from './measure.js';
 import { buildPdf } from './export.js';
 import { slug } from './util.js';
@@ -12,16 +12,17 @@ import { t } from './copy/index.js';
 
 export const pdfFileName = () => `${slug(APP_NAME, t('print.fallbackName'))}-${paperSlug()}.pdf`;
 
-/** Bytes del PDF de la hoja actual (una página del tamaño del papel). */
+/** Bytes del PDF: una página del tamaño del papel por hoja, en orden, salteando las vacías. */
 export function makePdf() {
   const [W, H] = sheetSize();
-  const pieces = state.items.map((item) => {
+  const piece = (item) => {
     const asset = assets.get(item.asset);
     const k = item.scale / 100;
     const [w, h] = dims(item);
     return { asset, x: item.x, y: item.y, w, h, uw: asset.w * k, uh: asset.h * k, r: item.r };
-  });
-  return buildPdf({ width: W, height: H, pieces, title: t('print.pdfTitle', { paper: paperName() }), creator: APP_NAME });
+  };
+  const pages = state.sheets.map((sheet) => itemsOn(sheet.id).map(piece)).filter((pieces) => pieces.length);
+  return buildPdf({ width: W, height: H, pages, title: t('print.pdfTitle', { paper: paperName() }), creator: APP_NAME });
 }
 
 const pdfUrl = (bytes) => URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));

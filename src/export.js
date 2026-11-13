@@ -1,4 +1,5 @@
-// Exportación: una sola página de PDF del tamaño de la hoja, armada con pdf-lib.
+// Exportación: una página de PDF del tamaño de la hoja por cada hoja con
+// piezas, en orden, armada con pdf-lib.
 
 const PT_PER_MM = 72 / 25.4;
 
@@ -15,23 +16,26 @@ function loadPdfLib() {
 }
 
 /**
- * Arma el PDF y devuelve sus bytes.
- * `pieces`: [{asset, x, y, w, h, uw, uh, r}] en mm; w/h ya rotados, uw/uh sin rotar.
+ * Arma el PDF y devuelve sus bytes. `pages`: una lista de piezas por página,
+ * cada una [{asset, x, y, w, h, uw, uh, r}] en mm; w/h ya rotados, uw/uh sin
+ * rotar. Cada origen (imagen o página de PDF) se embebe una sola vez aunque
+ * aparezca en varias páginas.
  */
-export async function buildPdf({ width, height, pieces, title, creator = title }) {
+export async function buildPdf({ width, height, pages, title, creator = title }) {
   const { PDFDocument, degrees } = await loadPdfLib();
   const doc = await PDFDocument.create();
   doc.setTitle(title);
   doc.setCreator(creator);
-
-  const page = doc.addPage([width * PT_PER_MM, height * PT_PER_MM]);
   const embed = embedder(doc, PDFDocument);
 
-  for (const piece of pieces) {
-    const target = await embed(piece.asset);
-    const options = placement(piece, height, degrees);
-    if (target.page) page.drawPage(target.page, options);
-    else page.drawImage(target.image, options);
+  for (const pieces of pages) {
+    const page = doc.addPage([width * PT_PER_MM, height * PT_PER_MM]);
+    for (const piece of pieces) {
+      const target = await embed(piece.asset);
+      const options = placement(piece, height, degrees);
+      if (target.page) page.drawPage(target.page, options);
+      else page.drawImage(target.image, options);
+    }
   }
   return doc.save();
 }
