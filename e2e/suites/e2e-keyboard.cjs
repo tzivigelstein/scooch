@@ -96,10 +96,20 @@ const { open, makeChecker, helpers, overlaps, FIX, path, norm } = require('../li
   await k.press('Control+z');
   await k.press(']');
   check('] sin superposición: lo explica (no hace falta)', /no hace falta traerla al frente/.test(await page.textContent('#live-polite')) || true);
+  // M focuses the Pieza tab itself (H and M keep working there); Tab goes into its fields.
   await k.press('m');
-  check('M: foco en X de «Propiedades» (con el texto elegido)', (await act()).id === 'pos-x');
+  check('M: focus on the Pieza tab', (await act()).id === 'props-tab-piece');
+  await k.press('h');
+  check('…H from there: the Hoja tab', (await act()).id === 'props-tab-sheet' && (await page.getAttribute('#props-tab-sheet', 'aria-selected')) === 'true');
+  await k.press('m');
+  check('…and M back to Pieza, without the mouse or Esc', (await act()).id === 'props-tab-piece' && (await page.getAttribute('#props-tab-piece', 'aria-selected')) === 'true');
   await k.press('Escape');
-  check('Esc desde el panel vuelve a la pieza', (await act()).piece === first);
+  check('Esc from the tab goes back to the piece', (await act()).piece === first);
+  await k.press('m');
+  await k.press('Tab');
+  check('Tab from the tab: X, with its text selected', (await act()).id === 'pos-x');
+  await k.press('Escape');
+  check('Esc from a field goes back to the piece', (await act()).piece === first);
   await k.press('Enter');
   check('Enter en la pieza: a su barra de acciones', !!(await page.evaluate(() => document.activeElement.closest('#piecebar'))));
   await k.press('ArrowRight');
@@ -128,7 +138,11 @@ const { open, makeChecker, helpers, overlaps, FIX, path, norm } = require('../li
 
   // ---- H: ajustes de la hoja; orientación con flechas; L; secciones; G
   await k.press('h');
-  check('H: foco en el tamaño del papel', (await act()).id === 'paper');
+  check('H: focus on the Hoja tab', (await act()).id === 'props-tab-sheet');
+  await k.press('Tab');
+  check('Tab: the «Papel» section’s header, then the paper size', (await page.evaluate(() => document.activeElement.getAttribute('aria-controls'))) === 'section-sheet');
+  await k.press('Tab');
+  check('…the paper size', (await act()).id === 'paper');
   await k.press('Tab'); // the margin, on the row below the paper
   await k.press('Tab'); // the orientation, beside the margin
   await k.press('ArrowRight');

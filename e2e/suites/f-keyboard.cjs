@@ -56,7 +56,10 @@ const cards = (from, n) => Array.from({ length: n }, (_, i) => `card${String(fro
   await k.press('Tab');
   await k.press('Escape');
   await k.press('h');
-  check('H: foco en el tamaño del papel', (await act()).id === 'paper');
+  check('H: focus on the Hoja tab', (await act()).id === 'props-tab-sheet');
+  await k.press('Tab');
+  await k.press('Tab');
+  check('Tab (past the «Papel» header): the paper size', (await act()).id === 'paper');
   await k.press('End');
   check('Fin: «Personalizado» con los campos de ancho y alto', (await p.inputValue('#paper')) === 'custom' && (await p.isVisible('#paper-w')));
   check('Tab llega al ancho (después de la orientación)', await tabTo((a) => a.id === 'paper-w', 4));
@@ -76,6 +79,8 @@ const cards = (from, n) => Array.from({ length: n }, (_, i) => `card${String(fro
   await p.waitForTimeout(150);
   check('Esc deshace la edición (también el paso con ↑) y vuelve a la hoja', !/paper/.test((await act()).id) && (await p.inputValue('#paper-h')) === '20', JSON.stringify([await act(), await p.inputValue('#paper-h')]));
   await k.press('h');
+  await k.press('Tab');
+  await k.press('Tab');
   await k.press('Home');
   for (let i = 0; i < 4; i++) await k.press('ArrowDown');
   check('flechas en el selector: A4', (await p.inputValue('#paper')) === 'A4');

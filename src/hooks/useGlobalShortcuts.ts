@@ -9,6 +9,7 @@ import { stepFor } from '../core/units.js';
 import { t } from '../copy/index.ts';
 import { announce } from '../components/feedback/announcer.ts';
 import { getDocument } from '../state/document.ts';
+import type { PropsTab } from '../state/view.ts';
 import { flushUi } from '../state/flush.ts';
 import { endEdit } from '../state/history.ts';
 import { getPrefs } from '../state/prefs.ts';
@@ -38,7 +39,6 @@ import {
 } from '../state/actions/pieces.ts';
 import { select, selectAll, selectSame, toggleInSelection } from '../state/actions/selection.ts';
 import { gotoSheet, sendToSheet, setGridVisible, setOrientation } from '../state/actions/sheets.ts';
-import { setSectionOpen } from '../state/prefs.ts';
 import { isTyping } from './dom.ts';
 
 const NUDGES: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -65,25 +65,17 @@ function adopt(target: Element) {
   if (!getDocument().selection.includes(id)) select(id);
 }
 
-/** M: to the first field of the Pieza tab (X); without a selection, the tab shows its hint. */
-function focusPieceFields() {
-  showPropsTab('piece');
-  revealPanel('props');
-  if (!getDocument().selection.length) return announce(t('announce.needSelection'));
-  flushUi();
-  const field = document.getElementById('pos-x') as HTMLInputElement | null;
-  if (!field || field.closest('[hidden]')) return;
-  field.focus({ preventScroll: false });
-  field.select();
-}
-
-/** H: to the first control of the Hoja tab. */
-function focusSheetSettings() {
-  showPropsTab('sheet');
-  revealPanel('props');
-  setSectionOpen('sheet', true);
-  flushUi();
-  document.getElementById('paper')?.focus();
+/**
+ * M / H: the Pieza or Hoja tab of Propiedades (opening it where it is
+ * collapsed), with the focus on the tab itself: H and M keep switching, the
+ * arrows too, Tab goes into the tab's controls and Esc back to the canvas.
+ * Without a selection, Pieza shows its hint.
+ */
+function focusPropsTab(tab: PropsTab) {
+  const active = document.activeElement;
+  const back = active?.closest('#sheets') ? active : (pieceNode(primaryItem()?.id) ?? sheetNode(currentSheet()));
+  revealPanel('props', back);
+  showPropsTab(tab, { focus: true });
 }
 
 /** P: to the list of pieces (or to the add zone when it is empty). */
@@ -272,10 +264,10 @@ function onKeyDown(e: KeyboardEvent) {
   const global: Record<string, () => void> = {
     a: arrangeAll,
     o: openFiles,
-    h: focusSheetSettings,
+    h: () => focusPropsTab('sheet'),
     m: () => {
       if (onPiece) adopt(target);
-      focusPieceFields();
+      focusPropsTab('piece');
     },
     l: () => setOrientation(!getDocument().landscape),
     g: () => setGridVisible(!getPrefs().grid.show),

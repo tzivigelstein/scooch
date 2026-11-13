@@ -118,17 +118,22 @@ const STATE = () => {
     await p.locator('#sheets .piece').first().focus();
     await p.keyboard.press('m');
     x = await st();
-    check('M: Pieza and the focus on X', x.selected.join() === 'piece' && x.active === 'pos-x', JSON.stringify(x));
-    await p.locator('#sheets .piece').first().focus();
+    check('M: Pieza, with the focus on its tab', x.selected.join() === 'piece' && x.active === 'props-tab-piece', JSON.stringify(x));
     await p.keyboard.press('h');
     x = await st();
-    check('H: Hoja and the focus on the paper', x.selected.join() === 'sheet' && x.active === 'paper', JSON.stringify(x));
+    check('H from the tab: Hoja, with the focus on its tab', x.selected.join() === 'sheet' && x.active === 'props-tab-sheet', JSON.stringify(x));
+    await p.keyboard.press('Tab');
+    check('Tab from the tab: its first control (the «Papel» header)', await p.evaluate(() => document.activeElement.getAttribute('aria-controls') === 'section-sheet'));
+    await p.keyboard.press('Tab');
+    check('…then the paper', (await st()).active === 'paper');
     await p.keyboard.press('Escape');
-    await p.locator('#sheets .piece').first().focus();
+    check('Esc from a Hoja control: back to the selected piece', await p.evaluate(() => document.activeElement.classList.contains('piece') && document.activeElement.classList.contains('is-selected')));
     await p.keyboard.press('Escape');
     await p.keyboard.press('m');
     x = await st();
-    check('M with nothing selected: Pieza with its hint, and it says so', x.selected.join() === 'piece' && x.emptyOnly && (await heard(p, /Primero selecciona una pieza/)), JSON.stringify(x));
+    check('M with nothing selected: Pieza with its hint, the focus on its tab', x.selected.join() === 'piece' && x.emptyOnly && x.active === 'props-tab-piece', JSON.stringify(x));
+    await p.keyboard.press('Escape');
+    check('Esc from the tab with nothing selected: back to the sheet', await p.evaluate(() => !!document.activeElement.closest('#sheets')));
     check('tabs show their shortcut in the tooltip and aria-keyshortcuts', (await p.getAttribute('#props-tab-piece', 'aria-keyshortcuts')) === 'M' && (await p.getAttribute('#props-tab-sheet', 'aria-keyshortcuts')) === 'H' && (await p.getAttribute('#props-tab-piece', 'data-kbd')) === 'M');
 
     // No focus theft: typing in a Hoja field while the selection changes keeps the field.
@@ -175,6 +180,25 @@ const STATE = () => {
     const tabBox = await p.locator('#props-tab-sheet').boundingBox();
     check(`${w}: tabs are touch-sized (≥ 40 px)`, tabBox.height >= 40 && tabBox.width >= 40, JSON.stringify(tabBox));
     check(`${w}: no horizontal scroll`, !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
+
+    // H and M from the canvas open Propiedades where it is collapsed, with the focus on the tab.
+    if (await p.locator('#props-panel.is-open').count()) {
+      await p.locator('#props-tab-sheet').focus();
+      await p.keyboard.press('Escape');
+    }
+    const piece = await p.locator('#sheets .piece').first().getAttribute('data-id');
+    await p.locator('#sheets .piece').first().focus();
+    await p.keyboard.press('h');
+    x = await p.evaluate(STATE);
+    check(`${w}: H shows Propiedades on Hoja with the focus on its tab`, (await p.locator('#props-panel').isVisible()) && x.selected.join() === 'sheet' && x.active === 'props-tab-sheet', JSON.stringify(x));
+    await p.keyboard.press('m');
+    x = await p.evaluate(STATE);
+    check(`${w}: then M: Pieza, the focus on its tab`, x.selected.join() === 'piece' && x.active === 'props-tab-piece', JSON.stringify(x));
+    await p.keyboard.press('Tab');
+    check(`${w}: Tab: the first field`, (await p.evaluate(STATE)).active === 'pos-x');
+    await p.keyboard.press('Escape');
+    const back = await p.evaluate(() => document.activeElement.dataset.id ?? null);
+    check(`${w}: Esc from the field goes back to the piece${w < 800 ? ' (and closes the sheet)' : ''}`, back === piece && (w >= 800 || !(await p.locator('#props-panel').isVisible())), JSON.stringify({ back, piece }));
     errors.push(...s.errors);
     await s.browser.close();
   }

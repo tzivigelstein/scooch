@@ -106,9 +106,11 @@ async function keyboardWalk() {
   await k.press('Escape'); // el primero cierra el tooltip del botón enfocado (WCAG 1.4.13)
   await k.press('Escape');
   check('Esc: vuelve a la pieza', (await act()).piece !== null);
-  // M: campos del grupo; alinear y distribuir con Tab y Enter
+  // M: the Pieza tab (the group's fields follow it); align and distribute with Tab and Enter
   await k.press('m');
-  check('M: foco en X del grupo', (await act()).id === 'pos-x');
+  check('M: focus on the Pieza tab', (await act()).id === 'props-tab-piece');
+  await k.press('Tab');
+  check('Tab: X of the group', (await act()).id === 'pos-x');
   let found = false;
   for (let i = 0; i < 20 && !found; i++) {
     await k.press('Tab');

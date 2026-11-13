@@ -195,7 +195,7 @@ const es = {
     removeTip: 'Quitar de la hoja',
     hint:
       'Flechas: mover (Shift: {coarse}; Alt: {fine}). Más y menos: agrandar o reducir. R y Shift+R: girar. ' +
-      'D: duplicar. M: editar las medidas. Enter: barra de acciones. Shift+Espacio: agregar a la selección o quitar. Supr: quitar.',
+      'D: duplicar. M: ir a sus propiedades. Enter: barra de acciones. Shift+Espacio: agregar a la selección o quitar. Supr: quitar.',
     hintNoKeys:
       'Flechas: mover (Shift: {coarse}; Alt: {fine}). Enter: barra de acciones. Shift+Espacio: agregar a la selección o quitar. Supr: quitar.',
   },
@@ -815,7 +815,7 @@ const es = {
       pages: 'En las hojas, ir a la hoja anterior o a la siguiente',
       sendPage: 'Mover la pieza a la hoja anterior o a la siguiente (si no hay lugar, a una hoja nueva)',
       remove: 'Quitar la pieza',
-      measures: 'Ir a la pestaña Pieza de Propiedades y editar las medidas',
+      measures: 'Ir a la pestaña Pieza de Propiedades',
       sheet: 'Ir a la pestaña Hoja de Propiedades',
       list: 'Ir a la lista de piezas',
       arrange: 'Acomodar las piezas sin superponerlas',
