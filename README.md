@@ -1,94 +1,124 @@
 # Scooch
 
-Web app para acomodar imágenes y páginas de PDF en una hoja a tamaño real y
-descargar o imprimir un PDF exacto. Todo pasa en el navegador: los archivos no
-se suben a ningún servidor.
+A web app to arrange images and PDF pages on sheets of paper at real size and
+download or print an exact PDF. Everything happens in the browser: files are
+never uploaded anywhere.
 
-JavaScript sin framework (módulos ES) con [Vite](https://vite.dev) para
-desarrollar y armar el build.
+The interface is in Spanish. React 19 and TypeScript, with Zustand for state
+and [Vite](https://vite.dev) for development and the build. pdf.js (reading
+PDFs) and pdf-lib (writing them) load only when first needed.
 
-## Desarrollo
+## Development
 
-Requiere Node.js 20.19+ o 22.12+ y Yarn 1.
+Requires Node.js 20.19+ or 22.12+ and Yarn 1.
 
 ```sh
-yarn install      # dependencias
-yarn dev          # servidor de desarrollo con recarga en caliente
-yarn build        # build de producción en dist/
-yarn preview      # sirve dist/ para probar el build
-yarn test         # pruebas unitarias (Vitest)
-yarn e2e          # pruebas de navegador (Playwright, ver e2e/run.mjs)
+yarn install      # dependencies
+yarn dev          # development server with hot reload
+yarn build        # production build in dist/
+yarn preview      # serves dist/ to try the build
+yarn typecheck    # TypeScript, no emit
+yarn test         # unit tests (Vitest)
+yarn e2e          # browser suites (Playwright), see below
 ```
 
-## Proyectos y privacidad
+### Browser suites
 
-Cada trabajo es un proyecto que se guarda solo en este navegador (IndexedDB):
-el documento, sus archivos originales y las vistas previas ya rasterizadas.
-Nada se sube a ningún servidor. Si el navegador no permite IndexedDB (algunas
-ventanas privadas), la app funciona igual pero no guarda, y lo avisa.
+`yarn e2e` builds the app, serves it on 127.0.0.1:4317 and runs every suite in
+`e2e/suites/` (logs and screenshots go to `e2e/out/`, which is ignored):
 
-Con la app abierta en varias pestañas, cada proyecto lo guarda una sola: la
-que lo abre se lo pide a las otras por `BroadcastChannel`, y la que lo tenía
-guarda lo pendiente, deja de guardar y avisa («Editar aquí» lo recupera,
-recargándolo). Así nunca se pisan cambios en silencio.
+```sh
+yarn e2e --only a-papers,migrate    # some suites (names without .cjs)
+yarn e2e --no-build                 # reuse the current dist/
+yarn e2e --dev --strict-console     # against `vite` dev; console warnings fail
+yarn e2e --jobs 3                   # in parallel (timings get noisier)
+yarn e2e --port 4400                # another port
+yarn e2e --parity URL               # also compare the exported PDF with the build at URL
+```
 
-## Pantallas grandes
+They include axe checks in light and dark mode, keyboard-only flows, the
+exported PDF's contents, the projects' storage and performance budgets for
+dragging and scrolling with 150 pieces.
 
-Hasta 1600 px de ancho la interfaz mide siempre lo mismo. Desde ahí crece de
-a poco hasta 1,25 × hacia los 2800 px: todo está en rem y el tamaño de letra
-raíz (`html` en `src/styles.css`) parte del 100 % del navegador, así respeta
-el zoom y el tamaño de letra elegido. Los paneles (`--left-w` y `--right-w`,
-en `:root`) además crecen con la pantalla hasta un tope. La hoja tiene su
-propio zoom (ocupa el alto disponible) y no cambia con esto.
+## Projects and privacy
 
-## Despliegue en Vercel
+Each piece of work is a project saved only in this browser (IndexedDB): the
+document, its original files and the already rasterized previews. Nothing is
+uploaded. If the browser doesn't allow IndexedDB (some private windows), the
+app works the same but doesn't save, and says so.
 
-Importa el repositorio en Vercel: detecta Vite y no hace falta configurar
-nada (instala con `yarn install`, compila con `vite build` y publica `dist/`).
-`vercel.json` solo agrega cabeceras de caché largas para los archivos con hash
-de `dist/assets/`.
+Everything the app stores lives under one namespace, `STORAGE_NAMESPACE` in
+`src/config.ts` (`scooch`): the `scooch` database, the `scooch-projects`
+channel and the `scooch:*` localStorage keys (preferences, the last open
+project, the last-moment journal). The namespace is separate from the app's
+name (`APP_NAME`) so a rename can't lose anyone's projects. Data saved before
+the app was renamed (database `pliego`, unprefixed keys) moves over once, on
+the first start (`src/services/storage/migrate.ts`): the copy is written
+before the old data is removed, so an interruption loses nothing.
 
-## Estructura
+With the app open in several tabs, each project is saved by one tab only: the
+one that opens it asks the others through a `BroadcastChannel`, and the one
+that had it saves what is pending, stops saving and says so («Editar aquí»
+takes it back, reloading it). Changes are never overwritten silently.
+
+## Large screens
+
+Up to 1600 px wide the interface keeps the same size. From there it grows
+little by little up to 1.25 × towards 2800 px: everything is in rem, and the
+root font size (`html` in `src/styles/base.css`) starts from the browser's
+100 %, so it respects zoom and the chosen font size. The panels (`--left-w`
+and `--right-w`, in `src/styles/tokens.css`) also grow with the screen up to a
+cap. The sheet has its own zoom (it fills the available height) and doesn't
+change with this.
+
+## Deploying to Vercel
+
+Import the repository in Vercel: it detects Vite and needs no configuration
+(it installs with `yarn install`, builds with `vite build` and publishes
+`dist/`). `vercel.json` only adds long cache headers for the hashed files in
+`dist/assets/`.
+
+## How it's built
+
+- **State** lives in small Zustand stores in `src/state/`: the document
+  (sheets, pieces, paper and selection), the undo history, the view, the
+  preferences and the open project's status. Assets (binaries) and live
+  gesture values stay outside React. Components subscribe to the slices they
+  show; everything that changes the document goes through the actions in
+  `src/state/actions/`, which record one undo step per operation.
+- **Pure logic** (packing, alignment, groups, crop, cut marks, units, the
+  project format) is in `src/core/`, plain JavaScript with `.d.ts` types and
+  no DOM, tested in `tests/core/`.
+- **Texts** all come from `src/copy/es.ts` through `t()`; `docs/copy.md` is
+  the copy guide. `index.html` only carries the few texts needed before the
+  app starts, filled in at build time.
+- **Dialogs** keep their `<dialog>` shells in the page; the contents of the
+  rarely used ones load on first use or when the app is idle.
+
+## Structure
 
 ```
-index.html        página única (Vite la usa como entrada)
+index.html              the single page (Vite's entry): critical styles and the loading screen
 src/
-  app.js          arranque: arma la interfaz y conecta las acciones
-  styles.css      estilos
-  copy/           todos los textos de la interfaz (es.js) y t(clave, params)
-  config.js       nombre de la app, límites y claves de almacenamiento
-  store.js        documento (hojas y piezas), assets e historial de deshacer
-  sheetview.js    las hojas en pantalla, una debajo de otra, y los gestos
-                  (mover, escalar y elegir con un recuadro)
-  panels.js       panel Propiedades (campos de longitud: lengthfield.js)
-  piecelist.js    panel Piezas, agrupado por hoja (selección múltiple)
-  groupactions.js acciones sobre la selección: aplica los planes de group.js,
-                  con un paso de deshacer, y los anuncia
-  layout.js       acomodar, reducir, ubicar lo nuevo y rellenar con copias
-  measure.js      medidas y nombres de papel en la unidad elegida
-  prefs.js        diálogo Preferencias (unidades, atajos de 1 tecla)
-  projects.js     proyecto abierto, guardado automático y varias pestañas
-  projectsui.js   nombre del proyecto en la barra y diálogo Proyectos
-  idbstorage.js   almacenamiento de proyectos en IndexedDB
-  assets.js       lectura de imágenes y PDF (pdf.js se carga recién al
-                  necesitarlo) y binarios para guardar y restaurar
-  export.js       armado del PDF, una página por hoja, con recorte y líneas
-                  de corte (pdf-lib se carga al exportar o imprimir)
-  output.js       descarga e impresión
-  core/           módulos puros (sin DOM, con pruebas en tests/core/):
-    pack.js         empaquetado de rectángulos en una o varias hojas
-    sheets.js       varias hojas: repartir, ubicar lo nuevo, problemas por hoja
-    projectdoc.js   formato versionado del proyecto (serializar, migrar, validar)
-    projectstore.js lógica de proyectos sobre un almacenamiento intercambiable
-    group.js        operaciones de grupo: planes de mover, girar, escalar,
-                    alinear, distribuir y soltar, y reglas de la selección
-    align.js        alinear, distribuir y transformar rectángulos
-    crop.js         recorte, tamaños de foto y geometría en pantalla y en el PDF
-    cutmarks.js     líneas de corte (marcas en las esquinas o contorno)
-    units.js, papers.js, collide.js, placement.js, humanize.js
-  …               avisos, atajos, tooltips, paneles plegables, diálogos y donación
-tests/            pruebas unitarias (Vitest)
-e2e/              pruebas de navegador (Playwright)
-docs/copy.md      guía de copy: reglas, glosario y ejemplos
-vite.config.js    completa los textos de index.html y nombra los chunks diferidos
+  main.tsx, App.tsx     start and layout
+  config.ts             app name, limits and storage keys
+  copy/                 every interface text (es.ts) and t(key, params)
+  core/                 pure modules (no DOM), with tests in tests/core/
+  state/                Zustand stores, selectors and the undo history
+    actions/            everything that changes the document, by area
+  components/
+    topbar/             app bar and the open project's name and status
+    pieces-panel/       pieces list, grouped by sheet
+    canvas/             sheets, pieces, selection frame, piece toolbar
+    properties-panel/   piece, sheet, arrange and grid sections
+    dialogs/            shortcuts, preferences, projects, donation, confirm
+    feedback/           notice pill, tooltip and live regions
+    ui/                 shared controls (buttons, fields, switches, dialog)
+  hooks/                keyboard shortcuts, pointer gestures, focus rescue
+  services/             files, PDF export, printing, projects and storage
+  styles/               stylesheet by area (index.css sets the order)
+tests/                  unit tests (Vitest; jsdom for state, hooks and components)
+e2e/                    browser suites (Playwright), fixtures and runner
+docs/copy.md            copy guide: rules, glossary and examples
+vite.config.ts          React, the static texts of index.html and chunk names
 ```
