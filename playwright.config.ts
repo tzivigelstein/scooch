@@ -7,8 +7,11 @@ const CI = !!process.env.CI;
 // A port of its own (the dev server uses 5173), so a run never talks to another
 // server: if the port is taken, the run stops instead of reusing it.
 const PORT = Number(process.env.E2E_PORT ?? 4319);
-// The build goes to its own folder, so `dist/` stays whatever `yarn build` left.
-const OUT_DIR = process.env.E2E_BUILD_DIR ?? 'e2e/out/build';
+// Everything a run writes (its build, results and report) goes under one
+// folder, so `dist/` stays whatever `yarn build` left; two runs at once need
+// different E2E_OUT and E2E_PORT.
+const OUT = process.env.E2E_OUT ?? 'e2e/out';
+const BUILD_DIR = `${OUT}/build`;
 const VITE = 'node ./node_modules/vite/bin/vite.js';
 
 // WebKit (Safari, the iPhone) needs system libraries that only install with root
@@ -29,14 +32,14 @@ const TIMING = /performance\.spec\.ts$/;
 
 export default defineConfig({
   testDir: 'e2e/specs',
-  outputDir: 'e2e/out/results',
+  outputDir: `${OUT}/results`,
   fullyParallel: true,
   forbidOnly: CI,
   // A flaky test gets fixed, never retried.
   retries: 0,
   reporter: CI
-    ? [['list'], ['html', { open: 'never', outputFolder: 'e2e/out/report' }], ['junit', { outputFile: 'e2e/out/junit.xml' }]]
-    : [['list'], ['html', { open: 'never', outputFolder: 'e2e/out/report' }]],
+    ? [['list'], ['html', { open: 'never', outputFolder: `${OUT}/report` }], ['junit', { outputFile: `${OUT}/junit.xml` }]]
+    : [['list'], ['html', { open: 'never', outputFolder: `${OUT}/report` }]],
   timeout: 60_000,
   expect: { timeout: 10_000 },
   use: {
@@ -70,7 +73,7 @@ export default defineConfig({
       : []),
   ],
   webServer: {
-    command: `${VITE} build --outDir ${OUT_DIR} --emptyOutDir --logLevel warn && ${VITE} preview --outDir ${OUT_DIR} --host 127.0.0.1 --port ${PORT} --strictPort`,
+    command: `${VITE} build --outDir ${BUILD_DIR} --emptyOutDir --logLevel warn && ${VITE} preview --outDir ${BUILD_DIR} --host 127.0.0.1 --port ${PORT} --strictPort`,
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: false,
     timeout: 180_000,
