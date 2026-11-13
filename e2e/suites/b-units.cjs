@@ -101,7 +101,7 @@ const { open, makeChecker, helpers, norm, addFiles, pdfInfo, download, heard } =
   await p.fill('#width', '0');
   await p.keyboard.press('Enter');
   await p.waitForTimeout(150);
-  check('cm: ancho 0 no vale: vuelve y explica', (await val('#width')) === '6,77' && /La medida tiene que ser mayor que 0\. Se mantiene 6,77\scm\./.test(await p.textContent('#live-assertive')));
+  check('cm: ancho 0 queda en el mínimo (escala 1 %), sin pasos de más', (await val('#width')) === '0,07' && (await val('#scale')) === '1');
   await p.fill('#margin', '1,5');
   await p.keyboard.press('Enter');
   check('cm: margen 1,5 cm', (await val('#margin')) === '1,5');

@@ -6,7 +6,7 @@
 import { CircleCheck, LoaderCircle, TriangleAlert, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { asSentence, formatList, t } from '../../copy/index.ts';
-import { useDocument } from '../../state/document.ts';
+import { useDocument, type DocumentData } from '../../state/document.ts';
 import { usePrefs } from '../../state/prefs.ts';
 import { sheetProblems } from '../../state/selectors.ts';
 import { getView, setView, useView, type Flash, type NoticeAction } from '../../state/view.ts';
@@ -31,15 +31,26 @@ function inSheets(text: string, sheets: readonly number[], many: boolean) {
   return t('notices.inSheets', { n: sheets.length, list: formatList(sheets.map((i) => i + 1)), text });
 }
 
-/** Which notice applies now, by priority (null: nothing to say). */
+/**
+ * Which notice applies now, by priority (null: nothing to say). While a
+ * measurement field is being edited, problems stay as they were when the edit
+ * began: what is typed is still a preview.
+ */
 function useCurrentNotice(): Notice | null {
   const busy = useDocument((s) => s.busy);
   const busyText = useView((s) => s.busyText);
   const flash = useView((s) => s.flash);
+  const editing = useView((s) => s.editing);
   const doc = useDocument((s) => s);
   const allowOverlap = usePrefs((s) => s.allowOverlap);
+  const problems = useRef<Notice | null>(null);
   if (busy) return busyText ? { text: busyText, busy: true } : null;
   if (flash) return { ...flash, flash: true };
+  if (!editing) problems.current = problemNotice(doc, allowOverlap);
+  return problems.current;
+}
+
+function problemNotice(doc: DocumentData, allowOverlap: boolean): Notice | null {
   if (!doc.items.length) return null;
   const { cut, pastMargin, overlap } = sheetProblems(doc);
   const many = doc.sheets.length > 1;

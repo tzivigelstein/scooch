@@ -40,6 +40,8 @@ export interface ViewState {
   animating: boolean;
   /** The app is still restoring the last project. */
   loading: boolean;
+  /** A measurement field is being edited: problem notices wait until it is confirmed. */
+  editing: boolean;
 }
 
 export const useView = create<ViewState>()(() => ({
@@ -53,6 +55,7 @@ export const useView = create<ViewState>()(() => ({
   drawer: null,
   animating: false,
   loading: true,
+  editing: false,
 }));
 
 export const getView = () => useView.getState();

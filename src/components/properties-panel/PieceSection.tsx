@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import type { AlignMode } from '../../core/align.js';
-import { common } from '../../core/group.js';
+import { common, SCALE_RANGE } from '../../core/group.js';
 import { clamp, num } from '../../core/util.ts';
 import { t, type CopyKey } from '../../copy/index.ts';
 import { MAX_ITEMS } from '../../config.ts';
@@ -55,11 +55,14 @@ import {
   distributeSelection,
   duplicate,
   fit,
+  lengthFieldKey,
+  lengthFieldRange,
   lengthFieldValue,
   maxCopies,
   overlapsOthers,
   primaryBox,
   remove,
+  scaleFieldKey,
   setLengthField,
   setScaleField,
   type LengthField as LengthFieldName,
@@ -68,6 +71,7 @@ import { selectSame } from '../../state/actions/selection.ts';
 import { Button, IconButton } from '../ui/Button.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { LengthField, type LengthFieldHandle } from '../ui/LengthField.tsx';
+import { NumberField } from '../ui/NumberField.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
 import { announce } from '../feedback/announcer.ts';
 
@@ -140,6 +144,18 @@ function shown(list: readonly Piece[]) {
   return { x: item.x, y: item.y, width: w, height: h, scale: item.scale as number | null, slider: clamp(item.scale, 1, 200) };
 }
 
+const parseNumber = (text: string) => {
+  const v = parseFloat(text.replace(',', '.'));
+  return Number.isFinite(v) ? v : null;
+};
+
+/** The scale the field shows: the piece's, or the shared one of several (null: «Mixta»). */
+function scaleValue() {
+  const { items, selection } = getDocument();
+  const list = items.filter((item) => selection.includes(item.id));
+  return list.length ? shown(list).scale : null;
+}
+
 function useScaleInput(ref: RefObject<HTMLInputElement | null>, name: 'scale' | 'slider') {
   useNativeEvents(ref, {
     input: () => setScaleField(name, parseFloat(ref.current!.value)),
@@ -171,9 +187,9 @@ export function PieceSection() {
   const scaleInput = useRef<HTMLInputElement>(null);
   const slider = useRef<HTMLInputElement>(null);
   const resolutionText = useRef<HTMLSpanElement>(null);
-  const dupCount = useRef<HTMLInputElement>(null);
-  const [copiesText, setCopiesText] = useState('1');
-  useScaleInput(scaleInput, 'scale');
+  // «Duplicar ×N»: how many copies (a view preference, not part of the document).
+  const copies = useRef(1);
+  const [copiesShown, setCopies] = useState(1);
   useScaleInput(slider, 'slider');
 
   const values = n ? shown(list) : null;
@@ -207,15 +223,8 @@ export function PieceSection() {
     []
   );
 
-  const copies = Math.max(1, Math.floor(parseFloat(copiesText) || 1));
   const max = Math.max(1, maxCopies());
-  useNativeEvents(dupCount, {
-    change: () => setCopiesText(String(Math.min(Math.max(1, Math.floor(parseFloat(dupCount.current!.value) || 1)), max))),
-    keydown: (e) => {
-      if ((e as KeyboardEvent).key === 'Enter') document.getElementById('dup-many')?.click();
-    },
-  });
-  const dupN = Math.min(copies, max);
+  const dupN = Math.min(copiesShown, max);
 
   // Without a selection the fields stay in the page, hidden (like every control).
   const primaryId = selection.at(-1);
@@ -260,7 +269,8 @@ export function PieceSection() {
                 aria-describedby={(field === 'width' || field === 'height') && single ? (single.r ? 'resolution-note rotation-note' : 'resolution-note') : undefined}
                 disabled={busyOff(busy, `#${id}`)}
                 value={() => lengthFieldValue(field)}
-                check={field === 'width' || field === 'height' ? (mm) => (mm > 0 ? null : t('props.positive')) : undefined}
+                range={() => lengthFieldRange(field)}
+                editKey={() => lengthFieldKey(field)}
                 busy={() => getDocument().busy || !getDocument().selection.length}
                 apply={(mm, { final }) => setLengthField(field, mm, { final })}
               />
@@ -269,8 +279,8 @@ export function PieceSection() {
         </div>
         <div className="scale-row">
           <NumField prefix={<Icon icon={Scaling} />} unit={t('units.percent')}>
-            <input
-              ref={scaleInput}
+            <NumberField
+              inputRef={scaleInput}
               id="scale"
               type="number"
               min="1"
@@ -282,6 +292,15 @@ export function PieceSection() {
               placeholder={group && values?.scale === null ? t('props.mixed') : ''}
               aria-describedby={describe('resolution-note')}
               disabled={busyOff(busy, '#scale')}
+              value={scaleValue}
+              range={() => SCALE_RANGE}
+              parse={parseNumber}
+              isPartial={(text) => !text.trim()}
+              format={num}
+              describe={(v) => t('units.scale', { n: v })}
+              editKey={() => scaleFieldKey('scale')}
+              busy={() => getDocument().busy || !getDocument().selection.length}
+              apply={(v, { final }) => setScaleField('scale', v, { final })}
             />
           </NumField>
           <input
@@ -415,13 +434,12 @@ export function PieceSection() {
               tip={t('props.duplicateTip', { n: dupN })}
               note={t('props.duplicateMax', { n: maxCopies(), max: MAX_ITEMS })}
               disabled={busyOff(busy, '#dup-many')}
-              onClick={() => !getDocument().busy && getDocument().selection.length && duplicate(copies)}
+              onClick={() => !getDocument().busy && getDocument().selection.length && duplicate(Math.min(copies.current, Math.max(1, maxCopies())))}
             >
               <span id="dup-many-text">{dupN > 1 ? t('props.duplicateTimes', { n: dupN }) : t('props.duplicate')}</span>
             </Button>
             <NumField prefix={t('props.times')} className="num-field prefixed dup-count">
-              <input
-                ref={dupCount}
+              <NumberField
                 id="dup-count"
                 type="number"
                 min="1"
@@ -430,9 +448,21 @@ export function PieceSection() {
                 inputMode="numeric"
                 aria-label={t('props.duplicateCount')}
                 data-tip={t('props.duplicateCount')}
-                value={copiesText}
                 disabled={busyOff(busy, '#dup-count')}
-                onChange={(e) => setCopiesText(e.target.value)}
+                value={() => copies.current}
+                range={() => ({ min: 1, max: Math.max(1, maxCopies()) })}
+                parse={(text) => {
+                  const v = parseNumber(text);
+                  return v === null ? null : Math.floor(v);
+                }}
+                isPartial={(text) => !text.trim()}
+                format={String}
+                describe={String}
+                apply={(v) => {
+                  copies.current = v;
+                  setCopies(v);
+                }}
+                onEnter={() => document.getElementById('dup-many')?.click()}
               />
             </NumField>
           </div>

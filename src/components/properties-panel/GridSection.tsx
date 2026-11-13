@@ -55,8 +55,7 @@ export function GridSection() {
               id="grid-size"
               aria-label={t('props.gridCustom', { unit: unitName() })}
               value={() => getPrefs().grid.size}
-              check={(mm) => (mm > 0 ? null : t('props.positive'))}
-              limit={(mm) => clamp(mm, GRID_MIN, GRID_MAX)}
+              range={() => ({ min: GRID_MIN, max: GRID_MAX })}
               apply={(mm) => setGrid({ size: clamp(mm, GRID_MIN, GRID_MAX) })}
             />
             <span className="num-unit" aria-hidden="true">

@@ -52,22 +52,24 @@ const { open, makeChecker, helpers, norm, addFiles, pill, pdfInfo, download } = 
   check('«29.7 cm» × «21 cm» → coincide con A4 horizontal', norm(await p.textContent('#paper-match')) === 'Coincide con A4 horizontal', norm(await p.textContent('#paper-match')));
   check('sigue en «Personalizado» (no cambia el selector solo)', (await p.inputValue('#paper')) === 'custom');
 
+  // Out of range: the preview uses the clamped value and the field says so right
+  // there; Esc goes back; confirming keeps the clamped value.
   await p.fill('#paper-w', '5');
-  check('inválido (muy chico): mensaje visible', norm(await p.textContent('#paper-error')) === 'El ancho mínimo es 20 mm' && (await p.isVisible('#paper-error')));
-  check('inválido: aria-invalid y aria-describedby al mensaje', (await p.getAttribute('#paper-w', 'aria-invalid')) === 'true' && /paper-error/.test(await p.getAttribute('#paper-w', 'aria-describedby')));
-  check('inválido: no dice con qué preset coincide (sería el tamaño anterior)', !(await p.isVisible('#paper-match')));
-  check('inválido: no cambia la hoja', /297 × 210 mm/.test(norm(await p.textContent('#paper-label'))));
+  check('fuera de rango (muy chico): el campo lo dice', norm(await p.textContent('#paper-w-limit')) === 'Mínimo 20 mm' && (await p.isVisible('#paper-w-limit')));
+  check('fuera de rango: aria-invalid y aria-describedby al aviso', (await p.getAttribute('#paper-w', 'aria-invalid')) === 'true' && /paper-w-limit/.test(await p.getAttribute('#paper-w', 'aria-describedby')));
+  check('fuera de rango: la vista previa usa el mínimo', /20 × 210 mm/.test(norm(await p.textContent('#paper-label'))), norm(await p.textContent('#paper-label')));
+  await p.keyboard.press('Escape');
+  check('Esc: vuelve la hoja de antes y el aviso se va', /297 × 210 mm/.test(norm(await p.textContent('#paper-label'))) && !(await p.locator('#paper-w-limit').count()));
   await p.fill('#paper-h', '2500');
-  check('inválido (muy grande, en el alto)', norm(await p.textContent('#paper-error')) === 'El alto máximo es 2000 mm' && (await p.getAttribute('#paper-h', 'aria-invalid')) === 'true' && (await p.getAttribute('#paper-w', 'aria-invalid')) === null);
+  check('fuera de rango (muy grande, en el alto)', norm(await p.textContent('#paper-h-limit')) === 'Máximo 2000 mm' && (await p.getAttribute('#paper-h', 'aria-invalid')) === 'true' && (await p.getAttribute('#paper-w', 'aria-invalid')) === null);
   await p.fill('#paper-h', 'abc');
-  check('inválido (no es un número)', norm(await p.textContent('#paper-error')) === 'Escribe el alto con números, por ejemplo 330');
+  check('inválido (no es un número)', norm(await p.textContent('#paper-error')) === 'Escribe el alto con números, por ejemplo 330' && !(await p.locator('#paper-h-limit').count()));
   await p.fill('#paper-h', '1/');
   check('a medio escribir («1/»): todavía no es error', !(await p.isVisible('#paper-error')));
   await p.fill('#paper-h', '9');
   await p.keyboard.press('Tab');
   await p.waitForTimeout(150);
-  check('al salir con algo inválido: vuelve al valor anterior', (await p.inputValue('#paper-h')) === '210' && !(await p.isVisible('#paper-error')) && (await p.getAttribute('#paper-h', 'aria-invalid')) === null);
-  check('…y lo anuncia', /El alto mínimo es 20 mm\. Se mantiene 210 mm\./.test(norm(await p.textContent('#live-assertive'))), norm(await p.textContent('#live-assertive')));
+  check('al salir fuera de rango: queda el mínimo y el aviso se va', (await p.inputValue('#paper-h')) === '20' && !(await p.locator('#paper-h-limit').count()) && (await p.getAttribute('#paper-h', 'aria-invalid')) === null && /297 × 20 mm/.test(norm(await p.textContent('#paper-label'))), norm(await p.textContent('#paper-label')));
 
   await p.fill('#paper-w', '123,4');
   await p.fill('#paper-h', '170');
@@ -81,9 +83,9 @@ const { open, makeChecker, helpers, norm, addFiles, pill, pdfInfo, download } = 
   check('aviso de descarga con el nombre', /^Se descargó pliego-123x170mm\.pdf/.test((await pill(p)).text));
 
   await p.keyboard.press('Control+z');
-  check('deshacer: vuelve el alto anterior', norm(await p.textContent('#paper-label')) === 'Personalizado · 123,4 × 210 mm', norm(await p.textContent('#paper-label')));
+  check('deshacer: vuelve el alto anterior', norm(await p.textContent('#paper-label')) === 'Personalizado · 123,4 × 20 mm', norm(await p.textContent('#paper-label')));
   await p.keyboard.press('Control+z');
-  check('deshacer otra vez: vuelve el ancho anterior (A4 horizontal)', norm(await p.textContent('#paper-label')) === 'A4 · 297 × 210 mm', norm(await p.textContent('#paper-label')));
+  check('deshacer otra vez: vuelve el ancho anterior', norm(await p.textContent('#paper-label')) === 'Personalizado · 297 × 20 mm', norm(await p.textContent('#paper-label')));
   await p.keyboard.press('Control+Shift+z');
   await p.keyboard.press('Control+Shift+z');
   check('rehacer ×2: 123,4 × 170 mm', norm(await p.textContent('#paper-label')) === 'Personalizado · 123,4 × 170 mm');

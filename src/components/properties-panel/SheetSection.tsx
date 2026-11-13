@@ -2,12 +2,11 @@
 
 import { MoveHorizontal, MoveVertical, RectangleHorizontal, RectangleVertical } from 'lucide-react';
 import { useLayoutEffect, useState } from 'react';
-import { CUSTOM_MAX, CUSTOM_MIN, PAPER_GROUPS, PAPERS, matchPreset, validateSide } from '../../core/papers.js';
+import { CUSTOM_MAX, CUSTOM_MIN, PAPER_GROUPS, PAPERS, matchPreset } from '../../core/papers.js';
 import type { PaperId } from '../../core/types.ts';
-import { clamp } from '../../core/util.ts';
 import { t } from '../../copy/index.ts';
 import { useShortcut } from '../../hooks/shortcuts.ts';
-import { lengthText, sizeText, unitName, unitSymbol } from '../../services/measure.ts';
+import { sizeText, unitName, unitSymbol } from '../../services/measure.ts';
 import { getDocument, useDocument } from '../../state/document.ts';
 import { usePrefs } from '../../state/prefs.ts';
 import { sheetSize } from '../../state/selectors.ts';
@@ -17,12 +16,6 @@ import { LengthField } from '../ui/LengthField.tsx';
 import { Section } from '../ui/Section.tsx';
 
 const busyOff = (busy: boolean, id: string) => busy && document.activeElement?.id !== id;
-
-// A side's problem → the key of its message (papers.errors.*).
-const PAPER_ERRORS = {
-  w: { 'too-small': 'widthTooSmall', 'too-large': 'widthTooLarge' },
-  h: { 'too-small': 'heightTooSmall', 'too-large': 'heightTooLarge' },
-} as const;
 
 export function SheetSection() {
   const paper = useDocument((s) => s.paper);
@@ -63,11 +56,8 @@ export function SheetSection() {
         disabled={busyOff(busy, `paper-${side}`)}
         value={() => sheetSize()[side === 'w' ? 0 : 1]}
         busy={() => getDocument().busy}
-        check={(mm) => {
-          const problem = validateSide(mm);
-          return problem && problem !== 'invalid' ? t(`papers.errors.${PAPER_ERRORS[side][problem]}`, { min: lengthText(CUSTOM_MIN), max: lengthText(CUSTOM_MAX) }) : null;
-        }}
-        limit={(mm) => clamp(mm, CUSTOM_MIN, CUSTOM_MAX)}
+        range={() => ({ min: CUSTOM_MIN, max: CUSTOM_MAX })}
+        editKey={() => 'paper:custom'}
         problem={(text) => setError(text ? { side, text } : null)}
         unreadable={t(side === 'w' ? 'papers.errors.widthInvalid' : 'papers.errors.heightInvalid')}
         apply={(mm, { final }) => setPaperSide(side, mm, { final })}
@@ -161,7 +151,8 @@ export function SheetLength({ name }: { name: 'margin' | 'gap' }) {
           id={name}
           disabled={busyOff(busy, name)}
           value={() => getDocument()[name]}
-          limit={(mm) => clamp(mm, 0, 50)}
+          range={() => ({ min: 0, max: 50 })}
+          editKey={() => `sheet:${name}`}
           busy={() => getDocument().busy}
           apply={(mm, { final }) => setSheetLength(name, mm, { final })}
         />

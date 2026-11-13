@@ -38,6 +38,9 @@ const es = {
     invalidValue: '{text} Se mantiene {value}.',
     // While typing something that can't become a length
     unreadable: 'Escribe una medida con números, por ejemplo 2,5 o 1/2 in',
+    // Next to a field while what is typed is out of its range ({value} already formatted)
+    max: 'Máximo {value}',
+    min: 'Mínimo {value}',
   },
 
   // Visible key names (letters and symbols are shown as they are)
@@ -158,10 +161,6 @@ const es = {
     errors: {
       widthInvalid: 'Escribe el ancho con números, por ejemplo 216',
       heightInvalid: 'Escribe el alto con números, por ejemplo 330',
-      widthTooSmall: 'El ancho mínimo es {min}',
-      heightTooSmall: 'El alto mínimo es {min}',
-      widthTooLarge: 'El ancho máximo es {max}',
-      heightTooLarge: 'El alto máximo es {max}',
     },
   },
 
@@ -207,7 +206,6 @@ const es = {
     piece: 'Pieza',
     empty: 'Selecciona una pieza para editarla',
     pieceNamePage: '{name} · página {page}',
-    positive: 'La medida tiene que ser mayor que 0',
     x: 'X',
     xLabel: 'X: distancia desde el borde izquierdo, en {unit}',
     xTip: 'X: distancia desde el borde izquierdo',

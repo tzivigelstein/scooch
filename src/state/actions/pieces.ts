@@ -35,6 +35,7 @@ import {
   planResizeTo,
   planRotate,
   planScaleBy,
+  scaleLimits,
   type Plan,
 } from '../../core/group.js';
 import type { AlignMode, Axis } from '../../core/align.js';
@@ -370,6 +371,44 @@ export function lengthFieldValue(field: LengthField): number | null {
   if (field === 'y') return item.y;
   return dims(item)[field === 'width' ? 0 : 1];
 }
+
+/**
+ * The values a length field accepts, in mm: X and Y keep every center on its
+ * sheet; width and height keep every scale between 1 % and 1000 %.
+ */
+export function lengthFieldRange(field: LengthField): { min: number; max: number } | null {
+  const [W, H] = sheetSize();
+  const list = selectedItems();
+  if (!list.length) return null;
+  if (field === 'x' || field === 'y') {
+    const total = field === 'x' ? W : H;
+    const box = primaryBox(list);
+    const start = field === 'x' ? box.x : box.y;
+    let lo = -Infinity;
+    let hi = Infinity;
+    for (const item of list) {
+      const [w, h] = dims(item);
+      const center = field === 'x' ? item.x + w / 2 : item.y + h / 2;
+      lo = Math.max(lo, -center);
+      hi = Math.min(hi, total - center);
+    }
+    return { min: start + lo, max: start + hi };
+  }
+  const box = primaryBox(list);
+  const size = field === 'width' ? box.w : box.h;
+  const { min, max } = scaleLimits(list.map((item) => item.scale));
+  return { min: size * min, max: size * max };
+}
+
+/** The undo key a length field's edit uses (see setLengthField). */
+export function lengthFieldKey(field: LengthField) {
+  if (isGroup()) return field === 'x' || field === 'y' ? `group-${field}` : `group-${field === 'width' ? 'w' : 'h'}`;
+  const item = selectedItem();
+  return item ? `${field}:${item.id}` : null;
+}
+
+/** The undo key of the scale field and the slider. */
+export const scaleFieldKey = (name: 'scale' | 'slider') => (isGroup() ? `group-${name}` : `${name}:${selectedItem()?.id}`);
 
 // ¿Would anything change? (Confirming the same twice adds no undo steps.)
 const differs = (item: Piece, changes: Partial<Item>) => (Object.keys(changes) as (keyof Item)[]).some((key) => item[key] !== changes[key]);

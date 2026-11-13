@@ -71,10 +71,10 @@ const cards = (from, n) => Array.from({ length: n }, (_, i) => `card${String(fro
   check('↑ en el alto: +0,1 cm', (await p.inputValue('#paper-h')) === '20,1');
   await k.press('Control+a');
   await k.type('1');
-  check('inválido: mensaje accesible mientras se escribe', norm(await p.textContent('#paper-error')) === 'El alto mínimo es 2 cm' && (await p.getAttribute('#paper-h', 'aria-invalid')) === 'true');
+  check('fuera de rango: aviso accesible junto al campo mientras se escribe', norm(await p.textContent('#paper-h-limit')) === 'Mínimo 2 cm' && (await p.getAttribute('#paper-h', 'aria-invalid')) === 'true');
   await k.press('Escape');
   await p.waitForTimeout(150);
-  check('Esc vuelve a la hoja; el alto queda en 20,1 cm', !/paper/.test((await act()).id) && (await p.inputValue('#paper-h')) === '20,1');
+  check('Esc deshace la edición (también el paso con ↑) y vuelve a la hoja', !/paper/.test((await act()).id) && (await p.inputValue('#paper-h')) === '20', JSON.stringify([await act(), await p.inputValue('#paper-h')]));
   await k.press('h');
   await k.press('Home');
   for (let i = 0; i < 4; i++) await k.press('ArrowDown');

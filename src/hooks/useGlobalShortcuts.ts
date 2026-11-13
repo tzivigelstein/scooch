@@ -264,7 +264,10 @@ function onKeyDown(e: KeyboardEvent) {
   }
 }
 
+// Releasing an arrow, + or − ends the step those keys share on a piece. A
+// field's arrows belong to its own edit, which ends when it is confirmed.
 function onKeyUp(e: KeyboardEvent) {
+  if (isTyping(e.target as Element)) return;
   if (NUDGES[e.key] || GROWS.has(e.key) || SHRINKS.has(e.key)) endEdit();
 }
 
