@@ -1,0 +1,196 @@
+# Contributing to Scooch
+
+Thanks for your interest. Scooch is source-available under the
+[PolyForm Noncommercial License 1.0.0](LICENSE): anyone can use, study and
+change it for noncommercial purposes. Read the
+[contribution terms](#contribution-terms) before you send code.
+
+For anything bigger than a small fix, open an issue first so we can agree on
+the approach before you put time into it.
+
+## Setup
+
+You need Node.js 24 (`.nvmrc` pins the major: `nvm use`) and Yarn 1 (classic).
+
+```sh
+yarn install
+yarn playwright install chromium   # once, for the browser suites
+```
+
+| Command | What it does |
+| --- | --- |
+| `yarn dev` | Development server with hot reload |
+| `yarn test` | Unit tests (Vitest) |
+| `yarn e2e` | Builds the app, serves it and runs the browser suites (Playwright) |
+| `yarn typecheck` | TypeScript, no emit |
+| `yarn build` | Production build in `dist/` |
+| `yarn preview` | Serves `dist/` to try the build |
+
+`yarn e2e` takes options to run some suites, reuse the build or run against the
+dev server; they are listed in the [README](README.md) and at the top of
+`e2e/run.mjs`.
+
+Before opening a pull request, run `yarn typecheck` and `yarn test`. If you
+changed anything the person sees or does, also run `yarn e2e`.
+
+## Project structure
+
+```
+src/
+  config.ts       app name, limits and storage keys
+  copy/           every interface text (es.ts) and t()
+  core/           pure logic: plain JavaScript with .d.ts types, no DOM
+  state/          Zustand stores; actions/ holds everything that changes the document
+  components/     React components, by area
+  hooks/          keyboard shortcuts, pointer gestures, focus rescue
+  services/       files, PDF export, printing, projects and storage
+  styles/         stylesheets by area
+tests/            unit tests (Vitest; jsdom for state, hooks and components)
+  fixtures/documents/   one stored project document per format version
+e2e/              browser suites (Playwright), their fixtures and runner
+docs/copy.md      copy guide for the interface texts (in Spanish)
+```
+
+The [README](README.md) explains how the parts fit together.
+
+## Conventions
+
+### Language and naming
+
+- Code, identifiers, comments and commit messages are in English. Some older
+  modules still have comments in Spanish; don't add new ones.
+- Use the domain's own terms, the same ones every time. The interface is in
+  Spanish and the code in English:
+
+  | Interface (es) | Code |
+  | --- | --- |
+  | pieza | piece (an `item` in the stored document) |
+  | hoja | sheet |
+  | área útil | printable area |
+  | separación | gap |
+  | margen | margin |
+  | acomodar | pack |
+  | recorte | crop |
+  | líneas de corte / margen de corte | cut lines (`cuts`) / cut margin |
+  | grilla / imán | grid / snap |
+  | proyecto | project |
+
+  [docs/copy.md](docs/copy.md) has the full glossary of the interface.
+- Write a comment only when it adds information the code can't say: why
+  something is done, a constraint, a unit, a browser quirk. Don't restate what
+  the code does.
+
+### Where things go
+
+- **Pure logic** (layout, alignment, crop, cut marks, units, zoom levels, the
+  project format) lives in `src/core/`: no DOM, no texts, plain JavaScript with
+  a `.d.ts` next to it. Every change there comes with unit tests in
+  `tests/core/`.
+- **Document changes** go through the actions in `src/state/actions/`, which
+  record one undo step per operation. Components subscribe only to the slices
+  of state they show.
+- **Lengths** are in millimetres in the document. Every conversion between
+  screen pixels and millimetres goes through
+  `src/components/canvas/viewport.ts`.
+- **Interface texts** live only in `src/copy/es.ts` and are used through
+  `t('area.key', params)`. That includes `aria-label`s, tooltips and what is
+  announced to screen readers. Never write the app's name: use `{app}`. Follow
+  [docs/copy.md](docs/copy.md) for tone, punctuation, numbers and terms.
+
+### Stored formats are frozen
+
+People use the app, and it is deployed from `main`, while it is being worked
+on. Projects saved in someone's browser must keep opening.
+
+- The shape of a project document version that has ever been written to
+  storage never changes. Any format change, even a new optional field and even
+  during development, needs all three of:
+  1. a new `DOC_VERSION` in `src/core/projectdoc.js`;
+  2. the migration from the previous version, in the same file;
+  3. a fixture of the new version in `tests/fixtures/documents/`.
+
+  `tests/core/documents.test.js` opens every fixture and fails when a shape
+  changes without a new version.
+- The same goes for what is kept in IndexedDB and localStorage: everything
+  lives under `STORAGE_NAMESPACE` (`src/config.ts`), and renaming a key or
+  changing what it holds needs a migration (see
+  `src/services/storage/migrate.ts`).
+- Reading is tolerant: an optional setting that is missing or can't be read
+  takes its default and out-of-range numbers are clamped (`repair`). Only a
+  document that can't be interpreted is shown as damaged.
+
+### Accessibility
+
+Every change keeps this bar:
+
+- Everything can be done with the keyboard alone, in a sensible order.
+- Focus is always visible and never lost: when the focused element goes
+  away, focus moves somewhere useful.
+- Accessible names start with the visible text (WCAG 2.5.3), and results of
+  actions are announced through the live regions in
+  `src/components/feedback/`.
+- axe reports no violations, in light and dark mode. The browser suites run
+  axe on the main states; add the new state to a suite when you add one.
+
+### Commits
+
+- [Conventional Commits](https://www.conventionalcommits.org/):
+  `type(scope): subject`, or `type: subject` when no scope fits.
+- Types in use: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `build`
+  and `chore`.
+- Scopes in use: `a11y`, `canvas`, `copy`, `core`, `crop`, `cutmarks`,
+  `deps`, `e2e`, `export`, `fonts`, `group`, `icons`, `layout`, `pack`,
+  `papers`, `piece-list`, `piecebar`, `prefs`, `projects`, `props`,
+  `selection`, `sheets`, `shortcuts`, `state`, `storage`, `styles`, `ui` and
+  `units`. Reuse one of these when it fits.
+- The subject is imperative, lowercase and without a final period, says what
+  changes for the person using the app when it can, and stays at 72
+  characters or fewer. For example:
+  `fix(canvas): keep floating controls off the stage's scrollbars`.
+- Use the body to explain why, when it isn't obvious.
+- One logical change per commit.
+- No trailers: no `Co-authored-by`, `Signed-off-by` or similar lines.
+
+### Pull requests
+
+- Keep each pull request to one topic, and fill in the template.
+- Include screenshots or a short recording for visible changes, in light and
+  dark mode if colors are involved.
+- Don't commit `dist/` or `e2e/out/`.
+
+## Reporting bugs
+
+Open an issue with the bug report form. Say which browser and operating system
+you use, the steps to reproduce it, what you expected and what happened, and
+whether the files were images or PDFs.
+
+Don't attach private documents or photos (IDs, passports, personal pictures).
+If the bug needs a file, try to reproduce it with a file you made up for the
+purpose and attach that one.
+
+To report a security problem, don't open a public issue: follow
+[SECURITY.md](SECURITY.md).
+
+## Code of conduct
+
+Everyone taking part in the project follows the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Contribution terms
+
+By sending a contribution (a pull request, a patch or code in an issue), you
+agree that:
+
+1. You wrote it, or you otherwise have the right to contribute it under these
+   terms.
+2. Your contribution is licensed to the project under the same license as the
+   project, the [PolyForm Noncommercial License 1.0.0](LICENSE).
+3. You also give the maintainer a permanent, worldwide, non-exclusive,
+   royalty-free and irrevocable permission to use, change, distribute and
+   relicense your contribution under any other terms, including terms that
+   allow commercial use. This lets the maintainer keep deciding how the
+   project is licensed.
+4. You keep the copyright of your contribution.
+
+If you don't agree with these terms, please don't send code. Describing the
+idea in an issue is always welcome.
