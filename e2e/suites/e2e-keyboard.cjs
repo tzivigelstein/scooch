@@ -145,7 +145,7 @@ const { open, makeChecker, helpers, overlaps, FIX, path, norm } = require('../li
 
   // ---- Ctrl+S y Ctrl+P
   const [dl] = await Promise.all([page.waitForEvent('download'), k.press('Control+s')]);
-  check('Ctrl+S descarga el PDF', dl.suggestedFilename() === 'pliego-a4.pdf');
+  check('Ctrl+S descarga el PDF', dl.suggestedFilename() === 'scooch-a4.pdf');
   await h.waitIdle();
   const viewer = await page.evaluate(() => navigator.pdfViewerEnabled);
   if (viewer) {

@@ -81,7 +81,7 @@ const STATE = () => {
         check(`${scheme}, carga lenta: al principio no se ve nada más (sin parpadeo en cargas rápidas)`, first.boot && first.boot.opacity < 0.5, JSON.stringify(first.boot));
         await page.waitForTimeout(700);
         const later = await page.evaluate(STATE);
-        check(`${scheme}, carga lenta: después aparece la marca con el nombre de la app`, later.boot?.opacity === 1 && later.boot.name === 'Pliego' && /Inter|system-ui/.test(later.boot.nameFont), JSON.stringify(later.boot));
+        check(`${scheme}, carga lenta: después aparece la marca con el nombre de la app`, later.boot?.opacity === 1 && later.boot.name === 'Scooch' && /Inter|system-ui/.test(later.boot.nameFont), JSON.stringify(later.boot));
         check(`${scheme}, carga lenta: el encabezado de respaldo sigue oculto a la vista`, later.h1 && later.h1.w <= 1 && later.h1.h <= 1, JSON.stringify(later.h1));
         release();
         await page.waitForFunction(() => document.querySelector('#paper') && !document.querySelector('.boot'));

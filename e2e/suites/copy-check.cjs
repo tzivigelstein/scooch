@@ -22,7 +22,7 @@ const COLLECT = () => {
   const bare = await p1.evaluate(COLLECT);
   const empty = Object.entries(bare).filter(([, v]) => !v || !String(v).trim());
   check('sin JS, todos los textos y atributos ya están puestos', empty.length === 0, empty.map(([k]) => k).join(', '));
-  check('sin JS, el <title> es el de la app', /^Pliego/.test(bare.title), bare.title);
+  check('sin JS, el <title> es el de la app', /^Scooch/.test(bare.title), bare.title);
   const ctx2 = await browser.newContext();
   const p2 = await ctx2.newPage();
   await p2.goto(BASE);

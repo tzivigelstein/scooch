@@ -1,4 +1,4 @@
-# Pliego
+# Scooch
 
 Web app para acomodar imágenes y páginas de PDF en una hoja a tamaño real y
 descargar o imprimir un PDF exacto. Todo pasa en el navegador: los archivos no

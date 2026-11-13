@@ -2,7 +2,7 @@
 // use it as {app}. The papers are in core/papers.js (stable ids; the names, in
 // src/copy).
 
-export const APP_NAME = 'Pliego';
+export const APP_NAME = 'Scooch';
 
 export const MAX_ITEMS = 200;
 export const MAX_UNDO = 50;

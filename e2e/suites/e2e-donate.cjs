@@ -78,7 +78,7 @@ async function withPage(opts, fn, { url = `${BASE}?donar=${encodeURIComponent(UR
         if (via === 'X') await page.click('#donate-close');
         if (via === 'fondo') await page.mouse.click(5, 5);
         const d = await dl;
-        check(`Descargar con modal: cerrar con ${via} sigue con la descarga`, d.suggestedFilename() === 'pliego-a4.pdf' && !(await isOpen(page)));
+        check(`Descargar con modal: cerrar con ${via} sigue con la descarga`, d.suggestedFilename() === 'scooch-a4.pdf' && !(await isOpen(page)));
       }))
     );
   }
@@ -92,7 +92,7 @@ async function withPage(opts, fn, { url = `${BASE}?donar=${encodeURIComponent(UR
       const [tab] = await Promise.all([context.waitForEvent('page'), page.click('#donate-cta')]);
       const d = await dl;
       check('CTA: abre Patreon en otra pestaña', /patreon\.com/.test(tab.url()));
-      check('CTA: la descarga sigue igual', d.suggestedFilename() === 'pliego-a4.pdf' && !(await isOpen(page)));
+      check('CTA: la descarga sigue igual', d.suggestedFilename() === 'scooch-a4.pdf' && !(await isOpen(page)));
     }))
   );
 
@@ -128,9 +128,9 @@ async function withPage(opts, fn, { url = `${BASE}?donar=${encodeURIComponent(UR
     ...(await withPage({}, async ({ page }) => {
       await page.click('#export');
       await page.waitForSelector('#donate[open]');
-      check('título y cuerpo sin depender del género del nombre', (await page.textContent('#donate-title')) === '¿Te ahorró tiempo y papel?' && /Pliego es gratis/.test(await page.textContent('#donate-body')));
+      check('título y cuerpo sin depender del género del nombre', (await page.textContent('#donate-title')) === '¿Te ahorró tiempo y papel?' && /Scooch es gratis/.test(await page.textContent('#donate-body')));
       check('beneficios: sin anuncios, sin marcas de agua, privado', (await page.locator('#donate-benefits li').count()) === 3);
-      check('agradecimiento sin culpa', /Gracias por usar Pliego, con o sin aporte/.test(await page.textContent('#donate-thanks')));
+      check('agradecimiento sin culpa', /Gracias por usar Scooch, con o sin aporte/.test(await page.textContent('#donate-thanks')));
       check('nombre accesible del modal: su título', (await page.getAttribute('#donate', 'aria-labelledby')) === 'donate-title');
       await Promise.all([page.waitForEvent('download'), page.keyboard.press('Escape')]);
     }))

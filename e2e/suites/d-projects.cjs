@@ -322,7 +322,7 @@ const TRACK = () => {
     check('sin IndexedDB: la app funciona y lo avisa una vez', n.text === 'Este navegador no permite guardar proyectos (por ejemplo, en una ventana privada). Lo que hagas se pierde al cerrar la pestaña.' && (await status(p)) === 'Sin guardar');
     await addFiles(p, ['card08.png']);
     const d = await download(p);
-    check('sin IndexedDB: agregar y descargar siguen', d.name === 'pliego-a4.pdf');
+    check('sin IndexedDB: agregar y descargar siguen', d.name === 'scooch-a4.pdf');
     await p.keyboard.press('Control+o');
     await p.waitForSelector('#projects[open]');
     check('el diálogo lo explica y no lista nada', (await p.isVisible('#projects-unavailable')) && (await p.locator('.project-card').count()) === 0);

@@ -85,7 +85,7 @@ async function savePdfFromBlob(page, index, file) {
     await d.saveAs(path.join(OUT, 'download-a4.pdf'));
     const downloaded = await pdfInfo(path.join(OUT, 'download-a4.pdf'));
     check('descargar e imprimir dan el mismo PDF (contenido)', JSON.stringify(downloaded.pages) === JSON.stringify(printed.pages));
-    check('título del PDF', downloaded.title === 'Pliego A4', downloaded.title);
+    check('título del PDF', downloaded.title === 'Scooch A4', downloaded.title);
     allErrors.push(...s.errors);
     await s.browser.close();
   }
@@ -115,9 +115,9 @@ async function savePdfFromBlob(page, index, file) {
     await popup.close();
     await s.page.evaluate(() => (window.open = () => null));
     const [d] = await Promise.all([s.page.waitForEvent('download'), s.page.click('#print')]);
-    check('ventanas bloqueadas: descarga el PDF', d.suggestedFilename() === 'pliego-a4.pdf');
+    check('ventanas bloqueadas: descarga el PDF', d.suggestedFilename() === 'scooch-a4.pdf');
     await s.page.waitForFunction(() => /Ábrelo e imprímelo/.test(document.getElementById('pill-text').textContent));
-    check('…y explica cómo imprimirlo', /^Se descargó pliego-a4\.pdf\. Ábrelo e imprímelo con «Tamaño real» o «100 %» y el papel A4\.$/.test(norm(await s.page.textContent('#pill-text'))));
+    check('…y explica cómo imprimirlo', /^Se descargó scooch-a4\.pdf\. Ábrelo e imprímelo con «Tamaño real» o «100 %» y el papel A4\.$/.test(norm(await s.page.textContent('#pill-text'))));
     allErrors.push(...s.errors);
     await s.browser.close();
   }
@@ -128,12 +128,12 @@ async function savePdfFromBlob(page, index, file) {
     const h = helpers(s.page);
     await h.load('small.jpg', 'twopage.pdf', 'rotated.pdf');
     const [d] = await Promise.all([s.page.waitForEvent('download'), s.page.click('#export')]);
-    check('descargar: pliego-a4.pdf', d.suggestedFilename() === 'pliego-a4.pdf');
+    check('descargar: scooch-a4.pdf', d.suggestedFilename() === 'scooch-a4.pdf');
     check('descargar: «%PDF-»', fs.readFileSync(await d.path()).subarray(0, 5).toString() === '%PDF-');
     await h.waitIdle();
-    check('aviso de descarga con el consejo', /^Se descargó pliego-a4\.pdf\. Al imprimirlo, elige «Tamaño real» o «100 %»\.$/.test((await h.geom()).notice));
+    check('aviso de descarga con el consejo', /^Se descargó scooch-a4\.pdf\. Al imprimirlo, elige «Tamaño real» o «100 %»\.$/.test((await h.geom()).notice));
     const [d2] = await Promise.all([s.page.waitForEvent('download'), s.page.keyboard.press('Control+e')]);
-    check('Ctrl+E también descarga', d2.suggestedFilename() === 'pliego-a4.pdf');
+    check('Ctrl+E también descarga', d2.suggestedFilename() === 'scooch-a4.pdf');
     await h.waitIdle();
     await h.pieceByName('small.jpg').focus();
     await h.openMeasures();

@@ -19,7 +19,7 @@ const num = (s) => parseFloat(String(s).replace(',', '.'));
   check('exportar y acomodar deshabilitados sin piezas', (await page.locator('#export').isDisabled()) && (await page.locator('#arrange').isDisabled()));
   check('barra de pieza oculta sin selección', !(await page.locator('#piecebar').isVisible()));
   check('margen 10 / separación 5', (await page.inputValue('#margin')) === '10' && (await page.inputValue('#gap')) === '5');
-  check('título del documento usa APP_NAME', (await page.title()) === 'Pliego — Acomoda imágenes y PDF en una hoja a tamaño real', await page.title());
+  check('título del documento usa APP_NAME', (await page.title()) === 'Scooch — Acomoda imágenes y PDF en una hoja a tamaño real', await page.title());
 
   // ---- Una imagen grande en hoja vacía: se limita al área útil
   await load('big.png');
@@ -335,8 +335,8 @@ const num = (s) => parseFloat(String(s).replace(',', '.'));
   await download.saveAs(path.join(OUT, download.suggestedFilename()));
   await h.waitIdle();
   g = await geom();
-  check('nombre del archivo (APP_NAME + papel)', download.suggestedFilename() === 'pliego-a4.pdf', download.suggestedFilename());
-  check('aviso: PDF descargado + consejo de impresión', /^Se descargó pliego-a4\.pdf\. .*Tamaño real.*100 %/.test(g.notice), g.notice);
+  check('nombre del archivo (APP_NAME + papel)', download.suggestedFilename() === 'scooch-a4.pdf', download.suggestedFilename());
+  check('aviso: PDF descargado + consejo de impresión', /^Se descargó scooch-a4\.pdf\. .*Tamaño real.*100 %/.test(g.notice), g.notice);
   check('el consejo no está fijo en la interfaz', !norm(await page.locator('main').textContent()).replace(g.notice, '').includes('Tamaño real'));
   check('el consejo está en el tooltip de Descargar PDF', /Tamaño real/.test(await page.getAttribute('#export', 'data-tip-note')));
   await page.mouse.move(5, 5);
@@ -352,7 +352,7 @@ const num = (s) => parseFloat(String(s).replace(',', '.'));
   const [d2] = await Promise.all([page.waitForEvent('download'), page.click('#export')]);
   await d2.saveAs(path.join(OUT, d2.suggestedFilename()));
   await h.waitIdle();
-  check('A3 horizontal: nombre', d2.suggestedFilename() === 'pliego-a3.pdf');
+  check('A3 horizontal: nombre', d2.suggestedFilename() === 'scooch-a3.pdf');
   check('etiqueta A3 horizontal', norm(await page.locator('#paper-label').textContent()) === 'A3 · 420 × 297 mm');
 
   // Angosto

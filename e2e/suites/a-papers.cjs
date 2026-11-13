@@ -23,9 +23,9 @@ const { open, makeChecker, helpers, norm, addFiles, pill, pdfInfo, download } = 
   await addFiles(p, ['small.jpg']);
   let d = await download(p);
   let info = await pdfInfo(d.file);
-  check('Folio: nombre del archivo pliego-folio.pdf', d.name === 'pliego-folio.pdf', d.name);
+  check('Folio: nombre del archivo scooch-folio.pdf', d.name === 'scooch-folio.pdf', d.name);
   check('Folio: página de 216 × 330 mm', info.pages.length === 1 && info.pages[0].w === 216 && info.pages[0].h === 330, JSON.stringify(info.pages));
-  check('Folio: título del PDF', info.title === 'Pliego Folio', info.title);
+  check('Folio: título del PDF', info.title === 'Scooch Folio', info.title);
   await p.keyboard.press('Escape');
 
   await h.openSheet();
@@ -77,10 +77,10 @@ const { open, makeChecker, helpers, norm, addFiles, pill, pdfInfo, download } = 
   await p.keyboard.press('Escape');
   d = await download(p);
   info = await pdfInfo(d.file);
-  check('personalizado: nombre del archivo con las medidas', d.name === 'pliego-123x170mm.pdf', d.name);
+  check('personalizado: nombre del archivo con las medidas', d.name === 'scooch-123x170mm.pdf', d.name);
   check('personalizado: página de 123,4 × 170 mm', info.pages[0].w === 123.4 && info.pages[0].h === 170, JSON.stringify(info.pages[0]));
-  check('personalizado: título con las medidas', /^Pliego 123,4\s×\s170\smm$/.test(info.title), info.title);
-  check('aviso de descarga con el nombre', /^Se descargó pliego-123x170mm\.pdf/.test((await pill(p)).text));
+  check('personalizado: título con las medidas', /^Scooch 123,4\s×\s170\smm$/.test(info.title), info.title);
+  check('aviso de descarga con el nombre', /^Se descargó scooch-123x170mm\.pdf/.test((await pill(p)).text));
 
   await p.keyboard.press('Control+z');
   check('deshacer: vuelve el alto anterior', norm(await p.textContent('#paper-label')) === 'Personalizado · 123,4 × 20 mm', norm(await p.textContent('#paper-label')));

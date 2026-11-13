@@ -58,7 +58,7 @@ Para sumar otro idioma: un `en.js` con las mismas claves, elegido en
   títulos, etiquetas, botones y tooltips: «Atajos de teclado», «Descargar PDF».
 - Sin punto final en etiquetas, botones, tooltips, encabezados y mensajes de
   una sola frase: «Hay piezas superpuestas».
-- Con dos frases o más, punto en todas: «Se descargó pliego-a4.pdf. Al
+- Con dos frases o más, punto en todas: «Se descargó scooch-a4.pdf. Al
   imprimirlo, elige «Tamaño real» o «100 %».»
 - Los mensajes que se juntan en la región viva van sin punto; `live.js`
   agrega el punto al unirlos para que el lector haga la pausa.
@@ -179,7 +179,7 @@ Esc. Las letras y los signos se muestran tal cual.
 | No se pudo armar el PDF: (error técnico) | No se pudo crear el PDF. Inténtalo de nuevo. | Sin jerga técnica; cómo seguir |
 | el PDF tiene contraseña; guardalo sin contraseña y volvé a cargarlo | el PDF tiene contraseña; guárdalo sin contraseña y vuelve a agregarlo | Tuteo; glosario: agregar |
 | el navegador no puede abrir este formato | el navegador no puede abrir este formato; prueba con JPG, PNG o WebP | Cómo resolverlo |
-| PDF descargado (pliego-a4.pdf). Al imprimir, elegí «Tamaño real» o «100 %». | Se descargó pliego-a4.pdf. Al imprimirlo, elige «Tamaño real» o «100 %». | Resultado con «Se»; tuteo |
+| PDF descargado (scooch-a4.pdf). Al imprimir, elegí «Tamaño real» o «100 %». | Se descargó scooch-a4.pdf. Al imprimirlo, elige «Tamaño real» o «100 %». | Resultado con «Se»; tuteo |
 | Se abrió el PDF: imprimilo desde ahí. Al imprimir, elegí… | Se abrió el PDF en otra pestaña. Imprímelo desde ahí con «Tamaño real» o «100 %» y el papel A4. | Dice dónde; tuteo; más corto |
 | Vaciar la hoja | Quitar todas | Glosario: quitar |
 | Ahí no había lugar libre: la pieza volvió a su lugar. | No había espacio libre ahí, así que la pieza volvió a su lugar | Una sola frase; sin repetir «lugar» |
