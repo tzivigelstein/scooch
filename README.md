@@ -95,6 +95,20 @@ Import the repository in Vercel: it detects Vite and needs no configuration
 - **Dialogs** keep their `<dialog>` shells in the page; the contents of the
   rarely used ones load on first use or when the app is idle.
 
+## Contributing
+
+- **Stored formats are frozen.** The shape of a project document version that
+  has ever been written to storage never changes: any format change, even a
+  new optional field and even during development, gets a new `DOC_VERSION`
+  with its migration in `src/core/projectdoc.js` and a fixture in
+  `tests/fixtures/documents/` (the app is used, and deployed from `main`,
+  while it is being worked on). `tests/core/documents.test.js` opens every
+  fixture and fails when a shape changes without a new version. The same goes
+  for what is kept in IndexedDB and localStorage.
+- Reading is tolerant: an optional setting that is missing or can't be read
+  takes its default and out-of-range numbers are clamped (`repair`); only a
+  document that can't be interpreted is shown as damaged.
+
 ## Structure
 
 ```
