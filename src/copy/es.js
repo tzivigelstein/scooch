@@ -16,7 +16,7 @@ export default {
       'Acomoda imágenes y páginas de PDF en una hoja a tamaño real y descarga un PDF listo para imprimir. Tus archivos no salen del navegador.',
     heading: '{app}: acomoda imágenes y PDF en una hoja a tamaño real',
     skip: 'Ir a la hoja',
-    printOnly: 'Para imprimir a tamaño real, usa el botón «Imprimir» de {app}',
+    printOnly: 'Para imprimir a tamaño real, usa el botón Imprimir de {app}',
     close: 'Cerrar',
   },
 
@@ -275,7 +275,7 @@ export default {
     distributeEven: 'Repartir parejo',
     distributeX: 'Distribuir en horizontal',
     distributeY: 'Distribuir en vertical',
-    distributeGapTip: '{gap} entre piezas, la «Separación» de Distribución',
+    distributeGapTip: '{gap} entre piezas, la separación de Distribución',
     distributeEvenTip: 'El mismo espacio entre piezas, de la primera a la última',
     distributeGapNote: 'A {gap}',
     distributeNeedTwo: 'Selecciona 2 piezas o más de una misma hoja para distribuir',
@@ -315,7 +315,7 @@ export default {
   notices: {
     close: 'Cerrar aviso',
     // Para lectores de pantalla, cuando el aviso tiene un botón ({text} ya termina en punto)
-    withAction: '{text} Botón «{action}» disponible en el aviso',
+    withAction: '{text} Botón {action} disponible en el aviso',
     cut: {
       one: '1 pieza se sale de la hoja y se corta al imprimir',
       other: '{n} piezas se salen de la hoja y se cortan al imprimir',
@@ -372,7 +372,7 @@ export default {
     openFailed: 'No se pudo abrir «{name}» porque sus datos están dañados',
     openNewer: '«{name}» se guardó con una versión más nueva de {app}. Recarga la página para abrirlo.',
     openError: 'No se pudo abrir el proyecto. Inténtalo de nuevo.',
-    projectError: 'No se pudo completar la acción en «Proyectos». Inténtalo de nuevo.',
+    projectError: 'No se pudo completar la acción en Proyectos. Inténtalo de nuevo.',
     takenOver: 'Este proyecto se abrió en otra pestaña. Aquí ya no se guardan los cambios.',
     deletedElsewhere: 'Este proyecto se eliminó en otra pestaña. Aquí ya no se guardan los cambios.',
     saveAsNew: 'Guardar como nuevo',
@@ -569,7 +569,7 @@ export default {
     takeOver: 'Editar aquí',
     new: 'Nuevo proyecto',
     newNote: 'El proyecto abierto queda guardado',
-    empty: 'Todavía no hay otros proyectos. Con «Nuevo proyecto» empiezas otro y el que tienes abierto queda guardado.',
+    empty: 'Todavía no hay otros proyectos. Si creas uno nuevo, el que tienes abierto queda guardado.',
     unavailable: 'Este navegador no permite guardar proyectos (por ejemplo, en una ventana privada). Lo que hagas se pierde al cerrar la pestaña.',
     current: 'Abierto',
     damaged: 'Dañado',
@@ -619,8 +619,8 @@ export default {
   // Diálogo «Atajos de teclado»
   shortcuts: {
     title: 'Atajos de teclado',
-    singleKeysNote: 'Los atajos de 1 tecla se activan y desactivan en «Preferencias».',
-    openPrefs: 'Abrir «Preferencias»',
+    // La parte entre <link> y </link> es un botón que abre Preferencias (linkedText).
+    singleKeysNote: 'Los atajos de 1 tecla se activan en <link>Preferencias</link>',
     caption: 'Atajos de teclado',
     key: 'Tecla',
     action: 'Acción',
@@ -637,7 +637,7 @@ export default {
       front: 'Traer al frente',
       toolbar: 'Sobre una pieza, ir a su barra de acciones',
       toggleSelect: 'Sobre una pieza, agregarla a la selección o quitarla',
-      clickSelect: 'Agregar una pieza a la selección o quitarla (arrastrar en un lugar vacío elige con un recuadro)',
+      clickSelect: 'Agregar una pieza a la selección o quitarla (arrastrar en un lugar vacío selecciona con un recuadro)',
       selectAll: 'Seleccionar las piezas de la hoja actual; otra vez, las de todas las hojas',
       alignSides: 'Alinear a la izquierda o a la derecha (con 1 pieza, al área útil)',
       alignEnds: 'Alinear arriba o abajo',
@@ -647,7 +647,7 @@ export default {
       pages: 'En las hojas, ir a la hoja anterior o a la siguiente',
       sendPage: 'Mover la pieza a la hoja anterior o a la siguiente (si no hay lugar, a una hoja nueva)',
       remove: 'Quitar la pieza',
-      measures: 'Editar las medidas de la pieza en «Propiedades»',
+      measures: 'Editar las medidas de la pieza en Propiedades',
       sheet: 'Ir a los ajustes de la hoja',
       list: 'Ir a la lista de piezas',
       arrange: 'Acomodar las piezas sin superponerlas',
@@ -660,7 +660,7 @@ export default {
       download: 'Descargar PDF',
       escape: 'En un panel, volver a la pieza o cerrar el panel; en la hoja, anular la selección',
       help: 'Mostrar estos atajos',
-      projects: 'Abrir «Proyectos»',
+      projects: 'Abrir Proyectos',
     },
   },
 };

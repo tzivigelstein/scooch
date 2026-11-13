@@ -2287,16 +2287,28 @@ input[role="switch"]:checked::before {
   color: var(--muted);
 }
 
-/* Texto de apoyo dentro de un diálogo, con un botón de texto al final. */
+/* Texto de apoyo dentro de un diálogo (puede llevar un enlace). */
 .dialog-note {
   margin: 0;
   color: var(--muted);
   font-size: 13px;
 }
 
-.dialog-note .text-btn {
+/* Enlace dentro de una frase: un botón (abre algo, no navega) con aspecto de enlace. */
+.link-btn {
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: none;
   color: var(--accent-strong);
-  font-size: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link-btn:hover {
+  text-decoration-thickness: 2px;
 }
 
 /* ---------- Proyectos ---------- */

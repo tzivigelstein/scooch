@@ -6,7 +6,7 @@ import { settings } from './store.js';
 import { stepTexts } from './measure.js';
 import { setupDialog } from './dialogs.js';
 import { $ } from './util.js';
-import { t, keyLabel } from './copy/index.js';
+import { t, keyLabel, linkedText } from './copy/index.js';
 
 // [teclas (nombres de keyLabel), acción (clave en shortcuts.rows), es de una tecla]
 const ROWS = [
@@ -57,6 +57,18 @@ export function initShortcuts({ trigger: button, openPrefs }) {
   trigger = button;
   dialog = $('shortcuts');
   openDialog = setupDialog(dialog, { close: [$('shortcuts-close')], fallback: () => trigger });
+  // Una sola frase con «Preferencias» como enlace (un botón: abre un diálogo, no navega).
+  $('shortcuts-note').replaceChildren(
+    linkedText('shortcuts.singleKeysNote', {}, (label) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.id = 'shortcuts-prefs';
+      button.className = 'link-btn';
+      button.setAttribute('aria-haspopup', 'dialog');
+      button.textContent = label;
+      return button;
+    })
+  );
   renderRows();
   syncShortcuts();
   trigger.addEventListener('click', () => openShortcuts());

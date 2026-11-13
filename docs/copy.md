@@ -62,8 +62,14 @@ Para sumar otro idioma: un `en.js` con las mismas claves, elegido en
   imprimirlo, elige «Tamaño real» o «100 %».»
 - Los mensajes que se juntan en la región viva van sin punto; `live.js`
   agrega el punto al unirlos para que el lector haga la pausa.
-- Comillas angulares « » para citar textos de la interfaz, propios o ajenos
-  (el diálogo de impresión): «Tamaño real», «Propiedades».
+- Comillas angulares « » solo para citar opciones de interfaces ajenas (el
+  diálogo de impresión del navegador: elige «Tamaño real» o «100 %») y lo que
+  escribió o nombró la persona (un proyecto: Se abrió «Tarjetas»; una medida
+  que no se entiende: «hola» no es una medida válida).
+- Las secciones, botones y diálogos propios van sin comillas: «usa el botón
+  Imprimir», «Abrir Proyectos», «en Propiedades». Si el nombre lleva a ese
+  lugar, va como enlace en la misma frase (ver «Enlaces dentro de una frase»).
+  En esta guía, las comillas solo delimitan los ejemplos.
 - «…» solo para lo que está en curso: «Creando el PDF…».
 
 ### Números y unidades
@@ -88,6 +94,15 @@ Para sumar otro idioma: un `en.js` con las mismas claves, elegido en
 | Error por archivo | `nombre: qué pasó; cómo resolverlo`, en minúscula | «foto.heic: el navegador no puede abrir este formato; prueba con JPG, PNG o WebP» |
 | En curso | Gerundio + «…» | «Cargando 2 de 5…» |
 | Nombre accesible | Empieza con el texto visible (WCAG 2.5.3) | botón «100 %» → «100 %: tamaño real» |
+
+### Enlaces dentro de una frase
+
+Una frase con un enlace es un solo texto: la parte enlazada se marca con
+`<link>…</link>` y `linkedText(clave, params, crearEnlace)` (en
+`src/copy/index.js`) arma los nodos sin interpretar HTML. Así la frase se
+traduce entera: «Los atajos de 1 tecla se activan en
+`<link>Preferencias</link>`». Si abre un diálogo (no navega), el enlace es un
+`<button>` con aspecto de enlace (`.link-btn`).
 
 ### Nombre de la app
 

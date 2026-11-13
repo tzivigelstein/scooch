@@ -62,6 +62,22 @@ export const formatList = (items) => listFormat.format(items.map(String));
 /** El texto con punto final (para unir mensajes sueltos al anunciarlos). */
 export const asSentence = (text) => (/[.!?…:]$/.test(text.trim()) ? text.trim() : `${text.trim()}.`);
 
+/**
+ * Texto con un enlace adentro: la cadena marca la parte enlazada con
+ * <link>…</link> («Los atajos… en <link>Preferencias</link>»), así la frase
+ * sigue entera en un solo texto traducible. Devuelve un DocumentFragment con
+ * nodos de texto y el elemento que arma `makeLink(texto)`; nada se interpreta
+ * como HTML.
+ */
+export function linkedText(key, params, makeLink) {
+  const text = t(key, params);
+  const match = /^([\s\S]*?)<link>([\s\S]*?)<\/link>([\s\S]*)$/.exec(text);
+  const fragment = document.createDocumentFragment();
+  if (!match) fragment.append(text);
+  else fragment.append(match[1], makeLink(match[2]), match[3]);
+  return fragment;
+}
+
 /** Nombre visible de una tecla o combinación («Mod+Shift+Z» → «Ctrl+Shift+Z»). */
 export const keyLabel = (combo) =>
   combo
