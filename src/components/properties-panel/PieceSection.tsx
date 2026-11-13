@@ -251,7 +251,8 @@ export function PieceSection() {
 
   return (
     <div className="prop-section" id="section-piece">
-      <h2 id="piece-title" className="section-title static">
+      {/* The tab already says «Pieza»: with one piece the heading is for screen readers only. */}
+      <h2 id="piece-title" className={group ? 'section-title static' : 'sr-only'} hidden={!n}>
         {group ? t('pieces.count', { n }) : t('props.piece')}
       </h2>
       <p id="piece-empty" className="panel-empty" hidden={n > 0}>

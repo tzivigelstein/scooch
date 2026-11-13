@@ -31,6 +31,7 @@ async function scan(page, label, results) {
       await scan(p, `${colorScheme} 1440 con avisos, distintivos y «Rellenar» abierto`, results);
       await p.keyboard.press('Control+z');
       await p.keyboard.press('Control+z');
+      await h.showTab('sheet');
       await p.click('[aria-controls="section-arrange"]');
       await p.click('#grid-show');
       await scan(p, `${colorScheme} 1440 sección plegada + grilla visible`, results);

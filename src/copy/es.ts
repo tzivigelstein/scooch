@@ -203,6 +203,8 @@ const es = {
   props: {
     title: 'Propiedades',
     close: 'Cerrar el panel de propiedades',
+    tabs: { piece: 'Pieza', sheet: 'Hoja', pieceTip: 'Propiedades de la selección', sheetTip: 'Papel, distribución y grilla de todas las hojas' },
+    allSheets: 'Se aplica a todas las hojas',
     piece: 'Pieza',
     empty: 'Selecciona una pieza para editarla',
     pieceNamePage: '{name} · página {page}',
@@ -287,7 +289,7 @@ const es = {
       ok: 'Calidad aceptable',
       low: 'Puede verse pixelada',
     },
-    sheet: 'Hoja',
+    sheet: 'Papel',
     size: 'Tamaño',
     orientation: 'Orientación',
     portrait: 'Vertical',
@@ -509,6 +511,9 @@ const es = {
     projectDeleted: 'Se eliminó «{name}»',
     projectSaved: 'Se guardó el proyecto',
     deselected: 'Ninguna pieza seleccionada',
+    // The properties panel switched tabs on its own (after a keyboard action)
+    propsPiece: 'Propiedades muestra la pieza',
+    propsSheet: 'Propiedades muestra la hoja',
     // Multiple selection
     selectedCount: { one: '1 pieza seleccionada', other: '{n} piezas seleccionadas' },
     selectionPinned: '1 pieza seleccionada. Ve a otra con Tab y agrégala con Shift+Espacio',
@@ -684,8 +689,8 @@ const es = {
       pages: 'En las hojas, ir a la hoja anterior o a la siguiente',
       sendPage: 'Mover la pieza a la hoja anterior o a la siguiente (si no hay lugar, a una hoja nueva)',
       remove: 'Quitar la pieza',
-      measures: 'Editar las medidas de la pieza en Propiedades',
-      sheet: 'Ir a los ajustes de la hoja',
+      measures: 'Ir a la pestaña Pieza de Propiedades y editar las medidas',
+      sheet: 'Ir a la pestaña Hoja de Propiedades',
       list: 'Ir a la lista de piezas',
       arrange: 'Acomodar las piezas sin superponerlas',
       add: 'Agregar imágenes o PDF',

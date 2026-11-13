@@ -28,8 +28,10 @@ const triggers = (name: DrawerName) => DRAWER_TRIGGERS[name].map((id) => documen
 // What gets the focus when a panel opens: the list (or the add zone), or the first field.
 function initialFocus(name: DrawerName): HTMLElement | null {
   if (name === 'pieces') return listFocusTarget() ?? document.getElementById('addzone');
-  const x = document.getElementById('pos-x');
-  return x && !x.closest('[hidden]') ? x : document.getElementById('paper');
+  // The open tab's first field (X or the paper); with nothing to edit, the tab itself.
+  const tab = getView().propsTab;
+  const field = document.getElementById(tab === 'piece' ? 'pos-x' : 'paper');
+  return field && !field.closest('[hidden]') ? field : document.getElementById(`props-tab-${tab}`);
 }
 
 export function openDrawer(name: DrawerName, { returnTo = document.activeElement as Element | null, focus = true } = {}) {

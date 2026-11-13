@@ -133,19 +133,33 @@ function helpers(page) {
     const el = document.activeElement;
     return { id: el.id, tag: el.tagName, cls: el.className?.baseVal ?? el.className, label: el.getAttribute('aria-label'), piece: el.classList.contains('piece') ? el.dataset.id : null };
   });
+  // The properties panel has two tabs (Pieza and Hoja): like a person, these open the panel
+  // (on narrow screens) and the tab that holds the field.
+  const showTab = async (tab) => {
+    if (!(await page.locator('#props-panel').isVisible()) && (await page.locator('#props-toggle').isVisible())) await page.click('#props-toggle');
+    if ((await page.getAttribute(`#props-tab-${tab}`, 'aria-selected')) !== 'true') await page.click(`#props-tab-${tab}`);
+  };
   const openMeasures = async () => {
-    if (!(await page.locator('#pos-x').isVisible())) {
-      if (await page.locator('#props-toggle').isVisible()) await page.click('#props-toggle');
-    }
+    if (!(await page.locator('#pos-x').isVisible())) await showTab('piece');
     await page.waitForSelector('#pos-x', { state: 'visible' });
   };
   const openSheet = async () => {
     if (!(await page.locator('#paper').isVisible())) {
-      if (await page.locator('#props-toggle').isVisible()) await page.click('#props-toggle');
+      await showTab('sheet');
       const toggle = page.locator('[aria-controls="section-sheet"]');
       if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
     }
     await page.waitForSelector('#paper', { state: 'visible' });
+  };
+  /** Shows a document setting (gap, overlap, grid…): the Hoja tab, with its section open. */
+  const openSetting = async (selector) => {
+    if (await page.locator(selector).isVisible()) return;
+    await showTab('sheet');
+    const section = await page.evaluate((sel) => document.querySelector(sel)?.closest('.section-body')?.id ?? null, selector);
+    if (section) {
+      const toggle = page.locator(`[aria-controls="${section}"]`);
+      if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
+    }
   };
   const closePopover = async () => {
     if (!(await page.evaluate(() => !!document.activeElement.closest('.panel')))) return;
@@ -167,7 +181,7 @@ function helpers(page) {
     await page.mouse.up();
     await page.waitForTimeout(30);
   };
-  return { geom, count, waitIdle, load, pieceByName, clickPiece, active, openMeasures, openSheet, closePopover, setMeasure, drag };
+  return { geom, count, waitIdle, load, pieceByName, clickPiece, active, showTab, openMeasures, openSheet, openSetting, closePopover, setMeasure, drag };
 }
 
 const norm = (s) => String(s ?? '').replace(/ /g, ' ');

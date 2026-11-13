@@ -44,6 +44,8 @@ export const SHORTCUTS = {
   selectSame: { kbd: 'I', aria: 'I', single: true },
   landscape: { kbd: 'L', aria: 'L', single: true },
   grid: { aria: 'G', single: true },
+  tabPiece: { kbd: 'M', aria: 'M', single: true },
+  tabSheet: { kbd: 'H', aria: 'H', single: true },
 } satisfies Record<string, ShortcutKeys>;
 
 export type ShortcutName = keyof typeof SHORTCUTS;

@@ -1,6 +1,6 @@
 // A. Selección múltiple: cada forma de elegir, marco de grupo, mover/girar/escalar el grupo,
 // alinear y distribuir con resultados exactos, y la matriz de ajustes globales.
-const { open, makeChecker, addFiles, tiles, lib, near, overlapping, centersInside, boxOf, onGrid, norm } = require('../lib/selection.cjs');
+const { open, makeChecker, addFiles, tiles, lib, helpers, near, overlapping, centersInside, boxOf, onGrid, norm } = require('../lib/selection.cjs');
 
 const { check, report } = makeChecker('A. Selección múltiple, alinear y distribuir');
 const errors = [];
@@ -228,12 +228,18 @@ async function alignDistribute() {
   await s.browser.close();
 }
 
-async function setOverlapAllowed(p, on) {
-  if ((await p.isChecked('#allow-overlap')) !== on) await p.click('#allow-overlap');
+// Document settings live in the Hoja tab of Propiedades: like a person, it switches to it
+// and then back to the tab that was open.
+async function toggleSetting(p, selector, on) {
+  if ((await p.isChecked(selector)) === on) return;
+  const h = helpers(p);
+  const piece = (await p.getAttribute('#props-tab-piece', 'aria-selected')) === 'true';
+  await h.openSetting(selector);
+  await p.click(selector);
+  if (piece) await h.showTab('piece');
 }
-async function setSnap(p, on) {
-  if ((await p.isChecked('#grid-snap')) !== on) await p.click('#grid-snap');
-}
+const setOverlapAllowed = (p, on) => toggleSetting(p, '#allow-overlap', on);
+const setSnap = (p, on) => toggleSetting(p, '#grid-snap', on);
 
 async function transforms() {
   const s = await open();
@@ -356,7 +362,10 @@ async function matrix() {
           }
           await setSnap(p, snapOn);
           await setOverlapAllowed(p, overlap);
-          if (unit === 'in') await p.locator('#grid-chips input').first().check({ force: true });
+          if (unit === 'in') {
+            await helpers(p).openSetting('#grid-chips');
+            await p.locator('#grid-chips input').first().check({ force: true });
+          }
           const step = unit === 'in' ? 3.175 : 1;
           const all = await L.ids();
           const chosen = twoSheets ? [all[0], all[1], all[4], all[5]] : [all[0], all[1], all[2]];

@@ -491,3 +491,66 @@ input[type="range"] {
   align-items: end;
   gap: 0.5rem;
 }
+
+/* Tabs of the properties panel: «Pieza» and «Hoja». Selected: text color,
+   weight and an underline (not just color). They stay at the top on scroll. */
+.props-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 0.375rem 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.tab {
+  position: relative;
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 0.375rem 0.375rem 0 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.tab:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.tab[aria-selected="true"] {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: -1px;
+  height: 0.1875rem;
+  border-radius: 0.1875rem 0.1875rem 0 0;
+  background: var(--accent);
+}
+
+.tab:focus-visible {
+  outline-offset: -0.125rem;
+}
+
+.tab-note {
+  margin: 0;
+  padding: 0.75rem 1rem 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.tab-panel > .tab-note + .prop-section {
+  padding-top: 0.625rem;
+}

@@ -188,6 +188,7 @@ const multiple = (v, step, tol = 0.02) => Math.abs(v / step - Math.round(v / ste
   check('y lo anuncia', await heard(p, /Grilla visible, cada 1\s?mm/));
   check('el interruptor la refleja', await p.isChecked('#grid-show'));
   // Imán a 5 mm
+  await h.openSetting('#grid-chips');
   await p.locator('#grid-chips input[value="5"]').check();
   await p.waitForTimeout(50);
   await dragTo(A, (await center(A)).x + 37, (await center(A)).y + 23);
@@ -202,6 +203,7 @@ const multiple = (v, step, tol = 0.02) => Math.abs(v / step - Math.round(v / ste
   a2 = await byName(A);
   check('con imán a 2,5 mm, múltiplos de 2,5', multiple(a2.x, 2.5) && multiple(a2.y, 2.5), `${a2.x}, ${a2.y}`);
   // Sin imán
+  await h.openSetting('#grid-snap');
   await p.locator('#grid-snap').uncheck();
   await dragTo(A, (await center(A)).x + 33, (await center(A)).y + 11);
   a2 = await byName(A);

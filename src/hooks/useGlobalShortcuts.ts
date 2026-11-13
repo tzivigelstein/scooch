@@ -19,6 +19,7 @@ import { arrangeAll, redoLast, undoLast } from '../state/actions/edit.ts';
 import { openFiles } from '../state/actions/files.ts';
 import { focusList, focusSheet, pieceNode, sheetNode } from '../state/actions/focus.ts';
 import { exportPdf, printPdf } from '../state/actions/output.ts';
+import { showPropsTab } from '../state/actions/panels.ts';
 import {
   alignSelection,
   bringToFront,
@@ -41,7 +42,7 @@ const NUDGES: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRigh
 const ALIGNS: Record<string, AlignMode> = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'top', ArrowDown: 'bottom', KeyH: 'centerX', KeyV: 'centerY' };
 const DISTRIBUTES: Record<string, 'x' | 'y'> = { KeyX: 'x', KeyY: 'y' };
 // Single keys that act on the selection (see the piece keys below).
-const PIECE_KEYS = new Set(['r', 'd', 'f', 'c', ']', 'm', 'i']);
+const PIECE_KEYS = new Set(['r', 'd', 'f', 'c', ']', 'i']);
 const GROWS = new Set(['+', '=', '*']);
 const SHRINKS = new Set(['-', '_', '−']);
 
@@ -56,10 +57,11 @@ function adopt(target: Element) {
   if (!getDocument().selection.includes(id)) select(id);
 }
 
-/** M: to the first field of the Pieza section (X). */
+/** M: to the first field of the Pieza tab (X); without a selection, the tab shows its hint. */
 function focusPieceFields() {
-  if (!getDocument().selection.length) return announce(t('announce.needSelection'));
+  showPropsTab('piece');
   revealPanel('props');
+  if (!getDocument().selection.length) return announce(t('announce.needSelection'));
   flushUi();
   const field = document.getElementById('pos-x') as HTMLInputElement | null;
   if (!field || field.closest('[hidden]')) return;
@@ -67,8 +69,9 @@ function focusPieceFields() {
   field.select();
 }
 
-/** H: to the first control of the Hoja section. */
+/** H: to the first control of the Hoja tab. */
 function focusSheetSettings() {
+  showPropsTab('sheet');
   revealPanel('props');
   setSectionOpen('sheet', true);
   flushUi();
@@ -231,6 +234,10 @@ function onKeyDown(e: KeyboardEvent) {
     a: arrangeAll,
     o: openFiles,
     h: focusSheetSettings,
+    m: () => {
+      if (onPiece) adopt(target);
+      focusPieceFields();
+    },
     l: () => setOrientation(!getDocument().landscape),
     g: () => setGridVisible(!getPrefs().grid.show),
     p: focusPieces,
@@ -256,7 +263,6 @@ function onKeyDown(e: KeyboardEvent) {
     f: () => fit({ focus: true }),
     c: () => center({ focus: true }),
     ']': () => bringToFront({ focus: true }),
-    m: focusPieceFields,
   };
   if (pieceKeys[lower] && !e.repeat) {
     e.preventDefault();

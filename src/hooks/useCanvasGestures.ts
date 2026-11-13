@@ -184,6 +184,9 @@ function begin(next: Gesture) {
 function onPointerDown(e: PointerEvent) {
   if (getDocument().busy || e.button !== 0 || gesture) return;
   const target = e.target as Element;
+  // A sheet's label: that sheet becomes the current one, like a click on its empty area.
+  const label = target.closest<HTMLElement>('.page-label');
+  if (label) return pickSheet(Number(label.closest<HTMLElement>('.page')!.dataset.sheet));
   if (target.closest('.dropzone, .page-head, .sheets-foot')) return;
   const additive = e.shiftKey || e.ctrlKey || e.metaKey;
   const handle = target.closest<HTMLElement>('.handle');
@@ -647,6 +650,14 @@ function gestureDone(result: string | null, sheetChanged: boolean, id: number | 
   if (sheetChanged && item) announce(t('announce.movedToSheet', { i: sheetIndex(item.sheet) + 1, total: getDocument().sheets.length }));
 }
 
+/** A click on a sheet's empty area (or its label): the current sheet, with nothing selected. */
+function pickSheet(id: number) {
+  setView({ sheet: id });
+  if (!getDocument().selection.length) return;
+  select(null);
+  focusSheetNode(id);
+}
+
 function endMarquee(g: MarqueeGesture, done: boolean) {
   document.querySelector<HTMLElement>('#sheets > .marquee')!.hidden = true;
   for (const node of document.querySelectorAll('#sheets .piece.is-marked')) node.classList.remove('is-marked');
@@ -654,7 +665,7 @@ function endMarquee(g: MarqueeGesture, done: boolean) {
   if (g.moved) return selectTouched(g.touched, g.additive);
   if (g.additive) return;
   // A click on an empty spot of a sheet (or around them).
-  if (g.sheetId !== null) setView({ sheet: g.sheetId });
+  if (g.sheetId !== null) return pickSheet(g.sheetId);
   if (!getDocument().selection.length) return;
   select(null);
   focusSheetNode(currentSheet());

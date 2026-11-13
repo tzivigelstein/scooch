@@ -18,6 +18,9 @@ export interface Flash {
 
 export type DrawerName = 'pieces' | 'props';
 
+/** The tabs of the properties panel: the selection's properties or the document's settings. */
+export type PropsTab = 'piece' | 'sheet';
+
 export interface ViewState {
   /** The current sheet when no piece is selected. */
   sheet: number;
@@ -36,6 +39,8 @@ export interface ViewState {
   zoom: number;
   /** Which collapsible panel is open (only on narrow screens). */
   drawer: DrawerName | null;
+  /** The properties panel's tab: follows the selection, and the person can switch it. */
+  propsTab: PropsTab;
   /** Position changes animate (arrange, undo…). */
   animating: boolean;
   /** The app is still restoring the last project. */
@@ -53,6 +58,7 @@ export const useView = create<ViewState>()(() => ({
   distribute: 'gap',
   zoom: 1,
   drawer: null,
+  propsTab: 'sheet',
   animating: false,
   loading: true,
   editing: false,

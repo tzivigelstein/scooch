@@ -191,7 +191,10 @@ const num = (s) => parseFloat(String(s).replace(',', '.'));
   check('Medidas girada: «Girada N°» visible', (await page.locator('#rotation-note').isVisible()) && new RegExp(`Girada ${rotated.rot}°`).test(await page.locator('#rotation-note').textContent()), `${rotated.rot}`);
   check('Medidas girada: ancho/alto son los que ocupa en la hoja', Math.abs(num(await page.inputValue('#width')) - rotated.w) < 0.06 && Math.abs(num(await page.inputValue('#height')) - rotated.h) < 0.06);
   check('Medidas girada: ancho y alto describidos por la nota de giro', /\brotation-note\b/.test(await page.getAttribute('#width', 'aria-describedby')) && /\brotation-note\b/.test(await page.getAttribute('#height', 'aria-describedby')));
-  if (allowed) await page.click('#allow-overlap');
+  if (allowed) {
+    await h.openSetting('#allow-overlap');
+    await page.click('#allow-overlap');
+  }
   await h.closePopover();
   for (let i = 0; i < 4 && (await geom()).pieces.find((p) => p.active).rot !== 0; i++) await page.click('#piecebar [data-action="rotate-left"]');
   await h.openMeasures();
@@ -322,6 +325,7 @@ const num = (s) => parseFloat(String(s).replace(',', '.'));
   }
   await page.click('#arrange');
   if (/para usar 1 hoja/.test((await geom()).action)) await page.click('#pill-action');
+  await h.openSetting('#grid-show');
   await page.click('#grid-show');
   check('grilla visible antes de exportar', await page.locator('#sheets .grid-layer').first().isVisible());
   const canvasBox = await page.locator('#canvas').boundingBox();

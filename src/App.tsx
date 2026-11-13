@@ -23,6 +23,7 @@ import { getView, setView, useView } from './state/view.ts';
 import { closeDrawer, DRAWER_PANELS, DRAWER_TRIGGERS, isDrawerOpen } from './state/actions/drawers.ts';
 import { filesFrom, loadFiles } from './state/actions/files.ts';
 import { focusSheet } from './state/actions/focus.ts';
+import { followSelection } from './state/actions/panels.ts';
 import { startProjects } from './state/actions/projects.ts';
 import { setSelection } from './state/actions/selection.ts';
 
@@ -95,6 +96,7 @@ export function App() {
   useEffect(() => {
     // Outside React's commit: the restore may move the focus right away.
     queueMicrotask(() => void startProjects());
+    const stopFollowing = followSelection();
     // Dropping a file outside the zone must not open it in the tab.
     const prevent = (e: Event) => e.preventDefault();
     window.addEventListener('dragover', prevent);
@@ -127,6 +129,7 @@ export function App() {
     const idle = window.requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 1500));
     idle(preloadDialogs);
     return () => {
+      stopFollowing();
       window.removeEventListener('dragover', prevent);
       window.removeEventListener('drop', prevent);
       document.removeEventListener('paste', paste);
