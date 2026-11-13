@@ -46,7 +46,6 @@ import {
 } from '../state/selectors.ts';
 import { animateNext, getView, setView } from '../state/view.ts';
 import { focusSheetNode, pieceNode } from '../state/actions/focus.ts';
-import { say } from '../state/actions/notify.ts';
 import { makePrimary, select, selectTouched, toggleInSelection } from '../state/actions/selection.ts';
 import { startCrop } from '../components/canvas/cropMode.ts';
 import { openContextMenuAt, openContextMenuFromKeyboard } from '../components/canvas/contextMenu.ts';
@@ -669,7 +668,8 @@ function applyGroupScale(k: number) {
 }
 
 function gestureDone(result: string | null, sheetChanged: boolean, id: number | null, group: boolean) {
-  if (result === 'reverted') say(t(group ? 'notices.revertedGroup' : 'notices.reverted'));
+  // The blocked look while dragging and the piece going back already show it: only screen readers hear it.
+  if (result === 'reverted') announce(t(group ? 'announce.revertedGroup' : 'announce.reverted'));
   const item = findItem(id ?? undefined);
   if (sheetChanged && item) announce(t('announce.movedToSheet', { i: sheetIndex(item.sheet) + 1, total: getDocument().sheets.length }));
 }

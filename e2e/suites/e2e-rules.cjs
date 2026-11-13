@@ -122,7 +122,10 @@ const multiple = (v, step, tol = 0.02) => Math.abs(v / step - Math.round(v / ste
   const g2 = await h.geom();
   const c2 = g2.pieces.find((x) => x.id === corner.id);
   check('sin hueco cerca: vuelve a su lugar', near(c2.x, corner.x) && near(c2.y, corner.y), JSON.stringify({ corner, c2 }));
-  check('y lo avisa', /No había espacio libre ahí, así que la pieza volvió a su lugar/.test(g2.notice), g2.notice);
+  // The blocked look and the piece going back show it: no notice, only the screen reader hears it.
+  check('sin aviso visible', !/volvió a su lugar/.test(g2.notice), g2.notice);
+  const heardBack = await p.evaluate(() => document.getElementById('live-polite').textContent);
+  check('el lector de pantalla lo oye', /No hay espacio ahí\. La pieza volvió a su lugar/.test(heardBack), heardBack);
   check('nada quedó superpuesto', overlaps(g2.pieces).length === 0);
   await p.keyboard.press('Control+z');
   await p.waitForTimeout(150);

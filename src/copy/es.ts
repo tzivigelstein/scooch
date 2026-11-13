@@ -460,8 +460,6 @@ const es = {
     shrinkAction: 'Reducir al {pct} % y acomodar',
     filled: { one: 'Se rellenó la hoja con 1 copia', other: 'Se rellenó la hoja con {n} copias' },
     filledSheet: { one: 'Se rellenó la hoja {i} con 1 copia', other: 'Se rellenó la hoja {i} con {n} copias' },
-    reverted: 'No había espacio libre ahí, así que la pieza volvió a su lugar',
-    revertedGroup: 'No había espacio libre ahí, así que las piezas volvieron a su lugar',
     duplicatedTimes: { one: 'Se agregó 1 copia en la hoja {i}', other: 'Se agregaron {n} copias en la hoja {i}' },
     duplicatedTimesSheets: { one: 'Se agregó 1 copia en {sheets} hojas', other: 'Se agregaron {n} copias en {sheets} hojas' },
     // A group operation that wasn't applied ({action}: groupActions)
@@ -586,6 +584,9 @@ const es = {
     sheetRemoved: { one: 'Se quitó la hoja {i} con 1 pieza', other: 'Se quitó la hoja {i} con {n} piezas' },
     sheetRemovedEmpty: 'Se quitó la hoja {i}',
     movedToSheet: 'Se movió a la hoja {i} de {total}',
+    // A drop where the piece can't go: it goes back (the canvas shows it; this is for screen readers)
+    reverted: 'No hay espacio ahí. La pieza volvió a su lugar.',
+    revertedGroup: 'No hay espacio ahí. Las piezas volvieron a su lugar.',
     movedToNewSheet: { one: 'Se creó la hoja {i} y se movió 1 pieza', other: 'Se creó la hoja {i} y se movieron {n} piezas' },
     firstSheet: 'Es la primera hoja',
     lastSheet: 'Es la última hoja',

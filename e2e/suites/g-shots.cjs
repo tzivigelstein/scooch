@@ -81,7 +81,7 @@ const OVERFLOW = () => {
       await shot('3b-arrastrando-afuera');
       await p.mouse.up();
       await shot('3c-soltada-afuera');
-      if (!(await p.evaluate(() => /volvió a su lugar/.test(document.getElementById('pill-text').textContent)))) await p.keyboard.press('Control+z');
+      if (!(await p.evaluate(() => /volvió a su lugar/.test(document.getElementById('live-polite').textContent)))) await p.keyboard.press('Control+z');
       await p.keyboard.press('g');
       await p.locator('.page').nth(0).locator('.page-remove').focus();
       await p.keyboard.press('Enter');
