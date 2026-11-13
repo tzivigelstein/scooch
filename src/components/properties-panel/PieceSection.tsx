@@ -193,7 +193,7 @@ export function PieceSection() {
   const scaleInput = useRef<HTMLInputElement>(null);
   const slider = useRef<HTMLInputElement>(null);
   const resolutionText = useRef<HTMLSpanElement>(null);
-  // «Duplicar ×N»: how many copies (a view preference, not part of the document).
+  // «Duplicar ×N»: how many copies, for this session only (not saved anywhere).
   const copies = useRef(1);
   const [copiesShown, setCopies] = useState(1);
   useScaleInput(slider, 'slider');

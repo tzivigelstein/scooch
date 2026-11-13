@@ -17,7 +17,7 @@ import { lengthValue, paperTitle, sizeText } from '../../src/services/measure.ts
 import { addAsset } from '../../src/state/assets.ts';
 import { getDocument, setDocument, useDocument } from '../../src/state/document.ts';
 import { historyDepth, redo, undo } from '../../src/state/history.ts';
-import { getPrefs, reloadPrefs, setGrid, setUnit, usePrefs } from '../../src/state/prefs.ts';
+import { getPrefs, setGrid, setUnit } from '../../src/state/prefs.ts';
 import { sheetProblems, sheetSize } from '../../src/state/selectors.ts';
 import { printResolution } from '../../src/state/actions/layout.ts';
 import { lengthFieldRange, lengthFieldValue, nudge, setLengthField } from '../../src/state/actions/pieces.ts';
@@ -138,18 +138,20 @@ describe('the unit lives in the preferences, not in the document', () => {
     expect(JSON.stringify(after!.doc)).toBe(JSON.stringify(before!.doc));
   });
 
-  test('the unit is remembered in this browser and read back on start; an unknown one means mm', () => {
+  test('the unit is remembered in this browser and read back on start; an unknown one means mm', async () => {
+    // A start: the preferences module loads again and reads localStorage.
+    const unitOnStart = async () => {
+      vi.resetModules();
+      return (await import('../../src/state/prefs.ts')).getPrefs().unit;
+    };
     setUnit('in');
     expect(localStorage.getItem('scooch:unit-preference')).toBe('in');
-    usePrefs.setState({ unit: 'mm' });
-    reloadPrefs();
-    expect(getPrefs().unit).toBe('in');
+    expect(await unitOnStart()).toBe('in');
     localStorage.setItem('scooch:unit-preference', 'pt');
-    reloadPrefs();
-    expect(getPrefs().unit).toBe('mm');
+    expect(await unitOnStart()).toBe('mm');
     // @ts-expect-error an unknown unit is ignored
     setUnit('pt');
-    expect(getPrefs().unit).toBe('mm');
+    expect(getPrefs().unit).toBe('in');
   });
 
   test('the scale and the print resolution don’t depend on the unit', () => {

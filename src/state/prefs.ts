@@ -69,9 +69,6 @@ export const usePrefs = create<PrefsState>()(loadPrefs);
 
 export const getPrefs = () => usePrefs.getState();
 
-/** Reads the preferences again (after migrating the stored keys on start). */
-export const reloadPrefs = () => usePrefs.setState(loadPrefs());
-
 export function setUnit(unit: Unit) {
   if (!isUnit(unit)) return;
   usePrefs.setState({ unit });

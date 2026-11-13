@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { GRID_STORAGE, PIECES_STORAGE } from '../../src/config.ts';
 import { getDocument } from '../../src/state/document.ts';
 import { endEdit, historyDepth, undo } from '../../src/state/history.ts';
-import { getPrefs, reloadPrefs, setAllowOverlap, setGrid } from '../../src/state/prefs.ts';
+import { getPrefs, setAllowOverlap, setGrid } from '../../src/state/prefs.ts';
 import { nudge, rotate, scaleBy, setLengthField } from '../../src/state/actions/pieces.ts';
 import { dims, sheetProblems } from '../../src/state/selectors.ts';
 import { getView } from '../../src/state/view.ts';
@@ -32,6 +32,12 @@ const overlap = (p: ReturnType<typeof rect>, q: ReturnType<typeof rect>, eps = 0
 function heard(ms = 100) {
   vi.advanceTimersByTime(ms);
   return `${document.getElementById('live-polite')!.textContent} ${document.getElementById('live-assertive')!.textContent}`.replace(/ /g, ' ');
+}
+
+/** The preferences as a new start reads them from localStorage (the module loads again). */
+async function prefsOnStart() {
+  vi.resetModules();
+  return (await import('../../src/state/prefs.ts')).getPrefs();
 }
 
 /** A key press: the action, then its keyup ends the continuous edit (see useGlobalShortcuts). */
@@ -196,15 +202,15 @@ describe('preferences', () => {
     expect(getPrefs().grid).toEqual({ show: true, size: 2.5, snap: false });
   });
 
-  test('by default overlaps are not allowed, the grid is hidden, 1 mm, with «Imán» on', () => {
+  test('by default overlaps are not allowed, the grid is hidden, 1 mm, with «Imán» on', async () => {
     localStorage.removeItem(PIECES_STORAGE);
     localStorage.removeItem(GRID_STORAGE);
-    reloadPrefs();
-    expect(getPrefs().allowOverlap).toBe(false);
-    expect(getPrefs().grid).toEqual({ show: false, size: 1, snap: true });
+    const prefs = await prefsOnStart();
+    expect(prefs.allowOverlap).toBe(false);
+    expect(prefs.grid).toEqual({ show: false, size: 1, snap: true });
   });
 
-  test('each change is saved in this browser and read back on the next start', () => {
+  test('each change is saved in this browser and read back on the next start', async () => {
     setAllowOverlap(true);
     expect(localStorage.getItem(PIECES_STORAGE)).toBe('{"allowOverlap":true}');
     setGrid({ show: true });
@@ -212,12 +218,11 @@ describe('preferences', () => {
     setGrid({ snap: false });
     expect(JSON.parse(localStorage.getItem(GRID_STORAGE)!)).toEqual({ show: true, size: 2.5, snap: false });
     resetState(); // the stores forget; the browser doesn't
-    reloadPrefs();
-    expect(getPrefs().allowOverlap).toBe(true);
-    expect(getPrefs().grid).toEqual({ show: true, size: 2.5, snap: false });
+    const prefs = await prefsOnStart();
+    expect(prefs.allowOverlap).toBe(true);
+    expect(prefs.grid).toEqual({ show: true, size: 2.5, snap: false });
     setAllowOverlap(false);
     expect(localStorage.getItem(PIECES_STORAGE)).toBe('{"allowOverlap":false}');
-    reloadPrefs();
-    expect(getPrefs().allowOverlap).toBe(false);
+    expect((await prefsOnStart()).allowOverlap).toBe(false);
   });
 });
