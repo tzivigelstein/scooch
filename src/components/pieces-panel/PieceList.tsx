@@ -8,9 +8,8 @@
 // same.
 
 import { Layers, Scissors, SquareDashed, TriangleAlert, type LucideIcon } from 'lucide-react';
-import { memo, useLayoutEffect, useRef, type FocusEvent, type KeyboardEvent, type MouseEvent } from 'react';
+import { memo, useLayoutEffect, useMemo, useRef, type FocusEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import { rangeBetween } from '../../core/group.js';
-import type { PieceProblems } from '../../core/sheets.js';
 import { t } from '../../copy/index.ts';
 import { sizeText } from '../../services/measure.ts';
 import { getAsset } from '../../state/assets.ts';
@@ -38,28 +37,27 @@ const BADGES: readonly { key: 'cut' | 'pastMargin' | 'overlap' | 'lowRes'; icon:
   { key: 'lowRes', icon: TriangleAlert },
 ];
 
+// Only values that stay equal when nothing about the row changed: a row
+// renders again only when its piece, its selection or its problems change.
 interface RowProps {
   item: Piece;
   selected: boolean;
   tabStop: boolean;
-  problems: PieceProblems | undefined;
-  allowOverlap: boolean;
+  cut: boolean;
+  pastMargin: boolean;
+  /** Overlaps another piece (and overlaps aren't allowed). */
+  overlap: boolean;
   /** Re-renders the row when the unit changes. */
   unit: string;
 }
 
-const Row = memo(function Row({ item, selected, tabStop, problems, allowOverlap }: RowProps) {
+const Row = memo(function Row({ item, selected, tabStop, cut, pastMargin, overlap }: RowProps) {
   const asset = getAsset(item.asset);
   const [w, h] = dims(item);
   const paged = asset.kind === 'pdf' && asset.pages > 1;
   const res = printResolution(item);
   const thumb = thumbView(item, asset, THUMB_REM);
-  const flags = {
-    cut: !!problems?.cut,
-    pastMargin: !!problems?.pastMargin,
-    overlap: !!problems?.overlap && !allowOverlap,
-    lowRes: !res.vector && res.level === 'low',
-  };
+  const flags = { cut, pastMargin, overlap, lowRes: !res.vector && res.level === 'low' };
   return (
     <div role="option" className="piece-row" data-id={item.id} aria-selected={selected} tabIndex={tabStop ? 0 : -1} data-tip={asset.name}>
       <span className="thumb">
@@ -106,7 +104,7 @@ export function PieceList() {
   const focusMode = useRef<FocusMode>(null);
   const lastScrolled = useRef<number | null>(null);
 
-  const problems = problemsById({ items, paper, landscape, margin, cuts });
+  const problems = useMemo(() => problemsById({ items, paper, landscape, margin, cuts }), [items, paper, landscape, margin, cuts]);
   const primary = selection.at(-1);
   const tabStop = items.some((item) => item.id === primary) ? primary : items[0]?.id;
 
@@ -228,17 +226,21 @@ export function PieceList() {
     lastScrolled.current = row ? (primary ?? null) : null;
   });
 
-  const row = (item: Piece) => (
-    <Row
-      key={item.id}
-      item={item}
-      selected={selection.includes(item.id)}
-      tabStop={item.id === tabStop}
-      problems={problems.get(item.id)}
-      allowOverlap={allowOverlap}
-      unit={unit}
-    />
-  );
+  const row = (item: Piece) => {
+    const problem = problems.get(item.id);
+    return (
+      <Row
+        key={item.id}
+        item={item}
+        selected={selection.includes(item.id)}
+        tabStop={item.id === tabStop}
+        cut={!!problem?.cut}
+        pastMargin={!!problem?.pastMargin}
+        overlap={!!problem?.overlap && !allowOverlap}
+        unit={unit}
+      />
+    );
+  };
 
   return (
     <div
