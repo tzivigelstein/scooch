@@ -14,6 +14,7 @@ const { open, makeChecker, helpers, overlaps, FIX, path, norm } = require('../li
     if (el.closest('.topbar')) return 'barra';
     if (el.closest('#pieces-panel')) return 'piezas';
     if (el.closest('#piecebar')) return 'barra-pieza';
+    if (el.closest('.zoom-control')) return 'zoom';
     if (el.closest('#sheets')) return el.classList.contains('piece') ? 'pieza' : 'hoja';
     if (el.closest('#props-panel')) return 'propiedades';
     if (el.id === 'skip') return 'saltar';
@@ -42,12 +43,12 @@ const { open, makeChecker, helpers, overlaps, FIX, path, norm } = require('../li
   }
   // v4: después de las piezas de la hoja está «Agregar hoja» (región «hoja»); before them, the
   // sheet's title (a button to its settings).
-  check('orden: saltar → barra → piezas → título de la hoja → piezas de la hoja → «Agregar hoja» → barra de pieza → propiedades', seq.join(' > ') === 'saltar > barra > piezas > hoja > pieza > hoja > barra-pieza > propiedades', seq.join(' > '));
+  // The zoom control floats in a corner of the canvas: after the piece's toolbar, before Propiedades.
+  check('orden: saltar → barra → piezas → título de la hoja → piezas de la hoja → «Agregar hoja» → barra de pieza → zoom → propiedades', seq.join(' > ') === 'saltar > barra > piezas > hoja > pieza > hoja > barra-pieza > zoom > propiedades', seq.join(' > '));
   check('la lista es una sola parada de Tab', (await page.evaluate(() => document.querySelectorAll('#piece-list [tabindex="0"]').length)) === 1);
 
-  await k.press('Shift+Tab');
-  await k.press('Shift+Tab');
-  await k.press('Shift+Tab');
+  // From Propiedades back over the 3 zoom buttons, the piece's toolbar and «Agregar hoja» to a piece.
+  for (let i = 0; i < 6; i++) await k.press('Shift+Tab');
   let a = await act();
   check('Shift+Tab vuelve a una pieza y la selecciona', !!a.piece && (await selectedId()) === a.piece, JSON.stringify(a));
   check('nombre accesible de la pieza con medidas y posición', /^\S+\.(jpg|webp|png), [\d,]+\s×\s[\d,]+\smm, a [\d,-]+\smm del borde izquierdo y [\d,-]+\smm del superior/.test(a.label), a.label);
