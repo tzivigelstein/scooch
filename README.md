@@ -33,6 +33,7 @@ index.html        página única (Vite la usa como entrada)
 src/
   app.js          arranque: arma la interfaz y conecta las acciones
   styles.css      estilos
+  copy/           todos los textos de la interfaz (es.js) y t(clave, params)
   config.js       nombre de la app, papeles, límites y claves de almacenamiento
   store.js        estado de la hoja e historial de deshacer/rehacer
   sheetview.js    la hoja en pantalla y los gestos con el puntero

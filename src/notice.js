@@ -8,6 +8,7 @@ import { EPS, overlaps } from './collide.js';
 import { announce } from './live.js';
 import { icon } from './icons.js';
 import { $ } from './util.js';
+import { t } from './copy/index.js';
 
 const INFO_MS = 5000;
 const WARN_MS = 9000;
@@ -123,18 +124,13 @@ function currentNotice() {
   if (!state.items.length) return null;
   const { cut, pastMargin, overlap } = sheetProblems();
   if (cut) {
-    const text =
-      cut === 1
-        ? '1 elemento se sale de la hoja y se va a cortar.'
-        : `${cut} elementos se salen de la hoja y se van a cortar.`;
-    return { text, warn: true };
+    return { text: t('notices.cut', { n: cut }), warn: true };
   }
   if (pastMargin) {
-    const who = pastMargin === 1 ? '1 elemento pasa' : `${pastMargin} elementos pasan`;
-    return { text: `${who} el margen: la impresora podría no llegar a imprimir el borde.`, warn: true };
+    return { text: t('notices.pastMargin', { n: pastMargin }), warn: true };
   }
   if (overlap && !settings.allowOverlap) {
-    return { text: 'Hay elementos superpuestos.', action: { label: 'Acomodar', run: arrangeAction } };
+    return { text: t('notices.overlap'), action: { label: t('bar.arrange'), run: arrangeAction } };
   }
   return null;
 }
@@ -164,7 +160,7 @@ export function renderNotice() {
   // Los resultados de una acción se anuncian enseguida (los warnings, con
   // prioridad); los problemas que aparecen solos (p. ej. al mover una pieza),
   // con demora para no repetir cada paso.
-  const spoken = action && !busy ? `${text} Botón «${action.label}» disponible en el aviso.` : text;
+  const spoken = action && !busy ? t('notices.withAction', { text, action: action.label }) : text;
   if (flash) announce(spoken, { assertive: warn, key: 'notice' });
   else announce(spoken, { key: 'notice', delay: busy ? 250 : 900 });
 }

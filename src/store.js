@@ -3,6 +3,7 @@
 
 import { PAPERS, MAX_UNDO, GRID_STORAGE, GRID_DEFAULTS, GRID_MIN, GRID_MAX, PIECES_STORAGE } from './config.js';
 import { storageGet, storageSet, clamp } from './util.js';
+import { t } from './copy/index.js';
 
 export const assets = new Map();
 
@@ -106,8 +107,9 @@ export function rects(items, k = 1) {
   });
 }
 
+/** Papel y orientación para mostrar: «A4», «A4 horizontal». */
 export function paperName() {
-  return `${state.paper}${state.landscape ? ' horizontal' : ''}`;
+  return state.landscape ? t('sheet.landscapeName', { paper: state.paper }) : state.paper;
 }
 
 // ---------- Deshacer / rehacer ----------

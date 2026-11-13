@@ -6,7 +6,8 @@ import { CROWD_LIMIT, MAX_ITEMS } from './config.js';
 import { state, settings, assets, area, dims, rects, findItem, newItem, commit, paperName, selectedItem } from './store.js';
 import { say } from './notice.js';
 import { animateNext } from './sheetview.js';
-import { clamp, fmt, plural, tidy } from './util.js';
+import { clamp, tidy } from './util.js';
+import { t } from './copy/index.js';
 
 const packOptions = () => ({ gap: state.gap, rotate: settings.rotate });
 
@@ -74,7 +75,7 @@ function applyPlacements(placements) {
   lastArranged = layoutSignature();
 }
 
-const arrangedText = (n) => (n === 1 ? '1 elemento acomodado.' : `${n} elementos acomodados.`);
+const arrangedText = (n) => t('notices.arranged', { n });
 
 /**
  * Acomoda todo sin superponer. Devuelve el resultado ('arranged', 'same',
@@ -85,7 +86,7 @@ export function arrange() {
   if (!n || state.busy) return null;
   const { aw, ah } = area();
   if (aw <= 0 || ah <= 0) {
-    say('El margen no deja lugar en la hoja: achicalo.', { warn: true });
+    say(t('errors.marginTooBig'), { warn: true });
     return 'error';
   }
   if (lastArranged === layoutSignature()) {
@@ -110,15 +111,13 @@ export function arrange() {
   // No entran: se ofrece reducir, nunca se achica sin avisar.
   const k = fitScale(rects(state.items), aw, ah, packOptions());
   if (!k) {
-    say('No hay forma de que entren todos, ni achicándolos. Quitá algunos o elegí una hoja más grande.', {
-      warn: true,
-    });
+    say(t('errors.neverFits'), { warn: true });
     return 'error';
   }
   const factor = Math.floor(k * 0.999 * 1000) / 1000;
-  say('No entran todos con su tamaño actual.', {
+  say(t('notices.noFit'), {
     warn: true,
-    action: { label: `Reducir al ${fmt(factor * 100)} % y acomodar`, run: () => shrinkAndArrange(factor, k) },
+    action: { label: t('notices.shrinkAction', { pct: factor * 100 }), run: () => shrinkAndArrange(factor, k) },
   });
   return 'nofit';
 }
@@ -138,11 +137,10 @@ export function shrinkAndArrange(factor, exact) {
     animateNext();
     for (const item of state.items) item.scale *= f;
     applyPlacements(placements);
-    const what = n === 1 ? '1 elemento acomodado' : `${n} elementos acomodados`;
-    say(`${what}, reducidos al ${fmt(f * 100)} % de su tamaño.`);
+    say(t('notices.shrunk', { n, pct: f * 100 }));
     return true;
   }
-  say('No se pudo acomodar ni reduciendo. Probá quitando algunos elementos.', { warn: true });
+  say(t('errors.shrinkFailed'), { warn: true });
   return false;
 }
 
@@ -224,9 +222,9 @@ export function fillPlan(item) {
 /** Resumen para «Rellenar con copias»: texto y si se puede rellenar. */
 export function fillSummary(item) {
   const { count } = fillPlan(item);
-  if (!count) return { text: 'No entra: achicá el elemento.', ok: false };
-  if (count > MAX_ITEMS) return { text: `Entrarían ${count} copias y el máximo es ${MAX_ITEMS}: agrandá el elemento.`, ok: false };
-  return { text: `${plural(count, 'copia', 'copias')} en ${paperName()}`, ok: true };
+  if (!count) return { text: t('props.fillNoFit'), ok: false };
+  if (count > MAX_ITEMS) return { text: t('props.fillTooMany', { n: count, max: MAX_ITEMS }), ok: false };
+  return { text: t('props.fillSummary', { n: count, paper: paperName() }), ok: true };
 }
 
 export function fillWithCopies() {
@@ -250,6 +248,6 @@ export function fillWithCopies() {
     }
   }
   state.selected = state.items[0].id;
-  say(`${plural(plan.count, 'copia', 'copias')} en ${paperName()}.`);
+  say(t('notices.filled', { n: plan.count, paper: paperName() }));
   return true;
 }

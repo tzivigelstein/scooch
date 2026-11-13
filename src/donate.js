@@ -2,8 +2,7 @@
 // donar con la misma facilidad, no hay cuentas regresivas ni culpa, y la
 // exportación pedida sigue siempre, se cierre como se cierre.
 
-import { APP_NAME, DONATE_URL, DONATE_EVERY, DONATE_STORAGE, DONATE_COPY } from './config.js';
-import { icon } from './icons.js';
+import { DONATE_URL, DONATE_EVERY, DONATE_STORAGE } from './config.js';
 import { $, storageGet, storageSet } from './util.js';
 
 let ui = {};
@@ -18,39 +17,16 @@ function donateUrl() {
   return /^https:\/\/\S+$/.test(url) ? url : '';
 }
 
-const fill = (text) => text.replaceAll('{app}', APP_NAME);
-
 export function initDonate() {
   ui = {
     dialog: $('donate'),
     title: $('donate-title'),
-    body: $('donate-body'),
-    benefits: $('donate-benefits'),
     cta: $('donate-cta'),
-    ctaText: $('donate-cta-text'),
-    ctaNote: $('donate-note'),
     skip: $('donate-skip'),
     never: $('donate-never'),
-    neverText: $('donate-never-text'),
-    thanks: $('donate-thanks'),
     close: $('donate-close'),
   };
-  ui.title.textContent = DONATE_COPY.title;
-  ui.body.replaceChildren(
-    ...DONATE_COPY.body.map((line) => {
-      const p = document.createElement('p');
-      p.textContent = fill(line);
-      return p;
-    })
-  );
-  ui.benefits.innerHTML = DONATE_COPY.benefits
-    .map((b) => `<li>${icon(b.icon)}<span>${b.text}</span></li>`)
-    .join('');
-  ui.ctaText.textContent = DONATE_COPY.cta;
-  ui.ctaNote.textContent = DONATE_COPY.ctaNote;
-  ui.skip.textContent = DONATE_COPY.skip;
-  ui.neverText.textContent = DONATE_COPY.never;
-  ui.thanks.textContent = fill(DONATE_COPY.thanks);
+  // Los textos ya vienen en el HTML (data-i18n, desde src/copy).
   ui.cta.href = donateUrl() || '#';
 
   // Cada vía de cierre continúa con la exportación, dentro del mismo gesto.

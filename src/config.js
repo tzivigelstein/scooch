@@ -1,8 +1,7 @@
-// Configuración general. Para renombrar la app alcanza con cambiar APP_NAME
-// (y el <title> estático de index.html).
+// Configuración general. Para renombrar la app alcanza con cambiar APP_NAME:
+// los textos (src/copy) lo usan con {app}, también en el HTML generado.
 
 export const APP_NAME = 'Pliego';
-export const APP_TAGLINE = 'Armá hojas para imprimir';
 
 export const PAPERS = [
   ['A4', 210, 297],
@@ -49,22 +48,4 @@ export const DONATE_URL = '';
 export const DONATE_EVERY = 'session';
 /** Clave de localStorage de «No volver a mostrar en este dispositivo». */
 export const DONATE_STORAGE = 'donate-dismissed';
-
-/** Textos del modal (para retocarlos en un solo lugar). `{app}` es el nombre de la app. */
-export const DONATE_COPY = {
-  title: '¿Te ahorró tiempo y papel?',
-  body: [
-    '{app} es gratis: sin anuncios, sin marcas de agua y sin cuentas. Lo mantengo con el aporte de quienes lo usan.',
-    'Si te sirvió, un aporte en Patreon me ayuda a seguir mejorándolo.',
-  ],
-  benefits: [
-    { icon: 'megaphone-off', text: 'Sin anuncios' },
-    { icon: 'droplet-off', text: 'Sin marca de agua' },
-    { icon: 'shield-check', text: 'Tus archivos no salen de tu navegador' },
-  ],
-  cta: 'Apoyar en Patreon',
-  ctaNote: 'Se abre en otra pestaña. Tu PDF sigue su curso.',
-  skip: 'Seguir sin donar',
-  never: 'No volver a mostrar en este dispositivo',
-  thanks: 'Gracias por usarlo, con o sin aporte.',
-};
+// Los textos del modal están en src/copy (donate).

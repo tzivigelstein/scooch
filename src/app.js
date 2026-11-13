@@ -2,7 +2,8 @@
 // exportar un PDF listo para imprimir. Este módulo arma la interfaz y conecta
 // las acciones; el estado vive en store.js y la hoja en sheetview.js.
 
-import { APP_NAME, APP_TAGLINE, MAX_ITEMS } from './config.js';
+import { MAX_ITEMS } from './config.js';
+import { t, applyCopy, keyLabel } from './copy/index.js';
 import {
   state,
   settings,
@@ -39,7 +40,7 @@ import { initDrawers, closeDrawer, isDrawerOpen, isCollapsible, drawerOf, reveal
 import { initShortcuts, openShortcuts } from './shortcuts.js';
 import { initDonate, shouldAskDonation, askDonation, isDonationOpen } from './donate.js';
 import { initKeyboard } from './keyboard.js';
-import { $, clamp, round1, tidy, fmt, plural, MOD } from './util.js';
+import { $, clamp, round1, tidy } from './util.js';
 
 const ui = {};
 
@@ -70,14 +71,14 @@ function renderTopbar() {
   off(ui.clear, busy || empty);
   const item = selectedItem();
   if (!item) return;
-  ui.piecebar.setAttribute('aria-label', `Acciones de la pieza ${assets.get(item.asset).name}`);
+  ui.piecebar.setAttribute('aria-label', t('piecebar.labelFor', { name: assets.get(item.asset).name }));
   // «Traer al frente» solo sirve si pisa a otra: si no, queda deshabilitado (enfocable y explicado).
   setFrontEnabled(overlapsOthers(item));
 }
 
 const othersOf = (item) => state.items.filter((other) => other !== item).map(rectOf);
 const overlapsOthers = (item) => overlapsAny(rectOf(item), othersOf(item));
-const nameOf = (rect) => assets.get(state.items.find((item) => item.id === rect.id)?.asset)?.name ?? 'otra pieza';
+const nameOf = (rect) => assets.get(state.items.find((item) => item.id === rect.id)?.asset)?.name ?? t('pieces.other');
 
 // ---------- Foco ----------
 
@@ -113,7 +114,7 @@ function select(id) {
 
 const sizeText = (item) => {
   const [w, h] = dims(item);
-  return `${fmt(w)} × ${fmt(h)} mm`;
+  return t('units.size', { w, h });
 };
 
 /**
@@ -151,31 +152,31 @@ const pieceActions = {
   rotate: (opts = {}, dir = 1) =>
     editSelected((item) => keepCenter(item, () => (item.r = (item.r + (dir > 0 ? 90 : 270)) % 360)), {
       ...opts,
-      announce: (item) => `Rotada a ${item.r}°: ${sizeText(item)}.`,
+      announce: (item) => t('announce.rotated', { deg: item.r, size: sizeText(item) }),
     }),
   duplicate: (opts = {}) => {
-    if (state.items.length >= MAX_ITEMS) return say(`Hay un máximo de ${MAX_ITEMS} elementos por hoja.`, { warn: true });
+    if (state.items.length >= MAX_ITEMS) return say(t('errors.maxPieces', { max: MAX_ITEMS }), { warn: true });
     editSelected(
       (item) => {
         const copy = { ...item, id: newId(), ...duplicateSpot(item) };
         state.items.push(copy);
         state.selected = copy.id;
       },
-      { ...opts, announce: () => `Duplicada. Ahora hay ${plural(state.items.length, 'pieza', 'piezas')}.` }
+      { ...opts, announce: () => t('announce.duplicated', { n: state.items.length }) }
     );
   },
   fit: (opts = {}) =>
-    editSelected(fitToSheet, { ...opts, announce: (item) => `Ajustada a la hoja: ${sizeText(item)}.` }),
-  center: (opts = {}) => editSelected(centerOnSheet, { ...opts, announce: 'Centrada en la hoja.' }),
+    editSelected(fitToSheet, { ...opts, announce: (item) => t('announce.fitted', { size: sizeText(item) }) }),
+  center: (opts = {}) => editSelected(centerOnSheet, { ...opts, announce: t('announce.centered') }),
   front: (opts = {}) => {
     const item = selectedItem();
     if (!item) return;
-    if (!overlapsOthers(item)) return announce('No hace falta traerla al frente: no pisa a ninguna otra pieza.');
+    if (!overlapsOthers(item)) return announce(t('announce.frontNotNeeded'));
     editSelected(
       (selected) => {
         state.items = [...state.items.filter((other) => other !== selected), selected];
       },
-      { ...opts, announce: 'Traída al frente.' }
+      { ...opts, announce: t('announce.front') }
     );
   },
   /**
@@ -196,7 +197,7 @@ const pieceActions = {
       // el foco sigue en la lista
     } else if (focus) focusSheet();
     else ui.sheet.focus({ preventScroll: true });
-    announce(`Quitada: ${name}.${state.items.length ? '' : ' La hoja está vacía.'}`);
+    announce(t(state.items.length ? 'announce.removed' : 'announce.removedLast', { name }));
   },
 };
 
@@ -217,8 +218,8 @@ function nudge(dx, dy) {
   }
   render();
   focusSheet();
-  if (jumped.length) announce(`Saltó sobre ${jumped.map(nameOf).join(', ')}.`);
-  announce(`A ${fmt(item.x)} mm del borde izquierdo y ${fmt(item.y)} mm del superior.`, { key: 'move', delay: 600 });
+  if (jumped.length) announce(t('announce.jumped', { names: jumped.map(nameOf).join(', ') }));
+  announce(t('announce.position', { x: item.x, y: item.y }), { key: 'move', delay: 600 });
 }
 
 function scaleBy(delta) {
@@ -231,14 +232,14 @@ function scaleBy(delta) {
     if (Number.isFinite(growth)) scale = Math.min(scale, Math.max(item.scale, Math.floor(item.scale * growth * 10) / 10));
     if (scale <= item.scale) {
       focusSheet();
-      return announce('No hay más lugar para agrandar.', { key: 'scale' });
+      return announce(t('announce.noRoom'), { key: 'scale' });
     }
   }
   commit(`scale-key:${item.id}`);
   keepCenter(item, () => (item.scale = scale));
   render();
   focusSheet();
-  announce(`Escala ${fmt(item.scale)} %: ${sizeText(item)}.`, { key: 'scale', delay: 600 });
+  announce(t('announce.scaled', { scale: item.scale, size: sizeText(item) }), { key: 'scale', delay: 600 });
 }
 
 function doUndo() {
@@ -247,7 +248,7 @@ function doUndo() {
   animateNext();
   render();
   if (onSheet) focusSheet();
-  announce('Se deshizo el último cambio.');
+  announce(t('announce.undone'));
 }
 
 function doRedo() {
@@ -256,7 +257,7 @@ function doRedo() {
   animateNext();
   render();
   if (onSheet) focusSheet();
-  announce('Se rehízo el cambio.');
+  announce(t('announce.redone'));
 }
 
 function doArrange() {
@@ -271,19 +272,19 @@ function setOrientation(landscape) {
   state.landscape = landscape;
   animateNext();
   render();
-  announce(`Hoja ${paperName()}.`);
+  announce(t('announce.sheet', { paper: paperName() }));
 }
 
 function setGridVisible(show) {
   setGrid({ show });
   render();
-  announce(show ? `Grilla visible, cada ${fmt(settings.grid.size)} mm.` : 'Grilla oculta.');
+  announce(show ? t('announce.gridShown', { size: settings.grid.size }) : t('announce.gridHidden'));
 }
 
 function sheetChanged() {
   animateNext();
   render();
-  announce(`Hoja ${paperName()}.`);
+  announce(t('announce.sheet', { paper: paperName() }));
 }
 
 function clearSheet() {
@@ -292,7 +293,7 @@ function clearSheet() {
   state.items = [];
   state.selected = null;
   render();
-  announce('Se vació la hoja.');
+  announce(t('announce.cleared'));
 }
 
 // Cambiar la página crea (o reusa) otro asset: así deshacer vuelve a la anterior.
@@ -300,7 +301,7 @@ async function changePage(n) {
   const item = selectedItem();
   const asset = item && assets.get(item.asset);
   if (!asset || asset.kind !== 'pdf' || asset.page === n || state.busy) return;
-  setBusy(true, `Cargando la página ${n}…`);
+  setBusy(true, t('busy.loadingPage', { page: n }));
   try {
     let key = [...assets].find(([, a]) => a.pdf === asset.pdf && a.page === n)?.[0];
     key ??= addAsset(await pdfPage(asset, n));
@@ -310,7 +311,7 @@ async function changePage(n) {
   } catch (err) {
     console.error(err);
     setBusy(false);
-    say(`No se pudo cargar la página ${n}.`, { warn: true });
+    say(t('errors.page', { page: n }), { warn: true });
   }
 }
 
@@ -322,7 +323,7 @@ function fill() {
 
 /** M: al primer campo de la sección Pieza (X). */
 function focusPieceFields() {
-  if (!selectedItem()) return announce('Primero seleccioná una pieza.');
+  if (!selectedItem()) return announce(t('announce.needSelection'));
   revealPanel('props');
   const field = firstPieceField();
   field?.focus({ preventScroll: false });
@@ -359,19 +360,19 @@ async function loadFiles(files) {
   if (!files.length || state.busy) return;
   const errors = [];
   const keys = [];
-  setBusy(true, 'Cargando…');
+  setBusy(true, t('busy.loading'));
   for (const [i, file] of files.entries()) {
     if (state.items.length + keys.length >= MAX_ITEMS) {
-      errors.push(`se llegó al máximo de ${MAX_ITEMS} elementos y ${files.length - i} quedaron afuera`);
+      errors.push(t('errors.maxReached', { max: MAX_ITEMS, n: files.length - i }));
       break;
     }
-    status.busyText = files.length > 1 ? `Cargando ${i + 1} de ${files.length}…` : `Cargando ${file.name}…`;
+    status.busyText = files.length > 1 ? t('busy.loadingCount', { i: i + 1, n: files.length }) : t('busy.loadingFile', { name: file.name });
     renderNotice();
     try {
       keys.push(addAsset(await readFile(file)));
     } catch (err) {
       console.warn(file.name, err);
-      errors.push(`${file.name || 'archivo'}: ${err.message}`);
+      errors.push(t('errors.loadItem', { name: file.name || t('errors.unnamedFile'), reason: err.message }));
     }
   }
   if (keys.length) {
@@ -379,9 +380,9 @@ async function loadFiles(files) {
     placeNew(keys);
   }
   state.busy = false;
-  if (errors.length) say(`No se pudo cargar: ${errors.join(' · ')}`, { warn: true });
+  if (errors.length) say(t('errors.load', { n: errors.length, list: errors.join(t('errors.loadSeparator')) }), { warn: true });
   else render();
-  if (keys.length) announce(keys.length === 1 ? 'Se agregó 1 archivo.' : `Se agregaron ${keys.length} archivos.`);
+  if (keys.length) announce(t('announce.added', { n: keys.length }));
 }
 
 const filesFrom = (dataTransfer) => (dataTransfer ? [...dataTransfer.files] : []);
@@ -428,7 +429,7 @@ async function preparePdf(busyText) {
   } catch (err) {
     console.error(err);
     setBusy(false);
-    say(`No se pudo armar el PDF: ${err.message}`, { warn: true });
+    say(t('errors.pdf', { detail: err.message }), { warn: true });
     return null;
   }
 }
@@ -438,25 +439,23 @@ const canExport = () => state.items.length > 0 && !state.busy && !isDonationOpen
 async function exportPdf() {
   if (!canExport()) return;
   const fileName = pdfFileName();
-  const bytes = await preparePdf('Armando el PDF…');
+  const bytes = await preparePdf(t('busy.pdf'));
   if (!bytes) return;
   downloadBytes(bytes, fileName);
   setBusy(false);
-  say(`PDF descargado (${fileName}). Al imprimir, elegí «Tamaño real» o «100 %».`);
+  say(t('notices.downloaded', { file: fileName }));
 }
 
 /** Imprime el mismo PDF que se descarga, sin pasar por la descarga. */
 async function printPdf() {
   if (!canExport()) return;
   const fileName = pdfFileName();
-  const bytes = await preparePdf('Preparando la impresión…');
+  const bytes = await preparePdf(t('busy.print'));
   if (!bytes) return;
   setBusy(false);
   const how = await printBytes(bytes, fileName);
-  const tip = `elegí «Tamaño real» o «100 %» y el mismo tamaño de papel (${paperName()}).`;
-  if (how === 'dialog') say(`En el diálogo de impresión, ${tip}`, { persist: true });
-  else if (how === 'tab') say(`Se abrió el PDF: imprimilo desde ahí. Al imprimir, ${tip}`, { persist: true });
-  else say(`Se descargó ${fileName}: imprimilo desde ahí. Al imprimir, ${tip}`, { persist: true });
+  const key = { dialog: 'notices.printDialog', tab: 'notices.printTab' }[how] ?? 'notices.printDownload';
+  say(t(key, { paper: paperName(), file: fileName }), { persist: true });
 }
 
 // ---------- Barra de la pieza (toolbar con foco itinerante) ----------
@@ -501,14 +500,9 @@ function syncSingleKeys() {
     if (single && !settings.singleKeys) el.removeAttribute('aria-keyshortcuts');
     else el.setAttribute('aria-keyshortcuts', el.dataset.aks);
   }
-  ui.pieceHint.textContent = settings.singleKeys
-    ? 'Flechas: mover (Shift: 10 mm; Alt: 0,1 mm). Más y menos: escalar. R y Shift+R: girar. D: duplicar. ' +
-      'M: editar medidas. Enter: barra de acciones. Supr: quitar.'
-    : 'Flechas: mover (Shift: 10 mm; Alt: 0,1 mm). Enter: barra de acciones. Supr: quitar.';
+  ui.pieceHint.textContent = t(settings.singleKeys ? 'piecebar.hint' : 'piecebar.hintNoKeys');
   document.body.classList.toggle('single-keys-off', !settings.singleKeys);
-  ui.emptyText.textContent = settings.singleKeys
-    ? 'Soltá imágenes o PDF, pegá con Ctrl+V o apretá O'
-    : 'Soltá imágenes o PDF, pegá con Ctrl+V o hacé clic acá';
+  ui.emptyText.textContent = t(settings.singleKeys ? 'sheet.drop' : 'sheet.dropNoKeys');
   refreshTooltip();
 }
 
@@ -535,9 +529,10 @@ function wire() {
     skip: $('skip'),
   });
 
-  document.title = `${APP_NAME} — ${APP_TAGLINE}`;
-  for (const el of document.querySelectorAll('[data-app-name]')) el.textContent = APP_NAME;
-  for (const el of document.querySelectorAll('[data-kbd]')) el.dataset.kbd = el.dataset.kbd.replaceAll('Ctrl+', `${MOD}+`);
+  // El HTML ya llega con los textos (Vite los completa); esto aplica lo que depende
+  // del dispositivo, como ⌘ en lugar de Ctrl.
+  applyCopy();
+  for (const el of document.querySelectorAll('[data-kbd]')) el.dataset.kbd = el.dataset.kbd.split(' ').map(keyLabel).join(' ');
   hydrateIcons();
 
   initLive();
@@ -553,7 +548,7 @@ function wire() {
       ui.sheet.focus({ preventScroll: true });
     },
     commitGesture: (result) => {
-      if (result === 'reverted') say('Ahí no había lugar libre: la pieza volvió a su lugar.');
+      if (result === 'reverted') say(t('notices.reverted'));
       else render();
     },
     preview: (draft) => renderPanels(draft),
@@ -664,7 +659,7 @@ function wire() {
       const onPiece = !!target.closest('.piece');
       select(null);
       if (onPiece) ui.sheet.focus({ preventScroll: true });
-      announce('Ninguna pieza seleccionada.');
+      announce(t('announce.deselected'));
       return true;
     },
   });

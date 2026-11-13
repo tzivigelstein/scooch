@@ -4,7 +4,8 @@
 import { DRAG_THRESHOLD } from './config.js';
 import { state, settings, assets, sheetSize, dims, findItem, commit, paperName } from './store.js';
 import { overlapsAny, nearestFree, maxGrowth } from './collide.js';
-import { $, clamp, round1, tidy, fmt, plural, isTyping } from './util.js';
+import { $, clamp, round1, tidy, isTyping } from './util.js';
+import { t } from './copy/index.js';
 
 const nodes = new Map(); // id → nodo de la pieza
 let ui = {};
@@ -74,8 +75,8 @@ export function renderSheetView() {
   renderGrid();
   ui.empty.hidden = n > 0;
   ui.empty.disabled = state.busy;
-  ui.sheet.setAttribute('aria-label', `Hoja ${paperName()}, ${n ? plural(n, 'pieza', 'piezas') : 'vacía'}`);
-  ui.paperLabel.textContent = `${state.paper} · ${fmt(W)} × ${fmt(H)} mm`;
+  ui.sheet.setAttribute('aria-label', n ? t('sheet.labelCount', { paper: paperName(), n }) : t('sheet.labelEmpty', { paper: paperName() }));
+  ui.paperLabel.textContent = t('sheet.paperLabel', { paper: state.paper, w: W, h: H });
 
   renderPieces();
   renderSelection();
@@ -146,7 +147,7 @@ function createPiece(item) {
   node.dataset.id = item.id;
   node.tabIndex = 0;
   node.setAttribute('role', 'button');
-  node.setAttribute('aria-roledescription', 'pieza');
+  node.setAttribute('aria-roledescription', t('piece.roleDescription'));
   node.setAttribute('aria-describedby', 'piece-hint');
   const img = document.createElement('img');
   img.alt = '';
@@ -159,12 +160,9 @@ function createPiece(item) {
 export function pieceLabel(item) {
   const asset = assets.get(item.asset);
   const [w, h] = dims(item);
-  const page = asset.kind === 'pdf' && asset.pdf?.numPages > 1 ? ` (página ${asset.page})` : '';
-  const turned = item.r ? `, rotada ${item.r}°` : '';
-  return (
-    `${asset.name}${page}, ${fmt(w)} × ${fmt(h)} mm, a ${fmt(item.x)} mm del borde izquierdo ` +
-    `y ${fmt(item.y)} mm del superior${turned}`
-  );
+  const page = asset.kind === 'pdf' && asset.pdf?.numPages > 1 ? t('piece.a11yPage', { page: asset.page }) : '';
+  const turned = item.r ? t('piece.a11yTurned', { deg: item.r }) : '';
+  return t('piece.a11y', { name: asset.name, page, size: t('units.size', { w, h }), x: item.x, y: item.y, turned });
 }
 
 // También se usa durante el arrastre, con una copia modificada del item.
@@ -204,7 +202,7 @@ function renderSelection(draft = null) {
     width: `${w * zoom}px`,
     height: `${h * zoom}px`,
   });
-  ui.pieceSize.textContent = `${fmt(w)} × ${fmt(h)} mm`;
+  ui.pieceSize.textContent = t('units.size', { w, h });
   placePiecebar(item);
 }
 

@@ -3,33 +3,34 @@
 
 import { SINGLE_KEYS_STORAGE } from './config.js';
 import { settings } from './store.js';
-import { $, MOD, storageGet, storageSet } from './util.js';
+import { $, storageGet, storageSet } from './util.js';
+import { t, keyLabel } from './copy/index.js';
 
-// [teclas, acción, es de una tecla]
+// [teclas (nombres de keyLabel), acción (clave en shortcuts.rows), es de una tecla]
 const ROWS = [
-  [['Tab', 'Shift+Tab'], 'Recorrer barra, piezas y paneles (en la hoja, enfocar una pieza la selecciona)', false],
-  [['←', '↑', '→', '↓'], 'Mover la pieza 1 mm (Shift: 10 mm; Alt: 0,1 mm). Si choca con otra, salta al otro lado', false],
-  [['+', '−'], 'Agrandar o achicar 1 % (Shift: 10 %)', true],
-  [['R', 'Shift+R'], 'Girar 90° a la derecha / a la izquierda', true],
-  [['D'], 'Duplicar', true],
-  [['F'], 'Ajustar a la hoja', true],
-  [['C'], 'Centrar', true],
-  [[']'], 'Traer al frente', true],
-  [['Enter', 'Espacio'], 'Sobre una pieza: ir a su barra de acciones', false],
-  [['Supr', 'Backspace'], 'Quitar la pieza', false],
-  [['M'], 'Editar las medidas de la pieza (panel Propiedades)', true],
-  [['H'], 'Ir a los ajustes de la hoja', true],
-  [['P'], 'Ir a la lista de piezas', true],
-  [['A'], 'Acomodar todo sin superponer', true],
-  [['O'], 'Agregar imágenes o PDF', true],
-  [['L'], 'Cambiar la orientación de la hoja', true],
-  [['G'], 'Mostrar u ocultar la grilla', true],
-  [[`${MOD}+Z`], 'Deshacer', false],
-  [[`${MOD}+Shift+Z`, 'Ctrl+Y'], 'Rehacer', false],
-  [[`${MOD}+P`], 'Imprimir', false],
-  [[`${MOD}+S`, `${MOD}+E`], 'Descargar PDF', false],
-  [['Esc'], 'En un panel: volver a la pieza (o cerrar el panel superpuesto); si no, deseleccionar', false],
-  [['?'], 'Mostrar estos atajos', true],
+  [['Tab', 'Shift+Tab'], 'tab', false],
+  [['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown'], 'move', false],
+  [['Plus', 'Minus'], 'scale', true],
+  [['R', 'Shift+R'], 'rotate', true],
+  [['D'], 'duplicate', true],
+  [['F'], 'fit', true],
+  [['C'], 'center', true],
+  [[']'], 'front', true],
+  [['Enter', 'Space'], 'toolbar', false],
+  [['Delete', 'Backspace'], 'remove', false],
+  [['M'], 'measures', true],
+  [['H'], 'sheet', true],
+  [['P'], 'list', true],
+  [['A'], 'arrange', true],
+  [['O'], 'add', true],
+  [['L'], 'orientation', true],
+  [['G'], 'grid', true],
+  [['Mod+Z'], 'undo', false],
+  [['Mod+Shift+Z', 'Control+Y'], 'redo', false],
+  [['Mod+P'], 'print', false],
+  [['Mod+S', 'Mod+E'], 'download', false],
+  [['Escape'], 'escape', false],
+  [['?'], 'help', true],
 ];
 
 let dialog;
@@ -52,17 +53,17 @@ export function initShortcuts({ trigger: button, onSingleKeysChange }) {
       if (single) row.dataset.single = '';
       const keyCell = document.createElement('td');
       keys.forEach((key, i) => {
-        if (i) keyCell.append(keys.length > 2 ? ' ' : ' o ');
+        if (i) keyCell.append(keys.length > 2 ? ' ' : t('shortcuts.or'));
         const kbd = document.createElement('kbd');
-        kbd.textContent = key;
+        kbd.textContent = keyLabel(key);
         keyCell.append(kbd);
       });
       const actionCell = document.createElement('td');
-      actionCell.textContent = action;
+      actionCell.textContent = t(`shortcuts.rows.${action}`);
       if (single) {
         const off = document.createElement('span');
         off.className = 'off-badge';
-        off.textContent = 'Desactivado';
+        off.textContent = t('shortcuts.off');
         actionCell.append(' ', off);
       }
       row.append(keyCell, actionCell);

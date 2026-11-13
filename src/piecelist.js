@@ -6,13 +6,15 @@ import { state, assets, dims, settings } from './store.js';
 import { problemsById } from './notice.js';
 import { printResolution } from './layout.js';
 import { icon } from './icons.js';
-import { $, fmt, plural } from './util.js';
+import { $ } from './util.js';
+import { t } from './copy/index.js';
 
+// Distintivos de cada fila (el texto está en pieces.badges.<key>).
 const BADGES = [
-  { key: 'cut', icon: 'scissors', text: 'Se sale de la hoja' },
-  { key: 'pastMargin', icon: 'square-dashed', text: 'Pasa el margen' },
-  { key: 'overlap', icon: 'layers', text: 'Se superpone con otra' },
-  { key: 'lowRes', icon: 'triangle-alert', text: 'Puede verse pixelada' },
+  { key: 'cut', icon: 'scissors' },
+  { key: 'pastMargin', icon: 'square-dashed' },
+  { key: 'overlap', icon: 'layers' },
+  { key: 'lowRes', icon: 'triangle-alert' },
 ];
 
 const rows = new Map(); // id → <li role="option">
@@ -95,11 +97,11 @@ function updateRow(row, item, problems = {}) {
   const img = row.querySelector('img');
   if (img.getAttribute('src') !== asset.url) img.src = asset.url;
   img.style.transform = item.r ? `rotate(${item.r}deg)` : '';
-  const page = asset.kind === 'pdf' && asset.pdf?.numPages > 1 ? ` · pág. ${asset.page}` : '';
+  const paged = asset.kind === 'pdf' && asset.pdf?.numPages > 1;
   const name = row.querySelector('.row-name');
   if (name.textContent !== asset.name) name.textContent = asset.name;
   row.dataset.tip = asset.name;
-  const size = `${fmt(w)} × ${fmt(h)} mm${page}`;
+  const size = t(paged ? 'pieces.rowSizePage' : 'pieces.rowSize', { size: t('units.size', { w, h }), page: asset.page });
   const dimsEl = row.querySelector('.row-dims');
   if (dimsEl.textContent !== size) dimsEl.textContent = size;
 
@@ -114,12 +116,21 @@ function updateRow(row, item, problems = {}) {
   const badges = row.querySelector('.row-badges');
   if (badges.dataset.key !== key) {
     badges.dataset.key = key;
-    badges.innerHTML = shown
-      .map(
-        (b) =>
-          `<span class="row-badge" data-kind="${b.key}" data-tip="${b.text}">${icon(b.icon)}<span class="sr-only">, ${b.text.toLowerCase()}</span></span>`
-      )
-      .join('');
+    badges.replaceChildren(
+      ...shown.map((b) => {
+        const text = t(`pieces.badges.${b.key}`);
+        const badge = document.createElement('span');
+        badge.className = 'row-badge';
+        badge.dataset.kind = b.key;
+        badge.dataset.tip = text;
+        badge.innerHTML = icon(b.icon);
+        const spoken = document.createElement('span');
+        spoken.className = 'sr-only';
+        spoken.textContent = `, ${text.toLowerCase()}`;
+        badge.append(spoken);
+        return badge;
+      })
+    );
   }
 }
 
@@ -127,7 +138,7 @@ export function renderPieceList() {
   const n = state.items.length;
   ui.empty.hidden = n > 0;
   ui.list.hidden = n === 0;
-  ui.total.textContent = plural(n, 'pieza', 'piezas');
+  ui.total.textContent = t('pieces.count', { n });
   ui.dockCount.textContent = n ? String(n) : '';
 
   const problems = problemsById();

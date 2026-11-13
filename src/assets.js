@@ -2,6 +2,7 @@
 // con su tamaño físico en mm y todo lo necesario para mostrarlas y exportarlas.
 
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { t } from './copy/index.js';
 
 export const MAX_FILE_BYTES = 40 * 1024 * 1024;
 export const DEFAULT_DPI = 300;
@@ -18,9 +19,9 @@ let lastSource = 0;
 
 /** Lee un File y devuelve un asset de imagen o de PDF (página 1). */
 export async function readFile(file) {
-  if (file.size > MAX_FILE_BYTES) throw new Error('pesa más de 40 MB');
+  if (file.size > MAX_FILE_BYTES) throw new Error(t('errors.file.tooHeavy'));
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const name = file.name || 'Imagen pegada';
+  const name = file.name || t('pieces.pastedName');
   return looksLikePdf(file, bytes) ? readPdf(name, bytes) : readImage(name, file, bytes);
 }
 
@@ -36,9 +37,9 @@ async function readImage(name, file, bytes) {
   const img = await decodeImage(file);
   const pw = img.naturalWidth;
   const ph = img.naturalHeight;
-  if (!pw || !ph) throw new Error('la imagen no tiene dimensiones');
+  if (!pw || !ph) throw new Error(t('errors.file.noSize'));
   if (pw * ph > MAX_PIXELS) {
-    throw new Error(`es demasiado grande (${Math.round((pw * ph) / 1e6)} MP; el máximo es 60 MP)`);
+    throw new Error(t('errors.file.tooManyPixels', { mp: Math.round((pw * ph) / 1e6) }));
   }
 
   // pdf-lib solo embebe JPG y PNG, y no aplica la orientación EXIF: en esos
@@ -76,7 +77,7 @@ async function decodeImage(file) {
     await img.decode();
     return img;
   } catch {
-    throw new Error('el navegador no puede abrir este formato');
+    throw new Error(t('errors.file.unsupported'));
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -93,7 +94,7 @@ function rasterize(source, width, height) {
 function canvasBlob(canvas, type, quality) {
   return new Promise((resolve, reject) =>
     canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('no se pudo procesar la imagen'))),
+      (blob) => (blob ? resolve(blob) : reject(new Error(t('errors.file.processFailed')))),
       type,
       quality
     )
@@ -189,9 +190,9 @@ async function readPdf(name, bytes) {
     pdf = await pdfjs.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise;
   } catch (err) {
     if (err?.name === 'PasswordException') {
-      throw new Error('el PDF tiene contraseña; guardalo sin contraseña y volvé a cargarlo');
+      throw new Error(t('errors.file.password'));
     }
-    throw new Error('no se pudo leer el PDF (¿está dañado?)');
+    throw new Error(t('errors.file.damaged'));
   }
   return pdfPage({ name, src: ++lastSource, pdf, bytes }, 1);
 }

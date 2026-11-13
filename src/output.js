@@ -7,8 +7,9 @@ import { APP_NAME } from './config.js';
 import { state, assets, sheetSize, dims, paperName } from './store.js';
 import { buildPdf } from './export.js';
 import { slug } from './util.js';
+import { t } from './copy/index.js';
 
-export const pdfFileName = () => `${slug(APP_NAME)}-${state.paper.toLowerCase()}.pdf`;
+export const pdfFileName = () => `${slug(APP_NAME, t('print.fallbackName'))}-${state.paper.toLowerCase()}.pdf`;
 
 /** Bytes del PDF de la hoja actual (una página del tamaño del papel). */
 export function makePdf() {
@@ -19,7 +20,7 @@ export function makePdf() {
     const [w, h] = dims(item);
     return { asset, x: item.x, y: item.y, w, h, uw: asset.w * k, uh: asset.h * k, r: item.r };
   });
-  return buildPdf({ width: W, height: H, pieces, title: `${APP_NAME} ${paperName()}`, creator: APP_NAME });
+  return buildPdf({ width: W, height: H, pieces, title: t('print.pdfTitle', { paper: paperName() }), creator: APP_NAME });
 }
 
 const pdfUrl = (bytes) => URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
@@ -69,7 +70,7 @@ function printInFrame(url) {
     if (!frame) {
       frame = document.createElement('iframe');
       frame.className = 'print-frame';
-      frame.title = 'PDF para imprimir';
+      frame.title = t('print.frameTitle');
       frame.tabIndex = -1;
       frame.setAttribute('aria-hidden', 'true');
       document.body.append(frame);

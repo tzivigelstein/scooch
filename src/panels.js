@@ -5,7 +5,8 @@ import { PAPERS, GRID_MIN, GRID_MAX, SECTIONS_STORAGE } from './config.js';
 import { state, settings, assets, dims, selectedItem, commit, endEdit, render, setGrid, setAllowOverlap } from './store.js';
 import { keepCenter, fillSummary, printResolution } from './layout.js';
 import { icon } from './icons.js';
-import { $, clamp, fmt, num, storageGet, storageSet } from './util.js';
+import { $, clamp, num, storageGet, storageSet } from './util.js';
+import { t, hasText } from './copy/index.js';
 
 let ui = {};
 
@@ -64,7 +65,7 @@ export function initPanels(actions) {
   bindItemNumber(ui.posY, 'y', (item, v) => ({ y: v }));
   ui.actual.addEventListener('click', () =>
     actions.editSelected((item) => keepCenter(item, () => (item.scale = 100)), {
-      announce: (item) => `Tamaño real: ${sizeText(item)}.`,
+      announce: (item) => t('announce.actualSize', { size: sizeText(item) }),
     })
   );
   ui.fit.addEventListener('click', () => actions.fit());
@@ -77,7 +78,7 @@ export function initPanels(actions) {
   ui.remove.addEventListener('click', (e) => actions.remove({ viaKeyboard: e.detail === 0 }));
 
   // Hoja
-  ui.paper.replaceChildren(...PAPERS.map(([name, w, h]) => new Option(`${name} (${fmt(w)} × ${fmt(h)} mm)`, name)));
+  ui.paper.replaceChildren(...PAPERS.map(([name, w, h]) => new Option(t('sheet.paperOption', { paper: paperLabel(name), w, h }), name)));
   ui.paper.addEventListener('change', () => {
     if (state.busy) return render();
     commit();
@@ -166,8 +167,11 @@ export const firstSheetField = () => ui.paper;
 
 const sizeText = (item) => {
   const [w, h] = dims(item);
-  return `${fmt(w)} × ${fmt(h)} mm`;
+  return t('units.size', { w, h });
 };
+
+/** Nombre visible de un papel (algunos se traducen: Carta, Oficio). */
+const paperLabel = (name) => (hasText(`sheet.papers.${name}`) ? t(`sheet.papers.${name}`) : name);
 
 /** Input numérico de la pieza: `patch(item, valor)` devuelve los cambios o null si no vale. */
 function bindItemNumber(input, name, patch) {
@@ -232,8 +236,8 @@ export function renderPanels(draft = null) {
   for (const el of [ui.scale, ui.slider, ui.width, ui.height, ui.posX, ui.posY, ui.actual, ui.page, ui.fill]) {
     setDisabled(el, busy);
   }
-  const page = asset.kind === 'pdf' && asset.pdf?.numPages > 1 ? ` · página ${asset.page}` : '';
-  ui.pieceName.textContent = asset.name + page;
+  const paged = asset.kind === 'pdf' && asset.pdf?.numPages > 1;
+  ui.pieceName.textContent = paged ? t('props.pieceNamePage', { name: asset.name, page: asset.page }) : asset.name;
   ui.pieceName.dataset.tip = asset.name;
   const [w, h] = dims(item);
   setValue(ui.posX, num(item.x));
@@ -242,11 +246,11 @@ export function renderPanels(draft = null) {
   setValue(ui.height, num(h));
   setValue(ui.scale, num(item.scale));
   setValue(ui.slider, String(clamp(item.scale, 1, 200)));
-  ui.slider.setAttribute('aria-valuetext', `${fmt(item.scale)} %`);
+  ui.slider.setAttribute('aria-valuetext', t('units.scale', { n: item.scale }));
 
   // Girada: ancho y alto son los que ocupa en la hoja (por eso aparecen intercambiados).
   ui.rotationNote.hidden = !item.r;
-  ui.rotationAngle.textContent = `Girada ${item.r}°`;
+  ui.rotationAngle.textContent = t('props.rotated', { deg: item.r });
   renderResolution(item);
   for (const input of [ui.scale, ui.slider]) input.setAttribute('aria-describedby', 'resolution-note');
   for (const input of [ui.width, ui.height]) {
@@ -284,22 +288,27 @@ function renderSettings() {
 /** Estado de «Traer al frente»: deshabilitado (pero enfocable y explicado) si no pisa a nadie. */
 export function setFrontEnabled(enabled) {
   ui.front.setAttribute('aria-disabled', String(!enabled));
-  ui.front.dataset.tip = enabled ? 'Traer al frente' : 'Traer al frente: solo hace falta si pisa a otra pieza';
+  ui.front.dataset.tip = t(enabled ? 'props.front' : 'props.frontDisabled');
 }
 
+// Ícono y aviso (clave en props.resolution) de cada nivel de resolución.
 const QUALITY = {
-  vector: { icon: 'circle-check', note: '' },
-  good: { icon: 'circle-check', note: '' },
-  ok: { icon: 'info', note: 'Calidad aceptable' },
-  low: { icon: 'triangle-alert', note: 'Puede verse pixelada' },
+  vector: { icon: 'circle-check', note: null },
+  good: { icon: 'circle-check', note: null },
+  ok: { icon: 'info', note: 'ok' },
+  low: { icon: 'triangle-alert', note: 'low' },
 };
 
 function renderResolution(item) {
   const res = printResolution(item);
   const level = res.vector ? 'vector' : res.level;
+  const note = QUALITY[level].note;
+  const printsAt = res.vector ? '' : t('props.resolution.printsAt', { ppp: res.ppp });
   const text = res.vector
-    ? 'Vectorial: nítido a cualquier tamaño'
-    : `Se imprime a ${res.ppp} ppp${QUALITY[level].note ? ` · ${QUALITY[level].note}` : ''}`;
+    ? t('props.resolution.vector')
+    : note
+      ? t('props.resolution.withNote', { text: printsAt, note: t(`props.resolution.${note}`) })
+      : printsAt;
   if (ui.resolutionNote.dataset.level !== level) {
     ui.resolutionNote.dataset.level = level;
     ui.resolutionIcon.innerHTML = icon(QUALITY[level].icon);
@@ -308,6 +317,9 @@ function renderResolution(item) {
 }
 
 function fillPageOptions(total) {
-  if (ui.page.options.length === total && ui.page.options[0]?.text.endsWith(`de ${total}`)) return;
-  ui.page.replaceChildren(...Array.from({ length: total }, (_, i) => new Option(`${i + 1} de ${total}`, String(i + 1))));
+  if (ui.page.options.length === total && ui.page.dataset.total === String(total)) return;
+  ui.page.dataset.total = String(total);
+  ui.page.replaceChildren(
+    ...Array.from({ length: total }, (_, i) => new Option(t('props.pageOption', { n: i + 1, total }), String(i + 1)))
+  );
 }
