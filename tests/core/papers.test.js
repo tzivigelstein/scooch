@@ -13,7 +13,7 @@ import {
   sizeOf,
   matchPreset,
   describe,
-} from '../src/papers.js';
+} from '../../src/core/papers.js';
 
 suite('presets', () => {
   test('ids estables, únicos, en vertical y agrupados', () => {

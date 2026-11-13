@@ -29,9 +29,9 @@ import {
   neighborAfterRemoval,
   copiesAllowed,
   scaleLimits,
-} from '../src/group.js';
-import { align, distribute, moveBy, rotateGroup, scaleGroup, bounds } from '../src/align.js';
-import { overlaps } from '../src/collide.js';
+} from '../../src/core/group.js';
+import { align, distribute, moveBy, rotateGroup, scaleGroup, bounds } from '../../src/core/align.js';
+import { overlaps } from '../../src/core/collide.js';
 import { prng } from './support.js';
 
 const b = (id, sheet, x, y, w, h) => ({ id, sheet, x, y, w, h });

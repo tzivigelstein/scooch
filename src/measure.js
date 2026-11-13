@@ -1,8 +1,8 @@
 // Medidas para mostrar en la unidad elegida en «Preferencias» (mm, cm o in).
 // El modelo es siempre mm: aquí solo se formatea (units.js hace la cuenta).
 
-import { formatLength, stepLabel } from './units.js';
-import { describe } from './papers.js';
+import { formatLength, stepLabel } from './core/units.js';
+import { describe } from './core/papers.js';
 import { state, settings } from './store.js';
 import { slug } from './util.js';
 import { t, numberLocale } from './copy/index.js';

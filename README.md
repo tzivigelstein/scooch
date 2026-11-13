@@ -75,7 +75,7 @@ src/
   export.js       armado del PDF, una página por hoja, con recorte y líneas
                   de corte (pdf-lib se carga al exportar o imprimir)
   output.js       descarga e impresión
-  módulos puros (sin DOM, con pruebas en test/):
+  core/           módulos puros (sin DOM, con pruebas en tests/core/):
     pack.js         empaquetado de rectángulos en una o varias hojas
     sheets.js       varias hojas: repartir, ubicar lo nuevo, problemas por hoja
     projectdoc.js   formato versionado del proyecto (serializar, migrar, validar)
@@ -87,7 +87,8 @@ src/
     cutmarks.js     líneas de corte (marcas en las esquinas o contorno)
     units.js, papers.js, collide.js, placement.js, humanize.js
   …               avisos, atajos, tooltips, paneles plegables, diálogos y donación
-test/             pruebas de los módulos puros (y del armado del PDF)
+tests/            pruebas unitarias (Vitest)
+e2e/              pruebas de navegador (Playwright)
 docs/copy.md      guía de copy: reglas, glosario y ejemplos
 vite.config.js    completa los textos de index.html y nombra los chunks diferidos
 ```

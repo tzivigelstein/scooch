@@ -4,7 +4,7 @@
 // quedan mientras existan. Todo se anuncia en las regiones vivas.
 
 import { state, settings, status, area, render, boxOf } from './store.js';
-import { pieceProblems, problemSummary } from './sheets.js';
+import { pieceProblems, problemSummary } from './core/sheets.js';
 import { announce, cancelAnnounce } from './live.js';
 import { icon } from './icons.js';
 import { $ } from './util.js';

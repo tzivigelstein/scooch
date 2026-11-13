@@ -14,7 +14,7 @@ import {
   zoomCrop,
   drawParams,
   cssParams,
-} from '../src/crop.js';
+} from '../../src/core/crop.js';
 import { prng } from './support.js';
 
 const PT_PER_MM = 72 / 25.4;

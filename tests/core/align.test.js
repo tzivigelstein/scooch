@@ -10,7 +10,7 @@ import {
   rotateGroup,
   snapGroup,
   validate,
-} from '../src/align.js';
+} from '../../src/core/align.js';
 import { prng } from './support.js';
 
 const r = (id, x, y, w, h) => ({ id, x, y, w, h });

@@ -2,8 +2,8 @@
 // ubicar lo nuevo y rellenar una hoja con copias. Todo opera sobre el estado
 // de store.js; la geometría está en pack.js y sheets.js.
 
-import { pack, fitScale } from './pack.js';
-import { arrangeSheets, samePlan, placeIntoSheets } from './sheets.js';
+import { pack, fitScale } from './core/pack.js';
+import { arrangeSheets, samePlan, placeIntoSheets } from './core/sheets.js';
 import { CROWD_LIMIT, MAX_ITEMS } from './config.js';
 import {
   state,
@@ -25,7 +25,7 @@ import {
   currentSheet,
 } from './store.js';
 import { paperName } from './measure.js';
-import { pieceSize, isIdentity } from './crop.js';
+import { pieceSize, isIdentity } from './core/crop.js';
 import { say } from './notice.js';
 import { animateNext } from './sheetview.js';
 import { clamp, tidy } from './util.js';

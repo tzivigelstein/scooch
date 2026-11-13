@@ -5,7 +5,7 @@
 
 import { APP_NAME } from './config.js';
 import { state, assets, sheetSize, itemsOn, boxOf } from './store.js';
-import { cutLines } from './cutmarks.js';
+import { cutLines } from './core/cutmarks.js';
 import { paperName, paperSlug } from './measure.js';
 import { buildPdf } from './export.js';
 import { slug } from './util.js';

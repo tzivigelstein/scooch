@@ -4,7 +4,7 @@
 // flechas/Supr sobre una pieza siguen.
 
 import { settings } from './store.js';
-import { stepFor } from './units.js';
+import { stepFor } from './core/units.js';
 import { isTyping } from './util.js';
 
 const NUDGES = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };

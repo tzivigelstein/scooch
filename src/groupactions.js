@@ -64,7 +64,7 @@ import {
   copiesAllowed,
   sameSource,
   withPrimaryLast,
-} from './group.js';
+} from './core/group.js';
 import { duplicatePieces } from './layout.js';
 import { lengthText, sizeText } from './measure.js';
 import { say } from './notice.js';

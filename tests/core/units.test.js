@@ -13,7 +13,7 @@ import {
   isPartialLength,
   gridPresets,
   unitLabel,
-} from '../src/units.js';
+} from '../../src/core/units.js';
 import { prng } from './support.js';
 
 const NB = '\u00a0';

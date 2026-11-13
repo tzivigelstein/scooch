@@ -3,7 +3,7 @@
 // girada) lo calcula crop.drawParams; sin recorte, la cuenta y los operadores
 // son los mismos de siempre.
 
-import { drawParams } from './crop.js';
+import { drawParams } from './core/crop.js';
 
 const PT_PER_MM = 72 / 25.4;
 /** Líneas de corte: finas (pt) y gris oscuro neutro. */

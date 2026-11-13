@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { pack, fitScale, score, fixedCandidates } from '../src/pack.js';
+import { pack, fitScale, score, fixedCandidates } from '../../src/core/pack.js';
 import { TOL, prng, shuffled, assertValid } from './support.js';
 
 const copies = (n, w, h, prefix = 'p') => Array.from({ length: n }, (_, i) => ({ id: `${prefix}${i}`, w, h }));

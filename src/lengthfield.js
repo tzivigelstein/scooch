@@ -4,7 +4,7 @@
 // las flechas (Shift: paso grueso; Alt: fino) y, si al confirmar lo escrito no
 // se entiende, vuelven al valor anterior y lo anuncian.
 
-import { parseLength, isPartialLength, stepFor } from './units.js';
+import { parseLength, isPartialLength, stepFor } from './core/units.js';
 import { settings } from './store.js';
 import { lengthValue, lengthText } from './measure.js';
 import { announce } from './live.js';

@@ -25,16 +25,16 @@ import {
   selectedItems,
   primaryItem,
 } from './store.js';
-import { overlapsAny, nearestFree, maxGrowth } from './collide.js';
-import { bounds, scaleGroup } from './align.js';
-import { touchedBy } from './group.js';
-import { sheetAt, keepCenterInside } from './sheets.js';
+import { overlapsAny, nearestFree, maxGrowth } from './core/collide.js';
+import { bounds, scaleGroup } from './core/align.js';
+import { touchedBy } from './core/group.js';
+import { sheetAt, keepCenterInside } from './core/sheets.js';
 import { paperTitle, sizeText, lengthText } from './measure.js';
 import { icon } from './icons.js';
 import { $, clamp, round1, tidy, isTyping } from './util.js';
 import { t } from './copy/index.js';
-import { pickSpot, clip } from './placement.js';
-import { cssParams } from './crop.js';
+import { pickSpot, clip } from './core/placement.js';
+import { cssParams } from './core/crop.js';
 
 const nodes = new Map(); // id de pieza → nodo
 const pages = new Map(); // id de hoja → {page, label, remove, box, sheet, grid, safe, hint}

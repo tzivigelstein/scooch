@@ -2,9 +2,9 @@ import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { deflateSync } from 'node:zlib';
 import { PDFDocument, PDFName, PDFRawStream, decodePDFRawStream, degrees, rgb } from 'pdf-lib';
-import { buildPdf, CUT_LINE } from '../src/export.js';
-import { drawParams } from '../src/crop.js';
-import { cutLines } from '../src/cutmarks.js';
+import { buildPdf, CUT_LINE } from '../../src/export.js';
+import { drawParams } from '../../src/core/crop.js';
+import { cutLines } from '../../src/core/cutmarks.js';
 
 const PT = 72 / 25.4;
 

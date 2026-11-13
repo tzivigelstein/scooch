@@ -3,8 +3,8 @@
 // (nuevo, abrir, duplicar, cambiar el nombre, eliminar y espacio usado).
 
 import { session, list, openProject, newProject, duplicate, rename, remove, retry, estimate, takeOver } from './projects.js';
-import { relativeTime, formatBytes } from './humanize.js';
-import { sizeOf } from './papers.js';
+import { relativeTime, formatBytes } from './core/humanize.js';
+import { sizeOf } from './core/papers.js';
 import { setupDialog } from './dialogs.js';
 import { confirmAction } from './confirm.js';
 import { announce } from './live.js';

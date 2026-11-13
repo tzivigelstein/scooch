@@ -15,9 +15,9 @@ import {
   pickProject,
   recoverJournal,
   memoryStorage,
-} from '../src/projectstore.js';
-import { ProjectError, fileKeys } from '../src/projectdoc.js';
-import { relativeTime, formatBytes } from '../src/humanize.js';
+} from '../../src/core/projectstore.js';
+import { ProjectError, fileKeys } from '../../src/core/projectdoc.js';
+import { relativeTime, formatBytes } from '../../src/core/humanize.js';
 
 const blob = (text) => new Blob([text]);
 

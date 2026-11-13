@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { pickSpot, clip } from '../src/placement.js';
+import { pickSpot, clip } from '../../src/core/placement.js';
 
 const r = (x, y, w, h, side) => ({ x, y, w, h, side });
 const bounds = r(0, 0, 1000, 800);

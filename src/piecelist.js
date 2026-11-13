@@ -8,7 +8,7 @@
 // al siguiente. La selección de la lista y la de la hoja son la misma.
 
 import { state, assets, dims, settings, isSelected } from './store.js';
-import { rangeBetween } from './group.js';
+import { rangeBetween } from './core/group.js';
 import { problemsById } from './notice.js';
 import { printResolution } from './layout.js';
 import { icon } from './icons.js';

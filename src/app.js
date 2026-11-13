@@ -37,7 +37,7 @@ import { sizeText as measureSize, lengthText, paperName, stepTexts, unitName } f
 import { readFile, pdfPage, openPdf } from './assets.js';
 import { makePdf, pdfFileName, downloadBytes, printBytes } from './output.js';
 import { arrange, keepCenter, centerOnSheet, fitToSheet, placeNew, fillWithCopies, duplicatePiece, forgetSpill } from './layout.js';
-import { spotOnSheet, keepCenterInside } from './sheets.js';
+import { spotOnSheet, keepCenterInside } from './core/sheets.js';
 import { initNotice, renderNotice, say } from './notice.js';
 import { initLive, announce } from './live.js';
 import { hydrateIcons } from './icons.js';
@@ -53,7 +53,7 @@ import {
   revealPiece,
   revealSheet,
 } from './sheetview.js';
-import { overlapsAny, nextFreeInDirection, maxGrowth } from './collide.js';
+import { overlapsAny, nextFreeInDirection, maxGrowth } from './core/collide.js';
 import { initPanels, renderPanels, expandSection, firstPieceField, firstSheetField, setFrontEnabled } from './panels.js';
 import { initPieceList, renderPieceList, focusList, listFocusTarget } from './piecelist.js';
 import { initDrawers, closeDrawer, isDrawerOpen, isCollapsible, drawerOf, revealPanel } from './drawers.js';

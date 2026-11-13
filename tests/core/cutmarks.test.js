@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { CUT_MODES, cutLines } from '../src/cutmarks.js';
+import { CUT_MODES, cutLines } from '../../src/core/cutmarks.js';
 import { prng, shuffled } from './support.js';
 
 const TOL = 1e-6;

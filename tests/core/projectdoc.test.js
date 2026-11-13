@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { DOC_VERSION, DEFAULT_CUTS, ProjectError, serialize, fileKeys, counts, nextIds, migrate, validate, deserialize } from '../src/projectdoc.js';
+import { DOC_VERSION, DEFAULT_CUTS, ProjectError, serialize, fileKeys, counts, nextIds, migrate, validate, deserialize } from '../../src/core/projectdoc.js';
 
 const image = (props = {}) => ({
   kind: 'image',

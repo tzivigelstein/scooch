@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { EPS, overlaps, overlapsAny, overlapping, nearestFree, nextFreeInDirection, maxGrowth, nextFreeForGroup, nearestFreeOffset, groupScaleRange } from '../src/collide.js';
+import { EPS, overlaps, overlapsAny, overlapping, nearestFree, nextFreeInDirection, maxGrowth, nextFreeForGroup, nearestFreeOffset, groupScaleRange } from '../../src/core/collide.js';
 
 const r = (x, y, w, h, id) => ({ id, x, y, w, h });
 

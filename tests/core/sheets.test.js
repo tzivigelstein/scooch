@@ -10,7 +10,7 @@ import {
   keepCenterInside,
   pieceProblems,
   problemSummary,
-} from '../src/sheets.js';
+} from '../../src/core/sheets.js';
 import { overlaps } from './support.js';
 
 // A4 con 10 mm de margen y 5 mm de separación.

@@ -5,8 +5,8 @@
 // (lengthfield.js).
 
 import { GRID_MIN, GRID_MAX, SECTIONS_STORAGE, CUSTOM_PAPER_STORAGE, MAX_ITEMS } from './config.js';
-import { PAPERS, PAPER_GROUPS, CUSTOM_MIN, CUSTOM_MAX, customPaper, validateSide, matchPreset } from './papers.js';
-import { gridPresets } from './units.js';
+import { PAPERS, PAPER_GROUPS, CUSTOM_MIN, CUSTOM_MAX, customPaper, validateSide, matchPreset } from './core/papers.js';
+import { gridPresets } from './core/units.js';
 import {
   state,
   settings,
@@ -22,8 +22,8 @@ import {
   setAllowOverlap,
   sheetSize,
 } from './store.js';
-import { bounds } from './align.js';
-import { common } from './group.js';
+import { bounds } from './core/align.js';
+import { common } from './core/group.js';
 import {
   groupPrefs,
   alignsToSheet,
@@ -36,7 +36,7 @@ import {
   setSelectionScale,
   maxCopies,
 } from './groupactions.js';
-import { keepCenterInside } from './sheets.js';
+import { keepCenterInside } from './core/sheets.js';
 import { keepCenter, fillSummary, printResolution } from './layout.js';
 import { bindLength, showLength } from './lengthfield.js';
 import { lengthText, sizeText, unitName, unitSymbol } from './measure.js';

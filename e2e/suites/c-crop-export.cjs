@@ -36,8 +36,8 @@ async function contents(file) {
 (async () => {
   const errors = [];
   try {
-    const { cutLines } = await import(path.join(ROOT, 'src/cutmarks.js'));
-    const { pieceSize } = await import(path.join(ROOT, 'src/crop.js'));
+    const { cutLines } = await import(path.join(ROOT, 'src/core/cutmarks.js'));
+    const { pieceSize } = await import(path.join(ROOT, 'src/core/crop.js'));
     const s = await open({ viewport: { width: 1440, height: 900 } });
     const p = s.page;
     const L = lib(p);

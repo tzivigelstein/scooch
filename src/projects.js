@@ -29,11 +29,11 @@ import {
   listProjects,
   pickProject,
   recoverJournal,
-} from './projectstore.js';
-import { serialize, fileKeys } from './projectdoc.js';
+} from './core/projectstore.js';
+import { serialize, fileKeys } from './core/projectdoc.js';
 import { state, assets, render, replaceDocument, docState, sheetSize, itemsOn } from './store.js';
 import { restoreAssets, assetBlob } from './assets.js';
-import { cssParams } from './crop.js';
+import { cssParams } from './core/crop.js';
 import { storageGet, storageSet, storageRemove } from './util.js';
 import { t } from './copy/index.js';
 
