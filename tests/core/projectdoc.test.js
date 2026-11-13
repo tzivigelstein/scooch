@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { DOC_VERSION, DEFAULT_CUTS, ProjectError, serialize, fileKeys, counts, nextIds, migrate, validate, deserialize } from '../../src/core/projectdoc.js';
+import { DOC_VERSION, DEFAULT_CUTS, LEGACY_CUT_STYLE, ProjectError, serialize, fileKeys, counts, nextIds, migrate, validate, deserialize } from '../../src/core/projectdoc.js';
 
 const image = (props = {}) => ({
   kind: 'image',
@@ -67,7 +67,7 @@ describe('serialize', () => {
     assert.deepEqual(doc.assets.a1, { kind: 'image', name: 'foto.jpg', src: 1, px: [1200, 800], format: 'jpg', dpi: 300, w: 101.6, h: 67.73, derived: true });
     assert.deepEqual(doc.assets.a2, { kind: 'pdf', name: 'plano.pdf', src: 2, page: 2, pages: 3, pageRotation: 0, view: [0, 0, 595.28, 841.89], px: [1697, 2400], w: 210, h: 297 });
     assert.equal(doc.rotate, false);
-    assert.deepEqual(doc.cuts, { mode: 'corners', length: 3, offset: 2 });
+    assert.deepEqual(doc.cuts, { mode: 'corners', length: 3, offset: 2, weight: 'thin', color: '#000000', dash: 'solid' }, 'the default stroke fills what is missing');
     assert.deepEqual(doc.items.map((item) => item.crop), [null, { x: 0.1, y: 0.2, w: 0.5, h: 0.6 }, null], 'sin recorte → null');
     // Es JSON puro: ida y vuelta sin pérdidas.
     assert.deepEqual(JSON.parse(JSON.stringify(doc)), doc);
@@ -117,7 +117,7 @@ describe('deserialize', () => {
     };
     const doc = deserialize(v0);
     assert.equal(doc.version, DOC_VERSION);
-    assert.deepEqual(doc.cuts, DEFAULT_CUTS);
+    assert.deepEqual(doc.cuts, { ...DEFAULT_CUTS, ...LEGACY_CUT_STYLE });
     assert.equal(doc.items[0].crop, null);
     assert.equal(doc.paper, 'letter');
     assert.equal(doc.rotate, true);
@@ -132,10 +132,26 @@ describe('deserialize', () => {
     delete v1.cuts;
     for (const item of v1.items) delete item.crop;
     const doc = deserialize(v1);
-    assert.equal(doc.version, 2);
-    assert.deepEqual(doc.cuts, { mode: 'none', length: 4, offset: 1.5 });
+    assert.equal(doc.version, DOC_VERSION);
+    assert.deepEqual(doc.cuts, { mode: 'none', length: 4, offset: 1.5, ...LEGACY_CUT_STYLE });
     assert.ok(doc.items.every((item) => item.crop === null));
     assert.equal(v1.cuts, undefined, 'no toca el original');
+  });
+
+  test('migrates version 2: the cut lines keep the stroke they printed with', () => {
+    const v2 = serialize(sampleState(), sampleAssets());
+    v2.version = 2;
+    v2.cuts = { mode: 'corners', length: 3, offset: 2 };
+    const doc = deserialize(v2);
+    assert.equal(doc.version, 3);
+    assert.deepEqual(doc.cuts, { mode: 'corners', length: 3, offset: 2, weight: 'thin', color: '#333333', dash: 'solid' });
+    assert.deepEqual(v2.cuts, { mode: 'corners', length: 3, offset: 2 }, 'the original stays as it was');
+  });
+
+  test('a version 3 document keeps its chosen stroke', () => {
+    const state = { ...sampleState(), cuts: { mode: 'outline', length: 4, offset: 1.5, weight: 'thick', color: '#12A0fF', dash: 'dotted' } };
+    const doc = deserialize(JSON.parse(JSON.stringify(serialize(state, sampleAssets()))));
+    assert.deepEqual(doc.cuts, state.cuts);
   });
 
   test('sin recorte en una pieza: vale (es «sin recorte»); el recorte de la imagen entera se guarda como null', () => {
@@ -178,6 +194,11 @@ describe('deserialize', () => {
       { ...doc, cuts: { mode: 'corners', length: 0, offset: 1 } },
       { ...doc, cuts: { mode: 'corners', length: 4, offset: -1 } },
       { ...doc, cuts: { mode: 'outline', length: 4, offset: 50 } },
+      { ...doc, cuts: { ...doc.cuts, weight: 'hairline' } },
+      { ...doc, cuts: { ...doc.cuts, color: 'red' } },
+      { ...doc, cuts: { ...doc.cuts, color: '#12345' } },
+      { ...doc, cuts: { ...doc.cuts, dash: 'dashed' } },
+      { ...doc, cuts: { mode: 'corners', length: 4, offset: 1 } },
       { ...doc, items: [{ ...doc.items[0], crop: { x: 0.5, y: 0, w: 0.6, h: 1 } }] },
       { ...doc, items: [{ ...doc.items[0], crop: { x: 0, y: 0, w: 0.001, h: 1 } }] },
       { ...doc, items: [{ ...doc.items[0], crop: { x: 0, y: 0, w: NaN, h: 1 } }] },

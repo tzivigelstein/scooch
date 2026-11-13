@@ -1,15 +1,16 @@
 // Formato del documento de un proyecto guardado: serializar, deserializar,
 // migrar versiones viejas y validar. Módulo puro (sin DOM ni textos).
 //
-// Forma (versión 2):
+// Forma (versión 3):
 //
 //   {
-//     version: 2,
+//     version: 3,
 //     paper: 'A4' | {custom: true, w, h},   // ids de papers.js; medidas en mm
 //     landscape: false,
 //     margin: 10, gap: 5,                  // mm
 //     rotate: true,                        // «Girar si conviene»
-//     cuts: {mode: 'none', length: 4, offset: 1.5},  // líneas de corte (cutmarks.js): modo y mm
+//     cuts: {mode: 'none', length: 4, offset: 1.5,   // líneas de corte (cutmarks.js): modo y mm,
+//            weight: 'thin', color: '#000000', dash: 'solid'},  // and their stroke
 //     sheets: [{id: 1}, {id: 2}],          // en orden; al menos una
 //     items: [{id, asset, sheet, x, y, scale, r, crop}],   // en orden de apilado;
 //                                          // crop: null o {x, y, w, h} normalizado (crop.js)
@@ -28,14 +29,23 @@
 
 import { sizeOf } from './papers.js';
 import { MIN_CROP, isIdentity } from './crop.js';
-import { CUT_MODES } from './cutmarks.js';
+import { CUT_DASHES, CUT_MODES, CUT_WEIGHTS, isHexColor } from './cutmarks.js';
 
-export const DOC_VERSION = 2;
+export const DOC_VERSION = 3;
 
-/** Líneas de corte de un documento nuevo (o de uno de antes de que existieran): ninguna. */
-export const DEFAULT_CUTS = Object.freeze({ mode: 'none', length: 4, offset: 1.5 });
+/** Cut lines of a new document: none, and thin solid black when turned on. */
+export const DEFAULT_CUTS = Object.freeze({ mode: 'none', length: 4, offset: 1.5, weight: 'thin', color: '#000000', dash: 'solid' });
+
+/** The stroke documents had before it could be chosen (version 2): 0.25 pt dark gray, solid. */
+export const LEGACY_CUT_STYLE = Object.freeze({ weight: 'thin', color: '#333333', dash: 'solid' });
 /** Largo de las marcas y separación de la esquina, en mm (inclusive). */
 export const CUT_LIMITS = Object.freeze({ length: [0.5, 20], offset: [0, 10] });
+
+/** A clean copy of the cut lines, with the default stroke for what is missing. */
+export function cleanCuts(cuts) {
+  const { mode, length, offset, weight, color, dash } = { ...DEFAULT_CUTS, ...cuts };
+  return { mode, length, offset, weight, color, dash };
+}
 
 /** Copia limpia de un recorte (o null si no hay o es la imagen entera). */
 export const cleanCrop = (crop) => (isIdentity(crop) ? null : { x: crop.x, y: crop.y, w: crop.w, h: crop.h });
@@ -75,7 +85,7 @@ export function serialize({ sheets, items, paper, landscape, margin, gap, rotate
     margin,
     gap,
     rotate: rotate !== false,
-    cuts: { mode: cuts.mode, length: cuts.length, offset: cuts.offset },
+    cuts: cleanCuts(cuts),
     sheets: sheets.map((sheet) => ({ id: sheet.id })),
     items: items.map(({ id, asset, sheet, x, y, scale, r, crop }) => ({ id, asset, sheet, x, y, scale, r, crop: cleanCrop(crop) })),
     assets: used,
@@ -129,8 +139,14 @@ const MIGRATIONS = {
   1: (doc) => ({
     ...doc,
     version: 2,
-    cuts: { ...DEFAULT_CUTS },
+    cuts: { mode: 'none', length: 4, offset: 1.5 },
     items: Array.isArray(doc.items) ? doc.items.map((item) => ({ ...item, crop: null })) : doc.items,
+  }),
+  // Version 2 had no choice of stroke: it keeps the look it printed with.
+  2: (doc) => ({
+    ...doc,
+    version: 3,
+    cuts: doc.cuts && typeof doc.cuts === 'object' ? { ...doc.cuts, ...LEGACY_CUT_STYLE } : doc.cuts,
   }),
 };
 
@@ -206,6 +222,9 @@ export function validate(doc) {
       const [lo, hi] = CUT_LIMITS[key];
       if (!isFiniteNumber(cuts[key]) || cuts[key] < lo || cuts[key] > hi) problems.push(`líneas de corte: ${key}`);
     }
+    if (!Object.hasOwn(CUT_WEIGHTS, cuts.weight)) problems.push('cut lines: weight');
+    if (!isHexColor(cuts.color)) problems.push('cut lines: color');
+    if (!CUT_DASHES.includes(cuts.dash)) problems.push('cut lines: dash');
   }
   const sheets = Array.isArray(doc.sheets) ? doc.sheets : null;
   if (!sheets || !sheets.length) problems.push('hojas');

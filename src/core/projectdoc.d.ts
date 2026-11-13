@@ -2,6 +2,9 @@ import type { Crop, Cuts, ImageAssetMeta, Item, Paper, PdfAssetMeta, ProjectDoc,
 
 export const DOC_VERSION: number;
 export const DEFAULT_CUTS: Readonly<Cuts>;
+/** The stroke of version 2 documents (they keep it when migrated). */
+export const LEGACY_CUT_STYLE: Readonly<Pick<Cuts, 'weight' | 'color' | 'dash'>>;
+export function cleanCuts(cuts: Partial<Cuts> | undefined): Cuts;
 export const CUT_LIMITS: Readonly<{ length: readonly [number, number]; offset: readonly [number, number] }>;
 
 export function cleanCrop(crop: Crop | null | undefined): Crop | null;
@@ -23,7 +26,7 @@ export interface DocumentState {
   margin: number;
   gap: number;
   rotate: boolean;
-  cuts?: Cuts;
+  cuts?: Partial<Cuts>;
 }
 
 /** An app asset as far as serializing goes (the binaries and extra fields are ignored). */
