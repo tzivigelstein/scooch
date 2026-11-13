@@ -101,7 +101,8 @@ gracias a personas como tú», no «Lo mantengo…»).
 | --- | --- | --- |
 | pieza | cada imagen o página de PDF que está en la hoja | elemento, imagen, objeto |
 | hoja | la página que se arma e imprime | página (salvo «página del PDF»), lienzo |
-| acomodar / acomodo | ubicar todas las piezas sin superponerlas | autoacomodar, organizar, distribuir |
+| acomodar | ubicar todas las piezas sin superponerlas, en las hojas que hagan falta | autoacomodar, organizar, acomodo (como título) |
+| distribución | la sección del panel con la separación, el giro y la superposición | acomodo |
 | girar | rotar 90° | rotar |
 | quitar | sacar piezas de la hoja («Quitar todas») | eliminar, borrar, vaciar |
 | agregar | sumar archivos a la hoja (mientras tanto, «Cargando…») | sumar, subir, importar |
@@ -161,8 +162,10 @@ Esc. Las letras y los signos se muestran tal cual.
 - **Retroceso** para la tecla Backspace y **Supr** para Delete, como en la
   documentación en español de Google y Microsoft. Shift y Enter quedan así,
   porque así aparecen en la mayoría de los teclados latinoamericanos.
-- **Acomodo** como título de la sección de separación y superposición: es el
-  sustantivo de «acomodar».
+- **Distribución** como título de la sección de separación, giro y
+  superposición. Antes era «Acomodo», que se podía leer como el botón
+  «Acomodar» (una acción) y no como un grupo de ajustes. «Distribuir», como
+  verbo, queda para repartir piezas con espacios iguales.
 - **Atajos de 1 tecla**, con cifra, como pide la regla de números.
 - **Coma decimal**, como en la mayor parte de Sudamérica (es-419 de Google usa
   punto). Si se cambia, es solo `meta.numberLocale` en `es.js`.

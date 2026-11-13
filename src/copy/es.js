@@ -247,7 +247,7 @@ export default {
     landscape: 'Horizontal',
     margin: 'Margen',
     marginUnit: ', en {unit}',
-    arrange: 'Acomodo',
+    arrange: 'Distribución',
     gap: 'Separación',
     gapUnit: ' entre piezas, en {unit}',
     rotate: 'Girar si conviene',
