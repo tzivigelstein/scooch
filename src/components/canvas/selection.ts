@@ -101,9 +101,14 @@ export function paintCommittedSelection() {
  */
 export function placePiecebar(target: SelectionTarget) {
   const bar = document.getElementById('piecebar');
+  if (bar) placeBar(bar, target);
+}
+
+/** Places a floating bar next to `target` like the piece's toolbar (see placePiecebar). */
+export function placeBar(bar: HTMLElement, target: Pick<SelectionTarget, 'sheet' | 'x' | 'y' | 'w' | 'h' | 'ids'>) {
   const canvasEl = document.getElementById('canvas');
   const stageEl = document.getElementById('stage');
-  if (!bar || !canvasEl || !stageEl) return;
+  if (!canvasEl || !stageEl) return;
   if (window.matchMedia(NARROW_QUERY).matches) {
     bar.style.transform = '';
     bar.dataset.side = 'docked';
