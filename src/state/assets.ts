@@ -50,6 +50,22 @@ export function retainAssets(used: ReadonlySet<string>) {
   release(dropped, [...assets.values()]);
 }
 
+/**
+ * Adds assets with their own keys (the ones of a saved undo history, by the
+ * keys its steps use), keeping the loaded ones; new keys continue after them.
+ */
+export function adoptAssets(adopted: ReadonlyMap<string, AppAsset>) {
+  for (const [key, asset] of adopted) {
+    if (!assets.has(key)) assets.set(key, asset);
+    nextAssetId = Math.max(nextAssetId, (Number(key.slice(1)) || 0) + 1);
+  }
+}
+
+/** New keys continue at least after `nextId`. */
+export function reserveAssetIds(nextId: number) {
+  nextAssetId = Math.max(nextAssetId, nextId);
+}
+
 /** Replaces every asset (opening a project); new keys continue after `nextId`. */
 export function replaceAssets(loaded: ReadonlyMap<string, AppAsset>, nextId: number) {
   const dropped = [...assets.values()];

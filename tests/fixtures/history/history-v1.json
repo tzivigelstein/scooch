@@ -1,0 +1,200 @@
+{
+  "about": "A saved undo history, version 1: two undo steps (both pieces; the first one moved) and one redo step (the second piece removed, kept only by the history)",
+  "record": {
+    "project": "p1",
+    "v": 1,
+    "docVersion": 5,
+    "items": [
+      {
+        "id": 1,
+        "asset": "a1",
+        "sheet": 1,
+        "x": 10,
+        "y": 10,
+        "scale": 50,
+        "r": 0,
+        "crop": null
+      },
+      {
+        "id": 2,
+        "asset": "a2",
+        "sheet": 2,
+        "x": 20,
+        "y": 12,
+        "scale": 80,
+        "r": 90,
+        "crop": {
+          "x": 0.1,
+          "y": 0.2,
+          "w": 0.5,
+          "h": 0.6
+        }
+      },
+      {
+        "id": 1,
+        "asset": "a1",
+        "sheet": 1,
+        "x": 30,
+        "y": 10,
+        "scale": 50,
+        "r": 0,
+        "crop": null
+      }
+    ],
+    "undo": [
+      {
+        "sheets": [
+          1,
+          2
+        ],
+        "items": [
+          0,
+          1
+        ],
+        "selection": [],
+        "paper": {
+          "custom": true,
+          "w": 216,
+          "h": 330
+        },
+        "landscape": false,
+        "margin": 8,
+        "gap": 4,
+        "cuts": {
+          "mode": "corners",
+          "length": 4,
+          "offset": 1.5,
+          "margin": 0,
+          "weight": "thin",
+          "color": "#000000",
+          "dash": "solid"
+        },
+        "allowOverlap": true
+      },
+      {
+        "sheets": [
+          1,
+          2
+        ],
+        "items": [
+          2,
+          1
+        ],
+        "selection": [
+          1
+        ],
+        "paper": {
+          "custom": true,
+          "w": 216,
+          "h": 330
+        },
+        "landscape": false,
+        "margin": 8,
+        "gap": 4,
+        "cuts": {
+          "mode": "corners",
+          "length": 4,
+          "offset": 1.5,
+          "margin": 0,
+          "weight": "thin",
+          "color": "#000000",
+          "dash": "solid"
+        },
+        "allowOverlap": true
+      }
+    ],
+    "redo": [
+      {
+        "sheets": [
+          1
+        ],
+        "items": [
+          2
+        ],
+        "selection": [],
+        "paper": {
+          "custom": true,
+          "w": 216,
+          "h": 330
+        },
+        "landscape": false,
+        "margin": 8,
+        "gap": 4,
+        "cuts": {
+          "mode": "corners",
+          "length": 4,
+          "offset": 1.5,
+          "margin": 0,
+          "weight": "thin",
+          "color": "#000000",
+          "dash": "solid"
+        },
+        "allowOverlap": true
+      }
+    ],
+    "assets": {
+      "a1": {
+        "kind": "image",
+        "name": "foto.jpg",
+        "src": 1,
+        "px": [
+          1200,
+          800
+        ],
+        "format": "jpg",
+        "dpi": 300,
+        "w": 101.6,
+        "h": 67.73,
+        "derived": true
+      },
+      "a2": {
+        "kind": "pdf",
+        "name": "plano.pdf",
+        "src": 2,
+        "page": 2,
+        "pages": 3,
+        "pageRotation": 0,
+        "view": [
+          0,
+          0,
+          595.28,
+          841.89
+        ],
+        "px": [
+          1697,
+          2400
+        ],
+        "w": 210,
+        "h": 297
+      }
+    },
+    "files": {
+      "src:1": "sha256-of-src:1",
+      "bytes:1": "sha256-of-bytes:1",
+      "preview:a1": "sha256-of-preview:a1",
+      "src:2": "sha256-of-src:2",
+      "preview:a2": "sha256-of-preview:a2"
+    },
+    "hashes": [
+      "sha256-of-bytes:1",
+      "sha256-of-preview:a1",
+      "sha256-of-preview:a2",
+      "sha256-of-src:1",
+      "sha256-of-src:2"
+    ]
+  },
+  "reads": {
+    "undo": 2,
+    "redo": 1,
+    "items": [
+      [
+        1,
+        30
+      ],
+      [
+        2,
+        20
+      ]
+    ]
+  }
+}

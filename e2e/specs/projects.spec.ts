@@ -202,6 +202,33 @@ test.describe('saving and restoring', () => {
   });
 });
 
+test.describe('the undo history', () => {
+  test('undo and redo survive a reload: a move, and a piece removed with its file', async ({ page, app }) => {
+    await app.addFiles(['card01.png', 'card02.png']);
+    await saved(page);
+    const before = await labels(page);
+    const first = app.pieces().first();
+    await first.focus();
+    await page.keyboard.press('ArrowRight');
+    const moved = await labels(page);
+    await page.keyboard.press('Delete');
+    await expect(app.pieces()).toHaveCount(1);
+    await saved(page);
+    await page.reload();
+    await app.ready();
+    await expect(app.pieces()).toHaveCount(1);
+    await expect(page.locator('#undo')).toBeEnabled();
+    await page.locator('#undo').click();
+    await expect(app.pieces()).toHaveCount(2);
+    expect(await labels(page)).toEqual(moved);
+    await expect.poll(() => page.evaluate(() => [...document.querySelectorAll<HTMLImageElement>('#sheets .piece img')].every((img) => img.complete && img.naturalWidth > 0))).toBe(true);
+    await page.keyboard.press('Control+z');
+    await expect.poll(() => labels(page)).toEqual(before);
+    await page.keyboard.press('Control+Shift+z');
+    await expect.poll(() => labels(page)).toEqual(moved);
+  });
+});
+
 test.describe('the projects dialog', () => {
   test('Ctrl+O opens it on «Nuevo proyecto», which starts a blank project; the list is newest first, arrows move between cards and Enter opens one', async ({ page, app }) => {
     // «Newest» is by the clock: the page's clock moves forward on purpose

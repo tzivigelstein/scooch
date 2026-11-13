@@ -1,0 +1,64 @@
+{
+  "about": "The saved cut pieces, version 1: one PDF page, turned and cropped",
+  "record": {
+    "id": "cut",
+    "v": 1,
+    "docVersion": 5,
+    "pieces": [
+      {
+        "asset": "a2",
+        "scale": 80,
+        "r": 90,
+        "crop": {
+          "x": 0.1,
+          "y": 0.2,
+          "w": 0.5,
+          "h": 0.6
+        }
+      }
+    ],
+    "assets": {
+      "a2": {
+        "kind": "pdf",
+        "name": "plano.pdf",
+        "src": 2,
+        "page": 2,
+        "pages": 3,
+        "pageRotation": 0,
+        "view": [
+          0,
+          0,
+          595.28,
+          841.89
+        ],
+        "px": [
+          1697,
+          2400
+        ],
+        "w": 210,
+        "h": 297
+      }
+    },
+    "files": {
+      "src:2": "sha256-of-src:2",
+      "preview:a2": "sha256-of-preview:a2"
+    },
+    "hashes": [
+      "sha256-of-preview:a2",
+      "sha256-of-src:2"
+    ]
+  },
+  "reads": [
+    {
+      "asset": "a2",
+      "scale": 80,
+      "r": 90,
+      "crop": {
+        "x": 0.1,
+        "y": 0.2,
+        "w": 0.5,
+        "h": 0.6
+      }
+    }
+  ]
+}

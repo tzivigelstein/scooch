@@ -1,5 +1,7 @@
 // Undo and redo: one step per gesture or operation. Continuous edits (typing
-// in a field, the slider, arrow presses) share a step through a key.
+// in a field, the slider, arrow presses) share a step through a key. The
+// project service saves the steps with the project (core/undostore.js) and
+// puts them back when it opens again (installHistory).
 
 import { MAX_UNDO } from '../config.ts';
 import { retainAssets } from './assets.ts';
@@ -121,3 +123,19 @@ function collectGarbage() {
 
 /** The depth of each stack (for tests). */
 export const historyDepth = () => ({ undo: undoStack.length, redo: redoStack.length });
+
+/** The steps, oldest first (for saving them with the project). */
+export const historyStacks = (): { undo: readonly Snapshot[]; redo: readonly Snapshot[] } => ({ undo: undoStack, redo: redoStack });
+
+/**
+ * Puts back the steps saved with the project (its assets are loaded already).
+ * Steps taken since it opened stay on top of the saved ones; with any of
+ * them, the saved redo steps no longer apply.
+ */
+export function installHistory(saved: { undo: readonly Snapshot[]; redo: readonly Snapshot[] }) {
+  const taken = undoStack.length > 0;
+  undoStack.unshift(...saved.undo);
+  if (undoStack.length > MAX_UNDO) undoStack.splice(0, undoStack.length - MAX_UNDO);
+  if (!taken && !redoStack.length) redoStack.push(...saved.redo.slice(-MAX_UNDO));
+  syncFlags();
+}

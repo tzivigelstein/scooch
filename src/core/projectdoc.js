@@ -77,6 +77,9 @@ const PDF_FIELDS = ['kind', 'name', 'src', 'page', 'pages', 'pageRotation', 'vie
 
 const pick = (obj, fields) => Object.fromEntries(fields.map((key) => [key, Array.isArray(obj[key]) ? [...obj[key]] : obj[key]]));
 
+/** What a stored document keeps of an app asset (no binaries): image or PDF page fields. */
+export const assetMeta = (asset) => (asset.kind === 'pdf' ? pick(asset, PDF_FIELDS) : { ...pick(asset, IMAGE_FIELDS), derived: !!asset.derived });
+
 /**
  * Documento a guardar a partir del estado. `assets`: Map clave → asset (los
  * de la app, con sus binarios); solo se incluyen los que usan las piezas.
@@ -88,8 +91,7 @@ export function serialize({ sheets, items, paper, landscape, margin, gap, rotate
     if (used[item.asset]) continue;
     const asset = assets.get(item.asset);
     if (!asset) throw new ProjectError('corrupt', `falta el asset ${item.asset}`);
-    used[item.asset] =
-      asset.kind === 'pdf' ? pick(asset, PDF_FIELDS) : { ...pick(asset, IMAGE_FIELDS), derived: !!asset.derived };
+    used[item.asset] = assetMeta(asset);
   }
   return {
     version: DOC_VERSION,

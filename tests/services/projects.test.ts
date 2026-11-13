@@ -4,6 +4,7 @@
 // writes, and what opening and deleting do to the undo history. The real
 // IndexedDB, reloads and other tabs are in e2e/specs/projects.spec.ts.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { MAX_UNDO } from '../../src/config.ts';
 import { memoryStorage } from '../../src/core/projectstore.js';
 import type { ProjectDoc, ProjectStorage } from '../../src/core/types.ts';
 import { storedProject } from '../support/projects.ts';
@@ -38,8 +39,10 @@ async function start(storage: ProjectStorage = memoryStorage()) {
   const { getDocument, setDocument } = await import('../../src/state/document.ts');
   const { historyDepth } = await import('../../src/state/history.ts');
   const { useProject } = await import('../../src/state/project.ts');
-  const { nudge } = await import('../../src/state/actions/pieces.ts');
-  const { undoLast } = await import('../../src/state/actions/edit.ts');
+  const { nudge, remove } = await import('../../src/state/actions/pieces.ts');
+  const { redoLast, undoLast } = await import('../../src/state/actions/edit.ts');
+  const { endEdit } = await import('../../src/state/history.ts');
+  const { getAsset } = await import('../../src/state/assets.ts');
   const support = await import('../support/state.ts');
   const notices: string[] = [];
   support.resetState();
@@ -53,7 +56,7 @@ async function start(storage: ProjectStorage = memoryStorage()) {
   };
   /** The open project as stored. */
   const stored = async () => (await storage.get(projects.projectSession().record!.id))!;
-  return { projects, storage, status, x, addPiece, stored, nudge, undoLast, historyDepth, getDocument, setDocument, notices };
+  return { projects, storage, status, x, addPiece, stored, nudge, remove, undoLast, redoLast, endEdit, historyDepth, getDocument, setDocument, getAsset, support, notices };
 }
 
 beforeEach(() => {
@@ -324,6 +327,76 @@ describe('two tabs, with Web Locks', () => {
     expect(app!.status()).toBe('saved');
     expect(app!.x()).toBe(11);
     expect(frozenLost).toBe(true);
+  });
+});
+
+describe('the undo history saved with the project', () => {
+  /** A project with two pieces of different files (piece 1 selected), saved. */
+  async function twoPieces(app: Awaited<ReturnType<typeof start>>) {
+    const photo = app.support.fakeImageMm(40, 30, { name: 'foto.png', src: 1 });
+    const other = app.support.fakeImageMm(20, 20, { name: 'otra.png', src: 2 });
+    app.setDocument({ items: [app.support.piece(1, photo, 20, 20), app.support.piece(2, other, 100, 20)], selection: [1] });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(app.status()).toBe('saved');
+  }
+
+  test('undo and redo survive reopening the project: a move, and a removed piece with its file', async () => {
+    const storage = memoryStorage();
+    const app = await start(storage);
+    await twoPieces(app);
+    app.nudge(5, 0);
+    app.endEdit();
+    app.setDocument({ selection: [2] });
+    app.remove();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(app.status()).toBe('saved');
+
+    const again = await start(storage);
+    expect(again.getDocument().items.map((item) => item.id)).toEqual([1]);
+    expect(again.x()).toBe(25);
+    await vi.waitFor(() => expect(again.historyDepth()).toEqual({ undo: 2, redo: 0 }));
+    again.undoLast();
+    expect(again.getDocument().items.map((item) => item.id)).toEqual([1, 2]);
+    expect(again.getAsset(again.getDocument().items[1].asset).name).toBe('otra.png');
+    again.undoLast();
+    expect(again.x()).toBe(20);
+    again.redoLast();
+    expect(again.x()).toBe(25);
+    // Saved again with the steps as they are now: one to undo, one to redo.
+    await vi.advanceTimersByTimeAsync(1000);
+    const third = await start(storage);
+    await vi.waitFor(() => expect(third.historyDepth()).toEqual({ undo: 1, redo: 1 }));
+  });
+
+  test('deleting the project deletes its saved history', async () => {
+    const storage = memoryStorage();
+    const app = await start(storage);
+    await twoPieces(app);
+    app.nudge(5, 0);
+    await vi.advanceTimersByTimeAsync(1000);
+    const id = app.projects.projectSession().record!.id;
+    expect(await storage.history(id)).not.toBeNull();
+    await app.projects.remove(id);
+    expect(await storage.history(id)).toBeNull();
+  });
+
+  test('a removed piece’s file stays stored while undo can bring it back, and goes once that step leaves the history', async () => {
+    const storage = memoryStorage();
+    const app = await start(storage);
+    await twoPieces(app);
+    const binaries = storage.blobCount();
+    app.setDocument({ selection: [2] });
+    app.remove();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(storage.blobCount(), 'kept by the saved history').toBe(binaries);
+    app.setDocument({ selection: [1] });
+    for (let i = 0; i < MAX_UNDO; i++) {
+      app.nudge(1, 0);
+      app.endEdit();
+    }
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(storage.blobCount(), 'the removed piece’s original and preview went').toBe(binaries - 2);
+    expect((await app.stored()).doc.items).toHaveLength(1);
   });
 });
 

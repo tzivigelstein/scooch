@@ -75,6 +75,12 @@ export function resetIds(next: { item: number; sheet: number }) {
   nextSheetId = next.sheet;
 }
 
+/** New ids continue at least after these (ids a saved undo history uses). */
+export function reserveIds(next: { item: number; sheet: number }) {
+  nextItemId = Math.max(nextItemId, next.item);
+  nextSheetId = Math.max(nextSheetId, next.sheet);
+}
+
 // ---------- Changes ----------
 
 /** Replaces some fields of some pieces (by id), keeping the others as they are. */

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import { MAX_UNDO } from '../../src/config.ts';
 import { getDocument, patchItem, setDocument, type Piece } from '../../src/state/document.ts';
-import { cancelEdit, commit, endEdit, historyDepth, redo, resetHistory, undo } from '../../src/state/history.ts';
+import { cancelEdit, commit, endEdit, historyDepth, historyStacks, installHistory, redo, resetHistory, undo } from '../../src/state/history.ts';
 import { getView, setView } from '../../src/state/view.ts';
 
 const piece = (id: number, x = 0): Piece => ({ id, asset: 'a1', sheet: 1, x, y: 0, scale: 100, r: 0, crop: null });
@@ -103,5 +103,48 @@ describe('history', () => {
     // The first 5 steps were dropped: undo stops at the state after the 5th change.
     expect(getDocument().items[0].x).toBe(5);
     expect(historyDepth()).toEqual({ undo: 0, redo: MAX_UNDO });
+  });
+});
+
+describe('putting back the steps saved with a project', () => {
+  /** Steps as a saved history has them: x = 1 then x = 2 (undo), and x = 9 (redo). */
+  function saved() {
+    const at = (x: number) => ({ ...historyStacks().undo[0], items: [piece(1, x), piece(2)] });
+    commit(); // a step only to borrow a snapshot's shape
+    const steps = { undo: [at(1), at(2)], redo: [at(9)] };
+    resetHistory();
+    return steps;
+  }
+
+  test('on a project just opened: the saved undo and redo steps, as they were', () => {
+    const steps = saved();
+    patchItem(1, { x: 3 });
+    installHistory(steps);
+    expect(historyDepth()).toEqual({ undo: 2, redo: 1 });
+    expect(getDocument().canUndo && getDocument().canRedo).toBe(true);
+    undo();
+    expect(getDocument().items[0].x).toBe(2);
+  });
+
+  test('steps taken since it opened stay on top, and the saved redo steps no longer apply', () => {
+    const steps = saved();
+    commit();
+    patchItem(1, { x: 5 });
+    installHistory(steps);
+    expect(historyDepth()).toEqual({ undo: 3, redo: 0 });
+    undo();
+    expect(getDocument().items[0].x).toBe(0);
+    undo();
+    expect(getDocument().items[0].x).toBe(2);
+  });
+
+  test('never more than MAX_UNDO steps: the oldest saved ones go', () => {
+    const steps = saved();
+    for (let i = 0; i < MAX_UNDO; i++) {
+      commit();
+      patchItem(1, { x: 100 + i });
+    }
+    installHistory(steps);
+    expect(historyDepth().undo).toBe(MAX_UNDO);
   });
 });

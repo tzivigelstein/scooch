@@ -40,6 +40,8 @@ export interface MigrationContext {
 export type SerializableAsset = PdfAssetMeta | (Omit<ImageAssetMeta, 'derived'> & { derived?: boolean });
 
 export function serialize(state: DocumentState, assets: ReadonlyMap<string, SerializableAsset>): ProjectDoc;
+/** What a stored document keeps of an app asset (no binaries). */
+export function assetMeta(asset: SerializableAsset): ImageAssetMeta | PdfAssetMeta;
 /** Keys of the binaries a document needs: 'src:N', 'bytes:N' and 'preview:aK'. */
 export function fileKeys(doc: Pick<ProjectDoc, 'assets'>): string[];
 export function counts(doc: Pick<ProjectDoc, 'sheets' | 'items'>): { sheets: number; pieces: number };

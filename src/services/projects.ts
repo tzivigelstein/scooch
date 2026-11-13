@@ -14,7 +14,8 @@
 // for it again and reloads it.
 
 import { JOURNAL_PREFIX, JOURNAL_STORAGE, LAST_PROJECT_STORAGE, TABS_CHANNEL } from '../config.ts';
-import { DEFAULT_CUTS, ProjectError, fileKeys, nextIds, serialize } from '../core/projectdoc.js';
+import { DEFAULT_CUTS, ProjectError, assetMeta, fileKeys, nextIds, serialize } from '../core/projectdoc.js';
+import { nextIdsOf, parseHistory, serializeHistory } from '../core/undostore.js';
 import {
   cleanName,
   createProject,
@@ -31,16 +32,16 @@ import {
   touchProject,
   type Journal,
 } from '../core/projectstore.js';
-import type { ProjectDoc, ProjectRecord, ProjectStorage, StoredFile } from '../core/types.ts';
+import type { ProjectDoc, ProjectRecord, ProjectStorage, StoredFile, StoredHistory } from '../core/types.ts';
 import { t } from '../copy/index.ts';
-import { allAssets, findAsset, replaceAssets } from '../state/assets.ts';
+import { adoptAssets, allAssets, assetGeneration, findAsset, getAsset, replaceAssets } from '../state/assets.ts';
 import { getDocument, resetIds, setDocument, useDocument, type Piece } from '../state/document.ts';
-import { resetHistory } from '../state/history.ts';
+import { historyStacks, installHistory, resetHistory } from '../state/history.ts';
 import { legacyAllowOverlap } from '../state/prefs.ts';
 import { useProject, type SaveStatus } from '../state/project.ts';
 import { itemsOn, sheetSize } from '../state/selectors.ts';
 import { setView } from '../state/view.ts';
-import { assetBlob, restoreAssets, withHashes, type AppAsset } from './assets.ts';
+import { assetBlob, reserveSources, restoreAssets, withHashes, type AppAsset } from './assets.ts';
 import { openIdbStorage } from './storage/idb.ts';
 import { migrateLegacyProjects } from './storage/migrate.ts';
 import { storageGet, storageJson, storageKeys, storageRemove, storageSet } from './storage/local.ts';
@@ -66,6 +67,10 @@ const session = {
   storage: null as ProjectStorage | null,
   record: null as ProjectRecord | null,
   stored: new Map<string, string>(), // key → hash of the files already saved
+  // The undo history saved with the project: what its stored record references,
+  // and whether the saved steps were put back (until then saves leave it as it is).
+  historyHashes: new Set<string>(),
+  historyReady: true,
   savedSig: '',
   failedSig: '', // what couldn't be saved: it isn't retried on its own until something changes
   thumbSig: '',
@@ -118,9 +123,13 @@ const docSignature = () => JSON.stringify(serialized());
  * every previous asset, starts a new history and continues ids after the
  * document's own. `loaded`: key → asset (restoreAssets).
  */
-function replaceDocument(doc: ProjectDoc, loaded: ReadonlyMap<string, AppAsset> = new Map()) {
-  const ids = nextIds(doc);
+function replaceDocument(doc: ProjectDoc, loaded: ReadonlyMap<string, AppAsset> = new Map(), history: SavedHistory | null = null) {
+  // New ids continue after the document's and its saved undo steps' (put back later).
+  const own = nextIds(doc);
+  const saved = history ? nextIdsOf(history) : own;
+  const ids = { item: Math.max(own.item, saved.item), sheet: Math.max(own.sheet, saved.sheet), asset: Math.max(own.asset, saved.asset), src: Math.max(own.src, saved.src) };
   replaceAssets(loaded, ids.asset);
+  reserveSources(ids.src);
   setDocument({
     sheets: doc.sheets.map((sheet) => ({ ...sheet })),
     items: doc.items.map((item) => ({ ...item })),
@@ -260,6 +269,8 @@ async function startNew({ remember = true } = {}) {
 function adopt(record: ProjectRecord, stored: Map<string, string>, { remember = true } = {}) {
   session.record = record;
   session.stored = stored;
+  session.historyHashes = new Set();
+  session.historyReady = true;
   session.savedSig = docSignature();
   session.thumbSig = '';
   if (remember) storageSet(LAST_PROJECT_STORAGE, record.id);
@@ -326,13 +337,16 @@ export function save({ quick = false } = {}): Promise<void> {
       const sig = JSON.stringify(doc);
       session.failedSig = sig;
       const files = filesFor(doc) ?? (await hashMissing(doc), filesFor(doc)!);
+      const steps = session.historyReady ? (historyFor(id) ?? (await hashHistoryAssets(), historyFor(id)!)) : null;
       setStatus('saving');
-      // The document first, in a transaction that starts now (if the tab closes
-      // right now, what matters is kept); the thumbnail goes after.
-      const result = await saveProject(storage, { record: session.record!, doc, files, stored: session.stored, now: now() });
+      // The document (and the undo steps) first, in a transaction that starts
+      // now (if the tab closes right now, what matters is kept); the thumbnail goes after.
+      const result = await saveProject(storage, { record: session.record!, doc, files, stored: session.stored, history: steps?.history, blobs: steps?.blobs, now: now() });
       if (session.record?.id !== id) return; // the project changed meanwhile
-      if ([...session.stored.keys()].some((key) => !result.stored.has(key))) scheduleGarbage();
+      const dropped = [...session.stored.keys()].some((key) => !result.stored.has(key)) || (steps && [...session.historyHashes].some((hash) => !steps.history?.hashes.includes(hash)));
+      if (dropped) scheduleGarbage();
       session.stored = result.stored;
+      if (steps) session.historyHashes = new Set(steps.history?.hashes ?? []);
       const thumb = quick ? undefined : await thumbnail();
       if (thumb && session.record?.id === id) {
         const withThumb = { ...result.record, name: session.record.name, thumb };
@@ -417,6 +431,71 @@ function assetOfFile(key: string) {
   return asset ? { asset, kind: kind === 'src' ? ('original' as const) : (kind as 'bytes' | 'preview') } : null;
 }
 
+// ---------- The saved undo history ----------
+
+type SavedHistory = NonNullable<ReturnType<typeof parseHistory>>;
+
+/**
+ * The undo steps to save with the project ({history, blobs}: the stored
+ * record, null without steps, and the binaries it needs that may not be
+ * stored yet), or null when an asset doesn't know its hashes yet.
+ */
+function historyFor(id: string) {
+  const hashOf = (key: string) => {
+    const found = assetOfFile(key);
+    return found?.asset.hashes?.[found.kind === 'original' ? 'src' : found.kind];
+  };
+  let history: StoredHistory | null;
+  try {
+    history = serializeHistory(id, historyStacks(), (key) => assetMeta(getAsset(key)), hashOf);
+  } catch {
+    return null;
+  }
+  // What the project's files or its saved history already keep is stored for sure.
+  const kept = new Set([...session.stored.values(), ...session.historyHashes]);
+  const blobs = new Map<string, Blob>();
+  for (const [key, hash] of Object.entries(history?.files ?? {})) {
+    if (kept.has(hash) || blobs.has(hash)) continue;
+    const found = assetOfFile(key)!;
+    blobs.set(hash, assetBlob(found.asset, found.kind));
+  }
+  return { history, blobs };
+}
+
+// Hashes the binaries of the undo steps' assets that don't have them yet.
+async function hashHistoryAssets() {
+  const { undo, redo } = historyStacks();
+  const keys = new Set([...undo, ...redo].flatMap((snap) => snap.items.map((item) => item.asset)));
+  await Promise.all([...keys].map((key) => findAsset(key)).filter((asset) => !!asset && !asset.hashes).map((asset) => withHashes(asset!)));
+}
+
+/**
+ * Puts back the undo steps saved with project `id` once their assets are
+ * loaded (the ones the document doesn't use: removed pieces, other pages),
+ * without delaying the opening. If a binary is missing, they aren't used.
+ */
+async function restoreHistory(id: string, saved: SavedHistory) {
+  const generation = assetGeneration();
+  try {
+    const missing = Object.fromEntries(Object.entries(saved.assets).filter(([key]) => !findAsset(key)));
+    const keys = fileKeys({ assets: missing });
+    const blobs = keys.length ? await session.storage!.blobs(keys.map((key) => saved.files[key])) : new Map<string, Blob>();
+    const files = new Map(keys.filter((key) => blobs.has(saved.files[key])).map((key) => [key, { blob: blobs.get(saved.files[key])!, hash: saved.files[key] }]));
+    if (files.size < keys.length) throw new Error('a binary of the undo history is missing');
+    const restored = await restoreAssets({ assets: missing }, files);
+    if (assetGeneration() !== generation || session.record?.id !== id) {
+      for (const asset of restored.values()) URL.revokeObjectURL(asset.url);
+      return;
+    }
+    adoptAssets(restored);
+    installHistory(saved);
+  } catch (err) {
+    console.warn('The undo history could not be restored.', err);
+  } finally {
+    if (session.record?.id === id) session.historyReady = true;
+  }
+}
+
 // Hashes the binaries of the document's assets that don't have them yet.
 async function hashMissing(doc: ProjectDoc) {
   const assets = new Set(fileKeys(doc).map((key) => assetOfFile(key)?.asset).filter((asset) => !!asset && !asset.hashes));
@@ -461,16 +540,20 @@ export async function openProject(id: string, { remember = true } = {}) {
   Object.assign(opening, { id, asked: false, lost: false });
   try {
     await claim(id);
-    const stored = await loadProject(session.storage!, id, migrationContext());
+    const [stored, savedSteps] = await Promise.all([loadProject(session.storage!, id, migrationContext()), session.storage!.history(id).catch(() => null)]);
     const { doc, files } = stored;
+    const history = parseHistory(savedSteps);
     // Opened now: first in «Proyectos» (only that changes: it isn't saved as a change).
     const record = (await touchProject(session.storage!, id, now())) ?? stored.record;
     // What was journaled when the tab closed, if newer than what was saved.
     const recovered = recoverJournal(record, files, readJournal(id), migrationContext());
     const use = recovered?.doc ?? doc;
     const loaded = await restoreAssets(use, files);
-    replaceDocument(use, loaded);
+    replaceDocument(use, loaded, history);
     adopt(recovered ? { ...record, name: recovered.name } : record, new Map([...files].map(([key, file]) => [key, file.hash])), { remember });
+    session.historyHashes = new Set(Array.isArray(savedSteps?.hashes) ? savedSteps.hashes : []);
+    session.historyReady = !history;
+    if (history) void restoreHistory(id, history);
     if (recovered) {
       // It differs from what was saved: autosave writes it.
       session.savedSig = JSON.stringify(doc);
@@ -596,6 +679,7 @@ export async function saveAsNew() {
   const record = await createProject(session.storage!, { id, name: session.record?.name ?? untitled(), now: now() });
   session.record = record;
   session.stored = new Map();
+  session.historyHashes = new Set();
   session.savedSig = '';
   storageSet(LAST_PROJECT_STORAGE, record.id);
   setStatus('pending');
