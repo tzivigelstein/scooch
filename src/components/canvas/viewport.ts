@@ -27,12 +27,15 @@ const stage = () => document.getElementById('stage');
 const sheetsEl = () => document.getElementById('sheets');
 export const pageNode = (id: number) => document.querySelector<HTMLElement>(`#sheets .page[data-sheet="${id}"]`);
 
-/** Measures where each sheet's box is inside #sheets. */
+/** Measures where each sheet's box is inside #sheets (to the subpixel: offsetTop rounds). */
 export function measureBoxes() {
   const next = new Map<number, BoxOffset>();
+  const origin = sheetsEl()?.getBoundingClientRect();
   for (const sheet of getDocument().sheets) {
     const box = pageNode(sheet.id)?.querySelector<HTMLElement>('.sheet-box');
-    if (box) next.set(sheet.id, { left: box.offsetLeft, top: box.offsetTop });
+    if (!box || !origin) continue;
+    const r = box.getBoundingClientRect();
+    next.set(sheet.id, { left: r.left - origin.left, top: r.top - origin.top });
   }
   boxes = next;
   const first = getDocument().sheets[0];

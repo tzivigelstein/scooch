@@ -19,6 +19,9 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  /* The app keeps the scroll itself (zooming around a point, dragging): the
+     browser must not shift it to keep some node in place. */
+  overflow-anchor: none;
 }
 
 /* The sheets, one below the other. With few, they stay vertically centered
