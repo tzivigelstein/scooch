@@ -29,6 +29,7 @@ suite('presets', () => {
       'B5',
       'letter',
       'legal',
+      'folio',
       'tabloid',
       'photo-9x13',
       'photo-10x15',
@@ -59,6 +60,7 @@ suite('presets', () => {
     assert.deepEqual(size('B5'), [176, 250]);
     assert.deepEqual(size('letter'), [215.9, 279.4]);
     assert.deepEqual(size('legal'), [215.9, 355.6]);
+    assert.deepEqual(size('folio'), [216, 330]);
     assert.deepEqual(size('tabloid'), [279.4, 431.8]);
     assert.deepEqual(size('photo-9x13'), [88.9, 127]);
     assert.deepEqual(size('photo-10x15'), [101.6, 152.4]);
@@ -170,6 +172,9 @@ suite('matchPreset', () => {
     assert.deepEqual(matchPreset(297, 210), { id: 'A4', landscape: true });
     assert.deepEqual(matchPreset(210.5, 296.5), { id: 'A4', landscape: false });
     assert.deepEqual(matchPreset(216, 279), { id: 'letter', landscape: false });
+    assert.deepEqual(matchPreset(216, 330), { id: 'folio', landscape: false });
+    assert.deepEqual(matchPreset(330.4, 215.8), { id: 'folio', landscape: true });
+    assert.deepEqual(matchPreset(216, 356), { id: 'legal', landscape: false }, 'oficio no es folio');
     assert.deepEqual(matchPreset(152.4, 101.6), { id: 'photo-10x15', landscape: true });
     assert.equal(matchPreset(210.6, 297), null);
     assert.equal(matchPreset(100, 150), null, '10×15 métrico no es 4×6 in');

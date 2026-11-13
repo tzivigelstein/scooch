@@ -10,7 +10,7 @@ export const PAPER_GROUPS = Object.freeze(['iso-a', 'iso-b', 'us', 'photo']);
 
 /**
  * Presets en vertical (w ≤ h), por grupo: serie A (ISO 216), B4 y B5 (ISO),
- * norteamericanos (carta, oficio/legal, tabloide) y papel fotográfico (sus
+ * americanos (carta, oficio/legal, folio y tabloide) y papel fotográfico (sus
  * medidas reales en pulgadas: 'photo-10x15' es 4 × 6 in).
  */
 export const PAPERS = Object.freeze(
@@ -26,6 +26,7 @@ export const PAPERS = Object.freeze(
     { id: 'B5', w: 176, h: 250, group: 'iso-b' },
     { id: 'letter', w: 215.9, h: 279.4, group: 'us' },
     { id: 'legal', w: 215.9, h: 355.6, group: 'us' },
+    { id: 'folio', w: 216, h: 330, group: 'us' },
     { id: 'tabloid', w: 279.4, h: 431.8, group: 'us' },
     { id: 'photo-9x13', w: 88.9, h: 127, group: 'photo' },
     { id: 'photo-10x15', w: 101.6, h: 152.4, group: 'photo' },
