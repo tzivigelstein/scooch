@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { EPS, overlaps, overlapsAny, overlapping, nearestFree, nextFreeInDirection, maxGrowth } from '../src/collide.js';
+import { EPS, overlaps, overlapsAny, overlapping, nearestFree, nextFreeInDirection, maxGrowth, nextFreeForGroup, nearestFreeOffset, groupScaleRange } from '../src/collide.js';
 
 const r = (x, y, w, h, id) => ({ id, x, y, w, h });
 
@@ -202,6 +202,97 @@ describe('maxGrowth', () => {
           : r(rect.x, rect.y, rect.w * f, rect.h * f);
       assert.equal(overlapsAny(grow(k), others), false, `caso ${n}: en el límite no pisa`);
       assert.equal(overlapsAny(grow(k * 1.01 + 0.01), others), true, `caso ${n}: pasado el límite pisa`);
+    }
+  });
+});
+
+describe('grupos', () => {
+  test('nextFreeForGroup: salta lo justo para que ninguna pise nada', () => {
+    const rects = [r(0, 0, 10, 10, 'a'), r(20, 0, 10, 10, 'b')];
+    const others = [r(32, 0, 5, 10, 'x'), r(40, 20, 5, 5, 'y')];
+    // Sin estorbo: el paso tal cual.
+    assert.deepEqual(nextFreeForGroup([{ rects, others: [] }], 1, 0), { dx: 1, dy: 0, jumped: [] });
+    // «b» pisaría a «x»: salta hasta dejarla atrás (b.x = 37).
+    const res = nextFreeForGroup([{ rects, others }], 3, 0);
+    assert.equal(res.dx, 17);
+    assert.deepEqual(res.jumped.map((o) => o.id), ['x']);
+    // Al saltar, «a» cae sobre «x»: sigue hasta dejarla atrás también.
+    const tight = [r(0, 0, 10, 10, 'a'), r(12, 0, 10, 10, 'b')];
+    const res2 = nextFreeForGroup([{ rects: tight, others: [r(24, 0, 5, 10, 'x')] }], 3, 0);
+    assert.equal(res2.dx, 29);
+    // Hacia arriba y en varias hojas a la vez.
+    const up = nextFreeForGroup(
+      [
+        { rects: [r(0, 20, 10, 10, 'a')], others: [r(0, 12, 10, 5, 'x')] },
+        { rects: [r(0, 20, 10, 10, 'c')], others: [] },
+      ],
+      0,
+      -4
+    );
+    assert.deepEqual([up.dx, up.dy], [0, -18]);
+  });
+
+  test('nextFreeForGroup: nunca deja piezas pisándose (fuzz)', () => {
+    const rnd = prng(5);
+    for (let n = 0; n < 200; n++) {
+      const rects = Array.from({ length: 1 + Math.floor(rnd() * 4) }, (_, i) => r(rnd() * 100, rnd() * 100, 2 + rnd() * 20, 2 + rnd() * 20, `g${i}`));
+      const others = Array.from({ length: Math.floor(rnd() * 8) }, (_, i) => r(rnd() * 150, rnd() * 150, 2 + rnd() * 20, 2 + rnd() * 20, `o${i}`));
+      const [dx, dy] = [[1, 0], [-1, 0], [0, 1], [0, -1]][n % 4];
+      const res = nextFreeForGroup([{ rects, others }], dx, dy);
+      for (const g of rects) assert.equal(overlapsAny(r(g.x + res.dx, g.y + res.dy, g.w, g.h), others), false, `caso ${n}`);
+      assert.ok(dx ? Math.sign(res.dx) === dx && res.dy === 0 : Math.sign(res.dy) === dy && res.dx === 0, `caso ${n}`);
+    }
+  });
+
+  test('nearestFreeOffset: el corrimiento libre más corto, con los centros en la hoja', () => {
+    const rects = [r(10, 10, 10, 10, 'a'), r(25, 10, 10, 10, 'b')];
+    // Libre: no se mueve.
+    assert.deepEqual(nearestFreeOffset([{ rects, others: [r(50, 50, 5, 5)] }]), { dx: 0, dy: 0 });
+    // «b» pisa a «x» por 2 mm a la derecha: lo más corto es correr el grupo 2 mm a la izquierda.
+    const res = nearestFreeOffset([{ rects, others: [r(33, 10, 10, 10, 'x')] }]);
+    assert.deepEqual(res, { dx: -2, dy: 0 });
+    // Con la hoja: el centro de «a» no puede salir por la izquierda.
+    const edge = nearestFreeOffset([{ rects: [r(-4, 10, 10, 10, 'a')], others: [r(0, 10, 10, 10, 'x')], bounds: { W: 100, H: 100 } }]);
+    assert.deepEqual(edge, { dx: 0, dy: -10 }, 'a igual distancia, arriba antes que abajo');
+    // Muy lejos: null.
+    assert.equal(nearestFreeOffset([{ rects, others: [r(0, 0, 100, 100)] }], { maxDistance: 5 }), null);
+    // Varias hojas: el mismo corrimiento para todas.
+    const two = nearestFreeOffset([
+      { rects: [r(0, 0, 10, 10, 'a')], others: [r(8, 0, 10, 10, 'x')] },
+      { rects: [r(0, 0, 10, 10, 'c')], others: [r(0, 9, 10, 10, 'y')] },
+    ], { maxDistance: 30 });
+    for (const [g, o] of [[r(0, 0, 10, 10), r(8, 0, 10, 10)], [r(0, 0, 10, 10), r(0, 9, 10, 10)]]) {
+      assert.equal(overlaps(r(g.x + two.dx, g.y + two.dy, 10, 10), o), false);
+    }
+  });
+
+  test('groupScaleRange: el factor exacto en que toca a otra, al agrandar y al reducir', () => {
+    const rects = [r(0, 0, 10, 10, 'a'), r(20, 0, 10, 10, 'b')];
+    // Desde la esquina (0, 0): «b» toca a «x» (x = 45) cuando 30k = 45.
+    const grow = groupScaleRange(rects, [r(45, 0, 10, 10, 'x')], { x: 0, y: 0 });
+    assert.ok(Math.abs(grow.max - (45 + EPS) / 30) < 1e-12, String(grow.max));
+    assert.equal(grow.min, 0);
+    // Una pieza entre las dos: al reducir, «b» la alcanza.
+    const shrink = groupScaleRange(rects, [r(12, 0, 4, 10, 'x')], { x: 0, y: 0 });
+    assert.ok(Math.abs(shrink.min - (16 - EPS) / 20) < 1e-12, String(shrink.min));
+    // …y al agrandar, «a» la alcanza desde el otro lado.
+    assert.ok(Math.abs(shrink.max - (12 + EPS) / 10) < 1e-12, String(shrink.max));
+    // Las que ya se pisan no frenan.
+    assert.deepEqual(groupScaleRange([rects[0]], [r(5, 5, 10, 10)], { x: 0, y: 0 }), { min: 0, max: Infinity });
+  });
+
+  test('groupScaleRange: dentro del rango no se pisa nada (fuzz)', () => {
+    const rnd = prng(17);
+    for (let n = 0; n < 200; n++) {
+      const rects = Array.from({ length: 1 + Math.floor(rnd() * 3) }, () => r(rnd() * 100, rnd() * 100, 2 + rnd() * 20, 2 + rnd() * 20));
+      const others = Array.from({ length: 1 + Math.floor(rnd() * 6) }, () => r(rnd() * 150, rnd() * 150, 2 + rnd() * 20, 2 + rnd() * 20)).filter((o) => !overlapsAny(o, rects));
+      const anchor = { x: rnd() * 100, y: rnd() * 100 };
+      const { min, max } = groupScaleRange(rects, others, anchor);
+      const at = (k) => rects.map((g) => r(anchor.x + (g.x - anchor.x) * k, anchor.y + (g.y - anchor.y) * k, g.w * k, g.h * k));
+      for (const k of [min, (min + 1) / 2, 1, Math.min(max, 5), (1 + Math.min(max, 5)) / 2].filter((k) => k > 0 && Number.isFinite(k))) {
+        for (const g of at(k)) assert.equal(overlapsAny(g, others, EPS + 1e-7), false, `caso ${n}, k ${k}`);
+      }
+      if (Number.isFinite(max)) assert.ok(at(max * (1 + 1e-7)).some((g) => overlapsAny(g, others)), `caso ${n}: pasado el máximo se pisa`);
     }
   });
 });

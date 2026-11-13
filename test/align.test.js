@@ -342,3 +342,32 @@ describe('validate', () => {
     assert.equal(validate(align(column, 'top'), []), true);
   });
 });
+
+describe('snapGroup por eje y hacia un lado', () => {
+  test('solo el eje pedido; el otro no se toca', () => {
+    const one = [r('a', 12.3, 7.6, 5, 5)];
+    assert.deepEqual(snapGroup(one, 5, { axes: 'x' }), [r('a', 10, 7.6, 5, 5)]);
+    assert.deepEqual(snapGroup(one, 5, { axes: 'y' }), [r('a', 12.3, 10, 5, 5)]);
+    assert.deepEqual(snapGroup(one, 5, { axes: 'xy' }), [r('a', 10, 10, 5, 5)]);
+  });
+
+  test('hacia arriba, hacia abajo y por eje', () => {
+    const one = [r('a', 11, 14, 5, 5)];
+    assert.deepEqual(snapGroup(one, 5, { round: 'up' }), [r('a', 15, 15, 5, 5)]);
+    assert.deepEqual(snapGroup(one, 5, { round: 'down' }), [r('a', 10, 10, 5, 5)]);
+    assert.deepEqual(snapGroup(one, 5, { round: { x: 'up', y: 'down' } }), [r('a', 15, 10, 5, 5)]);
+    // Lo que ya está en la grilla no salta un paso (ni con error de coma flotante).
+    const on = [r('a', 0.1 + 0.2, 6.35, 5, 5)];
+    assert.ok(Math.abs(snapGroup(on, 0.3, { round: 'up', axes: 'x' })[0].x - 0.3) < 1e-12);
+    assert.equal(snapGroup([r('a', 3.175 * 3, 0, 1, 1)], 3.175, { round: 'down' })[0].x, 3.175 * 3);
+  });
+});
+
+describe('validate sin comparar el grupo entre sí', () => {
+  test('internal: false', () => {
+    const piled = [r('a', 0, 0, 10, 10), r('b', 5, 5, 10, 10)];
+    assert.equal(validate(piled, []), false);
+    assert.equal(validate(piled, [], { internal: false }), true);
+    assert.equal(validate(piled, [r('c', 12, 12, 5, 5)], { internal: false }), false, 'con las demás sí');
+  });
+});

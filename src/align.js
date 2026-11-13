@@ -182,18 +182,31 @@ export function rotateGroup(rects, direction = 'cw') {
   };
 }
 
+// Redondeo a la grilla: al más cercano, hacia arriba o hacia abajo (con una
+// tolerancia, así un valor que ya está en la grilla no salta un paso).
+const ROUNDING = {
+  nearest: Math.round,
+  up: (v) => Math.ceil(v - 1e-9),
+  down: (v) => Math.floor(v + 1e-9),
+};
+
 /**
  * Imán para el grupo como bloque: lo mueve entero (mismo delta para todas)
  * para que la esquina superior izquierda de su caja caiga en la grilla más
  * cercana de paso `step` mm, con origen en `origin` (por omisión la esquina de
  * la hoja, como el imán de una pieza). No cambia las distancias internas. Con
  * un paso no positivo o no finito, no mueve nada. No redondea el resultado.
+ *
+ * `axes`: 'xy' (por omisión), 'x' o 'y': en qué ejes se ajusta (el otro no
+ * se toca). `round`: 'nearest' (por omisión), 'up' o 'down', o {x, y} con uno
+ * por eje: hacia dónde va la esquina (p. ej. hacia adentro del margen).
  */
-export function snapGroup(rects, step, { origin = { x: 0, y: 0 } } = {}) {
+export function snapGroup(rects, step, { origin = { x: 0, y: 0 }, axes = 'xy', round = 'nearest' } = {}) {
   const b = bounds(rects);
   if (!b || typeof step !== 'number' || !Number.isFinite(step) || step <= 0) return rects.map(copy);
-  const snap = (v, o) => o + Math.round((v - o) / step) * step;
-  return moveBy(rects, snap(b.x, origin.x) - b.x, snap(b.y, origin.y) - b.y);
+  const mode = (axis) => ROUNDING[typeof round === 'object' ? (round[axis] ?? 'nearest') : round] ?? ROUNDING.nearest;
+  const snap = (v, o, axis) => (axes.includes(axis) ? o + mode(axis)((v - o) / step) * step : v);
+  return moveBy(rects, snap(b.x, origin.x, 'x') - b.x, snap(b.y, origin.y, 'y') - b.y);
 }
 
 /**
@@ -202,10 +215,12 @@ export function snapGroup(rects, step, { origin = { x: 0, y: 0 } } = {}) {
  * se ignoran las de `others` cuyo id está en `result`, así se puede pasar la
  * hoja entera). Tocarse no es pisarse (tolerancia de collide.js). Con
  * `allowOverlap`, siempre true. La UI lo usa para rechazar la operación entera.
+ * Con `internal: false` no compara las de `result` entre sí (para un grupo que
+ * se mueve rígido: lo que ya se pisaba adentro no lo cambia el movimiento).
  */
-export function validate(result, others = [], { allowOverlap = false } = {}) {
+export function validate(result, others = [], { allowOverlap = false, internal = true } = {}) {
   if (allowOverlap) return true;
-  for (let i = 0; i < result.length; i++) {
+  for (let i = 0; internal && i < result.length; i++) {
     for (let j = i + 1; j < result.length; j++) if (overlaps(result[i], result[j])) return false;
   }
   const moved = new Set(result.map((r) => r.id));
