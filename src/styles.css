@@ -2324,10 +2324,24 @@ input[role="switch"]:checked::before {
     pointer-events: auto;
   }
 
+  /* La barra de la pieza, anclada abajo: justo encima de «Piezas» y «Propiedades». */
+  .piecebar {
+    left: 50%;
+    top: auto;
+    bottom: calc(66px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    transition: opacity var(--fast) var(--ease);
+  }
+
   .pill {
     bottom: calc(68px + env(safe-area-inset-bottom));
     max-width: calc(100% - 24px);
     font-size: 13px;
+  }
+
+  /* Con la barra de la pieza a la vista, el aviso va encima de ella. */
+  .canvas:has(.piecebar:not([hidden])) .pill {
+    bottom: calc(126px + env(safe-area-inset-bottom));
   }
 
   .dialog {

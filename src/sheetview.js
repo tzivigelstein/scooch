@@ -1,7 +1,7 @@
 // La hoja en pantalla: tamaño (zoom), piezas, marco de selección con su
 // tirador, posición de la barra de la pieza y gestos con el puntero.
 
-import { DRAG_THRESHOLD } from './config.js';
+import { DRAG_THRESHOLD, NARROW_QUERY } from './config.js';
 import { state, settings, assets, sheetSize, dims, findItem, commit, paperName } from './store.js';
 import { overlapsAny, nearestFree, maxGrowth } from './collide.js';
 import { $, clamp, round1, tidy, isTyping } from './util.js';
@@ -39,6 +39,7 @@ export function initSheetView(h) {
     paperLabel: $('paper-label'),
     piecebar: $('piecebar'),
     pieceSize: $('piece-size'),
+    narrow: window.matchMedia(NARROW_QUERY),
   };
   ui.stage.addEventListener('pointerdown', onPointerDown);
   ui.stage.addEventListener('pointermove', onPointerMove);
@@ -208,13 +209,19 @@ function renderSelection(draft = null) {
 }
 
 /**
- * Barra de la pieza: prueba arriba, abajo (centrada o alineada con un borde de la
- * pieza) y fuera de la hoja a cada costado, y se queda con la posición que tapa
- * menos piezas; a igualdad, en ese orden. Nunca sale del lienzo ni queda debajo
- * de un panel abierto encima del lienzo.
+ * Barra de la pieza. En pantallas angostas va anclada abajo, encima de los botones
+ * «Piezas» y «Propiedades» (lo resuelve el CSS). Si no, prueba arriba, abajo (centrada
+ * o alineada con un borde de la pieza) y fuera de la hoja a cada costado, y se queda
+ * con la posición que tapa menos piezas; a igualdad, en ese orden. Nunca sale del
+ * lienzo ni queda debajo de un panel abierto encima del lienzo.
  */
 function placePiecebar(item) {
   const bar = ui.piecebar;
+  if (ui.narrow.matches) {
+    bar.style.transform = '';
+    bar.dataset.side = 'docked';
+    return;
+  }
   const canvas = ui.canvas.getBoundingClientRect();
   const box = ui.sheetBox.getBoundingClientRect();
   const sheet = { x: box.left - canvas.left, y: box.top - canvas.top, w: box.width, h: box.height };
