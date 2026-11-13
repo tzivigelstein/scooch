@@ -1,8 +1,11 @@
+/* Inter variable, autoalojada (con unicode-range: el navegador baja solo los subsets que usa). */
+@import "@fontsource-variable/inter";
+
 /* ---------- Tokens ---------- */
 
 :root {
   color-scheme: light;
-  --font: "Inter", "InterVariable", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   --bg: #ffffff;
   --canvas: #eef0f3;
@@ -551,6 +554,7 @@ kbd {
 .addzone-title {
   font-size: 13px;
   font-weight: 600;
+  text-wrap: balance;
 }
 
 .addzone-sub {
@@ -925,6 +929,7 @@ input[type="range"] {
   margin: 0;
   color: var(--muted);
   font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
   line-height: 1.4;
 }
 
@@ -1018,6 +1023,7 @@ input[type="range"] {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   line-height: 1.25;
 }
@@ -1542,6 +1548,7 @@ input[role="switch"]:checked::before {
   color: var(--accent-strong);
   font-size: 12px;
   line-height: 20px;
+  font-variant-numeric: tabular-nums;
   text-align: center;
 }
 
