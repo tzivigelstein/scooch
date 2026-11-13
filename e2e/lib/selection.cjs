@@ -1,4 +1,4 @@
-// Helpers de las suites v5 (selección múltiple, copias, recorte, líneas de corte).
+// Helpers for the multi-selection, copies, crop and cut-marks suites.
 const base = require('./sheets.cjs');
 const { path, fs } = base;
 
@@ -9,8 +9,8 @@ const tiles = (from, n) => Array.from({ length: n }, (_, i) => `tile${String(fro
 const cards = (from, n) => Array.from({ length: n }, (_, i) => `card${String(from + i).padStart(2, '0')}.png`);
 
 /**
- * Geometría exacta (mm) leída de los estilos (px / zoom). El zoom sale del ancho
- * de la caja de la hoja y del ancho real del papel en mm (`paperW`, A4: 210).
+ * Exact geometry (mm) read from the styles (px / zoom). The zoom comes from the
+ * width of the sheet's box and the paper's real width in mm (`paperW`, A4: 210).
  */
 const GEOM5 = (paperW) => {
   const box = document.querySelector('#sheets .sheet-box');
@@ -38,7 +38,7 @@ const GEOM5 = (paperW) => {
   return { zoom, W: paperW, H, sheets, pieces };
 };
 
-/** Foto del estado visible, para comparar «exactamente igual». */
+/** A snapshot of the visible state, to compare «exactly the same». */
 const SNAP = () =>
   JSON.stringify({
     sheets: [...document.querySelectorAll('#sheets .page')].map((p) => p.dataset.sheet),
@@ -59,16 +59,16 @@ function lib(page, { paperW = 210 } = {}) {
   const row = (id) => page.locator(`#piece-list [role="option"][data-id="${id}"]`);
   const selectedIds = () => page.evaluate(() => [...document.querySelectorAll('#sheets .piece.is-selected')].map((p) => Number(p.dataset.id)).sort((a, b) => a - b));
   const ids = async () => (await geom()).pieces.map((p) => p.id);
-  /** Elige exactamente esas piezas desde la lista (clic y Ctrl+clic). */
+  /** Selects exactly those pieces from the list (click and Ctrl+click). */
   const selectIds = async (list) => {
     await page.keyboard.press('Escape');
-    // Con la lista a la vista (≥ 1100 px), desde la lista; si no, en la hoja.
+    // With the list visible (≥ 1100 px), from the list; otherwise on the sheet.
     const target = (await row(list[0]).isVisible()) ? row : piece;
     await target(list[0]).click({ force: target === piece });
     for (const id of list.slice(1)) await target(id).click({ modifiers: ['Control'], force: target === piece });
     await page.waitForTimeout(30);
   };
-  /** Pone una pieza en (x, y) mm con los campos X e Y (unidad actual: mm). */
+  /** Puts a piece at (x, y) mm with the X and Y fields (current unit: mm). */
   const setPos = async (id, x, y) => {
     await page.keyboard.press('Escape');
     await row(id).click();
@@ -89,7 +89,7 @@ function lib(page, { paperW = 210 } = {}) {
 
 const near = (a, b, tol = 1e-3) => Math.abs(a - b) <= tol;
 
-/** Piezas de la misma hoja que se pisan (más que tocarse, tolerancia de la app 0,01 mm). */
+/** Pieces of the same sheet that overlap (more than touching; the app's tolerance is 0.01 mm). */
 function overlapping(pieces, eps = 0.011) {
   const bad = [];
   for (let i = 0; i < pieces.length; i++)
@@ -104,7 +104,7 @@ function overlapping(pieces, eps = 0.011) {
 
 const centersInside = (g) => g.pieces.filter((p) => p.x + p.w / 2 < -1e-3 || p.y + p.h / 2 < -1e-3 || p.x + p.w / 2 > g.W + 1e-3 || p.y + p.h / 2 > g.H + 1e-3);
 
-/** Caja de las piezas `ids` de una hoja. */
+/** Bounding box of the pieces `ids` of one sheet. */
 function boxOf(g, ids, sheet) {
   const list = g.pieces.filter((p) => ids.includes(p.id) && (sheet === undefined || p.sheet === sheet));
   if (!list.length) return null;

@@ -29,7 +29,7 @@ const pill = (page) =>
     return { text: document.getElementById('pill-text').textContent.replace(/ /g, ' '), action: a.hidden ? '' : a.textContent.replace(/ /g, ' '), warn: p.dataset.tone === 'warning' };
   });
 
-/** Por hoja (en orden): ids de piezas y cajas en mm. */
+/** Per sheet (in order): piece ids and boxes in mm. */
 const sheets = (page) =>
   page.evaluate(() => {
     const label = document.getElementById('paper-label').textContent;
@@ -52,7 +52,7 @@ const sheets = (page) =>
     }));
   });
 
-/** Información de un PDF (Buffer o ruta): páginas con tamaño en mm, objetos y hash del contenido. */
+/** Info about a PDF (Buffer or path): pages with their size in mm, objects and a content hash. */
 async function pdfInfo(src) {
   const bytes = Buffer.isBuffer(src) ? src : fs.readFileSync(src);
   const doc = await PDFDocument.load(bytes, { updateMetadata: false });
@@ -85,7 +85,7 @@ async function download(page, selector = '#export') {
   return { file, name: d.suggestedFilename() };
 }
 
-/** ¿Se anunció algo que cumple `re` (en la región polite o assertive) dentro de `ms`? */
+/** Was something matching `re` announced (in the polite or assertive region) within `ms`? */
 const heard = (page, re, ms = 2500) =>
   page
     .waitForFunction(

@@ -51,12 +51,12 @@ async function open({ viewport = { width: 1440, height: 900 }, colorScheme = 'li
   });
   await page.goto(BASE);
   await page.waitForSelector('#paper option', { state: 'attached' });
-  // El proyecto se restaura (o se crea) de forma asíncrona al abrir.
+  // The project is restored (or created) asynchronously on start.
   await page.waitForFunction(() => !document.body.classList.contains('is-loading'));
   return { browser, context, page, errors };
 }
 
-// Geometría leída del DOM, en mm (x/y de cada pieza relativas a su hoja).
+// Geometry read from the DOM, in mm (each piece's x/y relative to its sheet).
 const GEOM = () => {
   const label = document.getElementById('paper-label').textContent;
   const m = label.match(/· ([\d.,]+)\s×\s([\d.,]+)\smm/);
@@ -96,7 +96,7 @@ function overlaps(pieces, gap = 0, eps = 0.02) {
     for (let j = i + 1; j < pieces.length; j++) {
       const a = pieces[i];
       const b = pieces[j];
-      if (a.sheet !== b.sheet) continue; // solo chocan las de la misma hoja
+      if (a.sheet !== b.sheet) continue; // only pieces on the same sheet collide
       if (a.x < b.x + b.w + gap - eps && b.x < a.x + a.w + gap - eps && a.y < b.y + b.h + gap - eps && b.y < a.y + a.h + gap - eps)
         bad.push([a.name, b.name]);
     }
