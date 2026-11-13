@@ -3,7 +3,7 @@
 // pointer or the focus on them, and they can be closed); current problems stay
 // while they last. Everything is announced in the live regions.
 
-import { CircleCheck, LoaderCircle, TriangleAlert, X } from 'lucide-react';
+import { CircleCheck, Info, LoaderCircle, TriangleAlert, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { asSentence, formatList, t } from '../../copy/index.ts';
 import { useDocument, type DocumentData } from '../../state/document.ts';
@@ -20,6 +20,8 @@ const WARN_MS = 9000;
 interface Notice {
   text: string;
   warn?: boolean;
+  /** Not the result of an action that went well (no check mark). */
+  info?: boolean;
   action?: NoticeAction | null;
   busy?: boolean;
   flash?: boolean;
@@ -58,15 +60,17 @@ function problemNotice(doc: DocumentData, allowOverlap: boolean): Notice | null 
   if (pastMargin.count) return { text: inSheets(t('notices.pastMargin', { n: pastMargin.count }), pastMargin.sheets, many), warn: true };
   if (overlap.count && !allowOverlap) {
     const text = many ? inSheets(t('notices.overlapIn'), overlap.sheets, many) : t('notices.overlap');
-    return { text, action: { label: t('bar.arrange'), run: arrangeAll } };
+    return { text, info: true, action: { label: t('bar.arrange'), run: arrangeAll } };
   }
   return null;
 }
 
 export function NoticePill() {
   const notice = useCurrentNotice();
-  const { text = '', warn = false, action = null, busy = false, flash = false } = notice ?? {};
-  const signature = notice ? [text, warn, action?.label, busy, flash].join('|') : '';
+  const { text = '', warn = false, info = false, action = null, busy = false, flash = false } = notice ?? {};
+  const signature = notice ? [text, warn, info, action?.label, busy, flash].join('|') : '';
+  // The check mark only for an action that went well; what is wrong warns.
+  const tone = warn ? 'warning' : busy ? 'busy' : info || !flash ? 'info' : 'success';
   const currentAction = useRef<NoticeAction | null>(null);
   const pill = useRef<HTMLDivElement>(null);
   currentAction.current = action;
@@ -146,7 +150,7 @@ export function NoticePill() {
       id="pill"
       className="pill"
       hidden={!notice}
-      data-tone={notice ? (warn ? 'warning' : busy ? 'busy' : 'info') : undefined}
+      data-tone={notice ? tone : undefined}
       onPointerEnter={() => ((timer.current.hovering = true), pause())}
       onPointerLeave={() => ((timer.current.hovering = false), resume())}
       onFocus={() => ((timer.current.focusInside = true), pause())}
@@ -157,7 +161,7 @@ export function NoticePill() {
       }}
     >
       <span id="pill-icon" className="pill-icon">
-        <Icon icon={warn ? TriangleAlert : busy ? LoaderCircle : CircleCheck} className="pill-glyph" />
+        <Icon icon={{ warning: TriangleAlert, busy: LoaderCircle, info: Info, success: CircleCheck }[tone]} className="pill-glyph" />
       </span>
       <span id="pill-text" className="pill-text">
         {text}

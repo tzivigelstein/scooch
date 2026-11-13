@@ -8,10 +8,15 @@ export interface NoticeAction {
   run: () => void;
 }
 
-/** The notice of the last action. `persist`: stays until the next action or until closed. */
+/**
+ * The notice of the last action. `persist`: stays until the next action or
+ * until closed. `info`: something to know, not an action that went well (it
+ * doesn't get the check mark); `warn`: something went wrong.
+ */
 export interface Flash {
   text: string;
   warn?: boolean;
+  info?: boolean;
   action?: NoticeAction | null;
   persist?: boolean;
 }

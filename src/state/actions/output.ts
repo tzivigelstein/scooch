@@ -50,5 +50,5 @@ export async function printPdf() {
   setBusy(false);
   const how = await printBytes(bytes, fileName);
   const key = ({ dialog: 'notices.printDialog', tab: 'notices.printTab' } as const)[how as 'dialog' | 'tab'] ?? 'notices.printDownload';
-  say(t(key, { paper: paperName(), file: fileName }), { persist: true });
+  say(t(key, { paper: paperName(), file: fileName }), { persist: true, info: key === 'notices.printDialog' });
 }
