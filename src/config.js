@@ -26,6 +26,8 @@ export const GRID_DEFAULTS = { show: false, size: 1, snap: true };
 export const GRID_MIN = 0.5;
 export const GRID_MAX = 50;
 export const PIECES_STORAGE = 'piece-preferences';
+/** Unidad de las medidas ('mm' | 'cm' | 'in'), elegida en «Preferencias». */
+export const UNIT_STORAGE = 'unit-preference';
 /** Último papel personalizado ({w, h} en mm, como se cargó): preferencia local. */
 export const CUSTOM_PAPER_STORAGE = 'custom-paper';
 

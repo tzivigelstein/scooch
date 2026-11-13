@@ -3,6 +3,7 @@
 
 import { SINGLE_KEYS_STORAGE } from './config.js';
 import { settings } from './store.js';
+import { stepTexts } from './measure.js';
 import { $, storageGet, storageSet } from './util.js';
 import { t, keyLabel } from './copy/index.js';
 
@@ -59,7 +60,7 @@ export function initShortcuts({ trigger: button, onSingleKeysChange }) {
         keyCell.append(kbd);
       });
       const actionCell = document.createElement('td');
-      actionCell.textContent = t(`shortcuts.rows.${action}`);
+      actionCell.textContent = t(`shortcuts.rows.${action}`, stepTexts());
       if (single) {
         const off = document.createElement('span');
         off.className = 'off-badge';

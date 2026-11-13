@@ -4,7 +4,8 @@
 // eso también está bloqueado, lo descarga).
 
 import { APP_NAME } from './config.js';
-import { state, assets, sheetSize, dims, paperName, paperSlug } from './store.js';
+import { state, assets, sheetSize, dims } from './store.js';
+import { paperName, paperSlug } from './measure.js';
 import { buildPdf } from './export.js';
 import { slug } from './util.js';
 import { t } from './copy/index.js';

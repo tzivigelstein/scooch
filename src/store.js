@@ -1,10 +1,10 @@
 // Estado de la hoja, assets cargados e historial de deshacer/rehacer.
 // Todas las medidas internas en mm.
 
-import { MAX_UNDO, GRID_STORAGE, GRID_DEFAULTS, GRID_MIN, GRID_MAX, PIECES_STORAGE } from './config.js';
-import { sizeOf, describe } from './papers.js';
-import { storageGet, storageSet, clamp, slug } from './util.js';
-import { t } from './copy/index.js';
+import { MAX_UNDO, GRID_STORAGE, GRID_DEFAULTS, GRID_MIN, GRID_MAX, PIECES_STORAGE, UNIT_STORAGE } from './config.js';
+import { sizeOf } from './papers.js';
+import { isUnit } from './units.js';
+import { storageGet, storageSet, clamp } from './util.js';
 
 export const assets = new Map();
 
@@ -19,7 +19,25 @@ export const state = {
 };
 
 /** Preferencias que no forman parte del historial. */
-export const settings = { rotate: true, singleKeys: true, grid: loadGrid(), allowOverlap: loadAllowOverlap() };
+export const settings = {
+  rotate: true,
+  singleKeys: true,
+  grid: loadGrid(),
+  allowOverlap: loadAllowOverlap(),
+  unit: loadUnit(), // 'mm' | 'cm' | 'in': solo para mostrar y cargar medidas
+};
+
+function loadUnit() {
+  const saved = storageGet(UNIT_STORAGE);
+  return isUnit(saved) ? saved : 'mm';
+}
+
+/** Unidad de las medidas («Preferencias»): se guarda; no toca el documento. */
+export function setUnit(unit) {
+  if (!isUnit(unit)) return;
+  settings.unit = unit;
+  storageSet(UNIT_STORAGE, unit);
+}
 
 function loadAllowOverlap() {
   try {
@@ -106,38 +124,6 @@ export function rects(items, k = 1) {
     const [w, h] = dims(item);
     return { id: item.id, w: w * k, h: h * k };
   });
-}
-
-// ---------- Nombres del papel ----------
-
-const presetName = (id) => t(`papers.names.${id}`);
-
-/**
- * Nombre corto del papel, sin orientación: «A4», «Carta»; un personalizado con
- * las medidas de un preset se llama como el preset y si no, «Personalizado».
- */
-export function paperTitle() {
-  const info = describe(state.paper, state.landscape);
-  if (!info) return presetName('A4');
-  return info.match ? presetName(info.match) : t('papers.custom');
-}
-
-/**
- * Papel y orientación para una frase: «A4», «A4 horizontal»; un personalizado
- * sin preset que coincida, por sus medidas: «216 × 330 mm».
- */
-export function paperName() {
-  const info = describe(state.paper, state.landscape);
-  if (info && !info.match) return t('papers.customName', { w: info.w, h: info.h });
-  const name = paperTitle();
-  return state.landscape ? t('sheet.landscapeName', { paper: name }) : name;
-}
-
-/** Para el nombre del archivo: «a4», «carta»; un personalizado, «216x330mm». */
-export function paperSlug() {
-  const info = describe(state.paper, state.landscape);
-  if (info && !info.match) return `${Math.round(info.w)}x${Math.round(info.h)}mm`;
-  return slug(paperTitle(), 'hoja');
 }
 
 // ---------- Deshacer / rehacer ----------

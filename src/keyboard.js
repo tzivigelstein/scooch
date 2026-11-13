@@ -3,6 +3,7 @@
 // 2.1.4); los de Ctrl y las flechas/Supr sobre una pieza siguen.
 
 import { settings } from './store.js';
+import { stepFor } from './units.js';
 import { isTyping } from './util.js';
 
 const NUDGES = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -56,10 +57,11 @@ function onKeyDown(e, a) {
 
   const onPiece = t.classList.contains('piece');
 
-  // Sobre una pieza enfocada: flechas (Alt = 0,1 mm), Supr y Enter.
+  // Sobre una pieza enfocada: flechas (pasos de la unidad elegida: Alt fino,
+  // Shift grueso), Supr y Enter.
   if (onPiece && NUDGES[key] && !e.ctrlKey && !e.metaKey) {
     e.preventDefault();
-    const step = e.altKey ? 0.1 : e.shiftKey ? 10 : 1;
+    const step = stepFor(settings.unit, e.altKey ? 'fine' : e.shiftKey ? 'coarse' : 'normal').mm;
     const [dx, dy] = NUDGES[key];
     a.nudge(dx * step, dy * step);
     return;

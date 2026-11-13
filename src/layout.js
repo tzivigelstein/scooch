@@ -3,7 +3,8 @@
 
 import { pack, fitScale } from './pack.js';
 import { CROWD_LIMIT, MAX_ITEMS } from './config.js';
-import { state, settings, assets, area, dims, rects, findItem, newItem, commit, paperName, selectedItem } from './store.js';
+import { state, settings, assets, area, dims, rects, findItem, newItem, commit, selectedItem } from './store.js';
+import { paperName } from './measure.js';
 import { say } from './notice.js';
 import { animateNext } from './sheetview.js';
 import { clamp, tidy } from './util.js';

@@ -1,15 +1,17 @@
 // Panel «Propiedades»: sección Pieza (solo con selección) y secciones
-// plegables Hoja, Acomodo y Grilla, que recuerdan si están abiertas.
+// plegables Hoja, Distribución y Grilla, que recuerdan si están abiertas.
+// Las longitudes se muestran y se cargan en la unidad elegida (lengthfield.js).
 
 import { GRID_MIN, GRID_MAX, SECTIONS_STORAGE, CUSTOM_PAPER_STORAGE } from './config.js';
 import { PAPERS, PAPER_GROUPS, CUSTOM_MIN, CUSTOM_MAX, customPaper, validateSide, matchPreset } from './papers.js';
-import { formatLength, parseLength } from './units.js';
+import { gridPresets } from './units.js';
 import { state, settings, assets, dims, selectedItem, commit, endEdit, render, setGrid, setAllowOverlap, sheetSize } from './store.js';
 import { keepCenter, fillSummary, printResolution } from './layout.js';
-import { announce } from './live.js';
+import { bindLength, showLength } from './lengthfield.js';
+import { lengthText, sizeText, unitName, unitSymbol } from './measure.js';
 import { icon } from './icons.js';
 import { $, clamp, num, storageGet, storageSet } from './util.js';
-import { t, asSentence } from './copy/index.js';
+import { t, numberLocale } from './copy/index.js';
 
 let ui = {};
 
@@ -38,6 +40,7 @@ export function initPanels(actions) {
     page: $('page'),
     fillDetails: $('fill-details'),
     fillSummary: $('fill-summary'),
+    fillWarning: $('fill-warning'),
     fill: $('fill'),
     remove: $('piece-remove'),
     // Hoja
@@ -50,14 +53,16 @@ export function initPanels(actions) {
     portrait: $('portrait'),
     landscape: $('landscape'),
     margin: $('margin'),
-    // Acomodo
+    marginUnit: $('margin-unit'),
+    // Distribución
     gap: $('gap'),
+    gapUnit: $('gap-unit'),
     rotate: $('allow-rotate'),
     allowOverlap: $('allow-overlap'),
     // Grilla
     gridShow: $('grid-show'),
     gridSize: $('grid-size'),
-    gridChips: [...document.querySelectorAll('input[name="grid-size"]')],
+    gridChips: $('grid-chips'),
     gridSnap: $('grid-snap'),
   };
 
@@ -67,13 +72,14 @@ export function initPanels(actions) {
   const toScale = (item, v) => (v > 0 ? { scale: clamp(v, 1, 1000) } : null);
   bindItemNumber(ui.scale, 'scale', toScale);
   bindItemNumber(ui.slider, 'slider', toScale);
-  bindItemNumber(ui.width, 'width', (item, v) => scaleFor(item, v, 0));
-  bindItemNumber(ui.height, 'height', (item, v) => scaleFor(item, v, 1));
-  bindItemNumber(ui.posX, 'x', (item, v) => ({ x: v }));
-  bindItemNumber(ui.posY, 'y', (item, v) => ({ y: v }));
+  const positive = (mm) => (mm > 0 ? null : t('props.positive'));
+  bindItemLength(ui.posX, 'x', (item) => item.x, (item, mm) => ({ x: mm }));
+  bindItemLength(ui.posY, 'y', (item) => item.y, (item, mm) => ({ y: mm }));
+  bindItemLength(ui.width, 'width', (item) => dims(item)[0], (item, mm) => scaleFor(item, mm, 0), positive);
+  bindItemLength(ui.height, 'height', (item) => dims(item)[1], (item, mm) => scaleFor(item, mm, 1), positive);
   ui.actual.addEventListener('click', () =>
     actions.editSelected((item) => keepCenter(item, () => (item.scale = 100)), {
-      announce: (item) => t('announce.actualSize', { size: sizeText(item) }),
+      announce: (item) => t('announce.actualSize', { size: itemSize(item) }),
     })
   );
   ui.fit.addEventListener('click', () => actions.fit());
@@ -86,7 +92,6 @@ export function initPanels(actions) {
   ui.remove.addEventListener('click', (e) => actions.remove({ viaKeyboard: e.detail === 0 }));
 
   // Hoja
-  fillPaperOptions();
   ui.paper.addEventListener('change', () => {
     if (state.busy) return render();
     if (ui.paper.value === 'custom') {
@@ -104,24 +109,20 @@ export function initPanels(actions) {
     }
     actions.sheetChanged();
   });
-  for (const [input, side] of [
-    [ui.paperW, 'w'],
-    [ui.paperH, 'h'],
-  ]) {
-    input.addEventListener('input', () => applyCustomSide(input, side, false, actions));
-    input.addEventListener('change', () => applyCustomSide(input, side, true, actions));
-  }
+  bindPaperSide(ui.paperW, 'w', actions);
+  bindPaperSide(ui.paperH, 'h', actions);
   for (const radio of [ui.portrait, ui.landscape]) {
     radio.addEventListener('change', () => {
       if (radio.checked) actions.setOrientation(radio === ui.landscape);
     });
   }
-  bindSheetNumber(ui.margin, 'margin');
+  bindSheetLength(ui.margin, 'margin');
 
-  // Acomodo
-  bindSheetNumber(ui.gap, 'gap');
+  // Distribución
+  bindSheetLength(ui.gap, 'gap');
   ui.rotate.addEventListener('change', () => {
     settings.rotate = ui.rotate.checked;
+    actions.settingsChanged?.();
     render();
   });
   ui.allowOverlap.addEventListener('change', () => {
@@ -135,20 +136,64 @@ export function initPanels(actions) {
     setGrid({ snap: ui.gridSnap.checked });
     render();
   });
-  for (const chip of ui.gridChips) {
-    chip.addEventListener('change', () => {
-      if (!chip.checked) return;
-      setGrid({ size: Number(chip.value) });
-      render();
-    });
-  }
-  ui.gridSize.addEventListener('input', () => {
-    const value = parseFloat(ui.gridSize.value);
-    if (!Number.isFinite(value) || value <= 0) return;
-    setGrid({ size: clamp(value, GRID_MIN, GRID_MAX) });
+  ui.gridChips.addEventListener('change', (e) => {
+    const chip = e.target.closest('input[name="grid-size"]');
+    if (!chip?.checked) return;
+    setGrid({ size: Number(chip.value) });
     render();
   });
-  ui.gridSize.addEventListener('change', () => render());
+  bindLength(ui.gridSize, {
+    value: () => settings.grid.size,
+    check: (mm) => (mm > 0 ? null : t('props.positive')),
+    limit: (mm) => clamp(mm, GRID_MIN, GRID_MAX),
+    apply: (mm) => {
+      setGrid({ size: clamp(mm, GRID_MIN, GRID_MAX) });
+      render();
+    },
+  });
+
+  applyUnit();
+}
+
+// ---------- Unidad ----------
+
+let shownUnit = null;
+
+/**
+ * Lo que depende de la unidad y no se redibuja solo: símbolos junto a los
+ * campos, nombres accesibles, tamaños de grilla sugeridos y opciones de papel.
+ */
+function applyUnit() {
+  shownUnit = settings.unit;
+  const unit = unitName();
+  for (const el of document.querySelectorAll('[data-unit]')) el.textContent = unitSymbol();
+  const labels = [
+    [ui.posX, 'props.xLabel'],
+    [ui.posY, 'props.yLabel'],
+    [ui.width, 'props.widthLabel'],
+    [ui.height, 'props.heightLabel'],
+    [ui.gridSize, 'props.gridCustom'],
+    [ui.paperW, 'papers.widthLabel'],
+    [ui.paperH, 'papers.heightLabel'],
+  ];
+  for (const [input, key] of labels) input.setAttribute('aria-label', t(key, { unit }));
+  ui.marginUnit.textContent = t('props.marginUnit', { unit });
+  ui.gapUnit.textContent = t('props.gapUnit', { unit });
+  ui.gridChips.replaceChildren(
+    ...gridPresets(settings.unit, { locale: numberLocale }).map((preset) => {
+      const label = document.createElement('label');
+      label.className = 'seg';
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'grid-size';
+      radio.value = String(preset.mm);
+      const text = document.createElement('span');
+      text.textContent = t('props.gridChip', { n: preset.label, unit: unitSymbol() });
+      label.append(radio, text);
+      return label;
+    })
+  );
+  fillPaperOptions();
 }
 
 // ---------- Secciones plegables ----------
@@ -191,26 +236,95 @@ export const firstSheetField = () => ui.paper;
 
 // ---------- Campos ----------
 
-const sizeText = (item) => {
+const itemSize = (item) => {
   const [w, h] = dims(item);
-  return t('units.size', { w, h });
+  return sizeText(w, h);
 };
+
+/** Input numérico de la pieza (escala): `patch(item, valor)` devuelve los cambios o null si no vale. */
+function bindItemNumber(input, name, patch) {
+  input.addEventListener('input', () => {
+    const item = selectedItem();
+    const value = parseFloat(input.value);
+    if (!item || state.busy || !Number.isFinite(value)) return;
+    const changes = patch(item, value);
+    if (!changes) return;
+    commit(`${name}:${item.id}`);
+    Object.assign(item, changes);
+    render();
+  });
+  input.addEventListener('change', () => {
+    endEdit();
+    render();
+  });
+}
+
+// ¿Cambiaría algo? (Confirmar dos veces lo mismo no agrega pasos de deshacer.)
+const differs = (target, changes) => Object.entries(changes).some(([key, value]) => target[key] !== value);
+
+/** Longitud de la pieza: `get(item)` en mm y `patch(item, mm)` con los cambios (o null). */
+function bindItemLength(input, name, get, patch, check) {
+  bindLength(input, {
+    value: () => {
+      const item = selectedItem();
+      return item ? get(item) : null;
+    },
+    check,
+    busy: () => state.busy || !selectedItem(),
+    apply: (mm, { final }) => {
+      const item = selectedItem();
+      const changes = item && patch(item, mm);
+      if (changes && differs(item, changes)) {
+        commit(`${name}:${item.id}`);
+        Object.assign(item, changes);
+      }
+      if (final) endEdit();
+      render();
+    },
+  });
+}
+
+/** Margen y separación: de 0 a 50 mm, en un solo paso de deshacer mientras se edita. */
+function bindSheetLength(input, name) {
+  const limit = (mm) => clamp(mm, 0, 50);
+  bindLength(input, {
+    value: () => state[name],
+    limit,
+    busy: () => state.busy,
+    apply: (mm, { final }) => {
+      const value = limit(mm);
+      if (state[name] !== value) {
+        commit(`sheet:${name}`);
+        state[name] = value;
+      }
+      if (final) endEdit();
+      render();
+    },
+  });
+}
+
+function scaleFor(item, value, axis) {
+  const natural = dims({ ...item, scale: 100 })[axis];
+  return value > 0 ? { scale: clamp((100 * value) / natural, 1, 1000) } : null;
+}
 
 // ---------- Papel ----------
 
 /** Presets agrupados (<optgroup>) y, al final, «Personalizado». */
 function fillPaperOptions() {
+  const value = ui.paper.value;
   const groups = PAPER_GROUPS.map((id) => {
     const group = document.createElement('optgroup');
     group.label = t(`papers.groups.${id}`);
     group.append(
       ...PAPERS.filter((p) => p.group === id).map(
-        (p) => new Option(t('papers.option', { paper: t(`papers.names.${p.id}`), w: p.w, h: p.h }), p.id)
+        (p) => new Option(t('papers.option', { paper: t(`papers.names.${p.id}`), size: sizeText(p.w, p.h) }), p.id)
       )
     );
     return group;
   });
   ui.paper.replaceChildren(...groups, new Option(t('papers.custom'), 'custom'));
+  if (value) ui.paper.value = value;
 }
 
 function loadCustomPaper() {
@@ -222,17 +336,11 @@ function loadCustomPaper() {
   }
 }
 
-const paperText = (mm) => formatLength(mm, 'mm', { withUnit: false });
-
 // Problema de un lado → clave del mensaje (papers.errors.*).
 const PAPER_ERRORS = {
-  w: { invalid: 'widthInvalid', 'too-small': 'widthTooSmall', 'too-large': 'widthTooLarge' },
-  h: { invalid: 'heightInvalid', 'too-small': 'heightTooSmall', 'too-large': 'heightTooLarge' },
+  w: { 'too-small': 'widthTooSmall', 'too-large': 'widthTooLarge' },
+  h: { 'too-small': 'heightTooSmall', 'too-large': 'heightTooLarge' },
 };
-
-function paperErrorText(side, problem) {
-  return t(`papers.errors.${PAPER_ERRORS[side][problem]}`, { min: CUSTOM_MIN, max: CUSTOM_MAX });
-}
 
 // El mensaje de error se asocia al campo solo mientras se ve.
 function showPaperError(input, text) {
@@ -254,38 +362,42 @@ function describePaperField(field) {
 }
 
 /**
- * Ancho o alto del papel personalizado. Mientras se escribe, aplica lo que
- * vale y marca lo que no; al confirmar (`final`), si no vale, vuelve al valor
- * anterior y lo anuncia.
+ * Ancho o alto del papel personalizado: mientras se escribe, aplica lo que vale
+ * y explica lo que no (fuera de 20–2000 mm o algo que no es un número); al
+ * confirmar algo que no vale, vuelve al valor anterior y lo anuncia.
  */
-function applyCustomSide(input, side, final, actions) {
-  if (state.busy) return;
-  const [W, H] = sheetSize();
-  const value = parseLength(input.value, 'mm');
-  const problem = value === null ? 'invalid' : validateSide(value);
-  if (problem) {
-    const text = paperErrorText(side, problem);
-    if (!final) return showPaperError(input, text);
-    const current = side === 'w' ? W : H;
-    input.value = paperText(current);
-    showPaperError(input, null);
-    announce(t('papers.errors.restored', { text: asSentence(text), value: paperText(current) }), { assertive: true });
-    return;
-  }
-  showPaperError(input, null);
-  const next = customPaper(side === 'w' ? value : W, side === 'h' ? value : H);
-  const changed = next.paper.w !== state.paper.w || next.paper.h !== state.paper.h || next.landscape !== state.landscape;
-  if (changed || typeof state.paper === 'string') {
-    commit('paper:custom');
-    state.paper = next.paper;
-    state.landscape = next.landscape;
-    storageSet(CUSTOM_PAPER_STORAGE, JSON.stringify({ w: side === 'w' ? value : W, h: side === 'h' ? value : H }));
-  }
-  if (final) {
-    endEdit();
-    input.value = paperText(value);
-    actions.sheetChanged();
-  } else render();
+function bindPaperSide(input, side, actions) {
+  const current = () => sheetSize()[side === 'w' ? 0 : 1];
+  bindLength(input, {
+    value: current,
+    busy: () => state.busy,
+    check: (mm) => {
+      const problem = validateSide(mm);
+      return problem && t(`papers.errors.${PAPER_ERRORS[side][problem]}`, { min: lengthText(CUSTOM_MIN), max: lengthText(CUSTOM_MAX) });
+    },
+    limit: (mm) => clamp(mm, CUSTOM_MIN, CUSTOM_MAX),
+    problem: (text) => showPaperError(input, text),
+    unreadable: t(side === 'w' ? 'papers.errors.widthInvalid' : 'papers.errors.heightInvalid'),
+    apply: (mm, { final }) => {
+      const [W, H] = sheetSize();
+      const w = side === 'w' ? mm : W;
+      const h = side === 'h' ? mm : H;
+      const next = customPaper(w, h);
+      if (!next) return;
+      const changed = typeof state.paper === 'string' || next.paper.w !== state.paper.w || next.paper.h !== state.paper.h || next.landscape !== state.landscape;
+      if (changed) {
+        commit('paper:custom');
+        state.paper = next.paper;
+        state.landscape = next.landscape;
+        storageSet(CUSTOM_PAPER_STORAGE, JSON.stringify({ w, h }));
+      }
+      if (final) {
+        endEdit();
+        if (changed) return actions.sheetChanged();
+      }
+      render();
+    },
+  });
 }
 
 function renderPaper() {
@@ -299,7 +411,7 @@ function renderPaper() {
     [ui.paperH, H],
   ]) {
     if (document.activeElement === input) continue;
-    input.value = paperText(value);
+    showLength(input, value);
     if (input.getAttribute('aria-invalid') === 'true') showPaperError(input, null);
   }
   const match = matchPreset(W, H);
@@ -310,42 +422,7 @@ function renderPaper() {
   for (const field of [ui.paperW, ui.paperH]) describePaperField(field);
 }
 
-/** Input numérico de la pieza: `patch(item, valor)` devuelve los cambios o null si no vale. */
-function bindItemNumber(input, name, patch) {
-  input.addEventListener('input', () => {
-    const item = selectedItem();
-    const value = parseFloat(input.value);
-    if (!item || state.busy || !Number.isFinite(value)) return;
-    const changes = patch(item, value);
-    if (!changes) return;
-    commit(`${name}:${item.id}`);
-    Object.assign(item, changes);
-    render();
-  });
-  input.addEventListener('change', () => {
-    endEdit();
-    render();
-  });
-}
-
-function bindSheetNumber(input, name) {
-  input.addEventListener('input', () => {
-    const value = parseFloat(input.value);
-    if (state.busy || !Number.isFinite(value)) return;
-    commit(`sheet:${name}`);
-    state[name] = clamp(value, 0, 50);
-    render();
-  });
-  input.addEventListener('change', () => {
-    endEdit();
-    render();
-  });
-}
-
-function scaleFor(item, value, axis) {
-  const natural = dims({ ...item, scale: 100 })[axis];
-  return value > 0 ? { scale: clamp((100 * value) / natural, 1, 1000) } : null;
-}
+// ---------- Render ----------
 
 // Mientras se carga algo, los controles se deshabilitan, salvo el que tiene el
 // foco (deshabilitarlo lo haría perder; sus acciones ya se ignoran si está ocupado).
@@ -363,6 +440,7 @@ function setValue(input, value) {
  * solo actualiza los valores de la pieza, en vivo.
  */
 export function renderPanels(draft = null) {
+  if (shownUnit !== settings.unit) applyUnit();
   const item = draft ?? selectedItem();
   if (!draft) renderSettings();
   ui.pieceEmpty.hidden = !!item;
@@ -373,14 +451,14 @@ export function renderPanels(draft = null) {
   for (const el of [ui.scale, ui.slider, ui.width, ui.height, ui.posX, ui.posY, ui.actual, ui.page, ui.fill]) {
     setDisabled(el, busy);
   }
-  const paged = asset.kind === 'pdf' && asset.pdf?.numPages > 1;
+  const paged = asset.kind === 'pdf' && asset.pages > 1;
   ui.pieceName.textContent = paged ? t('props.pieceNamePage', { name: asset.name, page: asset.page }) : asset.name;
   ui.pieceName.dataset.tip = asset.name;
   const [w, h] = dims(item);
-  setValue(ui.posX, num(item.x));
-  setValue(ui.posY, num(item.y));
-  setValue(ui.width, num(w));
-  setValue(ui.height, num(h));
+  showLength(ui.posX, item.x);
+  showLength(ui.posY, item.y);
+  showLength(ui.width, w);
+  showLength(ui.height, h);
   setValue(ui.scale, num(item.scale));
   setValue(ui.slider, String(clamp(item.scale, 1, 200)));
   ui.slider.setAttribute('aria-valuetext', t('units.scale', { n: item.scale }));
@@ -397,11 +475,12 @@ export function renderPanels(draft = null) {
 
   ui.pageRow.hidden = asset.kind !== 'pdf';
   if (asset.kind === 'pdf') {
-    fillPageOptions(asset.pdf.numPages);
+    fillPageOptions(asset.pages);
     ui.page.value = String(asset.page);
   }
   const summary = fillSummary(item);
   if (ui.fillSummary.textContent !== summary.text) ui.fillSummary.textContent = summary.text;
+  if (ui.fillWarning && summary.warning && ui.fillWarning.textContent !== summary.warning) ui.fillWarning.textContent = summary.warning;
   ui.fill.disabled = busy || !summary.ok;
 }
 
@@ -411,15 +490,15 @@ function renderSettings() {
   renderPaper();
   ui.portrait.checked = !state.landscape;
   ui.landscape.checked = state.landscape;
-  setValue(ui.margin, num(state.margin));
-  setValue(ui.gap, num(state.gap));
+  showLength(ui.margin, state.margin);
+  showLength(ui.gap, state.gap);
   ui.rotate.checked = settings.rotate;
   ui.allowOverlap.checked = settings.allowOverlap;
   const grid = settings.grid;
   ui.gridShow.checked = grid.show;
   ui.gridSnap.checked = grid.snap;
-  setValue(ui.gridSize, num(grid.size));
-  for (const chip of ui.gridChips) chip.checked = Number(chip.value) === grid.size;
+  showLength(ui.gridSize, grid.size);
+  for (const chip of ui.gridChips.querySelectorAll('input')) chip.checked = Math.abs(Number(chip.value) - grid.size) < 1e-6;
 }
 
 /** Estado de «Traer al frente»: deshabilitado (pero enfocable y explicado) si no pisa a nadie. */

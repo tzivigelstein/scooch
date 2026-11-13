@@ -5,6 +5,8 @@ export const $ = (id) => document.getElementById(id);
 export const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 export const round1 = (v) => Math.round(v * 10) / 10 || 0;
 export const tidy = (v) => Math.round(v * 100) / 100 || 0;
+/** Redondeo a 0,0001: quita el ruido de coma flotante sin desviar pasos como 1/16 in. */
+export const fine = (v) => Math.round(v * 1e4) / 1e4 || 0;
 
 /** Para inputs numéricos: «41.6» (para mostrar, t() en src/copy). */
 export const num = (v) => String(round1(v));

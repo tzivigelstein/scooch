@@ -13,7 +13,6 @@ import {
   selectedItem,
   addAsset,
   newId,
-  paperName,
   commit,
   endEdit,
   undo,
@@ -25,6 +24,7 @@ import {
   setGrid,
   area,
 } from './store.js';
+import { sizeText as measureSize, lengthText, paperName, stepTexts } from './measure.js';
 import { readFile, pdfPage } from './assets.js';
 import { makePdf, pdfFileName, downloadBytes, printBytes } from './output.js';
 import { arrange, keepCenter, centerOnSheet, fitToSheet, placeNew, fillWithCopies } from './layout.js';
@@ -40,7 +40,7 @@ import { initDrawers, closeDrawer, isDrawerOpen, isCollapsible, drawerOf, reveal
 import { initShortcuts, openShortcuts } from './shortcuts.js';
 import { initDonate, shouldAskDonation, askDonation, isDonationOpen } from './donate.js';
 import { initKeyboard } from './keyboard.js';
-import { $, clamp, round1, tidy } from './util.js';
+import { $, clamp, round1, tidy, fine } from './util.js';
 
 const ui = {};
 
@@ -114,7 +114,7 @@ function select(id) {
 
 const sizeText = (item) => {
   const [w, h] = dims(item);
-  return t('units.size', { w, h });
+  return measureSize(w, h);
 };
 
 /**
@@ -206,20 +206,21 @@ function nudge(dx, dy) {
   if (!item || state.busy) return;
   commit(`nudge:${item.id}`);
   let jumped = [];
+  // Redondeo fino (0,0001 mm): los pasos en pulgadas (1/16 in = 1,5875 mm) no se desvían.
   if (settings.allowOverlap) {
-    item.x = tidy(item.x + dx);
-    item.y = tidy(item.y + dy);
+    item.x = fine(item.x + dx);
+    item.y = fine(item.y + dy);
   } else {
     // Si el paso la deja pisando a otra, salta justo al otro lado.
     const next = nextFreeInDirection(rectOf(item), othersOf(item), dx, dy);
-    item.x = tidy(next.x);
-    item.y = tidy(next.y);
+    item.x = fine(next.x);
+    item.y = fine(next.y);
     jumped = next.jumped;
   }
   render();
   focusSheet();
   if (jumped.length) announce(t('announce.jumped', { names: jumped.map(nameOf).join(', ') }));
-  announce(t('announce.position', { x: item.x, y: item.y }), { key: 'move', delay: 600 });
+  announce(t('announce.position', { x: lengthText(item.x), y: lengthText(item.y) }), { key: 'move', delay: 600 });
 }
 
 function scaleBy(delta) {
@@ -278,7 +279,7 @@ function setOrientation(landscape) {
 function setGridVisible(show) {
   setGrid({ show });
   render();
-  announce(show ? t('announce.gridShown', { size: settings.grid.size }) : t('announce.gridHidden'));
+  announce(show ? t('announce.gridShown', { size: lengthText(settings.grid.size) }) : t('announce.gridHidden'));
 }
 
 function sheetChanged() {
@@ -503,7 +504,7 @@ function syncSingleKeys() {
     if (single && !settings.singleKeys) el.removeAttribute('aria-keyshortcuts');
     else el.setAttribute('aria-keyshortcuts', el.dataset.aks);
   }
-  ui.pieceHint.textContent = t(settings.singleKeys ? 'piecebar.hint' : 'piecebar.hintNoKeys');
+  ui.pieceHint.textContent = t(settings.singleKeys ? 'piecebar.hint' : 'piecebar.hintNoKeys', stepTexts());
   document.body.classList.toggle('single-keys-off', !settings.singleKeys);
   ui.emptyText.textContent = t(settings.singleKeys ? 'sheet.drop' : 'sheet.dropNoKeys');
   refreshTooltip();
@@ -670,7 +671,7 @@ function wire() {
   document.addEventListener('focusin', (e) => (lastFocus = e.target));
   // Al salir de un campo, se reformatea con lo que quedó en el estado.
   document.addEventListener('focusout', (e) => {
-    if (e.target.matches?.('input[type="number"]')) setTimeout(render);
+    if (e.target.matches?.('input[type="number"], input[inputmode="decimal"]')) setTimeout(render);
   });
 
   new ResizeObserver(() => {

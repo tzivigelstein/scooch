@@ -22,6 +22,9 @@ import es from './es.js';
 const fallback = es;
 const messages = es;
 
+/** Configuración regional de los números (coma decimal en español). */
+export const numberLocale = messages.meta.numberLocale;
+
 const pluralRules = new Intl.PluralRules(messages.meta.lang);
 const numberFormat = new Intl.NumberFormat(messages.meta.numberLocale, { maximumFractionDigits: 1 });
 

@@ -2,7 +2,8 @@
 // tirador, posición de la barra de la pieza y gestos con el puntero.
 
 import { DRAG_THRESHOLD, NARROW_QUERY } from './config.js';
-import { state, settings, assets, sheetSize, dims, findItem, commit, paperName, paperTitle } from './store.js';
+import { state, settings, assets, sheetSize, dims, findItem, commit } from './store.js';
+import { paperName, paperTitle, sizeText, lengthText } from './measure.js';
 import { overlapsAny, nearestFree, maxGrowth } from './collide.js';
 import { $, clamp, round1, tidy, isTyping } from './util.js';
 import { t } from './copy/index.js';
@@ -78,7 +79,7 @@ export function renderSheetView() {
   ui.empty.hidden = n > 0;
   ui.empty.disabled = state.busy;
   ui.sheet.setAttribute('aria-label', n ? t('sheet.labelCount', { paper: paperName(), n }) : t('sheet.labelEmpty', { paper: paperName() }));
-  ui.paperLabel.textContent = t('sheet.paperLabel', { paper: paperTitle(), w: W, h: H });
+  ui.paperLabel.textContent = t('sheet.paperLabel', { paper: paperTitle(), size: sizeText(W, H) });
 
   renderPieces();
   renderSelection();
@@ -162,9 +163,9 @@ function createPiece(item) {
 export function pieceLabel(item) {
   const asset = assets.get(item.asset);
   const [w, h] = dims(item);
-  const page = asset.kind === 'pdf' && asset.pdf?.numPages > 1 ? t('piece.a11yPage', { page: asset.page }) : '';
+  const page = asset.kind === 'pdf' && asset.pages > 1 ? t('piece.a11yPage', { page: asset.page }) : '';
   const turned = item.r ? t('piece.a11yTurned', { deg: item.r }) : '';
-  return t('piece.a11y', { name: asset.name, page, size: t('units.size', { w, h }), x: item.x, y: item.y, turned });
+  return t('piece.a11y', { name: asset.name, page, size: sizeText(w, h), x: lengthText(item.x), y: lengthText(item.y), turned });
 }
 
 // También se usa durante el arrastre, con una copia modificada del item.
@@ -204,7 +205,7 @@ function renderSelection(draft = null) {
     width: `${w * zoom}px`,
     height: `${h * zoom}px`,
   });
-  ui.pieceSize.textContent = t('units.size', { w, h });
+  ui.pieceSize.textContent = sizeText(w, h);
   placePiecebar(item);
 }
 

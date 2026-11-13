@@ -6,6 +6,7 @@ import { state, assets, dims, settings } from './store.js';
 import { problemsById } from './notice.js';
 import { printResolution } from './layout.js';
 import { icon } from './icons.js';
+import { sizeText } from './measure.js';
 import { $ } from './util.js';
 import { t } from './copy/index.js';
 
@@ -97,11 +98,11 @@ function updateRow(row, item, problems = {}) {
   const img = row.querySelector('img');
   if (img.getAttribute('src') !== asset.url) img.src = asset.url;
   img.style.transform = item.r ? `rotate(${item.r}deg)` : '';
-  const paged = asset.kind === 'pdf' && asset.pdf?.numPages > 1;
+  const paged = asset.kind === 'pdf' && asset.pages > 1;
   const name = row.querySelector('.row-name');
   if (name.textContent !== asset.name) name.textContent = asset.name;
   row.dataset.tip = asset.name;
-  const size = t(paged ? 'pieces.rowSizePage' : 'pieces.rowSize', { size: t('units.size', { w, h }), page: asset.page });
+  const size = t(paged ? 'pieces.rowSizePage' : 'pieces.rowSize', { size: sizeText(w, h), page: asset.page });
   const dimsEl = row.querySelector('.row-dims');
   if (dimsEl.textContent !== size) dimsEl.textContent = size;
 

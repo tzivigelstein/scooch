@@ -161,23 +161,23 @@
             <div class="prop-grid">
               <label class="num-field prefixed">
                 <span class="num-prefix" aria-hidden="true" data-i18n="props.x"></span>
-                <input id="pos-x" type="number" step="0.1" inputmode="decimal" data-i18n-label="props.xLabel" data-i18n-tip="props.xTip" />
-                <span class="num-unit" aria-hidden="true" data-i18n="units.mm"></span>
+                <input id="pos-x" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-i18n-tip="props.xTip" />
+                <span class="num-unit" aria-hidden="true" data-i18n="units.mm" data-unit></span>
               </label>
               <label class="num-field prefixed">
                 <span class="num-prefix" aria-hidden="true" data-i18n="props.y"></span>
-                <input id="pos-y" type="number" step="0.1" inputmode="decimal" data-i18n-label="props.yLabel" data-i18n-tip="props.yTip" />
-                <span class="num-unit" aria-hidden="true" data-i18n="units.mm"></span>
+                <input id="pos-y" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-i18n-tip="props.yTip" />
+                <span class="num-unit" aria-hidden="true" data-i18n="units.mm" data-unit></span>
               </label>
               <label class="num-field prefixed">
                 <span class="num-prefix" aria-hidden="true"><span data-icon="move-horizontal"></span></span>
-                <input id="width" type="number" min="1" step="0.1" inputmode="decimal" data-i18n-label="props.widthLabel" data-i18n-tip="props.widthTip" />
-                <span class="num-unit" aria-hidden="true" data-i18n="units.mm"></span>
+                <input id="width" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-i18n-tip="props.widthTip" />
+                <span class="num-unit" aria-hidden="true" data-i18n="units.mm" data-unit></span>
               </label>
               <label class="num-field prefixed">
                 <span class="num-prefix" aria-hidden="true"><span data-icon="move-vertical"></span></span>
-                <input id="height" type="number" min="1" step="0.1" inputmode="decimal" data-i18n-label="props.heightLabel" data-i18n-tip="props.heightTip" />
-                <span class="num-unit" aria-hidden="true" data-i18n="units.mm"></span>
+                <input id="height" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-i18n-tip="props.heightTip" />
+                <span class="num-unit" aria-hidden="true" data-i18n="units.mm" data-unit></span>
               </label>
             </div>
             <div class="scale-row">
@@ -245,23 +245,23 @@
               <div class="prop-grid">
                 <label class="num-field prefixed">
                   <span class="num-prefix" aria-hidden="true"><span data-icon="move-horizontal"></span></span>
-                  <input id="paper-w" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-i18n-label="papers.widthLabel" data-i18n-tip="papers.width" />
-                  <span class="num-unit" aria-hidden="true" data-i18n="units.mm"></span>
+                  <input id="paper-w" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-i18n-tip="papers.width" />
+                  <span class="num-unit" aria-hidden="true" data-i18n="units.mm" data-unit></span>
                 </label>
                 <label class="num-field prefixed">
                   <span class="num-prefix" aria-hidden="true"><span data-icon="move-vertical"></span></span>
-                  <input id="paper-h" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-i18n-label="papers.heightLabel" data-i18n-tip="papers.height" />
-                  <span class="num-unit" aria-hidden="true" data-i18n="units.mm"></span>
+                  <input id="paper-h" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-i18n-tip="papers.height" />
+                  <span class="num-unit" aria-hidden="true" data-i18n="units.mm" data-unit></span>
                 </label>
               </div>
               <p id="paper-error" class="field-error" hidden></p>
               <p id="paper-match" class="field-note" hidden></p>
             </div>
             <label class="field inline">
-              <span class="field-label"><span data-i18n="props.margin"></span><span class="sr-only" data-i18n="props.marginUnit"></span></span>
+              <span class="field-label"><span data-i18n="props.margin"></span><span id="margin-unit" class="sr-only"></span></span>
               <span class="num-field">
-                <input id="margin" type="number" min="0" max="50" step="1" inputmode="decimal" />
-                <span class="num-unit" aria-hidden="true" data-i18n="units.mm"></span>
+                <input id="margin" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />
+                <span class="num-unit" aria-hidden="true" data-i18n="units.mm" data-unit></span>
               </span>
             </label>
           </div>
@@ -274,10 +274,10 @@
           </h2>
           <div id="section-arrange" class="section-body">
             <label class="field inline">
-              <span class="field-label"><span data-i18n="props.gap"></span><span class="sr-only" data-i18n="props.gapUnit"></span></span>
+              <span class="field-label"><span data-i18n="props.gap"></span><span id="gap-unit" class="sr-only"></span></span>
               <span class="num-field">
-                <input id="gap" type="number" min="0" max="50" step="1" inputmode="decimal" />
-                <span class="num-unit" aria-hidden="true" data-i18n="units.mm"></span>
+                <input id="gap" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />
+                <span class="num-unit" aria-hidden="true" data-i18n="units.mm" data-unit></span>
               </span>
             </label>
             <div class="switch-row">
@@ -304,14 +304,10 @@
             <fieldset class="field">
               <legend class="field-label" data-i18n="props.gridSize"></legend>
               <div class="grid-size">
-                <div class="segmented chips">
-                  <label class="seg"><input type="radio" name="grid-size" value="1" /><span data-i18n="props.gridChip" data-i18n-params='{"n":1}'></span></label>
-                  <label class="seg"><input type="radio" name="grid-size" value="5" /><span data-i18n="props.gridChip" data-i18n-params='{"n":5}'></span></label>
-                  <label class="seg"><input type="radio" name="grid-size" value="10" /><span data-i18n="props.gridChip" data-i18n-params='{"n":10}'></span></label>
-                </div>
+                <div id="grid-chips" class="segmented chips"></div>
                 <span class="num-field">
-                  <input id="grid-size" type="number" min="0.5" max="50" step="0.5" inputmode="decimal" data-i18n-label="props.gridCustom" />
-                  <span class="num-unit" aria-hidden="true" data-i18n="units.mm"></span>
+                  <input id="grid-size" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />
+                  <span class="num-unit" aria-hidden="true" data-i18n="units.mm" data-unit></span>
                 </span>
               </div>
             </fieldset>

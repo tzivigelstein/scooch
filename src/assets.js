@@ -216,6 +216,7 @@ export async function pdfPage(base, n) {
       pdf: base.pdf,
       bytes: base.bytes,
       page: n,
+      pages: base.pdf.numPages,
       pageRotation: page.rotate,
       view: [...page.view], // caja visible (CropBox) en puntos, sin rotar
       px: [canvas.width, canvas.height], // vista previa (lo que se embebe si no va como vector)
