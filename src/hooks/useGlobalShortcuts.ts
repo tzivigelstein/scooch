@@ -18,6 +18,7 @@ import { openProjects, openShortcuts } from '../state/actions/dialogs.ts';
 import { closeDrawer, drawerOf, isCollapsible, isDrawerOpen, revealPanel } from '../state/actions/drawers.ts';
 import { arrangeAll, redoLast, undoLast } from '../state/actions/edit.ts';
 import { openFiles } from '../state/actions/files.ts';
+import { explainSaving } from '../state/actions/projects.ts';
 import { focusList, focusSheet, pieceNode, sheetNode } from '../state/actions/focus.ts';
 import { exportPdf, printPdf } from '../state/actions/output.ts';
 import { showPropsTab } from '../state/actions/panels.ts';
@@ -138,9 +139,13 @@ function onKeyDown(e: KeyboardEvent) {
 
   // With Ctrl/Cmd: they always work (except undo while typing, which is the field's).
   if (mod && !e.altKey) {
-    if (lower === 's' || lower === 'e') {
+    if (lower === 'e' || (lower === 's' && e.shiftKey)) {
       e.preventDefault();
       void exportPdf();
+    } else if (lower === 's') {
+      // Never the browser's «Save page»: changes save themselves, and it says so.
+      e.preventDefault();
+      if (!e.repeat) explainSaving();
     } else if (lower === 'p') {
       e.preventDefault(); // replaces printing the page with printing the real-size PDF
       void printPdf();

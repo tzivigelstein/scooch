@@ -8,6 +8,7 @@ import { closeDialog, projectListChanged } from '../../components/dialogs/dialog
 import type { ProjectRecord } from '../../core/types.ts';
 import { initProjects, newProject, openProject, projectSession, remove, retry, saveAsNew, takeOver, type ProjectNotice } from '../../services/projects.ts';
 import { setDocument } from '../document.ts';
+import { useProject } from '../project.ts';
 import { setView } from '../view.ts';
 import { setBusy } from './files.ts';
 import { scrollToStart } from '../../components/canvas/viewport.ts';
@@ -31,6 +32,18 @@ function projectNotice(kind: ProjectNotice, { error = null, record = null }: { e
   if (kind === 'openFailed') return openFailed(record, error);
   if (kind === 'takenOver') return say(t('notices.takenOver'), { warn: true, action: { label: t('projects.takeOver'), run: () => void takeOverWithUi() } });
   if (kind === 'deletedElsewhere') return say(t('notices.deletedElsewhere'), { warn: true, action: { label: t('notices.saveAsNew'), run: () => void saveAsNew() } });
+}
+
+/**
+ * Ctrl/⌘ + S: nothing to do, changes save themselves; it says so, or what
+ * stops them from being saved (with what to do about it).
+ */
+export function explainSaving() {
+  const { status } = useProject.getState();
+  if (status === 'off') return say(t('projects.unavailable'), { warn: true });
+  if (status === 'readonly') return projectNotice('takenOver');
+  if (status === 'error') return projectNotice('saveFailed', { error: projectSession().error });
+  say(t('notices.autosave'), { info: true });
 }
 
 /** A project couldn't open: if it is damaged, deleting it is offered. */

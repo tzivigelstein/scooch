@@ -1,7 +1,7 @@
 // The app walked with the keyboard only (no mouse event): the skip link, the
 // Tab order between regions, O and the file chooser, where the focus goes after
 // each key on a piece (its toolbar, its fields, the list, the tabs and back),
-// Ctrl+S, Ctrl+P and Ctrl+O, the focus rescue on «Deshacer», the dialogs giving
+// Ctrl+S, Ctrl+Shift+S, Ctrl+P and Ctrl+O, the focus rescue on «Deshacer», the dialogs giving
 // the focus back, papers and units, several sheets, the projects dialog and
 // the multiple selection. What each key does to the document is in
 // tests/hooks/useGlobalShortcuts.test.tsx; the dialogs' content in
@@ -216,13 +216,21 @@ test.describe('editing with the keyboard only', () => {
     });
   });
 
-  test('Ctrl+S downloads the PDF and Ctrl+P prints it', async ({ app, page }) => {
+  test('Ctrl+Shift+S downloads the PDF, Ctrl+S says changes save themselves, and Ctrl+P prints it', async ({ app, page }) => {
     await app.addFiles(['small.jpg']);
     await app.pieces().first().focus();
 
-    await test.step('Ctrl+S: scooch-a4.pdf', async () => {
-      const download = page.waitForEvent('download');
+    await test.step('Ctrl+S: no download and no «Save page», a notice', async () => {
+      let downloads = 0;
+      page.on('download', () => downloads++);
       await page.keyboard.press('Control+s');
+      await expect.poll(async () => (await app.notice()).text).toBe('Los cambios se guardan automáticamente');
+      expect(downloads).toBe(0);
+    });
+
+    await test.step('Ctrl+Shift+S: scooch-a4.pdf', async () => {
+      const download = page.waitForEvent('download');
+      await page.keyboard.press('Control+Shift+S');
       expect((await download).suggestedFilename()).toBe('scooch-a4.pdf');
       await app.idle();
     });

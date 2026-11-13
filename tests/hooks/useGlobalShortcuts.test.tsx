@@ -12,6 +12,10 @@ import { getPrefs, setSingleKeys, setUnit } from '../../src/state/prefs.ts';
 import { dims } from '../../src/state/selectors.ts';
 import { getView, setView } from '../../src/state/view.ts';
 import { piece as makePiece, resetState } from '../support/state.ts';
+import { exportPdf } from '../../src/state/actions/output.ts';
+import { useProject } from '../../src/state/project.ts';
+
+vi.mock('../../src/state/actions/output.ts', () => ({ exportPdf: vi.fn(async () => {}), printPdf: vi.fn(async () => {}) }));
 
 const key = addAsset({
   kind: 'image',
@@ -392,5 +396,33 @@ describe('aria-keyshortcuts', () => {
     expect(arrange.hasAttribute('aria-keyshortcuts')).toBe(false);
     expect(arrange.getAttribute('data-kbd')).toBe('A');
     expect(undo.getAttribute('aria-keyshortcuts')).toBe('Control+Z Meta+Z');
+  });
+});
+
+describe('saving and downloading', () => {
+  beforeEach(() => {
+    vi.mocked(exportPdf).mockClear();
+    setView({ flash: null });
+  });
+
+  test('Ctrl+S never opens the browser’s «Save page»: changes save themselves, and a notice says so (no download)', () => {
+    act(() => useProject.setState({ status: 'saved' }));
+    const event = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true });
+    act(() => void piece().dispatchEvent(event));
+    expect(event.defaultPrevented).toBe(true);
+    expect(exportPdf).not.toHaveBeenCalled();
+    expect(getView().flash).toEqual({ text: 'Los cambios se guardan automáticamente', info: true });
+  });
+
+  test('Ctrl+S when this browser can’t save says that instead', () => {
+    act(() => useProject.setState({ status: 'off' }));
+    act(() => void fireEvent.keyDown(piece(), { key: 's', metaKey: true }));
+    expect(getView().flash).toMatchObject({ text: expect.stringMatching(/^Este navegador no permite guardar proyectos/), warn: true });
+  });
+
+  test('Ctrl+E and Ctrl+Shift+S download the PDF', () => {
+    fireEvent.keyDown(piece(), { key: 'e', ctrlKey: true });
+    fireEvent.keyDown(piece(), { key: 'S', ctrlKey: true, shiftKey: true });
+    expect(exportPdf).toHaveBeenCalledTimes(2);
   });
 });

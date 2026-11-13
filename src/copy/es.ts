@@ -504,6 +504,8 @@ const es = {
     pageCropDropped: 'La página {page} tiene otro tamaño, así que se quitó el recorte',
     sizeOutOfRange: { one: '{names} no se puede llevar a ese tamaño: su escala pasaría de 1 % a 1000 %', other: '{n} piezas no se pueden llevar a ese tamaño: su escala pasaría de 1 % a 1000 %' },
     downloaded: 'Se descargó {file}. Al imprimirlo, elige «Tamaño real» o «100 %».',
+    // Ctrl+S: there is nothing to save by hand
+    autosave: 'Los cambios se guardan automáticamente',
     // Projects
     saveFailed: 'No se pudo guardar el proyecto. Vuelve a intentarlo.',
     quota: 'No hay espacio para guardar el proyecto. Elimina proyectos que no uses y vuelve a intentarlo.',

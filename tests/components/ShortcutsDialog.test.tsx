@@ -46,7 +46,7 @@ describe('the shortcuts table', () => {
     render(<ShortcutsDialog />);
     const table = rows();
     const row = (action: string) => table.find(([, a]) => a === action)?.[0];
-    expect(row('Descargar PDF')).toBe('Ctrl+S o Ctrl+E');
+    expect(row('Descargar PDF')).toBe('Ctrl+E o Ctrl+Shift+S');
     expect(row('Rehacer')).toBe('Ctrl+Shift+Z o Ctrl+Y');
     expect(row('Quitar la pieza')).toBe('Supr o Retroceso');
     expect(row('Mover la pieza 1 mm (Shift: 10 mm; Alt: 0,1 mm). Si choca con otra, salta al otro lado.')).toBe('← ↑ → ↓');
@@ -54,7 +54,7 @@ describe('the shortcuts table', () => {
     expect(row('En las hojas, ir a la hoja anterior o a la siguiente')).toBe('Re Pág o Av Pág');
     expect(row('Mostrar estos atajos')).toBe('?');
     const kbds = [...document.querySelectorAll('#shortcuts-rows tr')].find((tr) => /Descargar PDF/.test(tr.textContent ?? ''))!.querySelectorAll('kbd');
-    expect([...kbds].map((k) => k.textContent)).toEqual(['Ctrl+S', 'Ctrl+E']);
+    expect([...kbds].map((k) => k.textContent)).toEqual(['Ctrl+E', 'Ctrl+Shift+S']);
   });
 
   test('the actions, in order', () => {
