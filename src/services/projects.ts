@@ -36,6 +36,7 @@ import { t } from '../copy/index.ts';
 import { allAssets, findAsset, replaceAssets } from '../state/assets.ts';
 import { getDocument, resetIds, setDocument, useDocument, type Piece } from '../state/document.ts';
 import { resetHistory } from '../state/history.ts';
+import { legacyAllowOverlap } from '../state/prefs.ts';
 import { useProject, type SaveStatus } from '../state/project.ts';
 import { itemsOn, sheetSize } from '../state/selectors.ts';
 import { setView } from '../state/view.ts';
@@ -103,8 +104,8 @@ export const projectSession = () => session;
 
 /** What gets saved of the document. */
 function docState() {
-  const { sheets, items, paper, landscape, margin, gap, cuts, rotate } = getDocument();
-  return { sheets, items, paper, landscape, margin, gap, cuts, rotate };
+  const { sheets, items, paper, landscape, margin, gap, cuts, rotate, allowOverlap } = getDocument();
+  return { sheets, items, paper, landscape, margin, gap, cuts, rotate, allowOverlap };
 }
 
 const serialized = () => serialize(docState(), allAssets());
@@ -127,6 +128,7 @@ function replaceDocument(doc: ProjectDoc, loaded: ReadonlyMap<string, AppAsset> 
     gap: doc.gap,
     cuts: { ...(doc.cuts ?? DEFAULT_CUTS) },
     rotate: doc.rotate,
+    allowOverlap: doc.allowOverlap,
     selection: [],
   });
   setView({ pinned: false, sheet: doc.sheets[0].id, flash: null });
@@ -245,11 +247,15 @@ function adopt(record: ProjectRecord, stored: Set<string>) {
   setStatus('saved');
 }
 
-// Paper, margin, gap and cut lines of the current project (a new one keeps them).
+// The current project's settings (paper, margin, gap, «Permitir
+// superposición», cut lines): a new one keeps them.
 function currentSettings() {
-  const { paper, landscape, margin, gap, cuts } = getDocument();
-  return { paper: typeof paper === 'string' ? paper : { ...paper }, landscape, margin, gap, rotate: true, cuts: { ...cuts } };
+  const { paper, landscape, margin, gap, allowOverlap, cuts } = getDocument();
+  return { paper: typeof paper === 'string' ? paper : { ...paper }, landscape, margin, gap, rotate: true, allowOverlap, cuts: { ...cuts } };
 }
+
+/** What documents saved before a setting was the project's take (projectdoc.migrate). */
+const migrationContext = () => ({ allowOverlap: legacyAllowOverlap() });
 
 // ---------- Autosave ----------
 
@@ -402,9 +408,9 @@ export async function openProject(id: string) {
   setStatus('loading');
   try {
     await claim(id);
-    const { record, doc, files } = await loadProject(session.storage!, id);
+    const { record, doc, files } = await loadProject(session.storage!, id, migrationContext());
     // What was journaled when the tab closed, if newer than what was saved.
-    const recovered = recoverJournal(record, files, readJournal());
+    const recovered = recoverJournal(record, files, readJournal(), migrationContext());
     const use = recovered?.doc ?? doc;
     const loaded = await restoreAssets(use, files);
     replaceDocument(use, loaded);

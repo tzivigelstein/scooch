@@ -148,6 +148,22 @@ describe('deserialize', () => {
     assert.deepEqual(v2.cuts, { mode: 'corners', length: 3, offset: 2 }, 'the original stays as it was');
   });
 
+  test('migrates version 4: «Permitir superposición» was the device’s, so the project takes the value the device had', () => {
+    const v4 = { ...serialize(sampleState(), sampleAssets()), version: 4 };
+    delete v4.allowOverlap;
+    assert.equal(deserialize(v4, { allowOverlap: true }).allowOverlap, true);
+    assert.equal(deserialize(v4, { allowOverlap: false }).allowOverlap, false);
+    assert.equal(deserialize(v4).allowOverlap, false, 'without a device value: not allowed');
+    assert.equal(migrate(v4, { allowOverlap: true }).version, DOC_VERSION);
+  });
+
+  test('a version 5 document keeps its own «Permitir superposición», whatever the device had', () => {
+    const doc = serialize({ ...sampleState(), allowOverlap: true }, sampleAssets());
+    assert.equal(doc.allowOverlap, true);
+    assert.equal(deserialize(doc, { allowOverlap: false }).allowOverlap, true);
+    assert.equal(deserialize({ ...doc, allowOverlap: 'yes' }).allowOverlap, false, 'unreadable: not allowed');
+  });
+
   test('a version 3 document keeps its chosen stroke', () => {
     const state = { ...sampleState(), cuts: { mode: 'outline', length: 4, offset: 1.5, margin: -1.5, weight: 'thick', color: '#12A0fF', dash: 'dotted' } };
     const doc = deserialize(JSON.parse(JSON.stringify(serialize(state, sampleAssets()))));

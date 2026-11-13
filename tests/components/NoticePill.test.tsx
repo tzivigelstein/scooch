@@ -5,7 +5,7 @@ import { NoticePill } from '../../src/components/feedback/NoticePill.tsx';
 import { addAsset } from '../../src/state/assets.ts';
 import { getDocument, setDocument } from '../../src/state/document.ts';
 import { resetHistory } from '../../src/state/history.ts';
-import { setAllowOverlap } from '../../src/state/prefs.ts';
+
 import { setView } from '../../src/state/view.ts';
 
 const key = addAsset({
@@ -92,12 +92,12 @@ describe('notice pill', () => {
       { id: 1, asset: key, sheet: 1, x: 20, y: 20, scale: 100, r: 0 as const, crop: null },
       { id: 2, asset: key, sheet: 1, x: 40, y: 40, scale: 100, r: 0 as const, crop: null },
     ];
-    act(() => setAllowOverlap(true));
+    act(() => setDocument({ allowOverlap: true }));
     act(() => setDocument({ items, gap: 5, paper: 'A4', landscape: false }));
     resetHistory();
     // Allowed: not a problem.
     expect(text()).toBe('');
-    act(() => setAllowOverlap(false));
+    act(() => setDocument({ allowOverlap: false }));
     expect(text()).toBe('Hay piezas superpuestas');
     expect(pill().dataset.tone).toBe('info');
     const action = document.getElementById('pill-action')!;

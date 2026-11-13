@@ -6,7 +6,7 @@ import { DEFAULT_CUTS } from '../../src/core/projectdoc.js';
 import type { Cuts } from '../../src/core/types.ts';
 import { getDocument, setDocument, type Piece } from '../../src/state/document.ts';
 import { resetHistory } from '../../src/state/history.ts';
-import { setAllowOverlap, setGrid } from '../../src/state/prefs.ts';
+import { setGrid } from '../../src/state/prefs.ts';
 import { boxes, problemsById } from '../../src/state/selectors.ts';
 import { setView } from '../../src/state/view.ts';
 import { arrange, fillPlan } from '../../src/state/actions/layout.ts';
@@ -23,7 +23,7 @@ let key = '';
 
 beforeEach(() => {
   key = image(50, 30);
-  setAllowOverlap(false);
+  setDocument({ allowOverlap: false });
   setGrid({ snap: false });
   setView({ flash: null });
   setDocument({ sheets: [{ id: 1 }], paper: 'A4', landscape: false, margin: 10, gap: 5, rotate: true, busy: false, selection: [], cuts: { ...DEFAULT_CUTS } });

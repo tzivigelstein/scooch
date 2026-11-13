@@ -21,6 +21,8 @@ export interface DocumentData {
   readonly margin: number;
   readonly gap: number;
   readonly cuts: Readonly<Cuts>;
+  /** «Permitir superposición»: pieces may overlap when moved, scaled, aligned… */
+  readonly allowOverlap: boolean;
 }
 
 export interface DocumentState extends DocumentData {
@@ -46,6 +48,7 @@ export const useDocument = create<DocumentState>()(() => ({
   margin: 10,
   gap: 5,
   cuts: { ...DEFAULT_CUTS },
+  allowOverlap: false,
   rotate: true,
   busy: false,
   canUndo: false,

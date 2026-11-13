@@ -8,7 +8,7 @@ import { Button, IconButton } from '../../src/components/ui/Button.tsx';
 import { useDialogs } from '../../src/components/dialogs/dialogs.ts';
 import { getDocument, setDocument, useDocument, type Piece } from '../../src/state/document.ts';
 import { historyDepth, resetHistory } from '../../src/state/history.ts';
-import { getPrefs, setAllowOverlap as setAllowOverlapForTest, setSingleKeys, setUnit } from '../../src/state/prefs.ts';
+import { getPrefs, setSingleKeys, setUnit } from '../../src/state/prefs.ts';
 import { dims } from '../../src/state/selectors.ts';
 import { getView, setView } from '../../src/state/view.ts';
 import { piece as makePiece, resetState } from '../support/state.ts';
@@ -288,7 +288,7 @@ describe('single keys', () => {
 
   test('] on a piece under another one brings it to the front, in one undo step', () => {
     act(() => resetState({ items: [makePiece(1, key, 50, 50), makePiece(2, key, 60, 55)] }));
-    act(() => setAllowOverlapForTest(true));
+    act(() => setDocument({ allowOverlap: true }));
     node(1).focus();
     const depth = historyDepth().undo;
     press(']');

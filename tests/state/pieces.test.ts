@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { addAsset } from '../../src/state/assets.ts';
 import { getDocument, setDocument, type Piece } from '../../src/state/document.ts';
 import { historyDepth, resetHistory } from '../../src/state/history.ts';
-import { setAllowOverlap, setGrid } from '../../src/state/prefs.ts';
+import { setGrid } from '../../src/state/prefs.ts';
 import { getView, setView } from '../../src/state/view.ts';
 import { nudge, rotate } from '../../src/state/actions/pieces.ts';
 
@@ -27,7 +27,7 @@ const piece = (id: number, x: number, y: number): Piece => ({ id, asset: key, sh
 const item = (id: number) => getDocument().items.find((i) => i.id === id)!;
 
 beforeEach(() => {
-  setAllowOverlap(false);
+  setDocument({ allowOverlap: false });
   setGrid({ snap: true, size: 1 });
   setView({ flash: null });
   resetHistory();

@@ -3,7 +3,7 @@ import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { addAsset, assetEntries, getAsset, replaceAssets } from '../../src/state/assets.ts';
 import { getDocument, resetIds, setDocument, type Piece } from '../../src/state/document.ts';
 import { historyDepth, redo, resetHistory, undo } from '../../src/state/history.ts';
-import { setAllowOverlap } from '../../src/state/prefs.ts';
+
 import { getView, setView } from '../../src/state/view.ts';
 import { copySelection, cutSelection, hasClip, pastePieces } from '../../src/state/actions/clipboard.ts';
 import { duplicate } from '../../src/state/actions/pieces.ts';
@@ -22,7 +22,7 @@ let key = '';
 
 beforeEach(() => {
   key = image();
-  setAllowOverlap(false);
+  setDocument({ allowOverlap: false });
   setView({ flash: null, sheet: 1 });
   setDocument({ sheets: [{ id: 1 }], paper: 'A4', landscape: false, margin: 10, gap: 5, busy: false, selection: [] });
   resetHistory();
@@ -136,7 +136,7 @@ describe('copy, cut and duplicate with every kind of selection', () => {
   function run(allowOverlap: boolean, name: string, action: (typeof ACTIONS)[number]) {
     const selection = SELECTIONS[name];
     setup();
-    setAllowOverlap(allowOverlap);
+    setDocument({ allowOverlap: allowOverlap });
     setDocument({ selection });
     const n = selection.length;
     const base = state();

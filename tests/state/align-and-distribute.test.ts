@@ -7,7 +7,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vi
 import type { AlignMode } from '../../src/core/align.js';
 import { getDocument, setDocument } from '../../src/state/document.ts';
 import { historyDepth, undo } from '../../src/state/history.ts';
-import { getPrefs, setGrid } from '../../src/state/prefs.ts';
+import { setGrid } from '../../src/state/prefs.ts';
 import { getView, setView } from '../../src/state/view.ts';
 import { alignSelection, distributeSelection } from '../../src/state/actions/pieces.ts';
 import { fakeImage, piece, resetState } from '../support/state.ts';
@@ -164,7 +164,7 @@ describe('alignSelection', () => {
     expect(historyDepth().undo).toBe(0);
 
     flash!.action!.run();
-    expect(getPrefs().allowOverlap).toBe(true);
+    expect(getDocument().allowOverlap).toBe(true);
     expect(xs()).toEqual([20, 20, 20]);
     expect(historyDepth().undo).toBe(1);
     undo();

@@ -2,15 +2,14 @@
 
 import { t } from '../../copy/index.ts';
 import { useDocument } from '../../state/document.ts';
-import { setAllowOverlap, usePrefs } from '../../state/prefs.ts';
-import { setRotateWhenUseful } from '../../state/actions/sheets.ts';
+import { setAllowOverlap, setRotateWhenUseful } from '../../state/actions/sheets.ts';
 import { Section } from '../ui/Section.tsx';
 import { Switch } from '../ui/Switch.tsx';
 import { SheetLength } from './SheetSection.tsx';
 
 export function ArrangeSection() {
   const rotate = useDocument((s) => s.rotate);
-  const allowOverlap = usePrefs((s) => s.allowOverlap);
+  const allowOverlap = useDocument((s) => s.allowOverlap);
   return (
     <Section name="arrange" title={t('props.arrange')}>
       <SheetLength name="gap" />

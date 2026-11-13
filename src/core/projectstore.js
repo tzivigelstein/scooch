@@ -38,8 +38,8 @@ export function cleanName(name, fallback) {
 }
 
 /** Documento de un proyecto nuevo: una hoja vacía con los ajustes dados. */
-export function emptyDoc({ paper = 'A4', landscape = false, margin = 10, gap = 5, rotate = true, cuts = DEFAULT_CUTS } = {}) {
-  return { version: DOC_VERSION, paper, landscape, margin, gap, rotate, cuts: { ...cuts }, sheets: [{ id: 1 }], items: [], assets: {} };
+export function emptyDoc({ paper = 'A4', landscape = false, margin = 10, gap = 5, rotate = true, allowOverlap = false, cuts = DEFAULT_CUTS } = {}) {
+  return { version: DOC_VERSION, paper, landscape, margin, gap, rotate, allowOverlap, cuts: { ...cuts }, sheets: [{ id: 1 }], items: [], assets: {} };
 }
 
 /** Crea y guarda un proyecto (por omisión, vacío). Devuelve el registro. */
@@ -81,12 +81,12 @@ export async function saveProject(storage, { record, doc, blobs, stored = new Se
 /**
  * Abre un proyecto: {record, doc, files}. Lanza ProjectError 'missing' si no
  * existe, 'newer' si es de una versión futura y 'corrupt' si el documento no
- * vale o le faltan archivos.
+ * vale o le faltan archivos. `context`: what migrating needs (projectdoc.migrate).
  */
-export async function loadProject(storage, id) {
+export async function loadProject(storage, id, context = {}) {
   const record = await storage.get(id);
   if (!record) throw new ProjectError('missing', id);
-  const doc = deserialize(record.doc);
+  const doc = deserialize(record.doc, context);
   const files = await storage.files(id);
   const missing = fileKeys(doc).filter((key) => !(files.get(key) instanceof Blob));
   if (missing.length) throw new ProjectError('corrupt', `faltan archivos: ${missing.join(', ')}`);
@@ -163,11 +163,11 @@ export function pickProject(list, lastId) {
  * `journal`: {id, at, name, doc} (doc sin validar). Devuelve {doc, name} o
  * null si no corresponde o no sirve.
  */
-export function recoverJournal(record, files, journal) {
+export function recoverJournal(record, files, journal, context = {}) {
   if (!journal || journal.id !== record.id || !(journal.at > (record.modified ?? 0))) return null;
   let doc;
   try {
-    doc = deserialize(journal.doc);
+    doc = deserialize(journal.doc, context);
   } catch {
     return null;
   }

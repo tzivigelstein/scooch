@@ -48,8 +48,7 @@ import { revealPieces } from '../../components/canvas/viewport.ts';
 import { flushUi } from '../flush.ts';
 import { lengthText, sizeText } from '../../services/measure.ts';
 import { getDocument, patchItems, setDocument, type Piece } from '../document.ts';
-import { cancelEdit, commit, endEdit } from '../history.ts';
-import { getPrefs, setAllowOverlap } from '../prefs.ts';
+import { cancelEdit, commit, endEdit, joined } from '../history.ts';
 import {
   area,
   boxes,
@@ -103,7 +102,10 @@ function apply(rects: ReadonlyMap<number, IdRect>, patch: ((item: Piece) => Part
 
 type GroupAction = 'align' | 'distribute' | 'rotate' | 'scale' | 'move' | 'size';
 
-/** Nothing applied: the notice says why and, for overlaps, offers to allow them and retry. */
+/**
+ * Nothing applied: the notice says why and, for overlaps, offers to allow them
+ * in this project and retry (one undo step for both).
+ */
 function refuse(plan: Pick<Plan, 'reason'>, action: GroupAction, retry: () => void) {
   if (plan.reason === 'limit') return say(t('notices.scaleLimit'), { warn: true });
   const what = t(`notices.groupActions.${action}`);
@@ -113,8 +115,10 @@ function refuse(plan: Pick<Plan, 'reason'>, action: GroupAction, retry: () => vo
       action: {
         label: t('props.overlap'),
         run: () => {
-          setAllowOverlap(true);
-          retry();
+          if (busy()) return;
+          commit();
+          setDocument({ allowOverlap: true });
+          joined(retry);
         },
       },
     });
@@ -326,7 +330,7 @@ export function scaleBy(delta: number) {
   const item = selectedItem();
   if (!item) return;
   let scale = clamp(round1(item.scale + delta), 1, 1000);
-  if (delta > 0 && !getPrefs().allowOverlap) {
+  if (delta > 0 && !getDocument().allowOverlap) {
     // Growing stops when touching another piece (rounded down to 0.1 % so it doesn't go past it).
     const growth = maxGrowth(imageBoxOf(item), obstaclesFor(item.sheet, item.id), 'center');
     if (Number.isFinite(growth)) scale = Math.min(scale, Math.max(item.scale, Math.floor(item.scale * growth * 10) / 10));

@@ -181,7 +181,7 @@ export function PieceSection() {
   useDocument((s) => s.rotate);
   const alignTo = useView((s) => s.alignTo);
   const distribute = useView((s) => s.distribute);
-  usePrefs((s) => s.allowOverlap);
+  useDocument((s) => s.allowOverlap);
   usePrefs((s) => s.unit);
   usePrefs((s) => s.grid);
   const list = items.filter((item) => selection.includes(item.id));

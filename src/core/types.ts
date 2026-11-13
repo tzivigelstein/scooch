@@ -154,6 +154,7 @@ export interface ProjectDoc {
   margin: number;
   gap: number;
   rotate: boolean;
+  allowOverlap: boolean;
   cuts: Cuts;
   sheets: Sheet[];
   items: Item[];

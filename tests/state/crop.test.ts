@@ -4,7 +4,7 @@ import type { PdfAsset } from '../../src/services/assets.ts';
 import { addAsset, getAsset } from '../../src/state/assets.ts';
 import { getDocument, resetIds, setDocument, type Piece } from '../../src/state/document.ts';
 import { historyDepth, resetHistory, undo } from '../../src/state/history.ts';
-import { setAllowOverlap } from '../../src/state/prefs.ts';
+
 import { dims } from '../../src/state/selectors.ts';
 import { getView, setView } from '../../src/state/view.ts';
 import { applyPhotoSize, photoSizeOf, selectionPhotoSize } from '../../src/state/actions/crop.ts';
@@ -46,7 +46,7 @@ const center = (p: Piece) => {
 beforeEach(() => {
   wide = image(160, 100);
   tall = image(80, 120);
-  setAllowOverlap(false);
+  setDocument({ allowOverlap: false });
   setView({ flash: null });
   setDocument({ sheets: [{ id: 1 }], paper: 'A4', landscape: false, margin: 10, gap: 5, busy: false });
   resetHistory();
@@ -91,7 +91,7 @@ describe('standard photo sizes', () => {
     expect(apart || item(1).sheet !== other.sheet).toBe(true);
     undo();
     expect(getDocument().items).toEqual(items);
-    setAllowOverlap(true);
+    setDocument({ allowOverlap: true });
     applyPhotoSize('13x18');
     expect(item(1).sheet).toBe(1);
   });

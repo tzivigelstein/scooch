@@ -12,14 +12,15 @@
 // clamped (repair); only what can't be interpreted (no sheets, items or
 // assets, pieces pointing nowhere) makes a document damaged.
 //
-// Forma (versión 4):
+// Forma (versión 5):
 //
 //   {
-//     version: 4,
+//     version: 5,
 //     paper: 'A4' | {custom: true, w, h},   // ids de papers.js; medidas en mm
 //     landscape: false,
 //     margin: 10, gap: 5,                  // mm
 //     rotate: true,                        // «Girar si conviene»
+//     allowOverlap: false,                 // «Permitir superposición» (since 5; before, a device preference)
 //     cuts: {mode: 'none', length: 4, offset: 1.5,   // líneas de corte (cutmarks.js): modo y mm,
 //            weight: 'thin', color: '#000000', dash: 'solid',   // their stroke (since 3)
 //            margin: 0},                          // cut margin around each image (mm, −5…20; since 4)
@@ -43,7 +44,7 @@ import { sizeOf } from './papers.js';
 import { MIN_CROP, clampCrop, isIdentity } from './crop.js';
 import { CUT_DASHES, CUT_MODES, CUT_WEIGHTS, isHexColor } from './cutmarks.js';
 
-export const DOC_VERSION = 4;
+export const DOC_VERSION = 5;
 
 /** Cut lines of a new document: none, and thin solid black when turned on. */
 export const DEFAULT_CUTS = Object.freeze({ mode: 'none', length: 4, offset: 1.5, margin: 0, weight: 'thin', color: '#000000', dash: 'solid' });
@@ -81,7 +82,7 @@ const pick = (obj, fields) => Object.fromEntries(fields.map((key) => [key, Array
  * de la app, con sus binarios); solo se incluyen los que usan las piezas.
  * Para imágenes, `derived` dice si lo que se embebe no es el archivo original.
  */
-export function serialize({ sheets, items, paper, landscape, margin, gap, rotate, cuts = DEFAULT_CUTS }, assets) {
+export function serialize({ sheets, items, paper, landscape, margin, gap, rotate, allowOverlap, cuts = DEFAULT_CUTS }, assets) {
   const used = {};
   for (const item of items) {
     if (used[item.asset]) continue;
@@ -97,6 +98,7 @@ export function serialize({ sheets, items, paper, landscape, margin, gap, rotate
     margin,
     gap,
     rotate: rotate !== false,
+    allowOverlap: allowOverlap === true,
     cuts: cleanCuts(cuts),
     sheets: sheets.map((sheet) => ({ id: sheet.id })),
     items: items.map(({ id, asset, sheet, x, y, scale, r, crop }) => ({ id, asset, sheet, x, y, scale, r, crop: cleanCrop(crop) })),
@@ -137,6 +139,7 @@ const LEGACY_PAPERS = { Carta: 'letter', Oficio: 'legal' };
 /**
  * Pasos de una versión a la siguiente. La 0 es la de una sola hoja (sin
  * `sheets` ni `item.sheet`, con los papeles por nombre: «Carta», «Oficio»).
+ * `context`: what a step needs from outside the document (see migrate).
  */
 const MIGRATIONS = {
   0: (doc) => ({
@@ -167,21 +170,25 @@ const MIGRATIONS = {
     version: 4,
     cuts: doc.cuts && typeof doc.cuts === 'object' ? { ...doc.cuts, margin: isFiniteNumber(doc.cuts.margin) ? doc.cuts.margin : 0 } : doc.cuts,
   }),
+  // Until version 4, «Permitir superposición» was this browser's preference,
+  // the same for every project: each project takes the value it had.
+  4: (doc, context) => ({ ...doc, version: 5, allowOverlap: context.allowOverlap === true }),
 };
 
 /**
  * Lleva un documento guardado a la versión actual (sin modificar el
  * original). Lanza ProjectError 'newer' si es de una versión futura y
- * 'corrupt' si no tiene forma de documento.
+ * 'corrupt' si no tiene forma de documento. `context.allowOverlap`: the
+ * device's «Permitir superposición», which documents before version 5 take.
  */
-export function migrate(raw) {
+export function migrate(raw, context = {}) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ProjectError('corrupt', 'no es un objeto');
   let doc = structuredClone(raw);
   let version = doc.version ?? 0;
   if (!Number.isInteger(version) || version < 0) throw new ProjectError('corrupt', `versión ${version}`);
   if (version > DOC_VERSION) throw new ProjectError('newer', `versión ${version}`);
   while (version < DOC_VERSION) {
-    doc = MIGRATIONS[version](doc);
+    doc = MIGRATIONS[version](doc, context);
     version = doc.version;
   }
   return doc;
@@ -234,6 +241,7 @@ export function validate(doc) {
     if (!isFiniteNumber(doc[key]) || doc[key] < 0 || doc[key] > 50) problems.push(key);
   }
   if (typeof doc.rotate !== 'boolean') problems.push('rotate');
+  if (typeof doc.allowOverlap !== 'boolean') problems.push('allowOverlap');
   const cuts = doc.cuts;
   if (!cuts || typeof cuts !== 'object' || !CUT_MODES.includes(cuts.mode)) problems.push('líneas de corte');
   else {
@@ -291,6 +299,7 @@ export function repair(doc) {
   if (!sizeOf(out.paper, false)) out.paper = 'A4';
   if (typeof out.landscape !== 'boolean') out.landscape = false;
   if (typeof out.rotate !== 'boolean') out.rotate = true;
+  if (typeof out.allowOverlap !== 'boolean') out.allowOverlap = false;
   out.margin = numberOr(out.margin, 10, LENGTH_RANGE);
   out.gap = numberOr(out.gap, 5, LENGTH_RANGE);
   const cuts = out.cuts && typeof out.cuts === 'object' && !Array.isArray(out.cuts) ? out.cuts : {};
@@ -320,9 +329,10 @@ export function repair(doc) {
 /**
  * Documento guardado → documento listo para usar (migrado, reparado y
  * validado). Lanza ProjectError ('corrupt' o 'newer') si no se puede abrir.
+ * `context`: see migrate.
  */
-export function deserialize(raw) {
-  const doc = repair(migrate(raw));
+export function deserialize(raw, context = {}) {
+  const doc = repair(migrate(raw, context));
   const problems = validate(doc);
   if (problems.length) throw new ProjectError('corrupt', problems.slice(0, 5).join('; '));
   return doc;

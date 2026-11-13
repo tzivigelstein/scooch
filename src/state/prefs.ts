@@ -31,7 +31,6 @@ export interface PrefsState {
   /** Single-key shortcuts (WCAG 2.1.4: they can be turned off). */
   singleKeys: boolean;
   grid: GridPrefs;
-  allowOverlap: boolean;
   /** Collapsed sections of the properties panel (missing: open). */
   sections: Partial<Record<SectionName, boolean>>;
   /** «Más opciones» of the cut lines is open. */
@@ -53,12 +52,10 @@ function loadGrid(): GridPrefs {
 
 function loadPrefs(): PrefsState {
   const unit = storageGet(UNIT_STORAGE);
-  const pieces = storageJson(PIECES_STORAGE);
   return {
     unit: isUnit(unit) ? unit : 'mm',
     singleKeys: storageGet(SINGLE_KEYS_STORAGE) !== 'off',
     grid: loadGrid(),
-    allowOverlap: isRecord(pieces) && pieces.allowOverlap === true,
     ...parseSections(storageJson(SECTIONS_STORAGE)),
   };
 }
@@ -78,9 +75,14 @@ export function setSingleKeys(on: boolean) {
   storageSet(SINGLE_KEYS_STORAGE, on ? 'on' : 'off');
 }
 
-export function setAllowOverlap(on: boolean) {
-  usePrefs.setState({ allowOverlap: on });
-  storageSet(PIECES_STORAGE, JSON.stringify({ allowOverlap: on }));
+/**
+ * «Permitir superposición» as this browser had it before it became each
+ * project's (document version 5): what older projects take when opened.
+ * Nothing writes it any more.
+ */
+export function legacyAllowOverlap() {
+  const pieces = storageJson(PIECES_STORAGE);
+  return isRecord(pieces) && pieces.allowOverlap === true;
 }
 
 export function setGrid(changes: Partial<GridPrefs>) {

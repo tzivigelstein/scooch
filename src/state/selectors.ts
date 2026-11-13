@@ -132,8 +132,8 @@ export function pieceSizeText(item: Piece) {
 /** What core/group.js needs to know about the sheet and the preferences (for plans on layout boxes). */
 export function groupOptions(doc: Doc = getDocument()): GroupOptions & { W: number; H: number } {
   const { W, H } = area(doc);
-  const { allowOverlap, grid } = getPrefs();
-  return { W, H, allowOverlap, round: fine, snapStep: grid.snap ? grid.size : 0 };
+  const { grid } = getPrefs();
+  return { W, H, allowOverlap: getDocument().allowOverlap, round: fine, snapStep: grid.snap ? grid.size : 0 };
 }
 
 /** The same for the scale plans, which work on image boxes and keep the cut margin apart. */

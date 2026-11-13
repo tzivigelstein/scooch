@@ -1,10 +1,11 @@
+import type { MigrationContext } from './projectdoc';
 import type { ListedProject, ProjectDoc, ProjectRecord, ProjectStorage } from './types';
 
 export const NAME_MAX: number;
 
 export function newProjectId(now?: number, random?: () => number): string;
 export function cleanName(name: unknown, fallback: string): string;
-export function emptyDoc(settings?: Partial<Pick<ProjectDoc, 'paper' | 'landscape' | 'margin' | 'gap' | 'rotate' | 'cuts'>>): ProjectDoc;
+export function emptyDoc(settings?: Partial<Pick<ProjectDoc, 'paper' | 'landscape' | 'margin' | 'gap' | 'rotate' | 'allowOverlap' | 'cuts'>>): ProjectDoc;
 
 export function createProject(
   storage: ProjectStorage,
@@ -16,7 +17,7 @@ export function saveProject(
   save: { record: ProjectRecord; doc: ProjectDoc; blobs: ReadonlyMap<string, Blob>; stored?: ReadonlySet<string>; thumb?: Blob | null; now: number }
 ): Promise<{ record: ProjectRecord; stored: Set<string> }>;
 
-export function loadProject(storage: ProjectStorage, id: string): Promise<{ record: ProjectRecord; doc: ProjectDoc; files: Map<string, Blob> }>;
+export function loadProject(storage: ProjectStorage, id: string, context?: MigrationContext): Promise<{ record: ProjectRecord; doc: ProjectDoc; files: Map<string, Blob> }>;
 export function duplicateProject(storage: ProjectStorage, id: string, copy: { newId: string; name: string; now: number }): Promise<ProjectRecord>;
 export function renameProject(storage: ProjectStorage, id: string, name: string, now: number): Promise<ProjectRecord>;
 export function deleteProject(storage: ProjectStorage, id: string): Promise<void>;
@@ -36,5 +37,5 @@ export interface Journal {
   doc: unknown;
 }
 
-export function recoverJournal(record: ProjectRecord, files: ReadonlyMap<string, Blob>, journal: Journal | null): { doc: ProjectDoc; name: string } | null;
+export function recoverJournal(record: ProjectRecord, files: ReadonlyMap<string, Blob>, journal: Journal | null, context?: MigrationContext): { doc: ProjectDoc; name: string } | null;
 export function memoryStorage(options?: { fail?: (op: string) => Error | null | undefined }): ProjectStorage;

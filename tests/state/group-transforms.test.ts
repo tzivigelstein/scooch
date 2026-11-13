@@ -5,7 +5,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { getDocument, setDocument, type Piece } from '../../src/state/document.ts';
 import { historyDepth, undo } from '../../src/state/history.ts';
-import { getPrefs } from '../../src/state/prefs.ts';
 import { getView } from '../../src/state/view.ts';
 import { dims } from '../../src/state/selectors.ts';
 import { duplicate, lengthFieldValue, nudge, remove, rotate, scaleBy, setLengthField, setScaleField } from '../../src/state/actions/pieces.ts';
@@ -104,7 +103,7 @@ describe('group transforms', () => {
     expect(getDocument().items).toEqual(before);
     expect(historyDepth().undo).toBe(0);
     flash!.action!.run();
-    expect(getPrefs().allowOverlap).toBe(true);
+    expect(getDocument().allowOverlap).toBe(true);
     expect([item(1).r, item(2).r]).toEqual([90, 90]);
     expect(historyDepth().undo).toBe(1);
   });

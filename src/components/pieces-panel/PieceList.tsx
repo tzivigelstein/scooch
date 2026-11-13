@@ -98,7 +98,7 @@ export function PieceList() {
   const landscape = useDocument((s) => s.landscape);
   const margin = useDocument((s) => s.margin);
   const cuts = useDocument((s) => s.cuts);
-  const allowOverlap = usePrefs((s) => s.allowOverlap);
+  const allowOverlap = useDocument((s) => s.allowOverlap);
   const unit = usePrefs((s) => s.unit);
   // From where Shift extends the selection (the last one picked by hand) and
   // what the next focus of a row does.

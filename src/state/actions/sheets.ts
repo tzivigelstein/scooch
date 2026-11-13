@@ -308,6 +308,13 @@ export function setRotateWhenUseful(on: boolean) {
   setDocument({ rotate: on });
 }
 
+/** «Permitir superposición»: a setting of the open project, in one undo step. */
+export function setAllowOverlap(on: boolean) {
+  if (getDocument().allowOverlap === on || busy()) return;
+  commit();
+  setDocument({ allowOverlap: on });
+}
+
 export function setGridVisible(show: boolean) {
   setGrid({ show });
   announce(show ? t('announce.gridShown', { size: lengthText(getPrefs().grid.size) }) : t('announce.gridHidden'));

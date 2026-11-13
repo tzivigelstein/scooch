@@ -13,16 +13,22 @@ interface Snapshot extends DocumentData {
 const undoStack: Snapshot[] = [];
 const redoStack: Snapshot[] = [];
 let editKey: string | null = null;
+// While true, the next commit joins the step already taken (see joined).
+let joining = false;
 
 function snapshot(): Snapshot {
-  const { sheets, items, selection, paper, landscape, margin, gap, cuts } = getDocument();
-  return { sheets, items, selection, paper, landscape, margin, gap, cuts };
+  const { sheets, items, selection, paper, landscape, margin, gap, cuts, allowOverlap } = getDocument();
+  return { sheets, items, selection, paper, landscape, margin, gap, cuts, allowOverlap };
 }
 
 const syncFlags = () => setDocument({ canUndo: undoStack.length > 0, canRedo: redoStack.length > 0 });
 
 /** Saves the current state before changing it. With `key`, consecutive edits share one step. */
 export function commit(key: string | null = null) {
+  if (joining) {
+    joining = false;
+    return;
+  }
   if (key && key === editKey) return;
   editKey = key;
   undoStack.push(snapshot());
@@ -31,6 +37,19 @@ export function commit(key: string | null = null) {
   setView({ flash: null });
   collectGarbage();
   syncFlags();
+}
+
+/**
+ * Runs `change` as part of the step just committed: its own first commit adds
+ * nothing (e.g. allowing overlaps and the action that needed it: one step).
+ */
+export function joined(change: () => void) {
+  joining = true;
+  try {
+    change();
+  } finally {
+    joining = false;
+  }
 }
 
 /** Ends the continuous edit in progress (the next change is a new step). */
@@ -57,8 +76,8 @@ export function cancelEdit(key: string | null) {
 function restore(snap: Snapshot) {
   const ids = new Set(snap.items.map((item) => item.id));
   const selection = snap.selection.filter((id) => ids.has(id));
-  const { sheets, items, paper, landscape, margin, gap, cuts } = snap;
-  setDocument({ sheets, items, selection, paper, landscape, margin, gap, cuts: { ...cuts } });
+  const { sheets, items, paper, landscape, margin, gap, cuts, allowOverlap } = snap;
+  setDocument({ sheets, items, selection, paper, landscape, margin, gap, cuts: { ...cuts }, allowOverlap });
   setView({ flash: null, ...(selection.length < 2 ? { pinned: false } : {}) });
 }
 

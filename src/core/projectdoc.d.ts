@@ -26,7 +26,14 @@ export interface DocumentState {
   margin: number;
   gap: number;
   rotate: boolean;
+  allowOverlap?: boolean;
   cuts?: Partial<Cuts>;
+}
+
+/** What a migration needs from outside the document. */
+export interface MigrationContext {
+  /** The device's «Permitir superposición»: documents before version 5 take it. */
+  allowOverlap?: boolean;
 }
 
 /** An app asset as far as serializing goes (the binaries and extra fields are ignored). */
@@ -38,9 +45,9 @@ export function fileKeys(doc: Pick<ProjectDoc, 'assets'>): string[];
 export function counts(doc: Pick<ProjectDoc, 'sheets' | 'items'>): { sheets: number; pieces: number };
 export function nextIds(doc: Pick<ProjectDoc, 'items' | 'sheets' | 'assets'>): { item: number; sheet: number; asset: number; src: number };
 /** Brings a stored document to the current version (not validated). */
-export function migrate(raw: unknown): ProjectDoc;
+export function migrate(raw: unknown, context?: MigrationContext): ProjectDoc;
 /** Fills missing or unreadable optional settings with their defaults and clamps numbers (a migrated document). */
 export function repair<T>(doc: T): T;
 export function validate(doc: unknown): string[];
 /** Stored document → usable document (migrated and validated); throws ProjectError. */
-export function deserialize(raw: unknown): ProjectDoc;
+export function deserialize(raw: unknown, context?: MigrationContext): ProjectDoc;

@@ -47,7 +47,7 @@ async function start(storage: ProjectStorage = memoryStorage()) {
   };
   /** The open project as stored. */
   const stored = async () => (await storage.get(projects.projectSession().record!.id))!;
-  return { projects, storage, status, x, addPiece, stored, nudge, undoLast, historyDepth, getDocument, notices };
+  return { projects, storage, status, x, addPiece, stored, nudge, undoLast, historyDepth, getDocument, setDocument, notices };
 }
 
 /** A Blob that can be read back (jsdom's has no arrayBuffer()). */
@@ -56,12 +56,13 @@ const blob = (text: string) => Object.assign(new Blob([text]), { arrayBuffer: as
 /** A project in storage with one image piece at `x`, and its files. */
 async function storedProject(storage: ProjectStorage, id: string, name: string, x: number, now: number) {
   const doc: ProjectDoc = {
-    version: 4,
+    version: 5,
     paper: 'A4',
     landscape: false,
     margin: 10,
     gap: 5,
     rotate: true,
+    allowOverlap: false,
     cuts: { mode: 'none', length: 4, offset: 1, weight: 'thin', color: '#000000', dash: 'solid', margin: 0 },
     sheets: [{ id: 1 }],
     items: [{ id: 1, asset: 'a1', sheet: 1, x, y: 20, scale: 100, r: 0, crop: null }],
@@ -140,6 +141,28 @@ describe('autosave', () => {
     app.undoLast();
     await vi.advanceTimersByTimeAsync(2000);
     expect((await app.stored()).modified).toBe(modified);
+  });
+});
+
+describe('the settings a project keeps', () => {
+  test('«Nuevo proyecto» keeps the open one’s settings, «Permitir superposición» included', async () => {
+    const app = await start();
+    app.setDocument({ allowOverlap: true, margin: 7, gap: 3, landscape: true });
+    await app.projects.newProject();
+    expect(app.getDocument()).toMatchObject({ allowOverlap: true, margin: 7, gap: 3, landscape: true, items: [] });
+    expect((await app.stored()).doc).toMatchObject({ allowOverlap: true });
+  });
+
+  test('a project saved before «Permitir superposición» was the project’s opens with the value this browser had', async () => {
+    const storage = memoryStorage();
+    const record = await storedProject(storage, 'p1', 'Viejo', 33, 1000);
+    const { allowOverlap: _, ...v4 } = record.doc;
+    await storage.write({ ...record, version: 4, doc: { ...v4, version: 4 } as ProjectDoc });
+    localStorage.setItem('scooch:last-project', 'p1');
+    localStorage.setItem('scooch:piece-preferences', JSON.stringify({ allowOverlap: true }));
+    const app = await start(storage);
+    expect(app.x()).toBe(33);
+    expect(app.getDocument().allowOverlap).toBe(true);
   });
 });
 

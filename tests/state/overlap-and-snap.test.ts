@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
 // «Permitir superposición», «Imán» and the grid with the keyboard's actions:
 // arrows jump over a neighbor (or not, with overlaps allowed), + stops at a
-// neighbor and − doesn't, rotating next to a neighbor, typed positions, and the
-// preferences (outside the document and its undo history, saved in this browser).
+// neighbor and − doesn't, rotating next to a neighbor, typed positions,
+// «Permitir superposición» (the project's, in its undo history) and the grid
+// (a preference of this browser, outside the document and its undo history).
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { GRID_STORAGE, PIECES_STORAGE } from '../../src/config.ts';
-import { getDocument } from '../../src/state/document.ts';
+import { setDocument, getDocument } from '../../src/state/document.ts';
 import { endEdit, historyDepth, undo } from '../../src/state/history.ts';
-import { getPrefs, setAllowOverlap, setGrid } from '../../src/state/prefs.ts';
+import { getPrefs, setGrid } from '../../src/state/prefs.ts';
 import { nudge, rotate, scaleBy, setLengthField } from '../../src/state/actions/pieces.ts';
+import { setAllowOverlap } from '../../src/state/actions/sheets.ts';
 import { dims, sheetProblems } from '../../src/state/selectors.ts';
 import { getView } from '../../src/state/view.ts';
 import { fakeImage, piece, resetState } from '../support/state.ts';
@@ -96,7 +98,7 @@ describe('arrows', () => {
 
   test('with overlaps allowed they move 1 mm without jumping, onto the neighbor or out of it', () => {
     sideBySide(0.5);
-    setAllowOverlap(true);
+    setDocument({ allowOverlap: true });
     const a0 = rect(1);
     press(() => nudge(1, 0));
     expect(rect(1).x).toBeCloseTo(a0.x + 1, 6);
@@ -132,7 +134,7 @@ describe('+ and −', () => {
 
   test('with overlaps allowed + grows over the neighbor', () => {
     sideBySide(4);
-    setAllowOverlap(true);
+    setDocument({ allowOverlap: true });
     for (let i = 0; i < 8; i++) press(() => scaleBy(10));
     expect(overlap(rect(1), rect(2))).toBe(true);
   });
@@ -158,7 +160,7 @@ describe('rotating next to a neighbor', () => {
     expect(historyDepth().undo).toBe(2);
   });
 
-  test('hemmed in, it doesn’t turn: the notice says why and «Permitir superposición» turns it', () => {
+  test('hemmed in, it doesn’t turn: the notice says why and «Permitir superposición» allows it in this project only and turns it', () => {
     const [w, h] = aSize();
     // Turned around its center A would reach (w - h) / 2 mm higher: B sits right there.
     resetState({ items: [piece(1, A, 100, 100), piece(2, B, 100 + w / 2 - 5, 100 - (w - h) / 2 - dims(piece(2, B, 0, 0))[1] + 2)], selection: [1] });
@@ -171,12 +173,17 @@ describe('rotating next to a neighbor', () => {
     expect(flash).toMatchObject({ text: 'No se puede girar: las piezas se superpondrían', warn: true });
     expect(flash.action?.label).toBe('Permitir superposición');
     flash.action!.run();
-    expect(getPrefs().allowOverlap).toBe(true);
+    expect(getDocument().allowOverlap).toBe(true);
+    expect(localStorage.getItem(PIECES_STORAGE), 'no preference of this browser changes').toBeNull();
     expect(item(1).r).toBe(90);
     const after = rect(1);
     expect(after.x + after.w / 2).toBeCloseTo(before.x + before.w / 2, 3);
     expect(after.y + after.h / 2).toBeCloseTo(before.y + before.h / 2, 3);
+    // One step: undo turns it back and doesn't allow overlaps any more.
     expect(historyDepth().undo).toBe(1);
+    undo();
+    expect(item(1).r).toBe(0);
+    expect(getDocument().allowOverlap).toBe(false);
   });
 });
 
@@ -191,38 +198,38 @@ describe('typed positions', () => {
   });
 });
 
-describe('preferences', () => {
-  test('undo touches neither «Permitir superposición» nor the grid', () => {
+describe('settings', () => {
+  test('«Permitir superposición» is the project’s: one undo step of its own, and no preference of this browser', () => {
     sideBySide(10);
     setAllowOverlap(true);
+    expect(getDocument().allowOverlap).toBe(true);
+    expect(historyDepth().undo).toBe(1);
+    expect(localStorage.getItem(PIECES_STORAGE)).toBeNull();
+    setAllowOverlap(true);
+    expect(historyDepth().undo, 'setting it again adds no step').toBe(1);
+    undo();
+    expect(getDocument().allowOverlap).toBe(false);
+  });
+
+  test('undo doesn’t touch the grid (a preference of this browser)', () => {
+    sideBySide(10);
     setGrid({ show: true, size: 2.5, snap: false });
     press(() => nudge(1, 0));
     undo();
-    expect(getPrefs().allowOverlap).toBe(true);
     expect(getPrefs().grid).toEqual({ show: true, size: 2.5, snap: false });
   });
 
-  test('by default overlaps are not allowed, the grid is hidden, 1 mm, with «Imán» on', async () => {
-    localStorage.removeItem(PIECES_STORAGE);
+  test('by default the grid is hidden, 1 mm, with «Imán» on', async () => {
     localStorage.removeItem(GRID_STORAGE);
-    const prefs = await prefsOnStart();
-    expect(prefs.allowOverlap).toBe(false);
-    expect(prefs.grid).toEqual({ show: false, size: 1, snap: true });
+    expect((await prefsOnStart()).grid).toEqual({ show: false, size: 1, snap: true });
   });
 
-  test('each change is saved in this browser and read back on the next start', async () => {
-    setAllowOverlap(true);
-    expect(localStorage.getItem(PIECES_STORAGE)).toBe('{"allowOverlap":true}');
+  test('each grid change is saved in this browser and read back on the next start', async () => {
     setGrid({ show: true });
     setGrid({ size: 2.5 });
     setGrid({ snap: false });
     expect(JSON.parse(localStorage.getItem(GRID_STORAGE)!)).toEqual({ show: true, size: 2.5, snap: false });
     resetState(); // the stores forget; the browser doesn't
-    const prefs = await prefsOnStart();
-    expect(prefs.allowOverlap).toBe(true);
-    expect(prefs.grid).toEqual({ show: true, size: 2.5, snap: false });
-    setAllowOverlap(false);
-    expect(localStorage.getItem(PIECES_STORAGE)).toBe('{"allowOverlap":false}');
-    expect((await prefsOnStart()).allowOverlap).toBe(false);
+    expect((await prefsOnStart()).grid).toEqual({ show: true, size: 2.5, snap: false });
   });
 });

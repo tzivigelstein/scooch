@@ -11,9 +11,9 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { AlignMode, Axis } from '../../src/core/align.js';
 import { gridPresets, stepFor, type Unit } from '../../src/core/units.js';
-import { getDocument, type Piece } from '../../src/state/document.ts';
+import { setDocument, getDocument, type Piece } from '../../src/state/document.ts';
 import { historyDepth, redo, resetHistory, undo } from '../../src/state/history.ts';
-import { setAllowOverlap, setGrid, usePrefs } from '../../src/state/prefs.ts';
+import { setGrid, usePrefs } from '../../src/state/prefs.ts';
 import { area, dims } from '../../src/state/selectors.ts';
 import { setView } from '../../src/state/view.ts';
 import { placeNew } from '../../src/state/actions/layout.ts';
@@ -78,7 +78,7 @@ function setup({ unit, snap, overlap, two }: Combo) {
   resetState({ sheets: two ? [{ id: 1 }, { id: 2 }] : [{ id: 1 }] });
   usePrefs.setState({ unit });
   setGrid({ snap, size: unit === 'in' ? gridPresets('in')[0].mm : 1 });
-  setAllowOverlap(overlap);
+  setDocument({ allowOverlap: overlap });
   const tiles = (from: number, n: number) => Array.from({ length: n }, (_, i) => fakeImage({ name: `tile${from + i}.png`, src: from + i, px: [531, 591] }));
   placeNew(tiles(20, 4));
   if (two) {

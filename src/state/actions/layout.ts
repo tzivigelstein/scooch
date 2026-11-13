@@ -14,7 +14,6 @@ import { paperName } from '../../services/measure.ts';
 import { getAsset } from '../assets.ts';
 import { getDocument, newItem, newItemId, newSheetId, setDocument, type Piece } from '../document.ts';
 import { commit } from '../history.ts';
-import { getPrefs } from '../prefs.ts';
 import { area, boxOf, boxWith, currentSheet, dims, findItem, itemsOn, layoutPad, pieceName, selectedItem, sheetIndex } from '../selectors.ts';
 import { animateNext } from '../view.ts';
 import { say } from './notify.ts';
@@ -314,7 +313,7 @@ export function settle(changed: readonly Item[]): number[] {
   const moved: number[] = [];
   const homeless = new Set<number>();
   const pad = layoutPad();
-  if (!getPrefs().allowOverlap) {
+  if (!getDocument().allowOverlap) {
     for (const item of next.values()) {
       const rect = boxWith(item, pad);
       const others = items.filter((other) => other.sheet === item.sheet && other.id !== item.id && !homeless.has(other.id)).map((other) => boxWith(other, pad));

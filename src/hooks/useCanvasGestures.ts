@@ -317,7 +317,7 @@ function startResize(e: PointerEvent, handle: HTMLElement) {
     ...pointer(e),
     size: dims(item),
     // Without overlaps, the handle stops when touching another piece.
-    growth: !getPrefs().allowOverlap ? maxGrowth(rectOf(item), obstaclesFor(item.sheet, item.id), 'top-left') : Infinity,
+    growth: !getDocument().allowOverlap ? maxGrowth(rectOf(item), obstaclesFor(item.sheet, item.id), 'top-left') : Infinity,
     draft: { ...item },
   });
 }
@@ -445,7 +445,7 @@ function updateMove(g: MoveGesture, px: number, dy: number) {
   g.draft = { ...g.draft, x: spot.x, y: spot.y, sheet: target };
   markTarget(g, target);
   // Moving is free, but it shows when dropping there wouldn't be valid.
-  setBlocked(g, !getPrefs().allowOverlap && overlapsAny(boxOf(g.draft), cachedOthers(g, target)), [g.node]);
+  setBlocked(g, !getDocument().allowOverlap && overlapsAny(boxOf(g.draft), cachedOthers(g, target)), [g.node]);
   paintDraft(g.node, g.draft, sheetBoxes().get(target));
   preview([g.draft]);
 }

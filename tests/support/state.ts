@@ -62,12 +62,12 @@ export const piece = (id: number, asset: string, x: number, y: number, props: Pa
 
 /**
  * Starts from a known state: an A4 portrait document with one sheet, margin 10,
- * gap 5, default cut lines, nothing selected and no history; preferences in mm
- * with the grid's defaults (snap on, 1 mm), no overlap, single keys on; no
- * notice. `doc` patches the document on top of that.
+ * gap 5, default cut lines, overlaps not allowed, nothing selected and no
+ * history; preferences in mm with the grid's defaults (snap on, 1 mm), single
+ * keys on; no notice. `doc` patches the document on top of that.
  */
 export function resetState(doc: Partial<DocumentState> = {}) {
-  usePrefs.setState({ unit: 'mm', singleKeys: true, allowOverlap: false, grid: { ...GRID_DEFAULTS }, sections: {}, cutOptions: false });
+  usePrefs.setState({ unit: 'mm', singleKeys: true, grid: { ...GRID_DEFAULTS }, sections: {}, cutOptions: false });
   setView({ sheet: 1, pinned: false, flash: null, busyText: '', alignTo: 'selection', distribute: 'gap', drawer: null, propsTab: 'sheet', editing: false, cropping: null, loading: false });
   setDocument({
     sheets: [{ id: 1 }],
@@ -79,6 +79,7 @@ export function resetState(doc: Partial<DocumentState> = {}) {
     gap: 5,
     cuts: { ...DEFAULT_CUTS },
     rotate: true,
+    allowOverlap: false,
     busy: false,
     ...doc,
   });
