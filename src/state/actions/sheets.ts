@@ -7,7 +7,7 @@ import { confirmAction } from '../../components/dialogs/confirm.ts';
 import { revealPiece, revealSheet } from '../../components/canvas/viewport.ts';
 import { customPaper } from '../../core/papers.js';
 import { spotOnSheet } from '../../core/sheets.js';
-import type { Item, Paper, PaperId } from '../../core/types.ts';
+import type { Cuts, Item, Paper, PaperId } from '../../core/types.ts';
 import { clamp, tidy } from '../../core/util.ts';
 import { lengthText, paperName } from '../../services/measure.ts';
 import { flushUi } from '../flush.ts';
@@ -20,7 +20,8 @@ import { revealPanel } from './drawers.ts';
 import { focusSheet, pieceNode, sheetNode } from './focus.ts';
 import { showPropsTab } from './panels.ts';
 import { forgetSpill } from './layout.ts';
-import { singleOnly } from './notify.ts';
+import { arrangeAll } from './edit.ts';
+import { say, singleOnly } from './notify.ts';
 import { select, setSelection } from './selection.ts';
 
 const busy = () => getDocument().busy;
@@ -216,6 +217,34 @@ export function setSheetLength(name: 'margin' | 'gap', mm: number, { final = fal
     setDocument({ [name]: value });
   }
   if (final) endEdit();
+}
+
+/**
+ * Changes the cut lines (mode, marks, stroke). `key`: consecutive changes of
+ * a field or the color picker share one undo step until `final`.
+ */
+export function setCuts(patch: Partial<Cuts>, { key = null as string | null, final = false } = {}) {
+  if (busy()) return;
+  const cuts = getDocument().cuts;
+  const changed = (Object.keys(patch) as (keyof Cuts)[]).some((name) => patch[name] !== cuts[name]);
+  if (changed) {
+    commit(key);
+    setDocument({ cuts: { ...cuts, ...patch } });
+  }
+  if (final || !key) endEdit();
+}
+
+/** The gap the corner marks need not to touch neighboring pieces (mm, rounded up to 0.1). */
+export const gapForCuts = () => {
+  const { offset, length } = getDocument().cuts;
+  return Math.ceil((offset + length) * 10 - 1e-9) / 10;
+};
+
+/** «Usar N mm»: the gap the marks need, with an offer to arrange so it applies. */
+export function useGapForCuts() {
+  const gap = gapForCuts();
+  setSheetLength('gap', gap, { final: true });
+  say(t('cuts.gapFixed', { value: lengthText(gap) }), { action: { label: t('bar.arrange'), run: arrangeAll } });
 }
 
 export function setRotateWhenUseful(on: boolean) {

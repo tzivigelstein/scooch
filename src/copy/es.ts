@@ -363,6 +363,33 @@ const es = {
     unchanged: 'El recorte no cambió',
   },
 
+  // «Líneas de corte» in the Hoja tab (modes and stroke: src/core/cutmarks.js)
+  cuts: {
+    title: 'Líneas de corte',
+    modes: { none: 'Ninguna', corners: 'Esquinas', outline: 'Contorno' },
+    modeTips: { none: 'Sin líneas de corte', corners: 'Marcas en las esquinas de cada pieza', outline: 'El contorno de cada pieza' },
+    more: 'Más opciones',
+    length: 'Largo',
+    lengthLabel: 'Largo de las marcas, en {unit}',
+    lengthTip: 'Largo de las marcas',
+    offset: 'Distancia',
+    offsetLabel: 'Distancia de las marcas a la esquina, en {unit}',
+    offsetTip: 'Distancia de las marcas a la esquina',
+    weight: 'Grosor',
+    weights: { thin: 'Fina', medium: 'Media', thick: 'Gruesa' },
+    weightTip: '{n} pt',
+    color: 'Color',
+    colors: { black: 'Negro', gray: 'Gris', custom: 'Otro' },
+    picker: 'Color de las líneas de corte',
+    hex: 'Código hexadecimal del color, por ejemplo #1A2B3C',
+    hexInvalid: 'Escribe un color como #1A2B3C',
+    dash: 'Trazo',
+    dashes: { solid: 'Continuo', dotted: 'Punteado' },
+    gapNote: 'Con una separación menor que {value}, las marcas tocan las piezas vecinas',
+    gapFix: 'Usar {value}',
+    gapFixed: 'Se cambió la separación a {value}. Acomoda las piezas para aplicarla.',
+  },
+
   // Notice pill
   notices: {
     close: 'Cerrar aviso',

@@ -14,6 +14,7 @@ import { closeOnFocusOut } from '../pieces-panel/PiecesPanel.tsx';
 import { IconButton } from '../ui/Button.tsx';
 import { Tabs } from '../ui/Tabs.tsx';
 import { ArrangeSection } from './ArrangeSection.tsx';
+import { CutsSection } from './CutsSection.tsx';
 import { GridSection } from './GridSection.tsx';
 import { PieceSection } from './PieceSection.tsx';
 import { SheetSection } from './SheetSection.tsx';
@@ -49,6 +50,7 @@ export function PropertiesPanel() {
         <p className="tab-note">{t('props.allSheets')}</p>
         <SheetSection />
         <ArrangeSection />
+        <CutsSection />
         <GridSection />
       </div>
     </aside>

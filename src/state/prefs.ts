@@ -22,7 +22,7 @@ export interface GridPrefs {
   snap: boolean;
 }
 
-export type SectionName = 'sheet' | 'arrange' | 'grid';
+export type SectionName = 'sheet' | 'arrange' | 'cuts' | 'grid';
 
 export interface PrefsState {
   /** Unit to show and type lengths in; the document is always in mm. */
