@@ -1,5 +1,10 @@
 // Lectura de archivos: imágenes y páginas de PDF convertidas en "assets"
-// con su tamaño físico en mm y todo lo necesario para mostrarlas y exportarlas.
+// con su tamaño físico en mm y todo lo necesario para mostrarlas, exportarlas
+// y guardarlas en un proyecto: `bytes` (lo que se embebe en el PDF; en un PDF,
+// el archivo original), `original` (el archivo original de una imagen, solo si
+// `derived`: lo que se embebe se re-codificó) y `preview` (la vista previa
+// rasterizada, con su URL en `url`). Al restaurar un proyecto, el documento
+// de pdf.js (`pdf`) se abre recién si hace falta otra página.
 
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { t } from './copy/index.js';
@@ -57,6 +62,7 @@ async function readImage(name, file, bytes) {
   const preview = rasterize(img, Math.max(1, Math.round(pw * k)), Math.max(1, Math.round(ph * k)));
   const blob = await canvasBlob(preview, format === 'jpg' ? 'image/jpeg' : 'image/png', 0.9);
 
+  const derived = data !== bytes;
   const asset = {
     kind: 'image',
     name,
@@ -64,6 +70,9 @@ async function readImage(name, file, bytes) {
     px: [pw, ph],
     bytes: data,
     format,
+    derived,
+    original: derived ? new Blob([bytes], { type: file.type }) : undefined,
+    preview: blob,
     url: URL.createObjectURL(blob),
   };
   return withDpi(asset, DEFAULT_DPI);
@@ -167,7 +176,8 @@ function ascii(view, start, length) {
 
 let pdfjsPromise = null;
 
-// pdf.js y su worker van en archivos aparte: se descargan recién con el primer PDF.
+// pdf.js y su worker van en archivos aparte: se descargan recién con el primer
+// PDF (o, en un proyecto restaurado, cuando se pide otra página).
 function loadPdfjs() {
   pdfjsPromise ??= import('pdfjs-dist').then(
     (lib) => {
@@ -197,7 +207,13 @@ async function readPdf(name, bytes) {
   return pdfPage({ name, src: ++lastSource, pdf, bytes }, 1);
 }
 
-/** Asset para la página `n` (desde 1) de un PDF ya abierto. */
+/** Abre con pdf.js los bytes de un PDF (de un proyecto restaurado). */
+export async function openPdf(bytes) {
+  const pdfjs = await loadPdfjs();
+  return pdfjs.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise;
+}
+
+/** Asset para la página `n` (desde 1) de un PDF (`base.pdf` ya abierto). */
 export async function pdfPage(base, n) {
   const page = await base.pdf.getPage(n);
   try {
@@ -217,6 +233,7 @@ export async function pdfPage(base, n) {
       bytes: base.bytes,
       page: n,
       pages: base.pdf.numPages,
+      preview: blob,
       pageRotation: page.rotate,
       view: [...page.view], // caja visible (CropBox) en puntos, sin rotar
       px: [canvas.width, canvas.height], // vista previa (lo que se embebe si no va como vector)
@@ -227,4 +244,58 @@ export async function pdfPage(base, n) {
   } finally {
     page.cleanup();
   }
+}
+
+// ---------- Proyectos guardados ----------
+
+/** Los próximos orígenes nuevos no chocan con los de un proyecto restaurado. */
+export function reserveSources(next) {
+  lastSource = Math.max(lastSource, next - 1);
+}
+
+const MIME = { jpg: 'image/jpeg', png: 'image/png' };
+
+/**
+ * Binario de una clave de projectdoc.fileKeys para guardar: el archivo
+ * original, los bytes a embeber (si difieren) o la vista previa.
+ */
+export function assetBlob(asset, kind) {
+  if (kind === 'preview') return asset.preview;
+  if (kind === 'bytes') return new Blob([asset.bytes], { type: MIME[asset.format] });
+  if (asset.original) return asset.original;
+  return new Blob([asset.bytes], { type: asset.kind === 'pdf' ? 'application/pdf' : MIME[asset.format] });
+}
+
+/**
+ * Assets de un documento guardado (projectdoc) a partir de sus archivos
+ * (Map clave → Blob). Las páginas de un mismo PDF comparten sus bytes; pdf.js
+ * no se carga. Si algo falla, libera lo que alcanzó a crear y lanza.
+ */
+export async function restoreAssets(doc, files) {
+  const read = (blob) => blob.arrayBuffer().then((buffer) => new Uint8Array(buffer));
+  const shared = new Map(); // clave del binario → promesa de bytes
+  const out = new Map();
+  try {
+    for (const [key, meta] of Object.entries(doc.assets)) {
+      const derived = meta.kind === 'image' && meta.derived;
+      const bytesKey = derived ? `bytes:${meta.src}` : `src:${meta.src}`;
+      if (!shared.has(bytesKey)) shared.set(bytesKey, read(files.get(bytesKey)));
+      const preview = files.get(`preview:${key}`);
+      out.set(key, {
+        ...meta,
+        px: [...meta.px],
+        ...(meta.view ? { view: [...meta.view] } : {}),
+        bytes: await shared.get(bytesKey),
+        original: derived ? files.get(`src:${meta.src}`) : undefined,
+        preview,
+        pdf: null,
+        url: URL.createObjectURL(preview),
+      });
+    }
+  } catch (err) {
+    for (const asset of out.values()) URL.revokeObjectURL(asset.url);
+    throw err;
+  }
+  reserveSources(Math.max(1, ...Object.values(doc.assets).map((meta) => meta.src + 1)));
+  return out;
 }

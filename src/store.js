@@ -8,6 +8,7 @@
 import { MAX_UNDO, GRID_STORAGE, GRID_DEFAULTS, GRID_MIN, GRID_MAX, PIECES_STORAGE, UNIT_STORAGE } from './config.js';
 import { sizeOf } from './papers.js';
 import { isUnit } from './units.js';
+import { nextIds } from './projectdoc.js';
 import { storageGet, storageSet, clamp } from './util.js';
 
 export const assets = new Map();
@@ -222,6 +223,53 @@ export function redo() {
   return true;
 }
 
+// ---------- Documento entero (proyectos) ----------
+
+/** Lo que se guarda del documento (para projectdoc.serialize). */
+export function docState() {
+  const { sheets, items, paper, landscape, margin, gap } = state;
+  return { sheets, items, paper, landscape, margin, gap, rotate: settings.rotate };
+}
+
+// Suelta los binarios de un asset que ya nadie usa (URL de la vista previa y,
+// si ningún otro lo comparte, el documento de pdf.js).
+function release(dropped, alive) {
+  for (const asset of dropped) {
+    if (!alive.some((other) => other.url === asset.url)) URL.revokeObjectURL(asset.url);
+    if (asset.pdf && !alive.some((other) => other.pdf === asset.pdf)) asset.pdf.destroy();
+  }
+}
+
+/**
+ * Reemplaza el documento entero, al abrir o crear un proyecto: libera todos
+ * los assets de antes, empieza un historial nuevo y deja los contadores de ids
+ * después de los del documento. `doc`: de projectdoc; `loaded`: Map clave →
+ * asset (restoreAssets).
+ */
+export function replaceDocument(doc, loaded = new Map()) {
+  const dropped = [...assets.values()];
+  assets.clear();
+  for (const [key, asset] of loaded) assets.set(key, asset);
+  release(dropped, [...assets.values()]);
+  state.sheets = doc.sheets.map((sheet) => ({ ...sheet }));
+  state.items = doc.items.map((item) => ({ ...item }));
+  state.paper = typeof doc.paper === 'string' ? doc.paper : { ...doc.paper };
+  state.landscape = doc.landscape;
+  state.margin = doc.margin;
+  state.gap = doc.gap;
+  state.selected = null;
+  settings.rotate = doc.rotate;
+  view.sheet = state.sheets[0].id;
+  undoStack.length = 0;
+  redoStack.length = 0;
+  editKey = null;
+  status.flash = null;
+  const ids = nextIds(doc);
+  nextItemId = ids.item;
+  nextSheetId = ids.sheet;
+  nextAssetId = ids.asset;
+}
+
 // Libera los assets que ya no usa ni la hoja ni el historial.
 function collectGarbage() {
   if (state.busy) return; // puede haber assets recién creados todavía sin item
@@ -236,9 +284,5 @@ function collectGarbage() {
       dropped.push(asset);
     }
   }
-  const alive = [...assets.values()];
-  for (const asset of dropped) {
-    if (!alive.some((other) => other.url === asset.url)) URL.revokeObjectURL(asset.url);
-    if (asset.pdf && !alive.some((other) => other.pdf === asset.pdf)) asset.pdf.destroy();
-  }
+  release(dropped, [...assets.values()]);
 }
