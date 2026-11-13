@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
-import { fillHtml } from './src/copy/index.ts';
+import { fillStaticCopy } from './src/copy/index.ts';
 
 // The node_modules package a module belongs to («pdf-lib», «@scope/x»).
 const packageOf = (id: string | null | undefined) => id?.match(/node_modules[\\/]((?:@[^\\/]+[\\/])?[^\\/]+)[\\/]/)?.[1].replace('\\', '/');
@@ -9,10 +9,10 @@ export default defineConfig({
   plugins: [
     react(),
     {
-      // Fills the data-i18n attributes of index.html with the texts in src/copy, in dev
-      // and in the build, so the page arrives with its texts (no flash).
-      name: 'pliego-copy',
-      transformIndexHtml: (html: string) => fillHtml(html),
+      // The few texts index.html carries itself (title, description, no-JavaScript
+      // message) come from src/copy, like every other text.
+      name: 'static-copy',
+      transformIndexHtml: (html: string) => fillStaticCopy(html),
     },
   ],
   test: {

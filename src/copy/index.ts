@@ -12,9 +12,8 @@
 // Another language: a sibling file with the same keys (en.ts) chosen in
 // `messages`; missing keys fall back to Spanish.
 //
-// The static HTML uses data-i18n attributes (see ATTRIBUTES): Vite fills them
-// when serving and building (fillHtml, in vite.config.ts) so the page arrives
-// with its texts; applyCopy does the same in the browser (for {mod}).
+// index.html has `{{key}}` placeholders for the few texts it carries itself
+// (fillStaticCopy, from vite.config.ts); the rest is rendered by React.
 
 import { APP_NAME } from '../config.ts';
 import es from './es.ts';
@@ -92,15 +91,6 @@ export function splitLink(key: CopyKey, params?: CopyParams): [string, string | 
   return match ? [match[1], match[2], match[3]] : [text, null, ''];
 }
 
-/** The same as a DocumentFragment, with the element `makeLink(text)` builds (nothing is parsed as HTML). */
-export function linkedText(key: CopyKey, params: CopyParams | undefined, makeLink: (text: string) => Node) {
-  const [before, link, after] = splitLink(key, params);
-  const fragment = document.createDocumentFragment();
-  if (link === null) fragment.append(before);
-  else fragment.append(before, makeLink(link), after);
-  return fragment;
-}
-
 /** Visible name of a key or combination («Mod+Shift+Z» → «Ctrl+Shift+Z»). */
 export const keyLabel = (combo: string) =>
   combo
@@ -111,54 +101,13 @@ export const keyLabel = (combo: string) =>
     })
     .join('+');
 
-// ---------- HTML ----------
-
-/** Attribute with the key → where the text goes (null: the element's content). */
-const ATTRIBUTES: Record<string, string | null> = {
-  'data-i18n': null,
-  'data-i18n-label': 'aria-label',
-  'data-i18n-tip': 'data-tip',
-  'data-i18n-note': 'data-tip-note',
-  'data-i18n-content': 'content',
-};
+// ---------- Static HTML ----------
 
 const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const parseParams = (json: string | undefined): CopyParams => (json ? JSON.parse(json) : {});
-
 /**
- * Fills the texts of the static HTML (in Node, from vite.config.ts). Elements
- * with data-i18n have to come empty: `<span data-i18n="x"></span>`.
+ * Fills the `{{key}}` placeholders of index.html with their texts (from
+ * vite.config.ts), so the title, the description and the no-JavaScript
+ * message come in the page itself.
  */
-export function fillHtml(html: string): string {
-  return html.replace(/<([a-z][\w-]*)(\s(?:[^>]*?\s)?data-i18n[^>]*?)(\s*\/?)>(<\/\1>)?/gi, (tag, name: string, attrs: string, slash: string, close?: string) => {
-    const read = (attr: string) => attrs.match(new RegExp(`\\s${attr}="([^"]*)"`))?.[1];
-    const params = parseParams(attrs.match(/\sdata-i18n-params='([^']*)'/)?.[1]);
-    let extra = '';
-    let text: string | null = null;
-    for (const [source, target] of Object.entries(ATTRIBUTES)) {
-      const key = read(source) as CopyKey | undefined;
-      if (!key) continue;
-      if (target === null) text = escapeHtml(t(key, params));
-      else extra += ` ${target}="${escapeHtml(t(key, params))}"`;
-    }
-    if (text !== null && close === undefined) throw new Error(`data-i18n on an element that is not empty: ${tag}`);
-    return `<${name}${attrs}${extra}${slash}>${text ?? ''}${close ?? ''}`;
-  });
-}
-
-/** The same as fillHtml, on the DOM (on start or if the language changes). */
-export function applyCopy(root: ParentNode = document) {
-  const selector = Object.keys(ATTRIBUTES)
-    .map((attr) => `[${attr}]`)
-    .join(',');
-  for (const el of root.querySelectorAll<HTMLElement>(selector)) {
-    const params = parseParams(el.dataset.i18nParams);
-    for (const [source, target] of Object.entries(ATTRIBUTES)) {
-      const key = el.getAttribute(source) as CopyKey | null;
-      if (!key) continue;
-      if (target === null) el.textContent = t(key, params);
-      else el.setAttribute(target, t(key, params));
-    }
-  }
-}
+export const fillStaticCopy = (html: string) => html.replace(/\{\{([\w.]+)\}\}/g, (_, key: string) => escapeHtml(t(key as CopyKey)));

@@ -190,7 +190,11 @@ const { open, makeChecker, helpers, overlaps, FIX, path, norm } = require('../li
   await page.reload();
   await page.waitForSelector('#paper option', { state: 'attached' });
   await page.waitForFunction(() => !document.body.classList.contains('is-loading'));
+  // The dialog's contents load when it opens (they are not in the page while closed).
+  await page.click('#prefs-open');
+  await page.waitForSelector('#prefs[open] #single-keys');
   check('«atajos de una tecla» apagados se recuerdan al recargar', await page.evaluate(() => !document.getElementById('single-keys').checked));
+  await k.press('Escape');
   check('sin errores de consola', errors.length === 0, errors.join(' | '));
   const failures = report();
   await browser.close();

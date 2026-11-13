@@ -1,0 +1,243 @@
+// The sheets on screen, one below the other (like pages): size (zoom), pieces,
+// selection frames, current sheet and the pointer gestures.
+
+import { FilePlus, Trash2, Upload } from 'lucide-react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FocusEvent } from 'react';
+import { t } from '../../copy/index.ts';
+import type { Unit } from '../../core/units.js';
+import { useCanvasGestures } from '../../hooks/useCanvasGestures.ts';
+import { useShortcut } from '../../hooks/shortcuts.ts';
+import { paperTitle, sizeText } from '../../services/measure.ts';
+import { getAsset } from '../../state/assets.ts';
+import { useDocument, type Piece as PieceData } from '../../state/document.ts';
+import { isDragging } from '../../state/gesture.ts';
+import { usePrefs, type GridPrefs } from '../../state/prefs.ts';
+import { currentSheet, sheetIndex, sheetSize } from '../../state/selectors.ts';
+import { getView, setView, useView } from '../../state/view.ts';
+import { openFiles } from '../../state/actions/files.ts';
+import { focusPiece } from '../../state/actions/selection.ts';
+import { addSheet, removeSheet } from '../../state/actions/sheets.ts';
+import { Icon } from '../ui/Icon.tsx';
+import { Piece } from './Piece.tsx';
+import { SelectionOverlay } from './SelectionOverlay.tsx';
+
+/**
+ * Zoom so that a sheet (with its heading and, below, the button to add
+ * another) fits comfortably in the visible height; the rest scrolls.
+ */
+function computeZoom(stage: HTMLElement, W: number, H: number) {
+  const sheets = stage.querySelector<HTMLElement>('#sheets')!;
+  const foot = sheets.querySelector<HTMLElement>('.sheets-foot')!;
+  const style = getComputedStyle(stage);
+  const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+  const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+  const head = sheets.querySelector<HTMLElement>('.page-head')?.offsetHeight ?? 0;
+  const gap = parseFloat(getComputedStyle(sheets).rowGap) || 0;
+  const footSpace = foot.offsetHeight + gap + parseFloat(getComputedStyle(foot).marginTop || '0');
+  const availW = stage.clientWidth - padX;
+  const availH = stage.clientHeight - padY - head - footSpace;
+  return Math.max(0.05, Math.min(availW / W, availH / H));
+}
+
+/**
+ * Fine lines every `size` mm and stronger ones every 5 or 10 cells, drawn with
+ * gradients scaled to the zoom. Fine lines closer than ~6 px are left out.
+ */
+function gridStyle({ size }: GridPrefs, zoom: number) {
+  const MIN_PX = 6;
+  let minor = size * zoom;
+  let major = minor * (size >= 5 ? 5 : 10);
+  while (major < MIN_PX) major *= 2;
+  if (minor < MIN_PX) minor = major;
+  const line = (dir: string, color: string) => `linear-gradient(${dir}, ${color} 1px, transparent 1px)`;
+  return {
+    backgroundImage: [line('to right', 'var(--grid-major)'), line('to bottom', 'var(--grid-major)'), line('to right', 'var(--grid-minor)'), line('to bottom', 'var(--grid-minor)')].join(', '),
+    backgroundSize: [major, major, minor, minor].map((v) => `${v}px ${v}px`).join(', '),
+  };
+}
+
+interface PageProps {
+  id: number;
+  index: number;
+  total: number;
+  items: readonly PieceData[];
+  W: number;
+  H: number;
+  zoom: number;
+  margin: number;
+  empty: boolean;
+  current: boolean;
+  showGrid: boolean;
+  grid: { backgroundImage: string; backgroundSize: string };
+  selection: readonly number[];
+  pinned: boolean;
+  unit: Unit;
+  busy: boolean;
+}
+
+const EmptyDropzone = memo(function EmptyDropzone({ hidden, disabled }: { hidden: boolean; disabled: boolean }) {
+  const singleKeys = usePrefs((s) => s.singleKeys);
+  const shortcut = useShortcut('drop');
+  return (
+    <button type="button" id="empty" className="dropzone" hidden={hidden} disabled={disabled} onClick={openFiles} aria-keyshortcuts={shortcut['aria-keyshortcuts']} data-single="">
+      <span className="dropzone-icon">
+        <Icon icon={Upload} />
+      </span>
+      <span id="empty-text" className="dropzone-title">
+        {t(singleKeys ? 'sheet.drop' : 'sheet.dropNoKeys')}
+      </span>
+      <span id="empty-sub" className="dropzone-sub">
+        {t('sheet.private')}
+      </span>
+    </button>
+  );
+});
+
+const Page = memo(function Page({ id, index, total, items, W, H, zoom, margin, empty, current, showGrid, grid, selection, pinned, unit, busy }: PageProps) {
+  const label = t('sheet.numbered', { i: index + 1, total });
+  const n = items.length;
+  const many = selection.length > 1;
+  return (
+    <div className={current ? 'page is-current' : 'page'} data-sheet={id} style={{ width: `${W * zoom}px` }}>
+      <div className="page-head">
+        <span className="page-label">{label}</span>
+        <button
+          type="button"
+          className="icon-btn small page-remove"
+          data-tip={t('sheet.remove')}
+          aria-label={t('sheet.removeLabel', { i: index + 1 })}
+          hidden={total < 2}
+          onClick={(e) => void removeSheet(id, { viaKeyboard: e.detail === 0 })}
+        >
+          <Icon icon={Trash2} />
+        </button>
+      </div>
+      <div className="sheet-box" style={{ width: `${W * zoom}px`, height: `${H * zoom}px` }}>
+        <div className="sheet" role="group" tabIndex={-1} aria-label={n ? t('sheet.groupLabel', { label, n }) : t('sheet.groupEmpty', { label })}>
+          <div className="grid-layer" aria-hidden="true" hidden={!showGrid} style={showGrid ? grid : undefined} />
+          <div className="safe" aria-hidden="true" hidden={margin <= 0 || empty} style={{ inset: `${margin * zoom}px` }} />
+          {index === 0 && <EmptyDropzone hidden={!empty} disabled={busy} />}
+          <p className="sheet-empty" aria-hidden="true" hidden={n > 0 || (empty && index === 0)}>
+            {t('sheet.emptyHint')}
+          </p>
+          {items.map((item) => {
+            const selected = selection.includes(item.id);
+            return (
+              <Piece
+                key={item.id}
+                item={item}
+                asset={getAsset(item.asset)}
+                zoom={zoom}
+                selected={selected}
+                grouped={selected && many}
+                marked={selected && (many || pinned)}
+                unit={unit}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const NO_ITEMS: readonly PieceData[] = [];
+
+export function Stage() {
+  const stage = useRef<HTMLDivElement>(null);
+  const sheets = useDocument((s) => s.sheets);
+  const items = useDocument((s) => s.items);
+  const selection = useDocument((s) => s.selection);
+  const busy = useDocument((s) => s.busy);
+  const paper = useDocument((s) => s.paper);
+  const landscape = useDocument((s) => s.landscape);
+  const margin = useDocument((s) => s.margin);
+  const zoom = useView((s) => s.zoom);
+  const animating = useView((s) => s.animating);
+  const pinned = useView((s) => s.pinned);
+  const viewSheet = useView((s) => s.sheet);
+  const grid = usePrefs((s) => s.grid);
+  const unit = usePrefs((s) => s.unit);
+  const [layout, setLayout] = useState(0);
+
+  const [W, H] = sheetSize({ paper, landscape, margin });
+  const empty = items.length === 0;
+  const current = currentSheet({ items, selection, sheets }, viewSheet);
+  const bySheet = useMemo(() => {
+    const map = new Map<number, PieceData[]>(sheets.map((sheet) => [sheet.id, []]));
+    for (const item of items) map.get(item.sheet)?.push(item);
+    return map;
+  }, [items, sheets]);
+  const gridCss = useMemo(() => gridStyle(grid, zoom), [grid, zoom]);
+
+  // The zoom follows the paper and the stage's size (not while dragging).
+  const updateZoom = useCallback(() => {
+    if (!stage.current) return;
+    const next = computeZoom(stage.current, ...sheetSize());
+    if (next !== getView().zoom) setView({ zoom: next });
+    setLayout((n) => n + 1);
+  }, []);
+  useLayoutEffect(updateZoom, [W, H, updateZoom]);
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      if (!isDragging()) updateZoom();
+    });
+    observer.observe(stage.current!);
+    return () => observer.disconnect();
+  }, [updateZoom]);
+
+  useCanvasGestures(stage);
+
+  // Focusing a piece selects it (unless the selection is pinned); focusing
+  // something on a sheet makes it the current one.
+  const onFocus = (e: FocusEvent<HTMLDivElement>) => {
+    const target = e.target as Element;
+    const node = target.closest<HTMLElement>('.piece');
+    if (node) return focusPiece(Number(node.dataset.id));
+    const page = target.closest<HTMLElement>('.page');
+    if (page) {
+      const id = Number(page.dataset.sheet);
+      if (getView().sheet !== id && sheetIndex(id) >= 0) setView({ sheet: id });
+    }
+  };
+
+  return (
+    <div id="stage" className="stage" ref={stage}>
+      <div id="sheets" className={animating ? 'sheets is-animating' : 'sheets'} data-many={sheets.length > 1 ? '' : undefined} onFocus={onFocus}>
+        {sheets.map((sheet, i) => (
+          <Page
+            key={sheet.id}
+            id={sheet.id}
+            index={i}
+            total={sheets.length}
+            items={bySheet.get(sheet.id) ?? NO_ITEMS}
+            W={W}
+            H={H}
+            zoom={zoom}
+            margin={margin}
+            empty={empty}
+            current={sheet.id === current}
+            showGrid={grid.show}
+            grid={gridCss}
+            selection={selection}
+            pinned={pinned}
+            unit={unit}
+            busy={busy}
+          />
+        ))}
+        <div id="drag-layer" className="drag-layer" />
+        <SelectionOverlay layout={layout} />
+        <div className="sheets-foot">
+          <p id="paper-label" className="paper-label">
+            {t('sheet.paperLabel', { paper: paperTitle(), size: sizeText(W, H) })}
+          </p>
+          <button type="button" id="add-sheet" className="add-sheet" data-tip={t('sheet.addTip')} disabled={busy} onClick={() => addSheet()}>
+            <Icon icon={FilePlus} />
+            <span>{t('sheet.add')}</span>
+          </button>
+        </div>
+        <div className="marquee" hidden aria-hidden="true" />
+      </div>
+    </div>
+  );
+}

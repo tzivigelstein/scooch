@@ -1,0 +1,61 @@
+// The floating toolbar of the selected piece (or pieces): a toolbar with a
+// roving tab stop. Its position is painted by selection.ts.
+
+import { Copy, RotateCcw, RotateCw, Trash2 } from 'lucide-react';
+import { useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { t } from '../../copy/index.ts';
+import { getAsset } from '../../state/assets.ts';
+import { useDocument } from '../../state/document.ts';
+import { duplicate, remove, rotate } from '../../state/actions/pieces.ts';
+import { IconButton } from '../ui/Button.tsx';
+
+const ACTIONS = ['rotate-left', 'rotate-right', 'duplicate', 'remove'] as const;
+type Action = (typeof ACTIONS)[number];
+
+export function PieceToolbar() {
+  const selection = useDocument((s) => s.selection);
+  const items = useDocument((s) => s.items);
+  const [stop, setStop] = useState(0);
+  const n = selection.length;
+  const primary = items.find((item) => item.id === selection.at(-1));
+  const label = n > 1 ? t('piecebar.labelGroup', { n }) : primary ? t('piecebar.labelFor', { name: getAsset(primary.asset).name }) : t('piecebar.label');
+
+  const run = (action: Action, e: MouseEvent) => {
+    const viaKeyboard = e.detail === 0;
+    if (action === 'remove') return remove({ focus: viaKeyboard });
+    if (action === 'rotate-left') return rotate(-1);
+    if (action === 'rotate-right') return rotate(1);
+    duplicate(1);
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const buttons = [...e.currentTarget.querySelectorAll('button')];
+    const i = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (i < 0) return;
+    const count = buttons.length;
+    const next = ({ ArrowRight: (i + 1) % count, ArrowLeft: (i - 1 + count) % count, Home: 0, End: count - 1 } as Record<string, number>)[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setStop(next);
+    buttons[next].focus();
+  };
+
+  const props = (action: Action) => ({
+    'data-action': action,
+    tabIndex: ACTIONS.indexOf(action) === stop ? 0 : -1,
+    onClick: (e: MouseEvent) => run(action, e),
+    onFocus: () => setStop(ACTIONS.indexOf(action)),
+  });
+
+  return (
+    <div id="piecebar" className="piecebar" role="toolbar" aria-label={label} hidden={!n} onKeyDown={onKeyDown}>
+      <span id="piece-size" className="piecebar-size" aria-hidden="true" />
+      <IconButton icon={RotateCcw} label={t('piecebar.rotateLeft')} tip={t('piecebar.rotateLeftTip')} shortcut="rotateLeft" {...props('rotate-left')} />
+      <IconButton icon={RotateCw} label={t('piecebar.rotateRight')} tip={t('piecebar.rotateRightTip')} shortcut="rotateRight" {...props('rotate-right')} />
+      <IconButton icon={Copy} label={t('piecebar.duplicate')} tip={t('piecebar.duplicate')} shortcut="duplicate" {...props('duplicate')} />
+      <span className="piecebar-sep" aria-hidden="true" />
+      <IconButton icon={Trash2} className="icon-btn danger" label={t('piecebar.remove')} tip={t('piecebar.removeTip')} shortcut="remove" {...props('remove')} />
+    </div>
+  );
+}

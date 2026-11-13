@@ -127,7 +127,11 @@ async function selectSame() {
   await L.piece(pdf).focus();
   await p.keyboard.press('i');
   check('I con el PDF: también la copia en la página 2', JSON.stringify(await L.selectedIds()) === JSON.stringify([pdf, pdfCopy].sort((a, b) => a - b)));
+  // The dialog's contents load when it opens (they are not in the page while closed).
+  await p.click('#help');
+  await p.waitForSelector('#shortcuts[open] #shortcuts-rows tr');
   check('el atajo figura en el diálogo', await p.evaluate(() => [...document.querySelectorAll('#shortcuts-rows tr')].some((r) => /mismo archivo/.test(r.textContent) && /\bI\b/.test(r.cells[0].textContent))));
+  await p.keyboard.press('Escape');
   errors.push(...s.errors);
   await s.browser.close();
 }

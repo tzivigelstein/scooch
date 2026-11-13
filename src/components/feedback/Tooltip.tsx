@@ -1,0 +1,153 @@
+// Tooltips for the elements with `data-tip` (and `data-kbd` for the shortcut,
+// `data-tip-note` for a note). They show with the mouse (after a short delay)
+// and with the keyboard focus; the pointer can move onto them, and Esc closes
+// them without moving the focus (WCAG 1.4.13).
+
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { clamp } from '../../core/util.ts';
+import { usePrefs } from '../../state/prefs.ts';
+
+interface Tip {
+  el: HTMLElement;
+  label: string;
+  keys: string[];
+  note: string | null;
+}
+
+export function Tooltip() {
+  const tip = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState<Tip | null>(null);
+  const singleKeys = usePrefs((s) => s.singleKeys);
+  const state = useRef({ target: null as HTMLElement | null, showTimer: 0 as ReturnType<typeof setTimeout> | 0, hideTimer: 0 as ReturnType<typeof setTimeout> | 0, lastPointer: -Infinity, singleKeys });
+
+  // The shortcut shows unless it is a single-key one and those are off.
+  const tipOf = (el: HTMLElement): Tip => ({
+    el,
+    label: el.dataset.tip ?? '',
+    keys: el.dataset.kbd && (el.dataset.single === undefined || state.current.singleKeys) ? el.dataset.kbd.split(' ') : [],
+    note: el.dataset.tipNote ?? null,
+  });
+
+  useEffect(() => {
+    const s = state.current;
+    const hide = () => {
+      clearTimeout(s.showTimer);
+      clearTimeout(s.hideTimer);
+      if (!s.target) return;
+      s.target = null;
+      setShown(null);
+    };
+    const show = (el: HTMLElement) => {
+      clearTimeout(s.hideTimer);
+      if (!el.isConnected || el.closest('[hidden]')) return;
+      s.target = el;
+      setShown(tipOf(el));
+    };
+    const scheduleHide = () => {
+      clearTimeout(s.hideTimer);
+      s.hideTimer = setTimeout(hide, 120);
+    };
+    const onPointerOver = (e: PointerEvent) => {
+      if (e.pointerType === 'touch') return;
+      const target = e.target as Element;
+      const el = target.closest?.<HTMLElement>('[data-tip]') ?? null;
+      if (el === s.target) return clearTimeout(s.hideTimer);
+      if (tip.current?.contains(target)) return clearTimeout(s.hideTimer);
+      if (!el) return;
+      clearTimeout(s.showTimer);
+      s.showTimer = setTimeout(() => show(el), s.target ? 0 : 300);
+    };
+    const onPointerOut = (e: PointerEvent) => {
+      const target = e.target as Element;
+      const el = target.closest?.('[data-tip]');
+      const to = e.relatedTarget as Node | null;
+      if (el && el.contains(to)) return;
+      if (!el && !tip.current?.contains(target)) return;
+      clearTimeout(s.showTimer);
+      if (to && (tip.current?.contains(to) || s.target?.contains(to))) return;
+      scheduleHide();
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      clearTimeout(s.showTimer); // the focus wins over a pending hover
+      const el = (e.target as Element).closest?.<HTMLElement>('[data-tip]');
+      const fromPointer = performance.now() - s.lastPointer < 800;
+      if (el && el.matches(':focus-visible') && !fromPointer) show(el);
+      else if (s.target) hide();
+    };
+    const onPointerDown = () => {
+      s.lastPointer = performance.now();
+      hide();
+    };
+    // With the keyboard, the next focus is a keyboard one.
+    const onKeyDown = () => (s.lastPointer = -Infinity);
+    // Esc closes the tooltip without moving the focus and does nothing else. In
+    // a panel or a dialog, Esc also does its own thing (back to the piece,
+    // close), and the tooltip goes with it.
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || !s.target) return;
+      const inOverlay = (e.target as Element).closest?.('.panel, dialog') || s.target.closest('.panel, dialog');
+      hide();
+      if (inOverlay) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    };
+    document.addEventListener('pointerover', onPointerOver);
+    document.addEventListener('pointerout', onPointerOut);
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', hide);
+    document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('keydown', onEscape, true);
+    window.addEventListener('scroll', hide, true);
+    return () => {
+      document.removeEventListener('pointerover', onPointerOver);
+      document.removeEventListener('pointerout', onPointerOut);
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', hide);
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('keydown', onEscape, true);
+      window.removeEventListener('scroll', hide, true);
+      clearTimeout(s.showTimer);
+      clearTimeout(s.hideTimer);
+    };
+  }, []);
+
+  // A preference change redraws the visible tooltip.
+  useEffect(() => {
+    state.current.singleKeys = singleKeys;
+    if (state.current.target) setShown(tipOf(state.current.target));
+  }, [singleKeys]);
+
+  // Below if it belongs to the top bar or there is no room above; otherwise above.
+  useLayoutEffect(() => {
+    const el = tip.current;
+    if (!shown || !el) return;
+    const r = shown.el.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const gap = 8;
+    const below = shown.el.closest('.topbar') || r.top - h - gap < 4;
+    const top = below ? r.bottom + gap : r.top - h - gap;
+    const left = clamp(r.left + r.width / 2 - w / 2, 6, vw - w - 6);
+    el.style.left = `${Math.round(left)}px`;
+    el.style.top = `${Math.round(top)}px`;
+  }, [shown]);
+
+  return (
+    <div ref={tip} id="tooltip" className="tooltip" role="tooltip" hidden={!shown}>
+      {shown && (
+        <>
+          <span className="tip-line">
+            <span>{shown.label}</span>
+            {shown.keys.map((key, i) => (
+              <kbd key={i}>{key}</kbd>
+            ))}
+          </span>
+          {shown.note && <span className="tip-note">{shown.note}</span>}
+        </>
+      )}
+    </div>
+  );
+}

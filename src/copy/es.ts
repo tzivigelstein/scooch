@@ -17,6 +17,8 @@ const es = {
     heading: '{app}: acomoda imágenes y PDF en una hoja a tamaño real',
     skip: 'Ir a la hoja',
     printOnly: 'Para imprimir a tamaño real, usa el botón Imprimir de {app}',
+    // Without JavaScript the page shows only this
+    noscript: 'Para usar {app}, activa JavaScript en el navegador',
     close: 'Cerrar',
   },
 
