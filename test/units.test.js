@@ -9,6 +9,7 @@ import {
   formatLength,
   parseLength,
   stepFor,
+  stepLabel,
   gridPresets,
   unitLabel,
 } from '../src/units.js';
@@ -265,6 +266,22 @@ describe('pasos y grilla', () => {
       assert.ok(stepFor(u, 'fine').mm < stepFor(u).mm && stepFor(u).mm < stepFor(u, 'coarse').mm, u);
     }
     assert.throws(() => stepFor('mm', 'huge'), RangeError);
+  });
+
+  test('stepLabel', () => {
+    assert.deepEqual(['fine', 'normal', 'coarse'].map((s) => stepLabel('mm', s)), ['0,1', '1', '10']);
+    assert.deepEqual(['fine', 'normal', 'coarse'].map((s) => stepLabel('cm', s)), ['0,01', '0,1', '1']);
+    assert.deepEqual(['fine', 'normal', 'coarse'].map((s) => stepLabel('in', s)), ['1/64', '1/16', '1/2']);
+    assert.equal(stepLabel('cm', 'fine', { locale: 'en' }), '0.01');
+    assert.equal(stepLabel('mm'), '1');
+    // Lo que se muestra es lo que se lee: vuelve a dar el mismo paso.
+    for (const u of ['mm', 'cm', 'in']) {
+      for (const size of ['fine', 'normal', 'coarse']) {
+        assert.ok(close(parseLength(stepLabel(u, size), u), stepFor(u, size).mm), `${u} ${size}`);
+      }
+    }
+    assert.throws(() => stepLabel('pt'), RangeError);
+    assert.throws(() => stepLabel('mm', 'huge'), RangeError);
   });
 
   test('gridPresets', () => {

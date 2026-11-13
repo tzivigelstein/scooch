@@ -165,6 +165,18 @@ export function stepFor(unit, size = 'normal') {
   return { value: steps[size], mm: steps[size] * MM_PER[unit] };
 }
 
+// Pasos en pulgadas como fracción (así se los conoce): 1/64, 1/16, 1/2.
+const STEP_FRACTIONS = { in: { fine: '1/64', normal: '1/16', coarse: '1/2' } };
+
+/**
+ * El paso de `stepFor(unit, size)` para mostrarlo, solo el número: «0,1»,
+ * «1», «10» en mm; «0,01», «0,1», «1» en cm; «1/64», «1/16», «1/2» en in.
+ */
+export function stepLabel(unit, size = 'normal', { locale = 'es' } = {}) {
+  const { value } = stepFor(unit, size);
+  return STEP_FRACTIONS[unit]?.[size] ?? numberFormat(locale, decimalsFor(unit)).format(value);
+}
+
 const GRIDS = {
   mm: [
     [1, 1, null],
