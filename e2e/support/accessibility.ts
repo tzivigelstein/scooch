@@ -383,6 +383,9 @@ export interface CheckOptions {
  * emulateMedia) and leaves the page in light. Findings are soft assertions:
  * the flow goes on and the report lists every state that failed.
  */
+/** Extra test time per scanned state (two themes, axe and the detectors). */
+const STATE_BUDGET_MS = 20_000;
+
 export class Catalogue {
   scans = 0;
   constructor(
@@ -407,6 +410,9 @@ export class Catalogue {
   }
 
   async state(name: string, options: CheckOptions = {}) {
+    // Each state is two axe scans plus the detectors: a walk through many
+    // states gets time for each of them, not one cap for the whole walk.
+    this.info.setTimeout(this.info.timeout + STATE_BUDGET_MS);
     await test.step(`«${name}»`, async () => {
       await settle(this.page, !!options.keepPointer);
       for (const scheme of SCHEMES) {
