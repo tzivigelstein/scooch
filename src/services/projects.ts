@@ -15,7 +15,7 @@
 
 import { JOURNAL_PREFIX, JOURNAL_STORAGE, LAST_PROJECT_STORAGE, TABS_CHANNEL } from '../config.ts';
 import { DEFAULT_CUTS, ProjectError, assetMeta, fileKeys, nextIds, serialize } from '../core/projectdoc.js';
-import { nextIdsOf, parseHistory, serializeHistory } from '../core/undostore.js';
+import { nextIdsOf, parseClip, parseHistory, serializeClip, serializeHistory } from '../core/undostore.js';
 import {
   cleanName,
   createProject,
@@ -32,7 +32,7 @@ import {
   touchProject,
   type Journal,
 } from '../core/projectstore.js';
-import type { ProjectDoc, ProjectRecord, ProjectStorage, StoredFile, StoredHistory } from '../core/types.ts';
+import type { Crop, ProjectDoc, ProjectRecord, ProjectStorage, Rotation, StoredFile, StoredHistory } from '../core/types.ts';
 import { t } from '../copy/index.ts';
 import { adoptAssets, allAssets, assetGeneration, findAsset, getAsset, replaceAssets } from '../state/assets.ts';
 import { getDocument, resetIds, setDocument, useDocument, type Piece } from '../state/document.ts';
@@ -493,6 +493,87 @@ async function restoreHistory(id: string, saved: SavedHistory) {
     console.warn('The undo history could not be restored.', err);
   } finally {
     if (session.record?.id === id) session.historyReady = true;
+  }
+}
+
+// ---------- The cut pieces ----------
+//
+// What «Cortar» took is saved (in the clipboard store, with the binaries it
+// needs) until it is pasted or another copy replaces it: reloading after
+// cutting loses nothing. One clipboard for the browser, like the system's.
+
+/** A piece in the clipboard: its asset (with its binaries and hashes) and how it was. */
+export interface CutPiece {
+  asset: AppAsset;
+  scale: number;
+  r: Rotation;
+  crop: Crop | null;
+}
+
+/** Saves the pieces just cut. */
+export async function keepCut(pieces: readonly CutPiece[]) {
+  const storage = session.storage;
+  if (!storage) return;
+  try {
+    await Promise.all(pieces.filter((piece) => !piece.asset.hashes).map((piece) => withHashes(piece.asset)));
+    // Keys of their own for the clipboard's assets (one per asset).
+    const keys = new Map<AppAsset, string>();
+    for (const { asset } of pieces) if (!keys.has(asset)) keys.set(asset, `a${keys.size + 1}`);
+    const byKey = new Map([...keys].map(([asset, key]) => [key, asset]));
+    const fileOf = (fileKey: string) => {
+      const [kind, ref] = fileKey.split(':');
+      const asset = kind === 'preview' ? byKey.get(ref) : [...keys.keys()].find((a) => String(a.src) === ref && (kind !== 'bytes' || (a.kind === 'image' && a.derived)));
+      return asset && { asset, kind: kind === 'src' ? ('original' as const) : (kind as 'bytes' | 'preview') };
+    };
+    const record = serializeClip(
+      pieces.map((piece) => ({ asset: keys.get(piece.asset)!, scale: piece.scale, r: piece.r, crop: piece.crop })),
+      (key) => assetMeta(byKey.get(key)!),
+      (fileKey) => {
+        const file = fileOf(fileKey);
+        return file?.asset.hashes?.[file.kind === 'original' ? 'src' : file.kind];
+      }
+    );
+    const blobs = new Map<string, Blob>();
+    for (const [fileKey, hash] of Object.entries(record?.files ?? {})) {
+      const file = fileOf(fileKey)!;
+      blobs.set(hash, assetBlob(file.asset, file.kind));
+    }
+    await storage.setClip(record, blobs);
+    scheduleGarbage();
+  } catch (err) {
+    console.warn('The cut pieces could not be saved.', err);
+  }
+}
+
+/** The saved cut pieces are no longer needed (pasted, or replaced by a copy). */
+export async function forgetCut() {
+  const storage = session.storage;
+  if (!storage) return;
+  try {
+    if (!(await storage.clip())) return;
+    await storage.setClip(null);
+    scheduleGarbage();
+  } catch (err) {
+    console.warn('The saved cut pieces could not be removed.', err);
+  }
+}
+
+/** The pieces cut before the page was reloaded, with their assets loaded, or null. */
+export async function loadCut(): Promise<CutPiece[] | null> {
+  const storage = session.storage;
+  if (!storage) return null;
+  try {
+    const saved = parseClip(await storage.clip());
+    if (!saved) return null;
+    const keys = fileKeys({ assets: saved.assets });
+    const blobs = await storage.blobs(keys.map((key) => saved.files[key]));
+    if (keys.some((key) => !blobs.has(saved.files[key]))) return null;
+    const files = new Map(keys.map((key) => [key, { blob: blobs.get(saved.files[key])!, hash: saved.files[key] }]));
+    const assets = await restoreAssets({ assets: saved.assets }, files);
+    return saved.pieces.map((piece) => ({ asset: assets.get(piece.asset)!, scale: piece.scale, r: piece.r, crop: piece.crop }));
+  } catch (err) {
+    console.warn('The saved cut pieces could not be read.', err);
+    return null;
   }
 }
 

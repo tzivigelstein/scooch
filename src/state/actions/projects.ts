@@ -12,6 +12,7 @@ import { setView } from '../view.ts';
 import { setBusy } from './files.ts';
 import { scrollToStart } from '../../components/canvas/viewport.ts';
 import { focusSheet, pieceNode } from './focus.ts';
+import { restoreCut } from './clipboard.ts';
 import { forgetSpill } from './layout.ts';
 import { say } from './notify.ts';
 import { openProjects } from './dialogs.ts';
@@ -138,4 +139,5 @@ export async function startProjects() {
   clearTimeout(slow);
   setDocument({ busy: false });
   setView({ busyText: '', loading: false });
+  void restoreCut();
 }

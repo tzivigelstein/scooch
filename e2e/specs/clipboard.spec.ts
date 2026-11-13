@@ -1,8 +1,10 @@
 // The clipboard shortcuts with the real keyboard: Ctrl+C / Ctrl+V and Ctrl+D
 // reach their actions, select what they added and are one undo step each; an
-// image on the system clipboard is decoded into a piece. Every combination of
+// image on the system clipboard is decoded into a piece; what is cut survives
+// a reload until it is pasted. Every combination of
 // selection × «Permitir superposición» × action is in tests/state/clipboard.test.ts.
 import { overlapping } from '../support/geometry.ts';
+import { saved } from '../support/projects.ts';
 import { cards, expect, test } from '../support/test.ts';
 
 test.describe('pieces', () => {
@@ -26,6 +28,23 @@ test.describe('pieces', () => {
     expect(overlapping(g.pieces)).toEqual([]);
     await app.undo();
     await expect.poll(() => app.snapshot()).toBe(before);
+  });
+
+  test('Ctrl+X, a reload and Ctrl+V: the cut piece comes back, its image loaded', async ({ app, page }) => {
+    const [first, second] = await app.ids();
+    const name = (await app.geometry()).pieces.find((p) => p.id === second)!.name;
+    await app.selectIds([second]);
+    await page.keyboard.press('Control+x');
+    await expect(app.pieces()).toHaveCount(1);
+    await saved(page);
+    await page.reload();
+    await app.ready();
+    await expect(app.pieces()).toHaveCount(1);
+    await app.selectIds([first]);
+    await page.keyboard.press('Control+v');
+    await expect(app.pieces()).toHaveCount(2);
+    expect((await app.geometry()).pieces.map((p) => p.name).sort()).toEqual([(await app.geometry()).pieces.find((p) => p.id === first)!.name, name].sort());
+    await expect.poll(() => page.evaluate(() => [...document.querySelectorAll<HTMLImageElement>('#sheets .piece img')].every((img) => img.complete && img.naturalWidth > 0))).toBe(true);
   });
 
   test('Ctrl+D duplicates the selection, selected, in one undo step', async ({ app, page }) => {

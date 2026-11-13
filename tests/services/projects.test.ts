@@ -43,6 +43,7 @@ async function start(storage: ProjectStorage = memoryStorage()) {
   const { redoLast, undoLast } = await import('../../src/state/actions/edit.ts');
   const { endEdit } = await import('../../src/state/history.ts');
   const { getAsset } = await import('../../src/state/assets.ts');
+  const clipboard = await import('../../src/state/actions/clipboard.ts');
   const support = await import('../support/state.ts');
   const notices: string[] = [];
   support.resetState();
@@ -56,7 +57,7 @@ async function start(storage: ProjectStorage = memoryStorage()) {
   };
   /** The open project as stored. */
   const stored = async () => (await storage.get(projects.projectSession().record!.id))!;
-  return { projects, storage, status, x, addPiece, stored, nudge, remove, undoLast, redoLast, endEdit, historyDepth, getDocument, setDocument, getAsset, support, notices };
+  return { projects, storage, status, x, addPiece, stored, nudge, remove, undoLast, redoLast, endEdit, historyDepth, getDocument, setDocument, getAsset, clipboard, support, notices };
 }
 
 beforeEach(() => {
@@ -397,6 +398,62 @@ describe('the undo history saved with the project', () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(storage.blobCount(), 'the removed piece’s original and preview went').toBe(binaries - 2);
     expect((await app.stored()).doc.items).toHaveLength(1);
+  });
+});
+
+describe('the cut pieces', () => {
+  /** A project with two pieces of different files, saved, and piece 2 cut. */
+  async function cutSecond(storage = memoryStorage()) {
+    const app = await start(storage);
+    const photo = app.support.fakeImageMm(40, 30, { name: 'foto.png', src: 1 });
+    const other = app.support.fakeImageMm(20, 20, { name: 'otra.png', src: 2 });
+    app.setDocument({ items: [app.support.piece(1, photo, 20, 20), app.support.piece(2, other, 100, 20, { r: 90 })], selection: [2] });
+    await vi.advanceTimersByTimeAsync(0);
+    app.clipboard.cutSelection();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(app.getDocument().items.map((item) => item.id)).toEqual([1]);
+    return app;
+  }
+
+  test('cutting and reloading: the pieces are still in the clipboard and paste back with their files; once pasted, they aren’t saved any more', async () => {
+    const app = await cutSecond();
+    expect(await app.storage.clip()).toMatchObject({ id: 'cut', pieces: [{ r: 90 }] });
+    const again = await start(app.storage);
+    expect(again.clipboard.hasClip()).toBe(false);
+    await again.clipboard.restoreCut();
+    expect(again.clipboard.hasClip()).toBe(true);
+    expect(again.clipboard.pastePieces()).toBe(true);
+    const pasted = again.getDocument().items.at(-1)!;
+    expect(pasted).toMatchObject({ r: 90 });
+    expect(again.getAsset(pasted.asset).name).toBe('otra.png');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await again.storage.clip()).toBeNull();
+  });
+
+  test('copying replaces the saved cut pieces', async () => {
+    const app = await cutSecond();
+    app.setDocument({ selection: [1] });
+    app.clipboard.copySelection();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await app.storage.clip()).toBeNull();
+  });
+
+  test('the cut pieces’ files stay stored while they are saved, after the step that cut them left the history too', async () => {
+    const storage = memoryStorage();
+    const app = await cutSecond(storage);
+    const binaries = storage.blobCount();
+    app.setDocument({ selection: [1] });
+    for (let i = 0; i < MAX_UNDO; i++) {
+      app.nudge(1, 0);
+      app.endEdit();
+    }
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(storage.blobCount()).toBe(binaries);
+    const again = await start(storage);
+    await again.clipboard.restoreCut();
+    expect(again.clipboard.pastePieces()).toBe(true);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect((await again.stored()).doc.items).toHaveLength(2);
   });
 });
 

@@ -2,7 +2,9 @@
 // pieces (size, rotation, crop) with their assets, so they paste into any
 // project open in this tab: into another one, the assets are added to it
 // with new source ids. Pasting places the copies in the free gaps from the
-// current sheet on, like duplicating, in one undo step.
+// current sheet on, like duplicating, in one undo step. What is cut is also
+// saved until it is pasted or replaced (services/projects.ts keepCut), so a
+// reload in between loses nothing.
 
 import { MAX_ITEMS } from '../../config.ts';
 import type { Item } from '../../core/types.ts';
@@ -10,6 +12,7 @@ import { t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
 import { revealPieces } from '../../components/canvas/viewport.ts';
 import { newSource, reserveSources, type AppAsset } from '../../services/assets.ts';
+import { forgetCut, keepCut, loadCut } from '../../services/projects.ts';
 import { addAsset, assetEntries, assetGeneration, findAsset, getAsset } from '../assets.ts';
 import { getDocument, newItem, setDocument } from '../document.ts';
 import { flushUi } from '../flush.ts';
@@ -43,25 +46,48 @@ export const hasClip = () => !!clip?.pieces.length;
 /** What goes to the system clipboard as text, so a later outside copy is told apart from ours. */
 export const CLIP_TYPE = 'application/x-scooch-pieces';
 
-/** Copies the selected pieces. Returns how many, or 0. */
-export function copySelection({ quiet = false } = {}) {
+// Copies the selected pieces into the clipboard. Returns how many, or 0.
+function takeSelection() {
   const items = selectedItems();
   if (!items.length) return 0;
   clip = {
     pieces: items.map((item) => ({ key: item.asset, asset: getAsset(item.asset), scale: item.scale, r: item.r, crop: item.crop ? { ...item.crop } : null })),
     generation: assetGeneration(),
   };
-  if (!quiet) announce(t('announce.copied', { n: items.length }));
   return items.length;
 }
 
-/** Cuts the selected pieces: copied, then removed in one undo step. */
+/** Copies the selected pieces (what was cut and saved is replaced). Returns how many, or 0. */
+export function copySelection({ quiet = false } = {}) {
+  const n = takeSelection();
+  if (!n) return 0;
+  void forgetCut();
+  if (!quiet) announce(t('announce.copied', { n }));
+  return n;
+}
+
+/** Cuts the selected pieces: copied (and saved until pasted), then removed in one undo step. */
 export function cutSelection() {
   if (getDocument().busy) return 0;
-  const n = copySelection({ quiet: true });
+  const n = takeSelection();
   if (!n) return 0;
+  void keepCut(clip!.pieces);
   remove({ focus: true, announced: t('announce.cut', { n }) });
   return n;
+}
+
+/**
+ * On start: the pieces cut before the page was reloaded go back to the
+ * clipboard (unless something was copied meanwhile). They paste like pieces
+ * of another project.
+ */
+export async function restoreCut() {
+  if (clip) return;
+  const pieces = await loadCut();
+  if (!pieces || clip) return;
+  // Pasting gives each asset a preview URL of its own (see resolve).
+  for (const { asset } of pieces) URL.revokeObjectURL(asset.url);
+  clip = { pieces: pieces.map((piece) => ({ key: '', ...piece })), generation: -1 };
 }
 
 // The key of a clipboard piece's asset in the open project, adding it if it
@@ -127,5 +153,7 @@ export function pastePieces() {
   focusSheet();
   const sheets = new Set(fresh.map((item) => item.sheet)).size;
   announce(sheets > 1 ? t('announce.pastedSheets', { n, sheets }) : t('announce.pasted', { n, i: sheetIndex(fresh[0].sheet) + 1 }));
+  // Pasted into a project: the saved cut pieces aren't needed any more.
+  void forgetCut();
   return true;
 }
