@@ -189,9 +189,13 @@ async function restoreLast() {
     const broken = list.find((record) => record.id === lastId && (record.damaged || record.newer));
     if (broken) hooks.notify('openFailed', { record: broken, error: Object.assign(new Error('unreadable'), { code: broken.newer ? 'newer' : 'corrupt' }) });
     const id = pickProject(list, lastId);
+    // Another project opening in its place (the last one can't open here, or
+    // isn't there yet: a newer version, a move from the former name that
+    // failed) doesn't become the last opened: a later start tries it again.
+    const remember = !lastId || id === lastId;
     if (id) {
       try {
-        await openProject(id);
+        await openProject(id, { remember });
         return;
       } catch (err) {
         console.warn('The project could not be opened.', err);
@@ -199,7 +203,7 @@ async function restoreLast() {
         hooks.notify('openFailed', { record, error: err });
       }
     }
-    await startNew();
+    await startNew({ remember: !lastId });
   } catch (err) {
     // The database opened but can't be read or written: no saving.
     console.warn('The storage cannot be used.', err);
@@ -228,25 +232,26 @@ const placeholderRecord = (id: string): ProjectRecord => ({
   thumb: null,
 });
 
-async function startNew() {
+async function startNew({ remember = true } = {}) {
   const doc = emptyDoc(currentSettings());
   replacing = true;
   try {
     replaceDocument(doc);
     const record = await createProject(session.storage!, { id: newProjectId(), name: untitled(), now: now(), doc });
-    adopt(record, new Set());
+    adopt(record, new Set(), { remember });
   } finally {
     replacing = false;
   }
 }
 
-// The project becomes the open one (saved just as the document is).
-function adopt(record: ProjectRecord, stored: Set<string>) {
+// The project becomes the open one (saved just as the document is) and, with
+// `remember`, the one to open on the next start.
+function adopt(record: ProjectRecord, stored: Set<string>, { remember = true } = {}) {
   session.record = record;
   session.stored = stored;
   session.savedSig = docSignature();
   session.thumbSig = '';
-  storageSet(LAST_PROJECT_STORAGE, record.id);
+  if (remember) storageSet(LAST_PROJECT_STORAGE, record.id);
   setStatus('saved');
 }
 
@@ -405,7 +410,7 @@ export const list = () => (session.storage ? listProjects(session.storage) : Pro
  * Opens a project: saves the current one, asks other tabs that have it open
  * and reads it. If it fails, the current project stays as it was.
  */
-export async function openProject(id: string) {
+export async function openProject(id: string, { remember = true } = {}) {
   await flush();
   const previous = session.status;
   setStatus('loading');
@@ -417,7 +422,7 @@ export async function openProject(id: string) {
     const use = recovered?.doc ?? doc;
     const loaded = await restoreAssets(use, files);
     replaceDocument(use, loaded);
-    adopt(recovered ? { ...record, name: recovered.name } : record, new Set([...files.keys()]));
+    adopt(recovered ? { ...record, name: recovered.name } : record, new Set([...files.keys()]), { remember });
     if (recovered) {
       // It differs from what was saved: autosave writes it.
       session.savedSig = JSON.stringify(doc);

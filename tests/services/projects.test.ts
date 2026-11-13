@@ -9,10 +9,14 @@ import type { ProjectDoc, ProjectStorage } from '../../src/core/types.ts';
 import { storedProject } from '../support/projects.ts';
 
 // The storage the service opens instead of IndexedDB (set by each test).
-const opened = vi.hoisted(() => ({ storage: null as ProjectStorage | null }));
+const opened = vi.hoisted(() => ({ storage: null as ProjectStorage | null, legacyFails: false }));
 vi.mock('../../src/services/storage/idb.ts', () => ({
   openIdbStorage: async () => opened.storage,
-  openExistingIdbStorage: async () => null,
+  // The database under the app's former name: none, or one that can't be read.
+  openExistingIdbStorage: async () => {
+    if (opened.legacyFails) throw new Error('the legacy database can’t be read');
+    return null;
+  },
   deleteIdb: async () => {},
 }));
 // jsdom has no canvas: no thumbnails (they are drawn after the document is written).
@@ -52,6 +56,7 @@ async function start(storage: ProjectStorage = memoryStorage()) {
 }
 
 beforeEach(() => {
+  opened.legacyFails = false;
   vi.useFakeTimers();
   // One tab: no other tab to ask for the project.
   vi.stubGlobal('BroadcastChannel', undefined);
@@ -141,6 +146,38 @@ describe('the settings a project keeps', () => {
     const app = await start(storage);
     expect(app.x()).toBe(33);
     expect(app.getDocument().allowOverlap).toBe(true);
+  });
+});
+
+describe('the last opened project', () => {
+  test('a last project saved by a newer version opens another one but stays the last opened (the newer version opens it)', async () => {
+    const storage = memoryStorage();
+    await storedProject(storage, 'p1', 'Este', 11, 1000);
+    const newer = await storedProject(storage, 'pnew', 'Del futuro', 22, 2000);
+    await storage.write({ ...newer, doc: { ...newer.doc, version: 99 } });
+    localStorage.setItem('scooch:last-project', 'pnew');
+    const app = await start(storage);
+    expect(app.projects.projectSession().record?.id).toBe('p1');
+    expect(app.notices).toEqual(['openFailed']);
+    expect(localStorage.getItem('scooch:last-project')).toBe('pnew');
+  });
+
+  test('when moving the projects saved under the former name fails, the new blank project doesn’t replace the last opened one', async () => {
+    opened.legacyFails = true;
+    localStorage.setItem('scooch:last-project', 'pold');
+    const app = await start(memoryStorage());
+    expect(app.projects.projectSession().record?.name).toBe('Sin título');
+    expect(localStorage.getItem('scooch:last-project')).toBe('pold');
+  });
+
+  test('a project opened or created by the person becomes the last opened', async () => {
+    const storage = memoryStorage();
+    await storedProject(storage, 'p1', 'Uno', 11, 1000);
+    const app = await start(storage);
+    await app.projects.openProject('p1');
+    expect(localStorage.getItem('scooch:last-project')).toBe('p1');
+    const created = await app.projects.newProject();
+    expect(localStorage.getItem('scooch:last-project')).toBe(created.id);
   });
 });
 
