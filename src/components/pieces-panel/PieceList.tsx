@@ -11,6 +11,7 @@ import { Layers, SquareArrowOutDownRight, SquareDashed, TriangleAlert, type Luci
 import { memo, useLayoutEffect, useMemo, useRef, type FocusEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import { rangeBetween } from '../../core/group.js';
 import { t } from '../../copy/index.ts';
+import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';
 import { sizeText } from '../../services/measure.ts';
 import { getAsset } from '../../state/assets.ts';
 import { getDocument, useDocument, type Piece } from '../../state/document.ts';
@@ -61,7 +62,16 @@ const Row = memo(function Row({ item, selected, tabStop, cut, pastMargin, overla
   const size = t(paged ? 'pieces.rowSizePage' : 'pieces.rowSize', { size: sizeText(w, h), page: asset.kind === 'pdf' ? asset.page : 1 });
   // Both lines can be cut with «…» in a narrow list: the tooltip has them whole.
   return (
-    <div role="option" className="piece-row" data-id={item.id} aria-selected={selected} tabIndex={tabStop ? 0 : -1} data-tip={asset.name} data-tip-note={size}>
+    <div
+      role="option"
+      className="piece-row"
+      data-id={item.id}
+      aria-selected={selected}
+      tabIndex={tabStop ? 0 : -1}
+      data-tip={asset.name}
+      data-tip-note={size}
+      {...previewAttrs('piece', item.id)}
+    >
       <span className="thumb">
         <span className="thumb-piece" style={thumb.box}>
           <img alt="" draggable={false} src={asset.url} style={thumb.img} />
