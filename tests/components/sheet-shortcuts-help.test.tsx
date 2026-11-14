@@ -12,13 +12,13 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-/** The dialog's rows as [keys, action] texts. */
+/** The dialog's rows as [action, keys] texts. */
 const rows = () =>
-  [...document.querySelectorAll('#shortcuts-rows tr')].map((tr) => [...tr.querySelectorAll('td')].map((td) => (td.textContent ?? '').replace(/ /g, ' ').trim()));
+  [...document.querySelectorAll<HTMLTableRowElement>('#shortcuts-rows tr')].map((tr) => [...tr.cells].map((cell) => (cell.textContent ?? '').replace(/[\u00a0\u202f]/g, ' ').trim()));
 
 test('the sheet keys are documented: Re Pág or Av Pág to go to another sheet; with Shift, to move the piece there', () => {
-  expect(rows()).toContainEqual(['Re Pág o Av Pág', 'En las hojas, ir a la hoja anterior o a la siguiente']);
-  expect(rows()).toContainEqual(['Shift+Re Pág o Shift+Av Pág', 'Mover la pieza a la hoja anterior o a la siguiente (si no hay lugar, a una hoja nueva)']);
+  expect(rows()).toContainEqual(['En las hojas, ir a la hoja anterior o a la siguiente', 'Re Pág o Av Pág']);
+  expect(rows()).toContainEqual(['Mover la pieza a la hoja anterior o a la siguiente (si no hay lugar, a una hoja nueva)', 'Shift+Re Pág o Shift+Av Pág']);
   // Neither is a single-key shortcut (they work with «Atajos de 1 tecla» off).
   const marked = [...document.querySelectorAll('#shortcuts-rows tr[data-single]')].map((tr) => tr.textContent ?? '');
   expect(marked.some((text) => /Pág/.test(text))).toBe(false);

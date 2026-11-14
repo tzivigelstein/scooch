@@ -66,7 +66,7 @@ describe('shortcuts dialog', () => {
   test('lists I for selecting the pieces of the same file', () => {
     render(<ShortcutsDialog />);
     const rows = [...document.querySelectorAll<HTMLTableRowElement>('#shortcuts-rows tr')];
-    const row = rows.find((tr) => /mismo archivo/.test(tr.textContent ?? ''));
-    expect(row?.cells[0].textContent).toBe('I');
+    const row = rows.find((tr) => tr.cells[0].firstChild?.textContent === 'Seleccionar iguales');
+    expect(row?.cells[1].textContent).toBe('I');
   });
 });

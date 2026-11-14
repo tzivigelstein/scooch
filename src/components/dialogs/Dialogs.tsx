@@ -11,6 +11,8 @@ import { finishTip, usePrintTip } from './printTip.ts';
 
 const byId = (id: string) => () => document.getElementById(id);
 const otherDialogOpen = (name: DialogName) => () => Object.keys(useDialogs.getState().open).some((other) => other !== name);
+// The shortcuts' search field gets the focus, except on a touch screen (its keyboard would cover the list).
+const shortcutsFocus = () => (window.matchMedia?.('(pointer: coarse)').matches ? null : document.getElementById('shortcuts-search'));
 
 export function Dialogs() {
   const open = useDialogs((s) => s.open);
@@ -37,11 +39,12 @@ export function Dialogs() {
       </Dialog>
       <Dialog
         id="shortcuts"
-        className={singleKeys ? 'dialog' : 'dialog single-off'}
+        className={singleKeys ? 'dialog shortcuts' : 'dialog shortcuts single-off'}
         labelledBy="shortcuts-title"
         open={!!open.shortcuts}
         returnTo={open.shortcuts?.returnTo ?? null}
         fallback={byId('help')}
+        initialFocus={shortcutsFocus}
         focusTaken={otherDialogOpen('shortcuts')}
         onClose={() => closeDialog('shortcuts')}
       >

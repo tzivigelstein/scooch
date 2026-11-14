@@ -1,27 +1,30 @@
 // @vitest-environment jsdom
-// The shortcuts dialog's content: the table of every shortcut (keys and
-// action), the single-key ones marked, and the note whose link opens
-// «Preferencias» and hands it the focus to give back. The steps in other
-// units are in unit-preference.test.tsx; the row for I in
-// duplicate-and-select-same.test.tsx.
+// The shortcuts dialog's content: a table per section (the commands'
+// sections) with each action and its keys, the single-key ones marked, the
+// keys as this device names them, the search field that filters the rows, and
+// the note whose link opens «Preferencias» and hands it the focus to give
+// back. The steps in other units are in unit-preference.test.tsx; the row for
+// I in duplicate-and-select-same.test.tsx; the rows themselves come from
+// src/state/commands.ts (tests/state/commands.test.ts).
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import ShortcutsDialog from '../../src/components/dialogs/ShortcutsDialog.tsx';
 import { useDialogs } from '../../src/components/dialogs/dialogs.ts';
-import { SHORTCUT_ROWS } from '../../src/hooks/shortcuts.ts';
+import { SHORTCUTS } from '../../src/hooks/shortcuts.ts';
+import { COMMAND_IDS, command } from '../../src/state/commands.ts';
 import { resetState } from '../support/state.ts';
+import { keyLabel } from '../../src/copy/index.ts';
 
-const plain = (s: string | null | undefined) => String(s ?? '').replace(/ /g, ' ').trim();
+const plain = (s: string | null | undefined) => String(s ?? '').replace(/[  ]/g, ' ').trim();
 
-/** Each body row as [keys, action] (the «Desactivado» badge left out of the action). */
+/** Each body row as [action, keys] (the «Desactivado» badge left out of the action). */
 const rows = () =>
-  within(screen.getByRole('table', { name: 'Atajos de teclado' }))
-    .getAllByRole('row')
-    .slice(1)
-    .map((row) => {
-      const [keys, action] = within(row).getAllByRole('cell');
-      return [plain(keys.textContent), plain(action.firstChild?.textContent)];
-    });
+  [...document.querySelectorAll<HTMLTableRowElement>('#shortcuts-rows tbody tr')].map((tr) => [plain(tr.cells[0].firstChild?.textContent), plain(tr.cells[1].textContent)]);
+/** The row of an action (its header's text, without the badge). */
+const rowOf = (action: string) => [...document.querySelectorAll<HTMLTableRowElement>('#shortcuts-rows tr')].find((tr) => tr.cells[0].firstChild?.textContent === action)!;
+const tables = () => screen.queryAllByRole('table');
+const tableName = (table: HTMLElement) => plain(document.getElementById(table.getAttribute('aria-labelledby')!)?.textContent);
+const search = (text: string) => fireEvent.change(screen.getByRole('textbox', { name: 'Buscar atajos' }), { target: { value: text } });
 
 beforeEach(() => {
   resetState();
@@ -29,87 +32,103 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   act(() => useDialogs.setState({ open: {} }));
   document.body.innerHTML = '';
 });
 
-describe('the shortcuts table', () => {
-  test('a table named «Atajos de teclado» with a Tecla and an Acción column and one row per shortcut', () => {
+describe('the shortcuts, by section', () => {
+  test('a table per section, named by its heading, in order; Preferences has no keys, so no table', () => {
     render(<ShortcutsDialog />);
-    expect(screen.getByRole('heading', { name: 'Atajos de teclado' })).toBeTruthy();
-    const table = screen.getByRole('table', { name: 'Atajos de teclado' });
-    expect(within(table).getAllByRole('columnheader').map((th) => th.textContent)).toEqual(['Tecla', 'Acción']);
-    expect(rows()).toHaveLength(SHORTCUT_ROWS.length);
+    expect(screen.getByRole('heading', { level: 2, name: 'Atajos de teclado' })).toBeTruthy();
+    expect(tables().map(tableName)).toEqual(['General', 'Proyectos', 'Selección', 'Hojas', 'Vista']);
+    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['General', 'Proyectos', 'Selección', 'Hojas', 'Vista']);
   });
 
-  test('each key in its own <kbd> with its visible name: two keys joined by «o», more by spaces', () => {
+  test('each row is the action, as the row’s header, then its keys, each in a <kbd>: two joined by «o», more side by side', () => {
     render(<ShortcutsDialog />);
     const table = rows();
-    const row = (action: string) => table.find(([, a]) => a === action)?.[0];
-    expect(row('Descargar PDF')).toBe('Ctrl+E o Ctrl+Shift+S');
-    expect(row('Rehacer')).toBe('Ctrl+Shift+Z o Ctrl+Y');
-    expect(row('Quitar la pieza')).toBe('Supr o Retroceso');
-    expect(row('Mover la pieza 1 mm (Shift: 10 mm; Alt: 0,1 mm). Si choca con otra, salta al otro lado.')).toBe('← ↑ → ↓');
-    expect(row('Copiar, cortar o pegar piezas. Una imagen copiada en otra app se pega como pieza nueva.')).toBe('Ctrl+C Ctrl+X Ctrl+V');
-    expect(row('En las hojas, ir a la hoja anterior o a la siguiente')).toBe('Re Pág o Av Pág');
-    expect(row('Mostrar estos atajos')).toBe('?');
-    const kbds = [...document.querySelectorAll('#shortcuts-rows tr')].find((tr) => /Descargar PDF/.test(tr.textContent ?? ''))!.querySelectorAll('kbd');
-    expect([...kbds].map((k) => k.textContent)).toEqual(['Ctrl+E', 'Ctrl+Shift+S']);
+    const keysOf = (action: string) => table.filter(([a]) => a === action).map(([, keys]) => keys);
+    expect(keysOf('Descargar PDF')).toEqual(['Ctrl+E o Ctrl+Shift+S']);
+    expect(keysOf('Rehacer')).toEqual(['Ctrl+Shift+Z o Ctrl+Y']);
+    expect(keysOf('Quitar de la hoja')).toEqual(['Supr o Retroceso']);
+    expect(keysOf('Mover la pieza 1 mm (Shift: 10 mm; Alt: 0,1 mm). Si choca con otra, salta al otro lado.')).toEqual(['← ↑ → ↓']);
+    expect(keysOf('En las hojas, ir a la hoja anterior o a la siguiente')).toEqual(['Re Pág o Av Pág']);
+    expect(keysOf('Ver los atajos de teclado')).toEqual(['?']);
+    expect(keysOf('Buscar acciones')).toEqual(['Ctrl+K']);
+    // A command with Ctrl and single-key keys: a row for each kind.
+    expect(keysOf('Duplicar')).toEqual(['Ctrl+D', 'D']);
+    const download = [...document.querySelectorAll('#shortcuts-rows tr')].find((tr) => /Descargar PDF/.test(tr.textContent ?? ''))!;
+    expect(download.querySelector('th')?.getAttribute('scope')).toBe('row');
+    expect([...download.querySelectorAll('kbd')].map((k) => k.textContent)).toEqual(['Ctrl+E', 'Ctrl+Shift+S']);
   });
 
-  test('the actions, in order', () => {
+  test('every command with keys has its row, by its name, and every key of the shortcut table shows', () => {
     render(<ShortcutsDialog />);
-    expect(rows().map(([, action]) => action)).toEqual([
-      'Recorrer la barra, los paneles y las piezas; en la hoja, enfocar una pieza la selecciona',
-      'Mover la pieza 1 mm (Shift: 10 mm; Alt: 0,1 mm). Si choca con otra, salta al otro lado.',
-      'Agrandar o reducir 1 % (Shift: 10 %)',
-      'Rotar 90° a la derecha o a la izquierda',
-      'Duplicar la pieza',
-      'Duplicar la selección (siempre, también con los atajos de 1 tecla desactivados)',
-      'Copiar, cortar o pegar piezas. Una imagen copiada en otra app se pega como pieza nueva.',
-      'Abrir el menú de la pieza o de la hoja (también con clic derecho o manteniendo presionado)',
-      'Acercar o alejar la vista (también con Ctrl y la rueda, o pellizcando el trackpad)',
-      'Ver la hoja entera o su ancho',
-      'Mover la vista (también con el botón del medio o desplazando con dos dedos)',
-      'Seleccionar las piezas del mismo archivo',
-      'Recortar la pieza (también con doble clic); en el recorte, flechas para mover la imagen, más y menos para acercarla, Enter para aplicar y Esc para cancelar',
-      'Ajustar a la hoja',
-      'Centrar en la hoja',
-      'Traer al frente',
-      'Sobre una pieza, ir a su barra de acciones',
-      'Sobre una pieza, agregarla a la selección o quitarla',
-      'Agregar una pieza a la selección o quitarla (arrastrar en un lugar vacío selecciona con un recuadro)',
-      'Seleccionar las piezas de la hoja actual; otra vez, las de todas las hojas',
-      'Alinear a la izquierda o a la derecha (con 1 pieza, al área útil)',
-      'Alinear arriba o abajo',
-      'Centrar en horizontal o en vertical',
-      'Distribuir en horizontal o en vertical',
-      'En las hojas, ir a la hoja anterior o a la siguiente',
-      'Mover la pieza a la hoja anterior o a la siguiente (si no hay lugar, a una hoja nueva)',
-      'Quitar la pieza',
-      'Ir a la pestaña Pieza de Propiedades',
-      'Ir a la pestaña Proyecto de Propiedades',
-      'Ir a la lista de piezas',
-      'Acomodar las piezas sin superponerlas',
-      'Agregar imágenes o PDF',
-      'Cambiar la orientación de la hoja',
-      'Mostrar u ocultar la grilla',
-      'Deshacer',
-      'Rehacer',
-      'Imprimir',
-      'Descargar PDF',
-      'Abrir Proyectos',
-      'En un panel, volver a la pieza o cerrar el panel; en la hoja, anular la selección',
-      'Mostrar estos atajos',
-    ]);
+    const actions = rows().map(([action]) => action);
+    for (const id of COMMAND_IDS) if (command(id).keys.length) expect(actions, id).toContain(command(id).label);
+    const shown = new Set([...document.querySelectorAll('#shortcuts-rows kbd')].map((k) => k.textContent));
+    for (const [name, keys] of Object.entries(SHORTCUTS) as [string, { kbd?: string }][]) if (keys.kbd) expect(shown, name).toContain(keyLabel(keys.kbd));
   });
 
   test('the single-key rows, and only those, are marked and carry the «Desactivado» badge (shown while they are off)', () => {
     render(<ShortcutsDialog />);
     const marked = [...document.querySelectorAll<HTMLTableRowElement>('#shortcuts-rows tr')].filter((tr) => tr.hasAttribute('data-single'));
-    expect(marked.map((tr) => plain(tr.cells[0].textContent))).toEqual(['+ o −', 'R o Shift+R', 'D', 'Shift+1 o Shift+2', 'I', 'K', 'F', 'C', ']', 'M', 'H', 'P', 'A', 'O', 'L', 'G', '?']);
+    expect(marked.map((tr) => plain(tr.cells[1].textContent)).sort()).toEqual(['+ o −', '?', 'A', 'C', 'D', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'O', 'P', 'R', 'Shift+1', 'Shift+2', 'Shift+R', ']'].sort());
     expect(marked.every((tr) => tr.querySelector('.off-badge')?.textContent === 'Desactivado')).toBe(true);
     expect(document.querySelectorAll('#shortcuts-rows .off-badge')).toHaveLength(marked.length);
+  });
+
+  test('on a Mac, Apple’s symbols, each said by its name; elsewhere, Ctrl and Shift', () => {
+    vi.stubGlobal('navigator', { platform: 'MacIntel' });
+    render(<ShortcutsDialog />);
+    const download = [...document.querySelectorAll('#shortcuts-rows tr')].find((tr) => /Descargar PDF/.test(tr.textContent ?? ''))!;
+    const [e, s] = download.querySelectorAll('kbd');
+    expect(e.querySelector('[aria-hidden="true"]')?.textContent).toBe('⌘E');
+    expect(e.querySelector('.sr-only')?.textContent).toBe('Comando+E');
+    expect(s.querySelector('[aria-hidden="true"]')?.textContent).toBe('⇧⌘S');
+    expect(s.querySelector('.sr-only')?.textContent).toBe('Shift+Comando+S');
+    const align = rowOf('Alinear a la izquierda');
+    expect(align.querySelector('.sr-only')?.textContent).toBe('Opción+Shift+←');
+    // A key without a symbol stays as it is, with nothing extra.
+    const help = rowOf('Ver los atajos de teclado');
+    expect(help.querySelector('kbd')?.innerHTML).toBe('?');
+  });
+});
+
+describe('searching', () => {
+  test('a field named «Buscar atajos» that controls the rows', () => {
+    render(<ShortcutsDialog />);
+    const field = screen.getByRole('textbox', { name: 'Buscar atajos' });
+    expect(field.getAttribute('aria-controls')).toBe('shortcuts-rows');
+    expect(field.getAttribute('placeholder')).toBe('Buscar atajos');
+  });
+
+  test('typing filters the rows by name, by other words and by keys; a section with none left goes', () => {
+    render(<ShortcutsDialog />);
+    search('girar');
+    expect(rows()).toEqual([
+      ['Rotar a la izquierda', 'Shift+R'],
+      ['Rotar a la derecha', 'R'],
+      ['Cambiar la orientación de la hoja', 'L'],
+    ]);
+    expect(tables().map(tableName)).toEqual(['Selección', 'Hojas']);
+    search('retroceso');
+    expect(rows()).toEqual([['Quitar de la hoja', 'Supr o Retroceso']]);
+    search('ctrl+z');
+    expect(rows()).toEqual([['Deshacer', 'Ctrl+Z']]);
+    search('');
+    expect(tables()).toHaveLength(5);
+  });
+
+  test('nothing found: no table, and one line says so with what was typed', () => {
+    render(<ShortcutsDialog />);
+    expect(plain(document.getElementById('shortcuts-empty')?.textContent)).toBe('');
+    search(' xyzzy ');
+    expect(tables()).toHaveLength(0);
+    const empty = document.getElementById('shortcuts-empty')!;
+    expect(plain(empty.textContent)).toBe('No hay atajos que coincidan con «xyzzy»');
+    expect(empty.getAttribute('role')).toBe('status');
   });
 });
 

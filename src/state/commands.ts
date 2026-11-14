@@ -432,5 +432,60 @@ export function shownShortcut(c: Pick<Command, 'keys'>, singleKeys: boolean): { 
   return null;
 }
 
+// ---------- The shortcuts dialog's rows ----------
+
+/** A row of the shortcuts dialog: its keys (keyLabel names, alternatives to each other) and what they do. */
+export interface KeyRow {
+  id: string;
+  section: CommandSection;
+  keys: readonly string[];
+  text: string;
+  /** Other words that find it (a command's). */
+  aliases: string;
+  /** Single-key ones: they do nothing while «Atajos de 1 tecla» is off. */
+  single: boolean;
+}
+
+/** The keys that aren't commands: they act on what has the focus, or go with the pointer. */
+const KEY_ROWS: readonly { id: string; section: CommandSection; keys: readonly string[]; text: CopyKey; single?: boolean; first?: boolean }[] = [
+  { id: 'palette', section: 'general', keys: [SHORTCUTS.palette.kbd], text: 'palette.title', first: true },
+  { id: 'tab', section: 'general', keys: ['Tab', 'Shift+Tab'], text: 'shortcuts.rows.tab' },
+  { id: 'escape', section: 'general', keys: ['Escape'], text: 'shortcuts.rows.escape' },
+  { id: 'move', section: 'selection', keys: ['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown'], text: 'shortcuts.rows.move' },
+  { id: 'scale', section: 'selection', keys: ['Plus', 'Minus'], text: 'shortcuts.rows.scale', single: true },
+  { id: 'toolbar', section: 'selection', keys: ['Enter', 'Space'], text: 'shortcuts.rows.toolbar' },
+  { id: 'toggle', section: 'selection', keys: ['Shift+Space', 'Shift+Enter'], text: 'shortcuts.rows.toggleSelect' },
+  { id: 'click', section: 'selection', keys: ['Shift+Click', 'Mod+Click'], text: 'shortcuts.rows.clickSelect' },
+  { id: 'menu', section: 'selection', keys: ['Shift+F10', 'ContextMenu'], text: 'shortcuts.rows.menu' },
+  { id: 'double-click', section: 'selection', keys: ['DoubleClick'], text: 'shortcuts.rows.doubleClick' },
+  { id: 'crop-keys', section: 'selection', keys: [SHORTCUTS.cropApply.kbd, SHORTCUTS.cropCancel.kbd], text: 'shortcuts.rows.cropKeys' },
+  { id: 'pages', section: 'sheets', keys: ['PageUp', 'PageDown'], text: 'shortcuts.rows.pages' },
+  { id: 'send-page', section: 'sheets', keys: ['Shift+PageUp', 'Shift+PageDown'], text: 'shortcuts.rows.sendPage' },
+  { id: 'wheel', section: 'view', keys: ['Mod+Wheel'], text: 'shortcuts.rows.wheel' },
+  { id: 'pan', section: 'view', keys: ['Space+Drag'], text: 'shortcuts.rows.pan' },
+];
+
+/**
+ * Every row of the shortcuts dialog, section by section: the commands with
+ * keys (by their name; a command with single-key and other keys gets a row for
+ * each kind) and the keys that aren't commands. `params`: for the texts with
+ * lengths (the arrows' steps in the chosen unit).
+ */
+export function shortcutRows(params: Record<string, string> = {}): KeyRow[] {
+  const keyRow = (row: (typeof KEY_ROWS)[number]): KeyRow => ({ id: row.id, section: row.section, keys: row.keys, text: t(row.text, params), aliases: '', single: !!row.single });
+  const all = commands();
+  return SECTIONS.flatMap((section) => {
+    const rows = KEY_ROWS.filter((row) => row.section === section && row.first).map(keyRow);
+    for (const c of all.filter((c) => c.section === section)) {
+      for (const single of [false, true]) {
+        const names = c.keys.filter((name) => !!(SHORTCUTS[name] as ShortcutKeys).single === single);
+        const keys = names.map((name) => (SHORTCUTS[name] as ShortcutKeys).kbd!);
+        if (keys.length) rows.push({ id: single ? `${c.id}-key` : c.id, section, keys, text: c.label, aliases: c.aliases, single });
+      }
+    }
+    return [...rows, ...KEY_ROWS.filter((row) => row.section === section && !row.first).map(keyRow)];
+  });
+}
+
 /** Is `id` one of the commands (e.g. a recent one saved by an older version)? */
 export const isCommandId = (id: string): id is CommandId => Object.hasOwn(DEFINITIONS, id);

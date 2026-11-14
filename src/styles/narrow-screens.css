@@ -303,10 +303,6 @@
     width: calc(100vw - 1rem);
     max-height: calc(100dvh - 1rem);
   }
-
-  .keys td:first-child {
-    width: 46%;
-  }
 }
 
 @keyframes sheet-in {

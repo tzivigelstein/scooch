@@ -3,7 +3,7 @@
 // here, and the shortcuts dialog shows them. The dispatcher is
 // useGlobalShortcuts.
 
-import { keyLabel, type CopyKey } from '../copy/index.ts';
+import { keyLabel } from '../copy/index.ts';
 import { usePrefs } from '../state/prefs.ts';
 
 export interface ShortcutKeys {
@@ -84,48 +84,3 @@ export function shortcutAttributes(name: ShortcutName, singleKeys: boolean) {
 export function useShortcut(name: ShortcutName) {
   return shortcutAttributes(name, usePrefs((s) => s.singleKeys));
 }
-
-/** Rows of the shortcuts dialog: keys (keyLabel names), the action and whether it is a single-key one. */
-export const SHORTCUT_ROWS: readonly [keys: readonly string[], action: CopyKey, single: boolean][] = [
-  [['Tab', 'Shift+Tab'], 'shortcuts.rows.tab', false],
-  [['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown'], 'shortcuts.rows.move', false],
-  [['Plus', 'Minus'], 'shortcuts.rows.scale', true],
-  [['R', 'Shift+R'], 'shortcuts.rows.rotate', true],
-  [['D'], 'shortcuts.rows.duplicate', true],
-  [['Mod+D'], 'shortcuts.rows.duplicateMod', false],
-  [['Mod+C', 'Mod+X', 'Mod+V'], 'shortcuts.rows.clipboard', false],
-  [['Shift+F10', 'ContextMenu'], 'shortcuts.rows.menu', false],
-  [['Mod+Plus', 'Mod+Minus'], 'shortcuts.rows.zoom', false],
-  [['Shift+1', 'Shift+2'], 'shortcuts.rows.zoomFit', true],
-  [['Space+Drag'], 'shortcuts.rows.pan', false],
-  [['I'], 'shortcuts.rows.selectSame', true],
-  [['K'], 'shortcuts.rows.crop', true],
-  [['F'], 'shortcuts.rows.fit', true],
-  [['C'], 'shortcuts.rows.center', true],
-  [[']'], 'shortcuts.rows.front', true],
-  [['Enter', 'Space'], 'shortcuts.rows.toolbar', false],
-  [['Shift+Space', 'Shift+Enter'], 'shortcuts.rows.toggleSelect', false],
-  [['Shift+Click', 'Mod+Click'], 'shortcuts.rows.clickSelect', false],
-  [['Mod+A'], 'shortcuts.rows.selectAll', false],
-  [['Alt+Shift+ArrowLeft', 'Alt+Shift+ArrowRight'], 'shortcuts.rows.alignSides', false],
-  [['Alt+Shift+ArrowUp', 'Alt+Shift+ArrowDown'], 'shortcuts.rows.alignEnds', false],
-  [['Alt+Shift+H', 'Alt+Shift+V'], 'shortcuts.rows.alignCenter', false],
-  [['Alt+Shift+X', 'Alt+Shift+Y'], 'shortcuts.rows.distribute', false],
-  [['PageUp', 'PageDown'], 'shortcuts.rows.pages', false],
-  [['Shift+PageUp', 'Shift+PageDown'], 'shortcuts.rows.sendPage', false],
-  [['Delete', 'Backspace'], 'shortcuts.rows.remove', false],
-  [['M'], 'shortcuts.rows.measures', true],
-  [['H'], 'shortcuts.rows.project', true],
-  [['P'], 'shortcuts.rows.list', true],
-  [['A'], 'shortcuts.rows.arrange', true],
-  [['O'], 'shortcuts.rows.add', true],
-  [['L'], 'shortcuts.rows.orientation', true],
-  [['G'], 'shortcuts.rows.grid', true],
-  [['Mod+Z'], 'shortcuts.rows.undo', false],
-  [['Mod+Shift+Z', 'Control+Y'], 'shortcuts.rows.redo', false],
-  [['Mod+P'], 'shortcuts.rows.print', false],
-  [['Mod+E', 'Mod+Shift+S'], 'shortcuts.rows.download', false],
-  [['Mod+O'], 'shortcuts.rows.projects', false],
-  [['Escape'], 'shortcuts.rows.escape', false],
-  [['?'], 'shortcuts.rows.help', true],
-];
