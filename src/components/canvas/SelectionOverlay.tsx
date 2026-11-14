@@ -8,6 +8,7 @@ import { useDocument } from '../../state/document.ts';
 import { gestureStore } from '../../state/gesture.ts';
 import { usePrefs } from '../../state/prefs.ts';
 import { useView } from '../../state/view.ts';
+import { usePrintSummary } from '../feedback/printSummary.ts';
 import { paintCommittedSelection, paintSelection } from './selection.ts';
 
 export function SelectionOverlay({ layout }: { layout: number }) {
@@ -18,8 +19,9 @@ export function SelectionOverlay({ layout }: { layout: number }) {
   const drawer = useView((s) => s.drawer);
   const unit = usePrefs((s) => s.unit);
   const cuts = useDocument((s) => s.cuts);
-  // A notice that shows up over the canvas: the toolbar moves off it.
+  // A notice or the summary card that shows up over the canvas: the toolbar moves off it.
   const flash = useView((s) => s.flash);
+  const summary = usePrintSummary((s) => s.summary !== null);
 
   // One frame per sheet with selected pieces (only with several selected).
   const frameSheets =
@@ -29,7 +31,7 @@ export function SelectionOverlay({ layout }: { layout: number }) {
 
   useLayoutEffect(() => {
     paintCommittedSelection();
-  }, [items, selection, sheets, zoom, drawer, layout, unit, cuts, flash]);
+  }, [items, selection, sheets, zoom, drawer, layout, unit, cuts, flash, summary]);
 
   // Live values during a gesture; when it ends, back to the document.
   useEffect(
