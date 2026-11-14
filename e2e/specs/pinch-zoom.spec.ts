@@ -3,12 +3,15 @@
 // zooms the sheets around the fingers and the zoom becomes a hand-picked one,
 // two fingers moving together pan, the zoom stops at the ends of its range, a
 // pinch never moves a piece, and the browser's page zoom stays off the canvas
-// but works over a panel. The pinch's math is in tests/core/zoom.test.js and
-// tests/properties/pinch.test.js; its frames with 150 pieces, in
-// performance.spec.ts.
+// but works over a panel. Lifted while panning, the sheets glide on until
+// they stop, and anything new stops them. The pinch's math is in
+// tests/core/zoom.test.js and tests/properties/pinch.test.js, the glide's in
+// tests/core/glide.test.js and tests/properties/glide.test.js; their frames
+// with 150 pieces, in performance.spec.ts.
 import type { Page } from '@playwright/test';
+import { glideDistance } from '../../src/core/glide.js';
 import { PX_PER_MM, frames, stageBox, stageState } from '../support/canvas.ts';
-import { Fingers, type Spot } from '../support/touch.ts';
+import { FRAME_MS, Fingers, type Spot } from '../support/touch.ts';
 import { cards, expect, test, type App } from '../support/test.ts';
 
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
@@ -223,4 +226,157 @@ test('the page zoom stays off the canvas and keeps working over a panel', async 
   const fingers = await Fingers.on(page);
   await fingers.pinch(at, 60, 240);
   await expect.poll(() => pageScale(page), { message: 'a pinch over the panel zooms the page' }).toBeGreaterThan(1.5);
+});
+
+// ---------- The glide after two fingers pan ----------
+
+/** Five sheets, the first with four cards, scrolled to the top: room to glide down. */
+async function fiveSheets(app: App) {
+  await app.addFiles(cards(0, 4));
+  for (let i = 0; i < 4; i++) await app.page.locator('#add-sheet').click();
+  await expect(app.page.locator('#sheets .page')).toHaveCount(5);
+  await app.page.keyboard.press('Escape');
+  await app.page.locator('#stage').evaluate((el) => (el.scrollTop = 0));
+}
+
+/**
+ * Two fingers 100 px apart across `at` that move together by `step` px a
+ * frame for 8 frames, on the fingers' clock (so their speed is exactly
+ * step / FRAME_MS px per ms); still down.
+ */
+async function panTogether(page: Page, at: Spot, step: Spot) {
+  const fingers = await Fingers.on(page);
+  fingers.clock = Date.now();
+  const pair = (i: number) => ({ 1: { x: at.x - 50 + step.x * i, y: at.y + step.y * i }, 2: { x: at.x + 50 + step.x * i, y: at.y + step.y * i } });
+  await fingers.press(pair(0));
+  for (let i = 1; i <= 8; i++) await fingers.move(pair(i));
+  return fingers;
+}
+
+/** Starts noting the stage's scroll every frame (until scrollsNoted). */
+const noteScrolls = (page: Page) =>
+  page.evaluate(() => {
+    const w = window as unknown as { scrolls: number[]; noting: boolean };
+    const stage = document.getElementById('stage')!;
+    w.scrolls = [];
+    w.noting = true;
+    const note = () => {
+      if (!w.noting) return;
+      w.scrolls.push(stage.scrollTop);
+      requestAnimationFrame(note);
+    };
+    requestAnimationFrame(note);
+  });
+
+/** For how many frames the stage's scroll has stayed where it is. */
+const stillFor = (page: Page) =>
+  page.evaluate(() => {
+    const s = (window as unknown as { scrolls: number[] }).scrolls;
+    let n = 0;
+    while (n < s.length - 1 && s[s.length - 1 - n] === s[s.length - 2 - n]) n++;
+    return n;
+  });
+
+/** Stops noting and returns the scroll of each frame. */
+const scrollsNoted = (page: Page) =>
+  page.evaluate(() => {
+    const w = window as unknown as { scrolls: number[]; noting: boolean };
+    w.noting = false;
+    return w.scrolls;
+  });
+
+/** Lifts the fingers and waits until the stage has stayed put for 10 frames; returns its scroll each frame. */
+async function liftAndSettle(page: Page, fingers: Fingers) {
+  await noteScrolls(page);
+  await fingers.lift();
+  await expect.poll(() => stillFor(page), { message: 'the sheets come to rest' }).toBeGreaterThanOrEqual(10);
+  return scrollsNoted(page);
+}
+
+test.describe('the glide after two fingers pan', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+  });
+
+  test('lifted while panning, the sheets glide on the same way, slowing down, as far as that speed goes, and never back', async ({ app, page }) => {
+    await fiveSheets(app);
+    const fit = await stageState(page);
+    const fingers = await panTogether(page, await emptySpot(page), { x: 0, y: -24 });
+    const released = (await stageState(page)).scrollTop;
+    expect(released - fit.scrollTop, 'the fingers panned 8 × 24 px').toBeCloseTo(192, 0);
+    const seen = (await liftAndSettle(page, fingers)).filter((top, i, all) => i === 0 || top !== all[i - 1]);
+    expect(seen.every((top, i) => i === 0 || top > seen[i - 1]), `always down: ${seen.join(', ')}`).toBe(true);
+    const glided = seen.at(-1)! - released;
+    expect(Math.abs(glided - glideDistance(24 / FRAME_MS)), `${glided} px after the fingers lifted`).toBeLessThanOrEqual(2);
+    // Each frame noted while it moved: the first half of them went much further than the second.
+    const half = Math.floor(seen.length / 2);
+    expect(seen[half] - seen[0], 'it slows down').toBeGreaterThan(3 * (seen.at(-1)! - seen[half]));
+    const now = await stageState(page);
+    expect(now.pct, 'the zoom as it was').toBe(fit.pct);
+    expect(now.scrollLeft).toBe(0);
+  });
+
+  test('fingers that stop before lifting leave the sheets where they are, and so does a zoom: it never goes on', async ({ app, page }) => {
+    await fiveSheets(app);
+    const at = await emptySpot(page);
+    const fingers = await panTogether(page, at, { x: 0, y: -24 });
+    const held = await stageState(page);
+    // A tenth of a second still before lifting.
+    fingers.wait(100);
+    expect(new Set(await liftAndSettle(page, fingers)), 'no glide').toEqual(new Set([held.scrollTop]));
+
+    // One finger still and the other moving away from it: the midpoint moves too, but the fingers were zooming.
+    const zoom = await Fingers.on(page);
+    zoom.clock = Date.now();
+    await zoom.press({ 1: { x: at.x - 60, y: at.y }, 2: { x: at.x, y: at.y } });
+    for (let i = 1; i <= 8; i++) await zoom.move({ 2: { x: at.x + i * 12, y: at.y - i * 4 } });
+    const zoomed = await stageState(page);
+    expect(zoomed.pct, 'it zoomed').toBeGreaterThan(held.pct * 1.5);
+    expect(new Set(await liftAndSettle(page, zoom)), 'no glide').toEqual(new Set([zoomed.scrollTop]));
+    const after = await stageState(page);
+    expect(after.pct, 'the zoom stopped with the fingers').toBe(zoomed.pct);
+    expect(after.scrollLeft).toBe(zoomed.scrollLeft);
+  });
+
+  test('with reduced motion the sheets stop as the fingers lift', async ({ app, page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await fiveSheets(app);
+    const fingers = await panTogether(page, await emptySpot(page), { x: 0, y: -24 });
+    const released = (await stageState(page)).scrollTop;
+    expect(new Set(await liftAndSettle(page, fingers))).toEqual(new Set([released]));
+  });
+
+  test('a new touch, the wheel, a key or the zoom buttons stop the glide at once', async ({ app, page }) => {
+    await fiveSheets(app);
+    const at = await emptySpot(page);
+    const stoppers: [string, () => Promise<unknown>][] = [
+      [
+        'a finger',
+        async () => {
+          const finger = await Fingers.on(page);
+          await finger.press({ 3: at });
+          return finger;
+        },
+      ],
+      ['the wheel', () => page.mouse.move(at.x, at.y).then(() => page.mouse.wheel(40, 0))],
+      ['a key', () => page.keyboard.press('Shift')],
+      ['the zoom buttons', () => page.locator('#zoom-in').click()],
+    ];
+    for (const [name, stop] of stoppers) {
+      await test.step(name, async () => {
+        await page.locator('#stage').evaluate((el) => (el.scrollTop = 0));
+        const fingers = await panTogether(page, at, { x: 0, y: -24 });
+        await fingers.lift();
+        const lifted = (await stageState(page)).scrollTop;
+        await frames(page, 1);
+        expect((await stageState(page)).scrollTop, 'gliding').toBeGreaterThan(lifted);
+        const held = await stop();
+        await frames(page, 2);
+        const stopped = (await stageState(page)).scrollTop;
+        await frames(page, 10);
+        expect((await stageState(page)).scrollTop, 'stopped').toBe(stopped);
+        if (held instanceof Fingers) await held.lift();
+      });
+    }
+  });
 });

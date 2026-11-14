@@ -10,8 +10,19 @@ export interface Spot {
   y: number;
 }
 
+/** How far apart moves are on the fingers' clock (ms): a frame at 60 Hz. */
+export const FRAME_MS = 16;
+
 export class Fingers {
   private readonly down = new Map<number, Spot>();
+
+  /**
+   * When the events say they happened (ms since the epoch), or null for when
+   * each is sent. With a clock, each move comes FRAME_MS after the last one
+   * (and `wait` adds a pause), so the page sees the fingers move at exact
+   * speeds, whatever the machine's load.
+   */
+  clock: number | null = null;
 
   private constructor(
     private readonly page: Page,
@@ -24,7 +35,13 @@ export class Fingers {
 
   // Every event lists the fingers still down; the browser compares them with the last one's.
   private send(type: 'touchStart' | 'touchMove' | 'touchEnd') {
-    return this.cdp.send('Input.dispatchTouchEvent', { type, touchPoints: [...this.down].map(([id, p]) => ({ id, x: p.x, y: p.y })) });
+    const timestamp = this.clock === null ? {} : { timestamp: this.clock / 1000 };
+    return this.cdp.send('Input.dispatchTouchEvent', { type, touchPoints: [...this.down].map(([id, p]) => ({ id, x: p.x, y: p.y })), ...timestamp });
+  }
+
+  /** Lets `ms` go by on the fingers' clock before the next event. */
+  wait(ms: number) {
+    if (this.clock !== null) this.clock += ms;
   }
 
   /** Puts fingers down (id → where), next to any already down. */
@@ -36,6 +53,7 @@ export class Fingers {
   /** Moves fingers already down (id → where) and waits a frame, as a phone sends a move a frame. */
   async move(fingers: Record<number, Spot>) {
     for (const [id, p] of Object.entries(fingers)) this.down.set(Number(id), p);
+    this.wait(FRAME_MS);
     await this.send('touchMove');
     await frames(this.page, 1);
   }
