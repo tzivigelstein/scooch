@@ -4,7 +4,9 @@
 // the grid and the margin keep the sheet's size, and nothing scrolls sideways
 // or off center. The bug showed only at some window sizes, so it runs at four.
 // The same at other zooms: zoom-and-pan.spec.ts › pieces taken off the sheet.
-import { inside, nearRect, settled, type Rect } from '../support/canvas.ts';
+// And a project stored with a piece far off its sheet, and the way back.
+import { cardsOnThreeSheets, inside, nearRect, settled, type Rect } from '../support/canvas.ts';
+import { patchStored, saved } from '../support/projects.ts';
 import { cards, expect, test } from '../support/test.ts';
 
 const VIEWPORTS = [
@@ -159,3 +161,35 @@ for (const viewport of VIEWPORTS) {
     }
   });
 }
+
+test('a project with a piece stored thousands of mm off its sheet opens as it is: the canvas keeps the size of its sheets, even with the piece selected, the notice says which sheet, and from the list «Centrar en la hoja» brings it back', async ({ app, page }) => {
+  const ids = await cardsOnThreeSheets(app);
+  const extent = () => page.locator('#stage').evaluate((el) => el.scrollHeight);
+  const sized = await extent();
+  await saved(page);
+  // The card of the third sheet, 9784,9 mm down a 297 mm sheet (what a drag that never ended showed).
+  await patchStored(page, (doc) => {
+    const third = (doc.sheets as { id: number }[])[2].id;
+    return { ...doc, items: (doc.items as { sheet: number; y: number }[]).map((item) => (item.sheet === third ? { ...item, y: 9784.9 } : item)) };
+  });
+  await page.reload();
+  await app.ready();
+
+  const stray = (await app.sheets())[2].pieces[0];
+  expect(Number(stray.id)).toBe(ids[2]);
+  expect(stray.y, 'opened as stored, nothing moved').toBeCloseTo(9784.9, 1);
+  await expect.poll(() => app.notice()).toMatchObject({ text: 'Hoja 3: 1 pieza se sale de la hoja y se corta al imprimir', warn: true });
+  expect(await extent(), 'the canvas the size of its sheets').toBe(sized);
+
+  await app.row(ids[2]).click();
+  await expect.poll(() => app.selectedIds()).toEqual([ids[2]]);
+  await app.openMeasures();
+  await expect(page.locator('#pos-y')).toHaveValue(/^9784,9/);
+  await settled(page);
+  expect(await extent(), 'selected, its frame doesn’t stretch the canvas').toBe(sized);
+
+  await page.locator('#piece-center').click();
+  await expect.poll(async () => (await app.sheets())[2].pieces[0].y).toBeLessThan(297);
+  await expect.poll(async () => (await app.notice()).text).toBe('');
+  expect(await extent()).toBe(sized);
+});
