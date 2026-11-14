@@ -63,7 +63,7 @@
   --rail-w: 3.25rem;
   /* Height of the panel's fields (taller on narrow screens, for touch). */
   --control-h: 2.125rem;
-  /* Segmented controls: as tall as the fields beside them. */
+  /* Segmented controls: as tall as the fields beside them (44 px for a finger: narrow-screens.css). */
   --seg-h: var(--control-h);
   --seg-track: #eff1f4;
   --seg-thumb: #ffffff;

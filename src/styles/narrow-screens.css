@@ -324,4 +324,14 @@
   .handle::before {
     inset: 0.3125rem;
   }
+
+  /* Segmented controls a finger's height, and the fields beside them as tall. */
+  :root {
+    --seg-h: max(var(--control-h), 2.75rem);
+  }
+
+  .panel .paper-props input[type="text"],
+  .panel .grid-size input[type="text"] {
+    height: var(--seg-h);
+  }
 }
