@@ -805,6 +805,8 @@ const es = {
   // «Preferencias» dialog (settings of this browser)
   prefs: {
     title: 'Preferencias',
+    theme: 'Tema',
+    themes: { auto: 'Automático', light: 'Claro', dark: 'Oscuro' },
     printing: 'Impresión',
     printTip: 'Consejo antes de imprimir',
     printSummary: 'Resumen después de imprimir',

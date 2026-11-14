@@ -34,3 +34,12 @@
   height: 2.125rem;
   font-size: 0.84375rem;
 }
+
+.segmented.themes {
+  max-width: 17.5rem;
+}
+
+.segmented.themes .seg > span {
+  height: 2.125rem;
+  font-size: 0.84375rem;
+}

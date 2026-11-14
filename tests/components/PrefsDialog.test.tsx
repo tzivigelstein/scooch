@@ -6,7 +6,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import PrefsDialog from '../../src/components/dialogs/PrefsDialog.tsx';
-import { getPrefs, setSingleKeys } from '../../src/state/prefs.ts';
+import { getPrefs, readStoredTheme, setSingleKeys } from '../../src/state/prefs.ts';
 import { resetState } from '../support/state.ts';
 
 const plain = (s: string | null | undefined) => String(s ?? '').replace(/ /g, ' ').trim();
@@ -25,11 +25,11 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('Preferences', () => {
-  test('three groups, each named by its title: Unidades, Teclado and Impresión', () => {
+  test('four groups, each named by its title: Unidades, Teclado, Impresión and Tema', () => {
     render(<PrefsDialog />);
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Preferencias');
     const groups = screen.getAllByRole('group');
-    expect(groups.map((g) => referenced(g, 'aria-labelledby'))).toEqual(['Unidades', 'Teclado', 'Impresión']);
+    expect(groups.map((g) => referenced(g, 'aria-labelledby'))).toEqual(['Unidades', 'Teclado', 'Impresión', 'Tema']);
     expect(groups.map((g) => g.querySelector('h3')?.id)).toEqual(groups.map((g) => g.getAttribute('aria-labelledby')));
   });
 
@@ -82,5 +82,30 @@ describe('Preferences', () => {
     expect(JSON.parse(localStorage.getItem('scooch:print-preferences')!)).toEqual({ v: 1, tip: true, summary: false });
     fireEvent.click(tip);
     expect(getPrefs().printing.tip).toBe(false);
+  });
+
+  test('Tema: Automático, Claro and Oscuro, with no hint, automatic by default; the one chosen is saved in this browser', () => {
+    render(<PrefsDialog />);
+    const theme = screen.getAllByRole('group')[3];
+    const radios = within(theme).getAllByRole('radio') as HTMLInputElement[];
+    expect(radios.map((r) => [r.value, plain(r.labels?.[0]?.textContent)])).toEqual([
+      ['auto', 'Automático'],
+      ['light', 'Claro'],
+      ['dark', 'Oscuro'],
+    ]);
+    for (const radio of radios) expect(radio.hasAttribute('aria-describedby')).toBe(false);
+    expect(theme.querySelector('.switch-hint')).toBeNull();
+    expect(radios.map((r) => r.checked)).toEqual([true, false, false]);
+    fireEvent.click(screen.getByRole('radio', { name: 'Oscuro' }));
+    expect(getPrefs().theme).toBe('dark');
+    expect(radios.map((r) => r.checked)).toEqual([false, false, true]);
+    expect(JSON.parse(localStorage.getItem('scooch:theme-preference')!)).toEqual({ v: 1, theme: 'dark' });
+  });
+
+  test('Tema shows a theme chosen in another tab', () => {
+    render(<PrefsDialog />);
+    localStorage.setItem('scooch:theme-preference', JSON.stringify({ v: 1, theme: 'light' }));
+    act(() => readStoredTheme());
+    expect((screen.getByRole('radio', { name: 'Claro' }) as HTMLInputElement).checked).toBe(true);
   });
 });

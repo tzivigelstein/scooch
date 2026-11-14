@@ -207,6 +207,7 @@ mantiene gracias a personas como tú», no «Lo mantengo…»).
 | cambiar el nombre | renombrar un proyecto | renombrar, editar el título |
 | preferencias | ajustes de este navegador (unidades, atajos de 1 tecla) | configuración, ajustes |
 | unidades | mm, cm o in para mostrar y escribir medidas | sistema de medida |
+| tema | los colores de la interfaz: automático (como el sistema), claro u oscuro; la hoja siempre es blanca | apariencia, modo |
 | personalizado | papel con ancho y alto a elección | a medida, custom |
 | pág. | solo en la lista de piezas, por espacio | — |
 
