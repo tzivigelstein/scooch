@@ -122,11 +122,13 @@ describe('the skeleton in index.html', () => {
     for (const property of ['font-size', 'font-weight', 'letter-spacing']) expect(skeleton('desktop', '.boot-name', property), property).toBe(app('desktop', '.brand-name', property));
   });
 
-  test('the room it fits the sheet in is the stage’s, less the sheet’s title and «Agregar hoja», in every layout', () => {
+  test('the room it fits the sheet in is the stage’s scrolled area’s, less the sheet’s title and «Agregar hoja», in every layout', () => {
+    // The room a piece dragged out of the sheets makes for a new one is none at rest.
+    const atRest = (value: string) => value.replace(/^calc\((.+) \+ var\(--new-sheet-room\)\)$/, '$1');
     for (const layout of Object.keys(LAYOUTS) as Layout[]) {
       const [top, x, bottom] = parts(skeleton(layout, '.boot-stage', 'padding'));
       expect(skeleton(layout, '.boot-about', 'padding'), `the description is centered like the sheet (${layout})`).toBe(skeleton(layout, '.boot-stage', 'padding'));
-      const [stageTop, stageX, stageBottom] = parts(app(layout, '.stage', 'padding'));
+      const [stageTop, stageX, stageBottom] = parts(app(layout, '.stage-area', 'padding')).map(atRest);
       expect(terms(top), `top (${layout})`).toEqual([stageTop, app(layout, '.page-head', 'height')]);
       expect(x, `sides (${layout})`).toBe(stageX);
       expect(terms(bottom), `bottom (${layout})`).toEqual([stageBottom, app(layout, '.sheets', 'gap'), app(layout, '.sheets-foot', 'margin-top'), app(layout, '.add-sheet', 'height')]);
