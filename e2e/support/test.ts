@@ -23,6 +23,8 @@ export const norm = (s: string | null | undefined) => String(s ?? '').replace(/Â
 
 /** Pages whose app starts with the advice before printing and the summary after turned off. */
 const quietPages = new WeakSet<Page>();
+/** Pages whose app starts with the usage tips turned off. */
+const tiplessPages = new WeakSet<Page>();
 
 export class App {
   /**
@@ -32,6 +34,13 @@ export class App {
    * download only to read the PDF.
    */
   printing = false;
+
+  /**
+   * Whether usage tips show. Off unless a test turns them on before open():
+   * they have their own spec (usage-tips), and a tip in the notice area would
+   * stand in for what other specs read there.
+   */
+  tips = false;
 
   constructor(
     readonly page: Page,
@@ -45,6 +54,14 @@ export class App {
       // Only where the page hasn't got a preference of its own yet.
       await this.page.addInitScript(() => {
         if (localStorage.getItem('scooch:print-preferences') === null) localStorage.setItem('scooch:print-preferences', JSON.stringify({ v: 1, tip: false, summary: false }));
+      });
+    }
+    if (!this.tips && !tiplessPages.has(this.page)) {
+      tiplessPages.add(this.page);
+      await this.page.addInitScript(() => {
+        // It runs in every frame too: the PDF viewer's has no localStorage.
+        const storage = window.localStorage;
+        if (storage && storage.getItem('scooch:usage-tips') === null) storage.setItem('scooch:usage-tips', JSON.stringify({ v: 1, on: false, dismissed: [], known: [], counts: {} }));
       });
     }
     await this.page.goto(query ? `./${query}` : './');

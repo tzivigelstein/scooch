@@ -20,6 +20,8 @@ interface FlowOptions {
   before?: (page: Page) => Promise<unknown>;
   /** The advice before printing and the summary after show (off elsewhere: see App.printing). */
   printing?: boolean;
+  /** Usage tips show (off elsewhere: see App.tips). */
+  tips?: boolean;
 }
 
 /** One test per viewport, each with its own page at that size and the app opened. */
@@ -32,6 +34,7 @@ function flow(title: string, sizes: readonly Size[], run: (c: Catalogue, app: Ap
           await options.before?.(page);
           const app = new App(page, testInfo);
           app.printing = !!options.printing;
+          app.tips = !!options.tips;
           await app.open(options.query);
           const c = new Catalogue(app, testInfo, size);
           await run(c, app);
@@ -186,6 +189,26 @@ flow(
     await c.state('summary dialog after downloading, suggesting «Acomodar»');
   },
   { printing: true, before: (page) => page.addInitScript(() => localStorage.setItem('scooch:print-preferences', JSON.stringify({ v: 1, tip: false, summary: true }))) }
+);
+
+// ---------- A usage tip ----------
+
+// One piece duplicated three times with its toolbar: the tip about «Duplicar ×N», with its button.
+flow(
+  'usage tip',
+  [DESKTOP, MEDIUM, PHONE, WIDE],
+  async (c, app) => {
+    const page = c.page;
+    await app.addFiles(cards(0, 1));
+    await focusPiece(app.pieces().first());
+    for (let n = 2; n <= 4; n++) {
+      await page.locator('#piecebar [data-action="duplicate"]').click();
+      await expect(app.pieces()).toHaveCount(n);
+    }
+    await expect(page.locator('#usage-tip')).toBeVisible();
+    await c.state('a usage tip in the notice area, with its buttons');
+  },
+  { tips: true }
 );
 
 // ---------- Dialogs over a document ----------

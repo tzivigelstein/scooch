@@ -128,9 +128,9 @@ export const readLayout = (): Layout => {
   //    controls may only meet when one is pinned (sticky/fixed) over content
   //    that scrolls beneath it and can be scrolled clear.
   //    What floats over the canvas counts as one box with its text (the
-  //    notice, the toolbar, the zoom control): covering the notice's text hides
-  //    it as much as covering its button.
-  const FLOATING = '#pill, #piecebar, .zoom-control';
+  //    notice, a usage tip, the toolbar, the zoom control): covering the
+  //    notice's text hides it as much as covering its button.
+  const FLOATING = '#pill, #usage-tip, #piecebar, .zoom-control';
   const CONTROLS =
     'button, a[href], input:not([type="hidden"]), select, textarea, summary, [role="button"], [role="tab"], [role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"], [role="switch"], [role="slider"], [role="spinbutton"], [role="combobox"]';
   // A modal dialog makes the rest inert: only its controls count.
@@ -141,7 +141,7 @@ export const readLayout = (): Layout => {
     if (popup) return [4, popup];
     const panel = el.closest('.panel');
     if (panel && ['fixed', 'absolute'].includes(style(panel).position)) return [3, panel];
-    const floating = el.closest('#pill, #piecebar');
+    const floating = el.closest('#pill, #usage-tip, #piecebar');
     if (floating) return [2, floating];
     if (el.closest('#sheets')) return [0, null];
     return [1, null];
