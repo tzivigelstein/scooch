@@ -5,7 +5,7 @@
 import { CROWD_LIMIT, MAX_ITEMS } from '../../config.ts';
 import { overlapsAny } from '../../core/collide.js';
 import { isIdentity, pieceSize } from '../../core/crop.js';
-import { fitScale, pack, packSheets } from '../../core/pack.js';
+import { fitScale, pack, packedRotation, packSheets } from '../../core/pack.js';
 import { arrangeSheets, freeSpotNear, keepCenterInside, placeIntoSheets, samePlan, type ArrangePlan } from '../../core/sheets.js';
 import type { Item } from '../../core/types.ts';
 import { clamp, tidy } from '../../core/util.ts';
@@ -98,7 +98,7 @@ function applyPlan(plan: Pick<ArrangePlan, 'sheets' | 'placements'>) {
   const items = getDocument().items.map((item) => {
     const p = plan.placements.get(item.id);
     if (!p) return item;
-    return { ...item, sheet: p.sheet, x: tidy(p.x + pad), y: tidy(p.y + pad), r: p.rotated ? (((item.r + 90) % 360) as Item['r']) : item.r };
+    return { ...item, sheet: p.sheet, x: tidy(p.x + pad), y: tidy(p.y + pad), r: packedRotation(item.r, p.rotated) };
   });
   setDocument({ sheets: plan.sheets.map((id) => ({ id })), items });
   lastArranged = layoutSignature();
@@ -269,7 +269,7 @@ export function placementsFor(fresh: readonly Item[], from: number, { rotate = g
   const byId = new Map(fresh.map((item) => [item.id, item]));
   for (const p of plan.placements) {
     const { r } = byId.get(p.id)!;
-    placed.set(p.id, { sheet: p.sheet, x: tidy(p.x + pad), y: tidy(p.y + pad), r: p.rotated ? (((r + 90) % 360) as Item['r']) : r });
+    placed.set(p.id, { sheet: p.sheet, x: tidy(p.x + pad), y: tidy(p.y + pad), r: packedRotation(r, p.rotated) });
   }
   return { placed, sheets: plan.sheets, unplaced: plan.unplaced };
 }
@@ -478,7 +478,7 @@ export function fillCopies(item: Piece, newId = newItemId): Item[] | null {
   const g = getDocument().gap;
   const x0 = (W - (plan.cols * plan.w + (plan.cols - 1) * g)) / 2;
   const y0 = (H - (plan.rows * plan.h + (plan.rows - 1) * g)) / 2;
-  const r = (plan.rotated ? (item.r + 90) % 360 : item.r) as Item['r'];
+  const r = packedRotation(item.r, plan.rotated);
   const pad = layoutPad();
   const copies: Item[] = [];
   for (let row = 0; row < plan.rows; row++) {

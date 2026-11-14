@@ -1,4 +1,4 @@
-import type { IdSize, Rect, RectId } from './types';
+import type { IdSize, Rect, RectId, Rotation } from './types';
 
 /** Where `pack` put a piece; `rotated`: it takes h × w. */
 export interface Placement<I extends RectId = number> {
@@ -39,3 +39,6 @@ export function packInto<I extends RectId>(
   H: number,
   options?: { gap?: number; rotate?: boolean; sheets?: readonly (readonly Rect[])[]; from?: number }
 ): { placements: SheetPlacement<I>[]; unplaced: I[] };
+
+/** A piece's rotation `r` after a placement with `rotated`: the other rotation of its pair (0 ↔ 90, 180 ↔ 270), never adding up. */
+export function packedRotation(r: Rotation, rotated: boolean): Rotation;

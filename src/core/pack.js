@@ -728,3 +728,16 @@ export function packInto(rects, W, H, { gap = 0, rotate = true, sheets = [], fro
   placements.sort((a, b) => a.sheet - b.sheet);
   return { placements, unplaced: unplaced.concat(best.rest.map((r) => r.id)) };
 }
+
+/**
+ * A piece's rotation after packing. `rotated` (a placement's, relative to the
+ * footprint the packer was given) turns the footprint a quarter turn: the
+ * piece switches to the other rotation of its pair, 0 ↔ 90 or 180 ↔ 270.
+ * Packing only needs the two orientations of the footprint; adding 90 each
+ * time would leave a photo upside down after a few arranges. A piece turned
+ * to 180 by hand keeps its pair.
+ */
+export function packedRotation(r, rotated) {
+  if (!rotated) return r;
+  return r % 180 === 0 ? r + 90 : r - 90;
+}

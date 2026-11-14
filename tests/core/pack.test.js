@@ -1,6 +1,7 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { pack, fitScale, score } from '../../src/core/pack.js';
+import { pack, packedRotation, fitScale, score } from '../../src/core/pack.js';
+import { pieceSize } from '../../src/core/crop.js';
 import { prng, shuffled } from '../support/prng.js';
 import { TOL, assertValid, copies, scaled, sortedUnique } from '../support/pack.js';
 
@@ -338,6 +339,48 @@ describe('pack: picks the best layout', () => {
         rows.every((sizes) => sizes.size === 1),
         `rotate:${rotate}: rows ${JSON.stringify(rows.map((r) => [...r]))}`
       );
+    }
+  });
+});
+
+describe('packedRotation: the rotation of a piece the packer turned', () => {
+  const ROTATIONS = [0, 90, 180, 270];
+  const TURNED = { 0: 90, 90: 0, 180: 270, 270: 180 };
+  // A footprint of 30 × 20 mm at 0°: standing (h > w) only when turned.
+  const standing = (r) => pieceSize({ w: 30, h: 20 }, { scale: 100, r }).h > 20;
+
+  test.each(ROTATIONS)('%i°: unchanged when the packer leaves it as it was', (r) => {
+    assert.equal(packedRotation(r, false), r);
+  });
+
+  test.each(ROTATIONS)('%i°: turned, it goes to the other rotation of its pair (0 ↔ 90, 180 ↔ 270) and its footprint flips', (r) => {
+    const next = packedRotation(r, true);
+    assert.equal(next, TURNED[r]);
+    assert.equal(Math.abs(next - r), 90);
+    assert.notEqual(standing(next), standing(r));
+  });
+
+  test.each(ROTATIONS)('%i°: turned twice, it is back where it was', (r) => {
+    assert.equal(packedRotation(packedRotation(r, true), true), r);
+  });
+
+  test('any sequence of up to 8 arranges keeps a piece in its pair, its footprint turned after an odd number of turns', () => {
+    for (const start of ROTATIONS) {
+      const pair = [start, TURNED[start]];
+      for (let length = 1; length <= 8; length++) {
+        for (let bits = 0; bits < 2 ** length; bits++) {
+          let r = start;
+          let turns = 0;
+          for (let i = 0; i < length; i++) {
+            const turned = ((bits >> i) & 1) === 1;
+            r = packedRotation(r, turned);
+            if (turned) turns++;
+          }
+          const label = `from ${start}° with turns ${bits.toString(2).padStart(length, '0')}`;
+          assert.ok(pair.includes(r), `${label}: ${r}°`);
+          assert.equal(r, turns % 2 ? TURNED[start] : start, label);
+        }
+      }
     }
   });
 });
