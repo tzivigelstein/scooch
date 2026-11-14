@@ -20,7 +20,10 @@ import {
   Images,
   Info,
   Maximize2,
+  MoveHorizontal,
+  MoveVertical,
   RotateCw,
+  Scaling,
   Trash2,
   TriangleAlert,
   type LucideIcon,
@@ -145,8 +148,8 @@ function NumField({
 const FIELDS: readonly { field: LengthFieldName; id: string; prefix: ReactNode; label: CopyKey; tip: CopyKey }[] = [
   { field: 'x', id: 'pos-x', prefix: t('props.x'), label: 'props.xLabel', tip: 'props.xTip' },
   { field: 'y', id: 'pos-y', prefix: t('props.y'), label: 'props.yLabel', tip: 'props.yTip' },
-  { field: 'width', id: 'width', prefix: t('props.widthPrefix'), label: 'props.widthLabel', tip: 'props.widthTip' },
-  { field: 'height', id: 'height', prefix: t('props.heightPrefix'), label: 'props.heightLabel', tip: 'props.heightTip' },
+  { field: 'width', id: 'width', prefix: <Icon icon={MoveHorizontal} />, label: 'props.widthLabel', tip: 'props.widthTip' },
+  { field: 'height', id: 'height', prefix: <Icon icon={MoveVertical} />, label: 'props.heightLabel', tip: 'props.heightTip' },
 ];
 
 /** The displayed values of a selection (or of a gesture's live copies). */
@@ -302,7 +305,7 @@ export function PieceSection() {
           ))}
         </div>
         <div className="scale-row">
-          <NumField unit={t('units.percent')}>
+          <NumField prefix={<Icon icon={Scaling} />} unit={t('units.percent')}>
             <NumberField
               inputRef={scaleInput}
               id="scale"

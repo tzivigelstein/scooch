@@ -139,8 +139,9 @@ solo para una consecuencia que no se ve y que importa.
   atajo va en el tooltip y en `aria-keyshortcuts`.
 - Un ícono, un significado: «Duplicar» es siempre la copia con un «+»; las
   tijeras son «Cortar» (el distintivo de «Se sale de la hoja» es otro).
-- Campos compactos: una letra antes del valor (X, Y, An, Al) y la unidad
-  después; la escala, solo con su «%».
+- Campos compactos: antes del valor, la letra del eje en la posición (X, Y)
+  y un ícono en el ancho, el alto y la escala; la unidad va después. No se
+  abrevian palabras («An», «Al»).
 
 ### Enlaces dentro de una frase
 

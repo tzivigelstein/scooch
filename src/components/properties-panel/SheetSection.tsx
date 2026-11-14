@@ -1,6 +1,6 @@
 // The «Hoja» section: paper, orientation, custom size and margin.
 
-import { RectangleHorizontal, RectangleVertical } from 'lucide-react';
+import { MoveHorizontal, MoveVertical, RectangleHorizontal, RectangleVertical } from 'lucide-react';
 import { useLayoutEffect, useState } from 'react';
 import { CUSTOM_MAX, CUSTOM_MIN, PAPER_GROUPS, PAPERS, matchPreset } from '../../core/papers.js';
 import type { PaperId } from '../../core/types.ts';
@@ -46,7 +46,7 @@ export function SheetSection() {
   const sideField = (side: 'w' | 'h') => (
     <label className="num-field prefixed">
       <span className="num-prefix" aria-hidden="true">
-        {t(side === 'w' ? 'props.widthPrefix' : 'props.heightPrefix')}
+        <Icon icon={side === 'w' ? MoveHorizontal : MoveVertical} />
       </span>
       <LengthField
         id={`paper-${side}`}

@@ -245,7 +245,7 @@ input[aria-invalid="true"]:hover:not(:disabled) {
 }
 
 .num-field.prefixed input {
-  padding-left: 2rem;
+  padding-left: 1.75rem;
 }
 
 .num-prefix {
@@ -254,7 +254,7 @@ input[aria-invalid="true"]:hover:not(:disabled) {
   margin-left: 0.5625rem;
   display: grid;
   place-items: center;
-  min-width: 0.875rem;
+  width: 0.875rem;
   color: var(--muted);
   font-size: 0.75rem;
   font-weight: 650;
