@@ -694,8 +694,10 @@ const es = {
     fallbackName: 'hoja',
   },
 
-  // The request for a donation, at the bottom of the summary after printing
+  // The request for a donation, in the summary after printing
   donate: {
+    title: '¿Te ahorró tiempo y papel?',
+    body: '{app} es gratis, sin anuncios ni marcas de agua. Se mantiene gracias a personas como tú.',
     cta: 'Aportar en Patreon',
     ctaNote: 'Se abre en otra pestaña',
     never: 'No volver a mostrar',

@@ -93,6 +93,7 @@ describe('the summary after printing', () => {
 
   test('the request for a donation: a link that opens apart, and «No volver a mostrar» that hides it', () => {
     show({ ask: true });
+    expect(screen.getByRole('region', { name: '¿Te ahorró tiempo y papel?' })).toBeTruthy();
     const link = screen.getByRole('link', { name: 'Aportar en Patreon' });
     expect(link.getAttribute('href')).toBe('https://www.patreon.com/ejemplo');
     expect(link.getAttribute('target')).toBe('_blank');

@@ -1,9 +1,8 @@
 // The request for a donation in a real browser, with a Patreon URL tried
 // through ?donar= (the app is on 127.0.0.1): never a dialog of its own and
-// never before the printer, but a link at the foot of the summary after
-// printing or downloading, once per page load, that opens Patreon apart
-// without interrupting anything, and «No volver a mostrar» lasting across
-// reloads.
+// never before the printer, but a panel in the summary after printing or
+// downloading, once per page load, whose link opens Patreon apart without
+// interrupting anything, and «No volver a mostrar» lasting across reloads.
 // Its copy and attributes are in tests/components/PrintSummary.test.tsx; when
 // it asks (no URL, invalid URL, once per load), in tests/services/donate.test.ts.
 import type { Page } from '@playwright/test';
@@ -30,7 +29,7 @@ async function output(page: Page, button: '#print' | '#export') {
 test.describe('printing, with a PDF viewer', () => {
   test.use({ pdfViewer: true, printSpy: 'record' });
 
-  test('after the first print, the summary asks with a link (a comfortable target) at its foot; the next print in this page load doesn’t ask', async ({ app, page }) => {
+  test('after the first print, the summary asks with a link (a comfortable target); the next print in this page load doesn’t ask', async ({ app, page }) => {
     await app.addFiles(['small.jpg', 'square.webp']);
     await output(page, '#print');
     await expect.poll(() => printCalls(page)).toHaveLength(1);

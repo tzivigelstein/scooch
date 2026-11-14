@@ -1,5 +1,5 @@
-// The request for a donation: a discreet link at the bottom of the summary
-// after printing or downloading (never a dialog, never before the printer).
+// The request for a donation: a panel in the summary after printing or
+// downloading (never a dialog of its own, never before the printer).
 // Only with a valid https Patreon URL, once per page load (DONATE_EVERY), and
 // never again on this device after «No volver a mostrar».
 

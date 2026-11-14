@@ -4,7 +4,7 @@
 // that baseline in small print), one practical equivalent that takes turns,
 // the running total on this device (with a line and a brief glow at its
 // milestones) and, at most, a fuller arrangement when it surely saves a sheet.
-// The request for a donation, when it applies, is a link at its foot.
+// The request for a donation, when it applies, is a panel of its own.
 // «Listo» starts focused.
 
 import { Heart, Layers, LayoutDashboard, Leaf, Trophy } from 'lucide-react';
@@ -36,6 +36,41 @@ function Ring({ share, milestone }: { share: number; milestone: number | null })
       </svg>
       <span className="ring-label">{t('summary.percent', { n: percent })}</span>
     </div>
+  );
+}
+
+function DonationAsk({ url }: { url: string }) {
+  return (
+    <section className="summary-ask" aria-labelledby="summary-ask-title">
+      <div className="ask-head">
+        <span className="ask-heart" aria-hidden="true">
+          <Icon icon={Heart} />
+        </span>
+        <h3 id="summary-ask-title" className="ask-title">
+          {t('donate.title')}
+        </h3>
+      </div>
+      <p className="ask-body">{t('donate.body')}</p>
+      <div className="ask-actions">
+        <a id="summary-donate" className="ask-cta" href={url} target="_blank" rel="noopener noreferrer" data-tip={t('donate.ctaNote')}>
+          <Icon icon={Heart} />
+          <span>{t('donate.cta')}</span>
+        </a>
+        <button
+          type="button"
+          id="summary-donate-never"
+          className="text-btn ask-never"
+          onClick={() => {
+            neverAskDonation();
+            const { summary } = usePrintSummary.getState();
+            if (summary) usePrintSummary.setState({ summary: { ...summary, ask: false } });
+            focusDone()?.focus();
+          }}
+        >
+          {t('donate.never')}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -101,26 +136,7 @@ function SummaryContent({ summary }: { summary: Summary }) {
             )}
           </div>
         )}
-        {ask && url && (
-          <div className="summary-ask">
-            <a id="summary-donate" href={url} target="_blank" rel="noopener noreferrer" data-tip={t('donate.ctaNote')}>
-              <Icon icon={Heart} />
-              <span>{t('donate.cta')}</span>
-            </a>
-            <button
-              type="button"
-              id="summary-donate-never"
-              className="text-btn"
-              onClick={() => {
-                neverAskDonation();
-                usePrintSummary.setState({ summary: { ...summary, ask: false } });
-                focusDone()?.focus();
-              }}
-            >
-              {t('donate.never')}
-            </button>
-          </div>
-        )}
+        {ask && url && <DonationAsk url={url} />}
       </div>
       <div className="dialog-actions summary-actions">
         <button type="button" id="summary-done" className="btn primary" onClick={closeSummary}>
