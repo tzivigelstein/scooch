@@ -3,9 +3,10 @@
 // the app's script runs, only its texts download, and the key screens (the
 // top bar, both tabs, Preferences, the shortcuts, the palette and the summary
 // after downloading) show no Spanish, scroll nothing sideways and cut no
-// control's text, at 1440 and 390 px; axe finds nothing in one state. The rest
-// of the suite runs in Spanish (playwright.config.ts). How texts are chosen,
-// switched and kept, without a browser: tests/services/language.test.ts and
+// control's text, at 1440 and 390 px; axe finds nothing in one state. And
+// choosing a language in Preferences, once, end to end. The rest of the suite
+// runs in Spanish (playwright.config.ts). How texts are chosen, switched and
+// kept, without a browser: tests/services/language.test.ts and
 // tests/components/language-switch.test.tsx.
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
@@ -171,3 +172,33 @@ for (const language of LANGUAGES.filter((l) => l !== 'es')) {
     });
   });
 }
+
+test('choosing a language in Preferences shows it at once, without a reload, keeping the selection and undo; another tab follows, and a reload keeps it', async ({ app, page, context }) => {
+  await app.addFiles(['tile000.png', 'tile001.png']);
+  await app.selectIds([2]);
+  await page.keyboard.press('r');
+  const before = await app.ids();
+  const other = await context.newPage();
+  await other.goto('./');
+  await expect(other.locator('html')).toHaveAttribute('lang', 'es');
+  await page.evaluate(() => ((window as unknown as { kept: boolean }).kept = true));
+
+  await page.locator('#prefs-open').click();
+  await page.locator('#language').selectOption('fr');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  await expect(page.locator('#prefs-title')).toHaveText('Préférences');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#undo')).toHaveAttribute('aria-label', 'Annuler');
+  await expect(app.piece(2)).toHaveAttribute('aria-label', /pivoté de 90°/);
+  expect(await page.evaluate(() => (window as unknown as { kept?: boolean }).kept), 'the same page, not reloaded').toBe(true);
+  expect(await app.selectedIds()).toEqual([2]);
+  expect(await app.ids()).toEqual(before);
+  await expect(other.locator('html')).toHaveAttribute('lang', 'fr');
+  await expect(other).toHaveTitle(textsFor(CATALOGUES.fr).t('app.title'));
+
+  await app.undo();
+  await expect(app.piece(2)).not.toHaveAttribute('aria-label', /pivoté/);
+  await page.reload();
+  await app.ready();
+  await expect(page.locator('#undo')).toHaveAttribute('aria-label', 'Annuler');
+});
