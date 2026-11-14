@@ -44,7 +44,7 @@ const readTheme = () => {
 
 const mountedIn = (theme: keyof typeof LOOKS) => ({ ...LOOKS[theme], cssScheme: theme, sheet: WHITE, mounted: true });
 
-test('each option of Tema applies at once whatever the system’s theme, and the sheet stays white', async ({ app, page }) => {
+test('each option of Tema applies at once whatever the system’s theme, and the sheet stays white', async ({ app: { page } }) => {
   await expect.poll(() => page.evaluate(readTheme)).toEqual(mountedIn('light'));
   await chooseTheme(page, 'dark');
   await expect.poll(() => page.evaluate(readTheme)).toEqual(mountedIn('dark'));
@@ -55,7 +55,7 @@ test('each option of Tema applies at once whatever the system’s theme, and the
   await expect.poll(() => page.evaluate(readTheme)).toEqual(mountedIn('dark'));
 });
 
-test('on Automático the page follows the system’s theme as it changes', async ({ app, page }) => {
+test('on Automático the page follows the system’s theme as it changes', async ({ app: { page } }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await expect.poll(() => page.evaluate(readTheme)).toEqual(mountedIn('dark'));
   await page.emulateMedia({ colorScheme: 'light' });
@@ -80,7 +80,7 @@ test('after a reload the chosen theme is on the page before the app’s script r
   await expect(page.locator('#prefs').getByRole('radio', { name: LABELS.dark })).toBeChecked();
 });
 
-test('a theme chosen in one tab shows in the others at once', async ({ app, page, context }, testInfo) => {
+test('a theme chosen in one tab shows in the others at once', async ({ app: { page }, context }, testInfo) => {
   const other = await context.newPage();
   await new App(other, testInfo).open();
   await chooseTheme(page, 'dark');
