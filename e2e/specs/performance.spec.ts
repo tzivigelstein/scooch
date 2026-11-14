@@ -1,7 +1,7 @@
 // Time budgets with 150 pieces on 10 sheets: dragging, scrolling, selecting,
-// zooming and dragging at 200 % out of the sheets. These run alone, after the
-// rest (the `performance` project: one worker), so other workers don't eat
-// into the numbers; each test attaches what it measured («measures»).
+// zooming, pinching and dragging at 200 % out of the sheets. These run alone,
+// after the rest (the `performance` project: one worker), so other workers
+// don't eat into the numbers; each test attaches what it measured («measures»).
 // The gestures are dispatched inside the page, so each move's handler time is
 // measured on its own; frames are the gaps between animation frames, and long
 // tasks come from the browser's PerformanceObserver.
@@ -169,6 +169,54 @@ test.describe('with 150 pieces on 10 sheets', () => {
     expect(zoom.levels, 'the wheel really zooms').toBeGreaterThan(5);
     expect(zoom.p95).toBeLessThan(34);
     expect(long(zoom.longs)).toEqual([]);
+  });
+
+  test('pinching with two fingers, spreading and closing a little each frame: each move < 1 ms (p95), frames p95 < 34 ms, no long tasks', async ({ page }, info) => {
+    const before = await page.locator('#zoom-level').textContent();
+    const pinch = await page.evaluate(async () => {
+      const frame = () => new Promise((done) => requestAnimationFrame(done));
+      const stage = document.getElementById('stage')!;
+      const r = stage.getBoundingClientRect();
+      const longs: number[] = [];
+      const observer = new PerformanceObserver((l) => longs.push(...l.getEntries().map((e) => e.duration)));
+      observer.observe({ entryTypes: ['longtask'] });
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const opts = (id: number, x: number) => ({ bubbles: true, cancelable: true, pointerId: id, pointerType: 'touch', isPrimary: id === 21, clientX: x, clientY: cy, button: 0, buttons: 1 });
+      const fingers = (type: string, d: number) => {
+        for (const [id, x] of [[21, cx - d / 2], [22, cx + d / 2]]) stage.dispatchEvent(new PointerEvent(type, opts(id, x)));
+      };
+      fingers('pointerdown', 100);
+      const times: number[] = [];
+      const gaps: number[] = [];
+      const levels = new Set<string>();
+      let last = performance.now();
+      for (let i = 1; i <= 40; i++) {
+        const t = performance.now();
+        // Both fingers move each frame, as a phone sends them.
+        fingers('pointermove', i <= 20 ? 100 + i * 12 : 340 - (i - 20) * 12);
+        times.push(performance.now() - t);
+        await frame();
+        levels.add(document.getElementById('zoom-level')!.textContent ?? '');
+        const now = performance.now();
+        gaps.push(now - last);
+        last = now;
+      }
+      fingers('pointerup', 100);
+      // A long task is reported when it ends, before the next frames: after two,
+      // its entry is in the observer's buffer, and takeRecords() collects it.
+      await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+      longs.push(...observer.takeRecords().map((e) => e.duration));
+      observer.disconnect();
+      times.sort((a, b) => a - b);
+      gaps.sort((a, b) => a - b);
+      return { median: times[20], p95: times[37], max: times.at(-1)!, frameMedian: gaps[20], frameP95: gaps[37], frameMax: gaps.at(-1)!, longs, levels: levels.size };
+    });
+    await attach(info, { ...pinch, before });
+    expect(pinch.levels, 'the fingers really zoom').toBeGreaterThan(5);
+    expect(pinch.p95).toBeLessThan(1);
+    expect(pinch.frameP95).toBeLessThan(34);
+    expect(long(pinch.longs)).toEqual([]);
   });
 
   test('dragging at 200 % and out of the sheets (where the new-sheet placeholders show): each move < 1 ms (p95), no long tasks', async ({ page }, info) => {
