@@ -117,6 +117,12 @@ async function walkScreens(app: App, language: Language) {
   await expect(page.locator('#print-summary')).toHaveAttribute('open', '');
   await checkScreen(page, language, 'the summary after downloading');
   await page.locator('#summary-done').click();
+
+  // A usage tip, with its buttons: one piece duplicated three times with the toolbar offers «Duplicar ×N».
+  await app.clickPiece(app.piece(1));
+  for (let i = 0; i < 3; i++) await page.locator('#piecebar [data-action="duplicate"]').click();
+  await expect(page.locator('#usage-tip')).toBeVisible();
+  await checkScreen(page, language, 'a usage tip');
 }
 
 for (const language of LANGUAGES.filter((l) => l !== 'es')) {
