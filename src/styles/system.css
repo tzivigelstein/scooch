@@ -57,4 +57,40 @@
   input[role="switch"]::before {
     background: CanvasText;
   }
+
+  /* Segmented controls: the track outlined, the chosen segment highlighted. */
+  .segmented {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+
+  .seg-thumb::before {
+    forced-color-adjust: none;
+    border-color: Highlight;
+    background: Highlight;
+    box-shadow: none;
+  }
+
+  .seg > input:checked + span {
+    forced-color-adjust: none;
+    color: HighlightText;
+  }
+
+  .segmented:has(> .seg > input:checked:focus-visible) > .seg-thumb::before {
+    outline-color: CanvasText;
+  }
+
+  .seg > input:disabled + span {
+    color: GrayText;
+    opacity: 1;
+  }
+
+  .segmented:has(> .seg > input:checked:disabled) > .seg-thumb::before {
+    border-color: GrayText;
+    background: GrayText;
+  }
+
+  .seg > input:checked:disabled + span {
+    color: Canvas;
+  }
 }
