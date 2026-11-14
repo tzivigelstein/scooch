@@ -197,20 +197,28 @@ input.palette-input:focus-visible {
   }
 }
 
-/* Phones: the whole width, at the top (the on-screen keyboard takes the bottom). */
-@media (max-width: 799.98px) {
-  .dialog.palette {
-    width: calc(100vw - 1rem);
-    max-height: calc(100dvh - 1rem);
-    margin-top: 0.5rem;
-  }
-
+/* The compact top bar: just the icon (the keys stay in its tooltip). */
+@media (max-width: 1099.98px) {
   .palette-open-keys {
     display: none;
   }
 
   .tool.palette-open {
-    width: 2.5rem;
+    width: 2.25rem;
     padding: 0;
+  }
+}
+
+/* Phones: the whole width, at the top (the on-screen keyboard takes the bottom). */
+@media (max-width: 799.98px) {
+  .dialog.palette {
+    width: calc(100vw - 1rem);
+    max-width: none;
+    max-height: calc(100dvh - 1rem);
+    margin-top: 0.5rem;
+  }
+
+  .tool.palette-open {
+    width: 2.5rem;
   }
 }
