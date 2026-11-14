@@ -51,6 +51,11 @@ const TYPOGRAPHY: Record<string, readonly { rule: string; bad: RegExp }[]> = {
     { rule: 'no space between Chinese and a number or a Latin word', bad: /[㐀-鿿] [\w{]|[\w}] [㐀-鿿]/ },
     { rule: 'Chinese quotes (“ ”), not guillemets or straight ones', bad: /["«»]/ },
   ],
+  hi: [
+    { rule: 'a sentence ends with ।, not with a point', bad: /[ऀ-ॿ]\.(\s|$)/ },
+    { rule: 'curly quotes (“ ”), not guillemets or straight ones', bad: /["«»]/ },
+    { rule: 'no space before %', bad: /\d %|\} %/ },
+  ],
 };
 
 /** The words that find a command in the palette: search data, never shown (commas split them). */

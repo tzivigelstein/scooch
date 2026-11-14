@@ -2,7 +2,7 @@
 // Pure: the browser's languages are passed in (navigator.languages).
 
 /** The interface languages, as BCP 47 tags (what `<html lang>` says). */
-export const LANGUAGES = Object.freeze(['es', 'en', 'zh-Hans']);
+export const LANGUAGES = Object.freeze(['es', 'en', 'zh-Hans', 'hi']);
 
 /** Is it one of LANGUAGES? */
 export const isLanguage = (value) => LANGUAGES.includes(value);

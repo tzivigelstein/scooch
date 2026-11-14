@@ -73,6 +73,12 @@
   --font: "Inter Variable", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
 }
 
+/* Hindi: Inter for Latin letters and numbers, Noto Sans Devanagari
+   (styles/devanagari.css, loaded with the Hindi texts) for the rest. */
+:root:lang(hi) {
+  --font: "Inter Variable", "Noto Sans Devanagari Variable", system-ui, sans-serif;
+}
+
 /* The dark theme: chosen in «Preferencias», or the system's on «Automático»
    (index.html and src/services/theme.ts set data-theme). */
 :root[data-theme="dark"] {

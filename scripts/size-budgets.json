@@ -15,12 +15,17 @@
       "kB": 11.6,
       "measured": 11.0,
       "what": "Each language's texts (src/copy/<language>.ts), a chunk of its own: index.html preloads only the one it shows, so what a first visit waits for is «initialJs» plus one of these."
+    },
+    "hi": {
+      "kB": 13.5,
+      "measured": 12.8,
+      "what": "Hindi's texts: Devanagari takes three bytes a letter in UTF-8, so the same texts weigh more than in the other languages. Its font (about 121 kB of woff2, the Devanagari subset of Noto Sans Devanagari) isn't JavaScript and loads only with them."
     }
   },
   "totalJs": {
-    "kB": 923,
-    "measured": 878.5,
-    "what": "Every .js and .mjs file of the build: the editor's lazy chunks (dialogs, crop mode), pdf.js and its worker (about 500 kB), pdf-lib (about 180 kB), the contour worker and the static pages' scripts. Catches a dependency that grows or gets in by accident."
+    "kB": 977,
+    "measured": 930.4,
+    "what": "Every .js and .mjs file of the build: the editor's lazy chunks (dialogs, crop mode, each language's texts, of which only one loads), pdf.js and its worker (about 500 kB), pdf-lib (about 180 kB), the contour worker and the static pages' scripts. Catches a dependency that grows or gets in by accident."
   },
   "css": {
     "kB": 14.7,
@@ -44,8 +49,8 @@
       "what": "The privacy policy, from docs/legal/privacidad.md: it lists every key the app stores in the browser, so it grows with each new setting."
     },
     "es/licencias-de-terceros.html": {
-      "kB": 14,
-      "measured": 13.3,
+      "kB": 15,
+      "measured": 14.2,
       "what": "The third-party licenses page, from THIRD_PARTY_NOTICES.md: it grows with each dependency the build ships."
     }
   }

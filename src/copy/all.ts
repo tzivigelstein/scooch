@@ -6,6 +6,7 @@ import type { Language } from '../core/language.js';
 import es from './es.ts';
 import en from './en.ts';
 import zhHans from './zh-Hans.ts';
+import hi from './hi.ts';
 import type { Catalogue } from './index.ts';
 
-export const CATALOGUES: Readonly<Record<Language, Catalogue>> = { es, en, 'zh-Hans': zhHans };
+export const CATALOGUES: Readonly<Record<Language, Catalogue>> = { es, en, 'zh-Hans': zhHans, hi };

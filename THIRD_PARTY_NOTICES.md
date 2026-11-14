@@ -6,7 +6,8 @@ listed here, each under its own license. The license texts follow the table.
 
 What this covers: everything that ships to the browser. That is the npm
 packages whose modules end up in the production bundle, the files copied into
-it as they are (the pdf.js worker and the Inter font files) and the small
+it as they are (the pdf.js worker and the Inter and Noto Sans Devanagari font
+files) and the small
 helpers the build tools add. Development tools that don't ship (Vitest,
 Playwright, TypeScript, jsdom…) are not listed.
 
@@ -31,6 +32,7 @@ headers.
 | pako (used by pdf-lib) | 1.0.11 | (MIT AND Zlib) | Copyright (C) 2014-2017 by Vitaly Puzrin and Andrei Tuputcyn; zlib port: (C) 1995-2013 Jean-loup Gailly and Mark Adler | `pdf-lib-*.js` | [github.com/nodeca/pako](https://github.com/nodeca/pako) |
 | tslib (used by pdf-lib) | 1.14.1 | 0BSD | Copyright (c) Microsoft Corporation. | `pdf-lib-*.js` | [github.com/Microsoft/tslib](https://github.com/Microsoft/tslib) |
 | Inter, via @fontsource-variable/inter | 5.3.0 | OFL-1.1 | Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter) | `inter-*-wght-normal-*.woff2` and their `@font-face` rules in the stylesheet | [fontsource.org/fonts/inter](https://fontsource.org/fonts/inter) |
+| Noto Sans Devanagari, via @fontsource-variable/noto-sans-devanagari | 5.3.0 | OFL-1.1 | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/devanagari) | `noto-sans-devanagari-devanagari-wght-normal-*.woff2` (its Devanagari subset only) and its `@font-face` rule in `devanagari-*.css`, loaded only when the editor shows Hindi | [fontsource.org/fonts/noto-sans-devanagari](https://fontsource.org/fonts/noto-sans-devanagari) |
 
 Code added by the build tools (not a dependency of the app, but part of the
 output):
@@ -60,6 +62,9 @@ Notes, as read from the packages:
 - **Inter**: the font files keep the SIL Open Font License 1.1, which also
   applies to any modified version of them. The fonts are served with the app;
   they are not sold by themselves.
+- **Noto Sans Devanagari**: the same as Inter. It is a development
+  dependency because the build copies its file into `dist/`; nothing of it
+  runs. Only the Devanagari subset ships (Latin text stays in Inter).
 - **vite**: its `LICENSE.md` also lists the licenses of the code bundled into
   Vite's own Node.js tooling, which doesn't ship to the browser; only Vite's
   own license is reproduced below.
@@ -535,6 +540,104 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ```text
 Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter) Inter-Italic[opsz,wght].ttf: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+http://scripts.sil.org/OFL
+
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.
+```
+
+### OFL-1.1: Noto Sans Devanagari (@fontsource-variable/noto-sans-devanagari)
+
+```text
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/devanagari)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

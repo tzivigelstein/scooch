@@ -104,9 +104,11 @@ for (const language of LANGUAGES.filter((l) => l !== 'es')) {
       test(`at ${size.width} px: in ${language} before the app’s script runs, only its texts download, and the key screens show no Spanish, overflow nothing and cut no text`, async ({ page }, info) => {
         await page.setViewportSize(size);
         const chunks: string[] = [];
+        const devanagari: string[] = [];
         page.on('request', (request) => {
           const name = /\/assets\/copy-([\w-]+?)-[\w-]{8}\.js$/.exec(request.url())?.[1];
           if (name) chunks.push(name);
+          if (/noto-sans-devanagari/.test(request.url())) devanagari.push(request.url());
         });
         // The advice before downloading off, the summary after on.
         await page.addInitScript(() => localStorage.setItem('scooch:print-preferences', JSON.stringify({ v: 1, tip: false, summary: true })));
@@ -130,6 +132,9 @@ for (const language of LANGUAGES.filter((l) => l !== 'es')) {
         expect(chunks, 'the texts downloaded').toEqual([language]);
         await expect(page.locator('html')).toHaveAttribute('lang', language);
         await walkScreens(app, language);
+        // Hindi's font, with Hindi only (the other languages show «हिन्दी» in Preferences with the system's font).
+        expect(devanagari.length > 0, 'the Devanagari font downloaded').toBe(language === 'hi');
+        if (language === 'hi') expect(await page.evaluate(() => document.fonts.check('16px "Noto Sans Devanagari Variable"', 'हिन्दी')), 'the Devanagari font in use').toBe(true);
       });
     }
 

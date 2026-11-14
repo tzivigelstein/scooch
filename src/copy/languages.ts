@@ -7,4 +7,5 @@ export const LANGUAGE_NAMES: Readonly<Record<Language, string>> = Object.freeze(
   es: 'Español',
   en: 'English',
   'zh-Hans': '简体中文',
+  hi: 'हिन्दी',
 });

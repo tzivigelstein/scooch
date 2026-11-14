@@ -25,7 +25,8 @@ function languageFiles(bundle: Record<string, Output>): LanguageFiles {
       return chunk ? [[language, `/${chunk.fileName}`]] : [];
     })
   );
-  return { chunks };
+  const devanagari = outputs.filter((o) => o.type === 'asset' && o.originalFileNames?.some((name) => name.endsWith('noto-sans-devanagari-devanagari-wght-normal.woff2')));
+  return { chunks, fonts: { hi: devanagari.map((o) => `/${o.fileName}`) } };
 }
 
 export default defineConfig({
