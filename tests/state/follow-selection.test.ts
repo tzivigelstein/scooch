@@ -137,10 +137,10 @@ describe('the tab follows the selection', () => {
   test('a switch caused by the keyboard is announced; one caused by the pointer is not', () => {
     byKeyboard();
     select(1);
-    expect(heard()).toBe('Propiedades muestra la pieza.');
+    expect(heard()).toBe('Propiedades muestra la pestaña Pieza.');
     byKeyboard();
     select(null);
-    expect(heard()).toBe('Propiedades muestra la hoja.');
+    expect(heard()).toBe('Propiedades muestra la pestaña Hojas.');
     byPointer();
     select(2);
     expect(tab()).toBe('piece');

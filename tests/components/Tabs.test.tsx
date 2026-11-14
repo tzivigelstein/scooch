@@ -32,10 +32,10 @@ const tab = (name: 'piece' | 'sheet') => document.getElementById(`props-tab-${na
 const panel = (name: 'piece' | 'sheet') => document.getElementById(`props-${name}`)!;
 
 describe('the «Propiedades» tabs', () => {
-  test('a tablist named «Propiedades» with two tabs, Pieza and Hoja, each wired to its panel', () => {
+  test('a tablist named «Propiedades» with two tabs, Pieza and Hojas, each wired to its panel', () => {
     const list = screen.getByRole('tablist', { name: 'Propiedades' });
     const tabs = within(list).getAllByRole('tab');
-    expect(tabs.map((t) => t.textContent)).toEqual(['Pieza', 'Hoja']);
+    expect(tabs.map((t) => t.textContent)).toEqual(['Pieza', 'Hojas']);
     for (const t of tabs) {
       const controlled = document.getElementById(t.getAttribute('aria-controls')!)!;
       expect(controlled.getAttribute('role')).toBe('tabpanel');
@@ -84,7 +84,8 @@ describe('the «Propiedades» tabs', () => {
   });
 
   test('the tabs show their shortcut (M, H) in the tooltip and in aria-keyshortcuts, which goes when single keys are off', () => {
-    expect(tab('piece').dataset.tip).toBe('Propiedades de la selección');
+    expect(tab('piece').dataset.tip).toBe('Pieza');
+    expect(tab('sheet').dataset.tip).toBe('Hojas');
     expect(tab('piece').dataset.kbd).toBe('M');
     expect(tab('piece').getAttribute('aria-keyshortcuts')).toBe('M');
     expect(tab('sheet').dataset.kbd).toBe('H');
@@ -96,8 +97,9 @@ describe('the «Propiedades» tabs', () => {
 });
 
 describe('what each tab shows', () => {
-  test('Hoja says its settings apply to every sheet', () => {
-    expect(panel('sheet').querySelector('.tab-note')!.textContent).toBe('Se aplica a todas las hojas');
+  test('Hojas is named for every sheet and starts with its first section, with no note above it', () => {
+    expect(tab('sheet').textContent).toBe('Hojas');
+    expect(panel('sheet').firstElementChild!.classList.contains('prop-section')).toBe(true);
   });
 
   test('Pieza with nothing selected shows only the hint', () => {

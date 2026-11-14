@@ -1,4 +1,4 @@
-// «Líneas de corte» (Hoja tab): none, corner marks or the outline, and in
+// «Líneas de corte» (Hojas tab): none, corner marks or the outline, and in
 // «Más opciones» the marks' length and distance and the stroke (weight,
 // color, dash). Document settings: in the undo history and saved with it;
 // whether «Más opciones» is open is remembered in this browser.

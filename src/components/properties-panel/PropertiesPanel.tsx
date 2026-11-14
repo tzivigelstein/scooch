@@ -1,5 +1,6 @@
 // The «Propiedades» panel, in two tabs: «Pieza» (the selection's properties)
-// and «Hoja» (the document's settings: paper, arrangement, grid). The tab
+// and «Hojas» (the settings every sheet shares: paper, arrangement, cut lines,
+// grid). The tab
 // follows the selection (state/actions/panels.ts).
 
 import { X } from 'lucide-react';
@@ -39,15 +40,14 @@ export function PropertiesPanel() {
         value={tab}
         onChange={(value, { focus }) => showPropsTab(value, { focus })}
         options={[
-          { value: 'piece', label: t('props.tabs.piece'), panel: TAB_PANELS.piece, attrs: { 'data-tip': t('props.tabs.pieceTip'), ...pieceKeys } },
-          { value: 'sheet', label: t('props.tabs.sheet'), panel: TAB_PANELS.sheet, attrs: { 'data-tip': t('props.tabs.sheetTip'), ...sheetKeys } },
+          { value: 'piece', label: t('props.tabs.piece'), panel: TAB_PANELS.piece, attrs: { 'data-tip': t('props.tabs.piece'), ...pieceKeys } },
+          { value: 'sheet', label: t('props.tabs.sheet'), panel: TAB_PANELS.sheet, attrs: { 'data-tip': t('props.tabs.sheet'), ...sheetKeys } },
         ]}
       />
       <div id={TAB_PANELS.piece} className="tab-panel" role="tabpanel" aria-labelledby="props-tab-piece" hidden={tab !== 'piece'}>
         <PieceSection />
       </div>
       <div id={TAB_PANELS.sheet} className="tab-panel" role="tabpanel" aria-labelledby="props-tab-sheet" hidden={tab !== 'sheet'}>
-        <p className="tab-note">{t('props.allSheets')}</p>
         <SheetSection />
         <ArrangeSection />
         <CutsSection />
