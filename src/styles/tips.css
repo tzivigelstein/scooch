@@ -1,0 +1,119 @@
+/* ---------- Usage tips ----------
+   In the notice pill's place, shown only while the pill isn't. A card in the
+   page's own colors (the pill uses the inverted ones), with a light bulb. */
+
+.usage-tip {
+  position: absolute;
+  left: calc((100% - var(--stage-bar-right, 0px)) / 2);
+  bottom: calc(0.875rem + var(--stage-bar-bottom, 0px));
+  z-index: 15;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "icon text close"
+    ". actions actions";
+  align-items: center;
+  gap: 0.375rem 0.625rem;
+  width: max-content;
+  max-width: min(30rem, calc(100% - var(--stage-bar-right, 0px) - 2 * var(--zoom-room, 2rem)));
+  padding: 0.5rem 0.375rem 0.625rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+  line-height: 1.4;
+  transform: translateX(-50%);
+  animation: pill-in 180ms var(--ease);
+}
+
+.usage-tip-icon {
+  grid-area: icon;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.usage-tip-icon .icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.usage-tip-text {
+  grid-area: text;
+  margin: 0;
+  font-weight: 500;
+}
+
+.usage-tip-actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.usage-tip-btn {
+  height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 62.4375rem;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.usage-tip-btn:hover {
+  background: var(--hover);
+}
+
+.usage-tip-btn.strong {
+  border-color: transparent;
+  background: var(--primary-bg);
+  color: var(--primary-ink);
+}
+
+.usage-tip-btn.strong:hover {
+  background: var(--primary-hover);
+}
+
+.usage-tip-close {
+  grid-area: close;
+  align-self: start;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+}
+
+.usage-tip-close:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.usage-tip-close .icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Narrow screens: where the pill goes, above «Piezas» and «Propiedades» (and the piece toolbar). */
+@media (max-width: 799.98px) {
+  .usage-tip {
+    bottom: calc(4.25rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
+    font-size: 0.8125rem;
+  }
+
+  .canvas:has(.piecebar:not([hidden])) .usage-tip {
+    bottom: calc(7.875rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
+  }
+}

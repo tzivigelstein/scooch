@@ -40,7 +40,7 @@ function inSheets(text: string, sheets: readonly number[], many: boolean) {
  * measurement field is being edited, problems stay as they were when the edit
  * began: what is typed is still a preview.
  */
-function useCurrentNotice(): Notice | null {
+export function useCurrentNotice(): Notice | null {
   const busy = useDocument((s) => s.busy);
   const busyText = useView((s) => s.busyText);
   const flash = useView((s) => s.flash);

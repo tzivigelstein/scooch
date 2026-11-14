@@ -16,6 +16,7 @@ import { LiveRegions } from './components/feedback/LiveRegions.tsx';
 import { NoticePill } from './components/feedback/NoticePill.tsx';
 import { PrintSummary } from './components/feedback/PrintSummary.tsx';
 import { Tooltip } from './components/feedback/Tooltip.tsx';
+import { UsageTip } from './components/feedback/UsageTip.tsx';
 import { PiecesPanel } from './components/pieces-panel/PiecesPanel.tsx';
 import { PropertiesPanel } from './components/properties-panel/PropertiesPanel.tsx';
 import { Topbar } from './components/topbar/Topbar.tsx';
@@ -175,6 +176,7 @@ export function App() {
           <ZoomControl />
           <Dock />
           <NoticePill />
+          <UsageTip />
           <PieceHint />
           <LiveRegions />
           <Tooltip />
