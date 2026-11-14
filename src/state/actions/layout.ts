@@ -14,7 +14,7 @@ import { paperName } from '../../services/measure.ts';
 import { getAsset } from '../assets.ts';
 import { getDocument, newItem, newItemId, newSheetId, setDocument, type Piece } from '../document.ts';
 import { commit } from '../history.ts';
-import { area, boxOf, boxWith, currentSheet, dims, findItem, itemsOn, layoutPad, pieceName, selectedItem, sheetIndex } from '../selectors.ts';
+import { area, boxOf, boxWith, currentSheet, dims, findItem, itemsOn, layoutPad, pieceName, primaryItem, selectedItem, sheetIndex } from '../selectors.ts';
 import { animateNext } from '../view.ts';
 import { flushUi } from '../flush.ts';
 import { revealPiece } from '../../components/canvas/viewport.ts';
@@ -134,10 +134,11 @@ export function arrange(): 'arranged' | 'same' | 'error' | null {
     announce(t('announce.arrangedAlready', { n }));
     return 'same';
   }
+  const selectedSheet = primaryItem()?.sheet;
   commit();
   animateNext();
   applyPlan(plan);
-  followSelection();
+  followSelection(selectedSheet);
   const fromOne = before === 1 || spilled;
   spilled = false;
   const placed = n - plan.unplaced.length;
@@ -167,12 +168,12 @@ export function arrange(): 'arranged' | 'same' | 'error' | null {
   return 'arranged';
 }
 
-/** The view goes to the selected piece if the change took it out of sight (to another sheet, say). */
-function followSelection() {
-  const primary = getDocument().selection.at(-1);
-  if (primary === undefined) return;
+/** The view goes to the selected piece when the change took it to another sheet than `before` (and it is out of sight). */
+function followSelection(before: number | undefined) {
+  const primary = primaryItem();
+  if (!primary || primary.sheet === before) return;
   flushUi();
-  revealPiece(primary);
+  revealPiece(primary.id);
 }
 
 /**
@@ -450,7 +451,7 @@ export function fillWithCopies() {
   rest.splice(Math.min(at, rest.length), 0, ...copies);
   setDocument({ items: rest });
   setSelection([copies[0].id]);
-  followSelection();
+  followSelection(item.sheet);
   // It replaced the sheet's other pieces: easy to miss, and to want back.
   const many = getDocument().sheets.length > 1;
   sayUndoable(many ? t('notices.filledSheet', { n: plan.count, i: sheetIndex(sheet) + 1 }) : t('notices.filled', { n: plan.count }));
