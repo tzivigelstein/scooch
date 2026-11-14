@@ -1,10 +1,13 @@
 // Crop with a real pointer and keyboard: crop mode by mouse (wheel, drag, an
 // edge, a click outside) and by keyboard (K, +, an arrow, Enter, Ctrl+Z, Esc),
-// the locked proportion of a standard size while dragging a corner, the handle
-// scaling a cropped piece, the list thumbnail, and one photo size from the
-// select. The math and the actions are tested in Vitest (tests/core/crop*.test.js,
-// tests/state/crop.test.ts, tests/state/photo-sizes.test.ts, tests/components/CropMode.test.tsx).
+// the locked proportion of a standard size while dragging a corner, the PDF
+// started while cropping, the handle scaling a cropped piece, the list
+// thumbnail, and one photo size from the select. The math and the actions are
+// tested in Vitest (tests/core/crop*.test.js, tests/state/crop.test.ts,
+// tests/state/photo-sizes.test.ts, tests/components/CropMode.test.tsx,
+// tests/state/printing-flow.test.ts).
 import type { Page } from '@playwright/test';
+import { pdfInfo } from '../support/pdf.ts';
 import { expect, test, type App } from '../support/test.ts';
 
 const TOL = 0.05;
@@ -161,6 +164,24 @@ test.describe('crop mode', () => {
     // A tighter crop: the whole image is now clearly wider than the piece.
     expect((await cropRatio(page, id))[0]).toBeGreaterThan(1.05);
     await expect(page.locator('#photo-size')).toHaveValue('10x15');
+  });
+
+  test('Ctrl+E while cropping applies the crop first: that PDF has it, the same as downloading again afterwards', async ({ app, page }) => {
+    await app.addFiles(['wide.png']);
+    const [id] = await app.ids();
+    const uncropped = (await app.downloadPdf()).info.pages[0].content;
+    await app.piece(id).focus();
+    await page.keyboard.press('k');
+    await expect(page.locator('#crop-frame')).toBeFocused();
+    await page.keyboard.press('+');
+    const [download] = await Promise.all([page.waitForEvent('download'), page.keyboard.press('Control+e')]);
+    const file = test.info().outputPath(`cropping-${download.suggestedFilename()}`);
+    await download.saveAs(file);
+    await expect(page.locator('#crop-frame')).toHaveCount(0);
+    await expect(app.piece(id)).toBeFocused();
+    const during = (await pdfInfo(file)).pages[0].content;
+    expect(during).not.toBe(uncropped);
+    expect((await app.downloadPdf()).info.pages[0].content).toBe(during);
   });
 });
 

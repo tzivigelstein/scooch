@@ -3,9 +3,11 @@
 // gesture that prints or downloads. Once the person is back (the print dialog
 // closed, the download started), the summary of what the PDF saves shows
 // (unless turned off), with the request for a donation folded in, and the
-// focus goes back to whoever started it when it closes.
+// focus goes back to whoever started it when it closes. Before all that, a
+// crop in progress is applied (as a click outside it does): the PDF has it.
 
 import { t } from '../../copy/index.ts';
+import { finishCrop, isCropping } from '../../components/canvas/cropMode.ts';
 import { askTip, isTipOpen, shouldShowTip, type OutputKind } from '../../components/dialogs/printTip.ts';
 import { takeDonationAsk } from '../../components/dialogs/donate.ts';
 import { closeSummary, showSummary, usePrintSummary, type PrintSummary } from '../../components/feedback/printSummary.ts';
@@ -89,6 +91,8 @@ function summaryAfter(kind: OutputKind, key: string, opener: Element | null, not
 
 async function output(kind: OutputKind) {
   if (!canExport()) return;
+  // Otherwise the advice taking the focus would apply it, after the PDF had started without it.
+  if (isCropping()) finishCrop('apply');
   outputting = true;
   try {
     await sendOut(kind);

@@ -2,19 +2,25 @@
 // Printing and downloading (output.ts), with the PDF, the browser and the
 // advice dialog faked: the PDF starts before the advice shows and goes out in
 // the click of its button; closing it otherwise sends nothing; turned off, it
-// goes straight out; nothing else exports meanwhile. What each way of
-// printing says (no tip any more: the advice gave it), and the summary once
-// the person is back, with what it counts on this device: each PDF once, a
-// print only once it settles (a page load, another PDF, its download).
+// goes straight out; nothing else exports meanwhile; a crop in progress is
+// applied before the PDF starts. What each way of printing says (no tip any
+// more: the advice gave it), and the summary once the person is back, with
+// what it counts on this device: each PDF once, a print only once it settles
+// (a page load, another PDF, its download).
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { createElement } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import CropMode from '../../src/components/canvas/crop/CropMode.tsx';
 import { usePrintSummary } from '../../src/components/feedback/printSummary.ts';
 import { askTip } from '../../src/components/dialogs/printTip.ts';
+import { Topbar } from '../../src/components/topbar/Topbar.tsx';
 import { makePdf } from '../../src/services/export.ts';
 import { downloadBytes, printBytes } from '../../src/services/print.ts';
 import { getDocument, setDocument } from '../../src/state/document.ts';
+import { historyDepth } from '../../src/state/history.ts';
 import { setPrinting } from '../../src/state/prefs.ts';
 import { settleSavings } from '../../src/state/savings.ts';
-import { getView } from '../../src/state/view.ts';
+import { getView, setView } from '../../src/state/view.ts';
 import { exportPdf, printPdf } from '../../src/state/actions/output.ts';
 import { fakeImageMm, piece, resetState } from '../support/state.ts';
 
@@ -161,6 +167,62 @@ describe('one at a time', () => {
     await printing;
     await exportPdf();
     expect(downloadBytes).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('while cropping', () => {
+  /** Crop mode on piece 1, zoomed in once with «+»: a crop in progress, not applied yet. */
+  function cropping() {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        disconnect() {}
+      }
+    );
+    const canvas = document.createElement('div');
+    canvas.id = 'canvas';
+    canvas.innerHTML = '<div id="stage"><div id="sheets"></div></div><div id="bar"></div>';
+    document.body.append(canvas);
+    render(createElement(Topbar), { container: canvas.querySelector<HTMLElement>('#bar')! });
+    render(createElement(CropMode), { container: canvas.querySelector<HTMLElement>('#stage')! });
+    act(() => setView({ cropping: 1 }));
+    fireEvent.keyDown(document.getElementById('crop-frame')!, { key: '+' });
+    expect(getDocument().items[0].crop).toBeNull();
+  }
+
+  afterEach(async () => {
+    // A test that stopped halfway leaves no export going on for the next one.
+    tip.answer?.(false);
+    await settle();
+    act(() => setView({ cropping: null }));
+    cleanup();
+    document.body.innerHTML = '';
+    vi.unstubAllGlobals();
+  });
+
+  // The keys call these actions themselves; the bar's buttons are clicked (no press outside the crop first).
+  test.each([
+    ['Ctrl+P', () => printPdf()],
+    ['Ctrl+E', () => exportPdf()],
+    ['Imprimir', () => fireEvent.click(document.getElementById('print')!)],
+    ['Descargar PDF', () => fireEvent.click(document.getElementById('export')!)],
+  ])('%s first applies the crop, in one undo step, then makes the PDF with it', async (_, start) => {
+    cropping();
+    let drawn: unknown = 'not made';
+    vi.mocked(makePdf).mockImplementationOnce(async () => {
+      drawn = getDocument().items[0].crop;
+      return PDF;
+    });
+    start();
+    expect(getView().cropping).toBeNull();
+    expect(historyDepth().undo).toBe(1);
+    const applied = getDocument().items[0].crop;
+    expect(applied).not.toBeNull();
+    expect(drawn).toBe(applied);
+    await settle();
+    tip.answer!(true);
+    await settle();
   });
 });
 
