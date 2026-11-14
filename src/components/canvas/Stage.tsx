@@ -231,56 +231,58 @@ export function Stage() {
 
   return (
     <div id="stage" className={`stage${besideList ? ' beside-list' : ''}${wide ? ' is-wide' : ''}`} ref={stage}>
-      <div id="sheets" className={animating ? 'sheets is-animating' : 'sheets'} data-many={sheets.length > 1 ? '' : undefined} onFocus={onFocus}>
-        {sheets.map((sheet, i) => (
-          <Page
-            key={sheet.id}
-            id={sheet.id}
-            index={i}
-            total={sheets.length}
-            items={bySheet.get(sheet.id) ?? NO_ITEMS}
-            W={W}
-            H={H}
-            zoom={zoom}
-            margin={margin}
-            empty={empty}
-            current={sheet.id === current}
-            showGrid={grid.show || gridShown || (moving && grid.snap)}
-            grid={gridCss}
-            selection={selection}
-            pinned={pinned}
-            unit={unit}
-            busy={busy}
-            cropping={cropping}
-            cuts={cuts}
-          />
-        ))}
-        <div id="drag-layer" className="drag-layer" />
-        <SelectionOverlay layout={layout} />
-        {cropping !== null && (
-          <Suspense fallback={null}>
-            <CropContent />
-          </Suspense>
-        )}
-        <div className="sheets-foot">
-          <p id="paper-label" className="paper-label">
-            {t('sheet.paperLabel', { paper: paperTitle(), size: sizeText(W, H) })}
+      <div className="stage-area">
+        <div id="sheets" className={animating ? 'sheets is-animating' : 'sheets'} data-many={sheets.length > 1 ? '' : undefined} onFocus={onFocus}>
+          {sheets.map((sheet, i) => (
+            <Page
+              key={sheet.id}
+              id={sheet.id}
+              index={i}
+              total={sheets.length}
+              items={bySheet.get(sheet.id) ?? NO_ITEMS}
+              W={W}
+              H={H}
+              zoom={zoom}
+              margin={margin}
+              empty={empty}
+              current={sheet.id === current}
+              showGrid={grid.show || gridShown || (moving && grid.snap)}
+              grid={gridCss}
+              selection={selection}
+              pinned={pinned}
+              unit={unit}
+              busy={busy}
+              cropping={cropping}
+              cuts={cuts}
+            />
+          ))}
+          <div id="drag-layer" className="drag-layer" />
+          <SelectionOverlay layout={layout} />
+          {cropping !== null && (
+            <Suspense fallback={null}>
+              <CropContent />
+            </Suspense>
+          )}
+          <div className="sheets-foot">
+            <p id="paper-label" className="paper-label">
+              {t('sheet.paperLabel', { paper: paperTitle(), size: sizeText(W, H) })}
+            </p>
+            <button type="button" id="add-sheet" className="add-sheet" disabled={busy} onClick={() => addSheet()}>
+              <Icon icon={FilePlus} />
+              <span>{t('sheet.add')}</span>
+            </button>
+          </div>
+          <div className="marquee" hidden aria-hidden="true" />
+          <div id="new-sheet-end" className="new-sheet-drop" hidden aria-hidden="true">
+            <span>{t('sheet.dropNew')}</span>
+          </div>
+          <div id="new-sheet-gap" className="new-sheet-gap" hidden aria-hidden="true">
+            <span>{t('sheet.dropNew')}</span>
+          </div>
+          <p id="change-paper-hint" className="sr-only">
+            {t('sheet.changePaperHint')}
           </p>
-          <button type="button" id="add-sheet" className="add-sheet" disabled={busy} onClick={() => addSheet()}>
-            <Icon icon={FilePlus} />
-            <span>{t('sheet.add')}</span>
-          </button>
         </div>
-        <div className="marquee" hidden aria-hidden="true" />
-        <div id="new-sheet-end" className="new-sheet-drop" hidden aria-hidden="true">
-          <span>{t('sheet.dropNew')}</span>
-        </div>
-        <div id="new-sheet-gap" className="new-sheet-gap" hidden aria-hidden="true">
-          <span>{t('sheet.dropNew')}</span>
-        </div>
-        <p id="change-paper-hint" className="sr-only">
-          {t('sheet.changePaperHint')}
-        </p>
       </div>
     </div>
   );

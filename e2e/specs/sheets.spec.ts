@@ -2,10 +2,13 @@
 // groups, removing a sheet (at once, with «Deshacer» in the notice, and where the
 // focus goes), dragging a piece to another sheet (the stage scrolls by itself, the
 // target sheet is marked, dropping onto a piece there), which sheet is the
-// current one, and dragging pieces out of the sheets onto a new one (the
+// current one, dragging pieces out of the sheets onto a new one (the
 // placeholders, by mouse, touch and zoomed in, and the context menu's
-// keyboard path). What these actions do exactly is in tests/state/sheets.test.ts.
+// keyboard path), and how far something held at an edge scrolls the stage.
+// What these actions do exactly is in tests/state/sheets.test.ts.
+import type { Page } from '@playwright/test';
 import { expect, test, cards } from '../support/test.ts';
+import { frames, setZoom } from '../support/canvas.ts';
 import { outsideMargin, overlapping } from '../support/geometry.ts';
 import { counts, holdPiece, lastSheetBottom, pageAt, pieceIds, placeholders, sheetIds, stageBox, toBelowLastSheet } from '../support/sheets.ts';
 
@@ -348,6 +351,137 @@ test.describe('dragging pieces out of the sheets onto a new sheet', () => {
     await expect.poll(async () => (await app.sheets()).length).toBe(3);
     expect((await pieceIds(app))[2]).toContain(last3[2]);
     await app.heard(/Se creó la hoja 3 y se movió 1 pieza/);
+  });
+});
+
+test.describe('something held at an edge of the stage scrolls it only as far as there is something to show', () => {
+  /** The stage's scroll and how far it reaches (px). */
+  const scrollOf = (p: Page) =>
+    p.evaluate(() => {
+      const s = document.getElementById('stage')!;
+      return { top: s.scrollTop, left: s.scrollLeft, height: s.scrollHeight, width: s.scrollWidth, maxTop: s.scrollHeight - s.clientHeight, maxLeft: s.scrollWidth - s.clientWidth };
+    });
+
+  /** Waits, frame by frame, until the stage scrolls no more by itself; returns where it stopped. */
+  async function scrollStops(p: Page) {
+    await expect
+      .poll(
+        async () => {
+          const a = await scrollOf(p);
+          await frames(p, 10);
+          const b = await scrollOf(p);
+          return a.top === b.top && a.left === b.left && a.height === b.height && a.width === b.width;
+        },
+        { intervals: [0], message: 'the stage stops scrolling' }
+      )
+      .toBe(true);
+    return scrollOf(p);
+  }
+
+  test('a piece held below the bottom edge with one sheet: the stage scrolls until the new sheet’s placeholder shows whole and stops there for good, past the window too; with Esc the extent is the one it had, dropped it is the new document’s', async ({ app, page }) => {
+    await app.addFiles(cards(0, 2));
+    const [[id]] = await pieceIds(app);
+    const stage = await stageBox(page);
+    const before = await scrollOf(page);
+
+    for (const end of ['cancel', 'drop'] as const) {
+      await test.step(`held, then ${end === 'cancel' ? 'Esc' : 'dropped'}`, async () => {
+        const from = await holdPiece(app, id);
+        await page.mouse.move(from.x, stage.y + stage.height - 4, { steps: 8 });
+        const held = await scrollStops(page);
+        expect(held.top, 'it scrolled down').toBeGreaterThan(0);
+        expect(held.top, 'to the end of what it shows').toBe(held.maxTop);
+        const { endRect } = await placeholders(page);
+        const endBottom = held.top + endRect!.y + endRect!.h - stage.y;
+        expect(endBottom, 'the placeholder shows whole').toBeLessThanOrEqual(held.top + stage.height);
+        // No further than the stage's bottom padding (4rem) below it.
+        expect(held.height, 'the extent ends just below the placeholder').toBeLessThanOrEqual(Math.ceil(endBottom) + 64 + 1);
+
+        await frames(page, 120);
+        expect(await scrollOf(page), 'held on, nothing grows').toEqual(held);
+        await page.mouse.move(from.x, 900 + 300, { steps: 4 });
+        await frames(page, 120);
+        expect(await scrollOf(page), 'held past the window’s bottom, nothing grows either').toEqual(held);
+
+        if (end === 'cancel') {
+          await page.keyboard.press('Escape');
+          await page.mouse.up();
+          await frames(page);
+          expect((await scrollOf(page)).height, 'the extent it had before').toBe(before.height);
+          expect(await counts(app)).toEqual([2]);
+        } else {
+          await page.mouse.up();
+          await expect.poll(() => counts(app)).toEqual([1, 1]);
+        }
+      });
+    }
+
+    // The same document without a drag (undone and redone): the same extent.
+    const dropped = (await scrollOf(page)).height;
+    await app.undo();
+    await expect.poll(() => counts(app)).toEqual([2]);
+    await app.redo();
+    await expect.poll(() => counts(app)).toEqual([1, 1]);
+    await frames(page);
+    expect(dropped, 'after the drop, the extent of the new document').toBe((await scrollOf(page)).height);
+  });
+
+  test('at 400 %, a piece held at the right edge scrolls sideways only to the sheets’ edge, and at the left edge back to the start; with Esc nothing is left', async ({ app, page }) => {
+    await app.addFiles(cards(0, 2));
+    const [[id]] = await pieceIds(app);
+    await setZoom(page, 400);
+    const stage = await stageBox(page);
+    // Where the right end is (Chrome stops short of scrollWidth − clientWidth by the scrollbar's gutter).
+    const end = await page.locator('#stage').evaluate((el) => {
+      el.scrollTo(1e6, 0);
+      const left = el.scrollLeft;
+      el.scrollTo(0, 0);
+      return left;
+    });
+    const before = await scrollOf(page);
+    expect(end, 'zoomed in past the stage’s width').toBeGreaterThan(0);
+
+    const from = await holdPiece(app, id);
+    await page.mouse.move(stage.x + stage.width - 4, from.y, { steps: 8 });
+    let held = await scrollStops(page);
+    expect(held.left, 'to the right end').toBe(end);
+    expect(held.width, 'the sheets’ width, not one pixel more').toBe(before.width);
+    await page.mouse.move(1440 + 300, from.y, { steps: 4 });
+    await frames(page, 120);
+    expect(await scrollOf(page), 'held past the window’s right edge, nothing grows').toEqual(held);
+
+    await page.mouse.move(stage.x + 4, from.y, { steps: 8 });
+    held = await scrollStops(page);
+    expect(held.left, 'back to the left end').toBe(0);
+    expect(held.width).toBe(before.width);
+
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+    await frames(page);
+    const after = await scrollOf(page);
+    expect([after.width, after.height], 'the extent it had before').toEqual([before.width, before.height]);
+  });
+
+  test('a marquee held past the bottom edge scrolls to the end of the sheet and no further', async ({ app, page }) => {
+    await app.addFiles(cards(0, 2));
+    await setZoom(page, 100);
+    await page.locator('#stage').evaluate((el) => el.scrollTo(0, 0));
+    const before = await scrollOf(page);
+    expect(before.maxTop, 'the sheet is taller than the stage').toBeGreaterThan(0);
+    const sheet = (await pageAt(page, 0).locator('.sheet').boundingBox())!;
+    await page.mouse.move(sheet.x - 12, sheet.y + 10);
+    await page.mouse.down();
+    await page.mouse.move(sheet.x + sheet.width - 20, sheet.y + 80, { steps: 4 });
+    await page.mouse.move(sheet.x + sheet.width - 20, 900 + 300, { steps: 8 });
+    const held = await scrollStops(page);
+    expect(held.top, 'to the end').toBe(before.maxTop);
+    expect(held.height, 'and no further').toBe(before.height);
+    await frames(page, 120);
+    expect(await scrollOf(page), 'held on, nothing grows').toEqual(held);
+    await page.mouse.up();
+    await frames(page);
+    expect((await scrollOf(page)).height).toBe(before.height);
+    expect(await app.selectedIds(), 'the marquee selected both cards').toHaveLength(2);
   });
 });
 

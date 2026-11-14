@@ -104,8 +104,8 @@
 
   /* Room at the top for the zoom control: the first sheet's heading (its title
      and remove button) never starts under it. */
-  .stage {
-    padding: 4.25rem 1rem 8.25rem;
+  .stage-area {
+    padding: 4.25rem 1rem calc(8.25rem + var(--new-sheet-room));
   }
 
   .paper-label {

@@ -4,7 +4,7 @@
 // moves under the pointer), and hidden from screen readers: the result of
 // the drop is announced.
 
-import { endSheetBox, type NewSheetSpot } from './viewport.ts';
+import { endSheetBox, setNewSheetRoom, type NewSheetSpot } from './viewport.ts';
 
 const px = (v: number) => `${Math.round(v * 100) / 100}px`;
 
@@ -18,7 +18,10 @@ export function paintNewSheetSpot(spot: NewSheetSpot | null | false) {
   const bar = document.getElementById('new-sheet-gap');
   if (!sheets || !end || !bar) return;
   const on = spot !== false;
-  if (sheets.classList.contains('has-new-sheet') !== on) sheets.classList.toggle('has-new-sheet', on);
+  if (sheets.classList.contains('has-new-sheet') !== on) {
+    sheets.classList.toggle('has-new-sheet', on);
+    setNewSheetRoom(on);
+  }
   end.hidden = !on;
   bar.hidden = !(spot && spot.kind === 'gap');
   if (!on) return;

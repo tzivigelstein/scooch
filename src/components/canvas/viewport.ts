@@ -4,6 +4,7 @@
 
 import { NARROW_QUERY } from '../../config.ts';
 import { t } from '../../copy/index.ts';
+import { newSheetRoom } from '../../core/dragscroll.js';
 import { sheetAt } from '../../core/sheets.js';
 import type { Point, Rect } from '../../core/types.ts';
 import { getDocument } from '../../state/document.ts';
@@ -26,6 +27,8 @@ let spacing = { head: 0, gap: 0 };
 
 const stage = () => document.getElementById('stage');
 const sheetsEl = () => document.getElementById('sheets');
+/** What the stage scrolls: the sheets and the room around them (see .stage-area). */
+const areaEl = () => document.querySelector<HTMLElement>('#stage > .stage-area');
 export const pageNode = (id: number) => document.querySelector<HTMLElement>(`#sheets .page[data-sheet="${id}"]`);
 
 /** Measures where each sheet's box is inside #sheets (to the subpixel: offsetTop rounds). */
@@ -80,9 +83,9 @@ const clampZoom = (next: number, current = viewZoom()) => fromPercent(clampPerce
 /** The zoom in percent (a screen measure: 100 % is not the printed size). */
 export const zoomPercent = (zoom = viewZoom()) => toPercent(zoom);
 
-/** The room the sheets have in the stage (without its padding): {width, height} in px. */
+/** The room the sheets have in the stage (without the padding around them): {width, height} in px. */
 function stageRoom(stageEl: HTMLElement) {
-  const style = getComputedStyle(stageEl);
+  const style = getComputedStyle(areaEl() ?? stageEl);
   return {
     width: stageEl.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
     height: stageEl.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom),
@@ -331,6 +334,34 @@ export function endSheetBox(): LayerRect | null {
   const c = column();
   if (!c) return null;
   return { left: c.tops[0].left, top: c.tops.at(-1)!.top + c.H + c.gap + c.head, width: c.W, height: c.H };
+}
+
+/**
+ * Room below the sheets for the placeholder of a sheet added after the last
+ * one (`on`), so the stage can scroll it whole into view, and no further.
+ * Measured when it first shows; taken away when it hides.
+ */
+export function setNewSheetRoom(on: boolean) {
+  const area = areaEl();
+  const sheets = sheetsEl();
+  const box = on && endSheetBox();
+  if (!area || !sheets) return;
+  if (!box) return area.style.removeProperty('--new-sheet-room');
+  if (area.style.getPropertyValue('--new-sheet-room')) return;
+  const top = sheets.getBoundingClientRect().top - area.getBoundingClientRect().top;
+  const room = newSheetRoom({ bottom: top + box.top + box.height, pad: parseFloat(getComputedStyle(area).paddingBottom), height: area.offsetHeight });
+  area.style.setProperty('--new-sheet-room', `${room}px`);
+}
+
+/** How far the stage can scroll (px): to the end of what it shows, and sideways only when zoomed in past its width. */
+export function scrollMax() {
+  const stageEl = stage();
+  const area = areaEl();
+  if (!stageEl || !area) return { top: 0, left: 0 };
+  return {
+    top: Math.max(0, area.offsetHeight - stageEl.clientHeight),
+    left: stageEl.classList.contains('is-wide') ? Math.max(0, area.offsetWidth - stageEl.clientWidth) : 0,
+  };
 }
 
 /**

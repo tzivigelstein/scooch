@@ -22,7 +22,6 @@
   inset: 0;
   display: flex;
   flex-direction: column;
-  padding: 1.25rem 2.25rem 4rem;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -33,6 +32,23 @@
   /* One finger scrolls; two zoom the sheets (the gestures' pinch), never the
      page, whose zoom still works over the panels and dialogs. */
   touch-action: pan-x pan-y;
+}
+
+/* What the stage scrolls: the sheets with room around them, at least the
+   stage's size. It clips what is laid over the sheets (dragged pieces, frames,
+   the marquee…), so none of it can make the stage scroll further. Dragging
+   pieces out of the sheets adds room below them for the new sheet's
+   placeholder (--new-sheet-room, viewport.ts), taken back by the negative
+   margin so the sheets don't move. */
+.stage-area {
+  --new-sheet-room: 0px;
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: min-content;
+  margin-bottom: calc(-1 * var(--new-sheet-room));
+  padding: 1.25rem 2.25rem calc(4rem + var(--new-sheet-room));
+  overflow: clip;
 }
 
 /* The sheets, one below the other. With few, they stay vertically centered

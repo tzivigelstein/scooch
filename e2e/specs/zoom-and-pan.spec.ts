@@ -27,11 +27,11 @@ import {
 } from '../support/canvas.ts';
 import { cards, expect, test } from '../support/test.ts';
 
-/** The room the sheets have across the stage (without its padding), px. */
+/** The room the sheets have across the stage (without the padding around them), px. */
 const stageRoom = (page: import('@playwright/test').Page) =>
   page.evaluate(() => {
     const stage = document.getElementById('stage')!;
-    const cs = getComputedStyle(stage);
+    const cs = getComputedStyle(stage.querySelector('.stage-area')!);
     return stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
   });
 

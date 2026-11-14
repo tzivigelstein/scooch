@@ -15,6 +15,7 @@ import { useEffect, type RefObject } from 'react';
 import { DRAG_THRESHOLD, PINCH_THRESHOLD } from '../config.ts';
 import { bounds, scaleGroup } from '../core/align.js';
 import { maxGrowth, overlapsAny } from '../core/collide.js';
+import { edgeScroll } from '../core/dragscroll.js';
 import { planDrag, planDrop, planScale, scaleBounds, touchedBy, type Drag } from '../core/group.js';
 import { GLIDE_WINDOW, releaseVelocity, type GlideSample } from '../core/glide.js';
 import { keepCenterInside, placeOnNewSheet } from '../core/sheets.js';
@@ -33,6 +34,7 @@ import {
   newSheetSpot,
   pinchTo,
   pxToMm,
+  scrollMax,
   sheetAtLayerY,
   sheetAtPoint,
   sheetBoxes,
@@ -589,7 +591,8 @@ function followNewSheet(g: MoveGesture | GroupMoveGesture, center: Point) {
 }
 
 // While dragging near the top or bottom edge of the canvas, it scrolls (to take
-// a piece to a sheet out of view).
+// a piece to a sheet out of view), and sideways when zoomed in past the
+// stage's width; never past what the stage shows.
 function startAutoScroll() {
   cancelAnimationFrame(autoFrame);
   const tick = () => {
@@ -597,21 +600,13 @@ function startAutoScroll() {
     if (!g?.moved) return;
     const stage = el('stage');
     const r = stage.getBoundingClientRect();
-    const zone = 48;
-    const speed = (d: number) => Math.ceil(((zone - d) / zone) * 18);
-    let delta = 0;
-    if (g.lastY < r.top + zone) delta = -speed(Math.max(0, g.lastY - r.top));
-    else if (g.lastY > r.bottom - zone) delta = speed(Math.max(0, r.bottom - g.lastY));
-    // Sideways too, when zoomed in past the stage's width.
-    let side = 0;
-    if (stage.classList.contains('is-wide')) {
-      if (g.lastX < r.left + zone) side = -speed(Math.max(0, g.lastX - r.left));
-      else if (g.lastX > r.right - zone) side = speed(Math.max(0, r.right - g.lastX));
-    }
-    if (delta || side) {
+    const max = scrollMax();
+    const top = edgeScroll(g.lastY, r.top, r.bottom, stage.scrollTop, max.top);
+    const left = max.left ? edgeScroll(g.lastX, r.left, r.right, stage.scrollLeft, max.left) : stage.scrollLeft;
+    if (top !== stage.scrollTop || left !== stage.scrollLeft) {
       const before = [stage.scrollTop, stage.scrollLeft];
-      stage.scrollTop += delta;
-      stage.scrollLeft += side;
+      stage.scrollTop = top;
+      stage.scrollLeft = left;
       if (stage.scrollTop !== before[0] || stage.scrollLeft !== before[1]) updateGesture();
     }
     autoFrame = requestAnimationFrame(tick);
