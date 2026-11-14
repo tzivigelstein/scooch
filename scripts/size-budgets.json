@@ -31,6 +31,11 @@
       "measured": 7.0,
       "what": "Each static page (every .html of the build but the editor's index.html), its HTML with its inline CSS; it applies to new pages too. Set on the largest one, cuantas-fotos-caben-en-una-hoja; the other guides are 5.3 to 5.8 kB and the legal pages 5.7 to 6.4 kB."
     },
+    "es/privacidad.html": {
+      "kB": 8.1,
+      "measured": 7.7,
+      "what": "The privacy policy, from docs/legal/privacidad.md: it lists every key the app stores in the browser, so it grows with each new setting."
+    },
     "es/licencias-de-terceros.html": {
       "kB": 14,
       "measured": 13.3,
