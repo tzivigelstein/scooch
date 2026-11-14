@@ -51,10 +51,34 @@ const readWords = (words: string[]) => {
   return found;
 };
 
-/** No Spanish, no sideways scroll, no clipped or wrapped control text, no controls on top of each other. */
+/**
+ * Controls of the bar, the panels, dialogs and menus that stick out of the box
+ * that clips them (a panel, a dialog's body): longer labels pushing them past
+ * its edge, where nobody can see or reach them. Runs in the page.
+ */
+const readCutOff = () => {
+  const out: string[] = [];
+  const name = (el: Element) => `${el.id ? `#${el.id}` : el.tagName.toLowerCase()}${[...el.classList].map((c) => `.${c}`).join('')} «${(el.textContent ?? '').trim().slice(0, 40)}»`;
+  const controls = document.querySelectorAll('.topbar button, .panel button, .panel select, .panel input, .panel .seg > span, dialog[open] button, dialog[open] select, dialog[open] input, dialog[open] .seg > span, [role="menu"] [role^="menuitem"]');
+  for (const el of controls) {
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2 || el.closest('[hidden], dialog:not([open])')) continue;
+    for (let box = el.parentElement; box && box !== document.body; box = box.parentElement) {
+      if (getComputedStyle(box).overflowX === 'visible') continue;
+      const left = box.getBoundingClientRect().left + box.clientLeft;
+      const past = Math.max(r.right - (left + box.clientWidth), left - r.left);
+      if (past > 1) out.push(`${name(el)} ${Math.round(past)} px past ${name(box).split(' «')[0]}`);
+      break;
+    }
+  }
+  return out;
+};
+
+/** No Spanish, no sideways scroll, no clipped or wrapped control text, no controls on top of each other or cut off. */
 async function checkScreen(page: Page, language: Language, screen: string) {
   expect(await page.evaluate(readWords, spanishOnly(language)), `${screen}: Spanish texts`).toEqual([]);
   expect(await horizontalOverflow(page), `${screen}: sideways scroll`).toBeLessThanOrEqual(0);
+  expect(await page.evaluate(readCutOff), `${screen}: controls cut off by their panel or dialog`).toEqual([]);
   const layout = await page.evaluate(readLayout);
   expect(layout.clipped, `${screen}: clipped text`).toEqual([]);
   expect(layout.wrapped, `${screen}: one-line text on two lines`).toEqual([]);

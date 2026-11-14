@@ -367,9 +367,18 @@ input[type="range"] {
   min-width: 0;
 }
 
-/* The control takes the rest of the row; if it doesn't fit next to the title, the whole row. */
+/* The control takes the rest of the row; if it doesn't fit next to the title,
+   the whole row. Its options sit side by side while their names fit, and one
+   above the other when a language's are longer than the panel is wide. */
 .tools-head > .segmented {
+  display: flex;
+  flex-wrap: wrap;
   flex: 1 1 8rem;
+}
+
+.tools-head > .segmented > .seg {
+  flex: 1 1 0;
+  min-width: max-content;
 }
 
 .tools-head.wide > .segmented {
