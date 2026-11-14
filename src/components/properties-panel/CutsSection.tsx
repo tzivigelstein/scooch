@@ -139,30 +139,28 @@ export function CutsSection() {
               </span>
             </span>
           </div>
-          {cuts.mode === 'corners' && (
-            <div className="prop-grid">
-              {(['length', 'offset'] as const).map((name) => (
-                <label key={name} className="field">
-                  <span className="field-label">{t(`cuts.${name}`)}</span>
-                  <span className="num-field">
-                    <LengthField
-                      id={`cut-${name}`}
-                      aria-label={t(name === 'length' ? 'cuts.lengthLabel' : 'cuts.offsetLabel', { unit: unitName() })}
-                      disabled={busy}
-                      value={() => getDocument().cuts[name]}
-                      range={() => ({ min: CUT_LIMITS[name][0], max: CUT_LIMITS[name][1] })}
-                      editKey={() => `cuts:${name}`}
-                      busy={() => getDocument().busy}
-                      apply={(mm, { final }) => setCuts({ [name]: mm }, { key: `cuts:${name}`, final })}
-                    />
-                    <span className="num-unit" aria-hidden="true">
-                      {unitSymbol()}
-                    </span>
+          {/* One per row, like the cut margin: their names are long. */}
+          {cuts.mode === 'corners' &&
+            (['length', 'offset'] as const).map((name) => (
+              <label key={name} className="field">
+                <span className="field-label">{t(`cuts.${name}`)}</span>
+                <span className="num-field">
+                  <LengthField
+                    id={`cut-${name}`}
+                    aria-label={t(name === 'length' ? 'cuts.lengthLabel' : 'cuts.offsetLabel', { unit: unitName() })}
+                    disabled={busy}
+                    value={() => getDocument().cuts[name]}
+                    range={() => ({ min: CUT_LIMITS[name][0], max: CUT_LIMITS[name][1] })}
+                    editKey={() => `cuts:${name}`}
+                    busy={() => getDocument().busy}
+                    apply={(mm, { final }) => setCuts({ [name]: mm }, { key: `cuts:${name}`, final })}
+                  />
+                  <span className="num-unit" aria-hidden="true">
+                    {unitSymbol()}
                   </span>
-                </label>
+                </span>
+              </label>
               ))}
-            </div>
-          )}
           <div className="field">
             <span id="cut-weight-label" className="field-label">
               {t('cuts.weight')}
