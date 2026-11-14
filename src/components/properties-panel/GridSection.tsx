@@ -34,7 +34,6 @@ export function GridSection() {
             </kbd>
           </span>
         }
-        hint={t('props.gridShowHint')}
         checked={grid.show}
         onChange={setGridVisible}
         aria-keyshortcuts={gridKeys['aria-keyshortcuts']}

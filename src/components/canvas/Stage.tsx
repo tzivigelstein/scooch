@@ -248,7 +248,7 @@ export function Stage() {
           <p id="paper-label" className="paper-label">
             {t('sheet.paperLabel', { paper: paperTitle(), size: sizeText(W, H) })}
           </p>
-          <button type="button" id="add-sheet" className="add-sheet" data-tip={t('sheet.addTip')} disabled={busy} onClick={() => addSheet()}>
+          <button type="button" id="add-sheet" className="add-sheet" disabled={busy} onClick={() => addSheet()}>
             <Icon icon={FilePlus} />
             <span>{t('sheet.add')}</span>
           </button>

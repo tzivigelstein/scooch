@@ -42,7 +42,6 @@ export default function PrefsDialog() {
             }}
             options={UNITS.map((value) => ({
               value,
-              input: { 'aria-describedby': 'units-hint' },
               label: (
                 <span>
                   <span>{t(`units.${value}`)}</span>
@@ -51,9 +50,6 @@ export default function PrefsDialog() {
               ),
             }))}
           />
-          <p className="switch-hint" id="units-hint">
-            {t('prefs.unitsHint')}
-          </p>
         </div>
         <div className="pref-section" role="group" aria-labelledby="prefs-keys-title">
           <h3 id="prefs-keys-title" className="pref-title">

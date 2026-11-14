@@ -98,7 +98,7 @@ export function CutsSection() {
         onChange={(mode) => setCuts({ mode })}
         options={MODES.map(({ value, icon }) => ({
           value,
-          input: { 'data-tip': t(`cuts.modeTips.${value}`), disabled: busy },
+          input: { disabled: busy },
           label: (
             <span>
               <Icon icon={icon} />

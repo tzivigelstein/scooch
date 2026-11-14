@@ -14,7 +14,7 @@ export function ArrangeSection() {
     <Section name="arrange" title={t('props.arrange')}>
       <SheetLength name="gap" />
       <Switch id="allow-rotate" label={<span>{t('props.rotate')}</span>} checked={rotate} onChange={setRotateWhenUseful} />
-      <Switch id="allow-overlap" label={<span>{t('props.overlap')}</span>} hint={t('props.overlapHint')} checked={allowOverlap} onChange={setAllowOverlap} />
+      <Switch id="allow-overlap" label={<span>{t('props.overlap')}</span>} checked={allowOverlap} onChange={setAllowOverlap} />
     </Section>
   );
 }

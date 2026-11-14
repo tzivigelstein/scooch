@@ -47,13 +47,13 @@ describe('«Más opciones»', () => {
 });
 
 describe('cut line modes', () => {
-  test('a named radio group with tooltips; none by default, with the options hidden', () => {
+  test('a named radio group without tooltips (the canvas shows each mode); none by default, with the options hidden', () => {
     const group = screen.getByRole('radiogroup', { name: 'Líneas de corte' });
     const radios = within(group).getAllByRole('radio') as HTMLInputElement[];
     expect(radios.map((r) => [r.value, r.dataset.tip])).toEqual([
-      ['none', 'Sin líneas de corte'],
-      ['corners', 'Marcas en las esquinas de cada pieza'],
-      ['outline', 'El contorno de cada pieza'],
+      ['none', undefined],
+      ['corners', undefined],
+      ['outline', undefined],
     ]);
     expect((within(group).getByRole('radio', { name: 'Ninguna' }) as HTMLInputElement).checked).toBe(true);
     expect(byId('cut-options')!.hidden).toBe(true);

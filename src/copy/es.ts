@@ -121,7 +121,6 @@ const es = {
     groupEmpty: '{label}, vacía',
     emptyHint: 'Hoja vacía',
     add: 'Agregar hoja',
-    addTip: 'Agregar una hoja vacía al final',
     remove: 'Quitar hoja',
     removeLabel: 'Quitar la hoja {i}',
     // While dragging pieces out of the sheets: where dropping them creates a sheet
@@ -226,7 +225,6 @@ const es = {
     scaleTip: 'Escala',
     slider: 'Escala',
     rotated: 'Rotada {deg}°',
-    rotatedNote: ': el ancho y el alto son los que ocupa en la hoja',
     quick: 'Ajustes rápidos de la pieza',
     actual: '100 %',
     actualLabel: '100 %: tamaño real',
@@ -305,10 +303,8 @@ const es = {
     gapUnit: ' entre piezas, en {unit}',
     rotate: 'Rotación automática',
     overlap: 'Permitir superposición',
-    overlapHint: 'Desactivado, no se superponen al moverlas ni al agrandarlas',
     grid: 'Grilla',
     gridShow: 'Mostrar grilla',
-    gridShowHint: 'Solo en pantalla: no sale en el PDF',
     gridSize: 'Tamaño de la grilla',
     gridChip: '{n} {unit}',
     gridCustom: 'Otro tamaño de grilla, en {unit}',
@@ -340,7 +336,6 @@ const es = {
       instant: 'Instantánea',
     },
     start: 'Recortar',
-    startTip: 'Elegir qué parte de la imagen se ve',
     startSingle: 'Recortar: disponible con una sola pieza seleccionada',
     // Crop mode
     frameRole: 'recorte',
@@ -367,7 +362,6 @@ const es = {
   cuts: {
     title: 'Líneas de corte',
     modes: { none: 'Ninguna', corners: 'Esquinas', outline: 'Contorno' },
-    modeTips: { none: 'Sin líneas de corte', corners: 'Marcas en las esquinas de cada pieza', outline: 'El contorno de cada pieza' },
     more: 'Más opciones',
     margin: 'Margen de corte',
     marginLabel: 'Margen de corte, en {unit}',
@@ -797,7 +791,6 @@ const es = {
     printTip: 'Consejo antes de imprimir',
     printSummary: 'Resumen después de imprimir',
     units: 'Unidades',
-    unitsHint: 'Para mostrar y escribir medidas. No cambia el documento ni el PDF.',
     // After the visible symbol («mm»), for screen readers
     unitNames: { mm: ', milímetros', cm: ', centímetros', in: ', pulgadas' },
     unitChanged: 'Medidas en {unit}',

@@ -34,6 +34,7 @@ describe('the piece’s measures', () => {
     const [w, h] = dims(piece(1, photo, 30, 30, { r: 90 }));
     expect($('rotation-note').hidden).toBe(false);
     expect($('rotation-angle').textContent).toBe('Rotada 90°');
+    expect($('rotation-note').textContent).toBe('Rotada 90°');
     expect(mm('width')).toBeCloseTo(w, 1);
     expect(mm('height')).toBeCloseTo(h, 1);
     expect(w).toBeLessThan(h); // 50.8 wide once turned

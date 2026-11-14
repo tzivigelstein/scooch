@@ -332,10 +332,7 @@ export function PieceSection() {
         </p>
         <p id="rotation-note" className="field-note" hidden={!single?.r}>
           <Icon icon={RotateCw} />
-          <span>
-            <strong id="rotation-angle">{t('props.rotated', { deg: single?.r ?? 90 })}</strong>
-            <span>{t('props.rotatedNote')}</span>
-          </span>
+          <strong id="rotation-angle">{t('props.rotated', { deg: single?.r ?? 90 })}</strong>
         </p>
         <div className="photo-row">
           <label className="field">
@@ -371,7 +368,7 @@ export function PieceSection() {
             className="chip-btn icon-chip"
             icon={CropIcon}
             data-crop-toggle=""
-            tip={t('crop.startTip')}
+            tip={t('crop.start')}
             note={group ? t('crop.startSingle') : undefined}
             shortcut="crop"
             aria-disabled={group || undefined}

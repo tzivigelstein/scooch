@@ -50,12 +50,12 @@ describe('choosing the unit in Preferences', () => {
     expect(live()).toBe('Medidas en centímetros.');
   });
 
-  test('the three units are named for screen readers and described by the hint', () => {
+  test('the three units are named for screen readers, with no hint describing them', () => {
     render(<PrefsDialog />);
     const radios = screen.getAllByRole('radio') as HTMLInputElement[];
     expect(radios.map((r) => r.value)).toEqual(['mm', 'cm', 'in']);
     expect(radios.map((r) => plain(r.closest('label')!.textContent))).toEqual(['mm, milímetros', 'cm, centímetros', 'in, pulgadas']);
-    expect(radios.every((r) => r.getAttribute('aria-describedby') === 'units-hint')).toBe(true);
+    expect(radios.some((r) => r.hasAttribute('aria-describedby'))).toBe(false);
     expect(radios.find((r) => r.checked)!.value).toBe('mm');
   });
 });

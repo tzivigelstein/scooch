@@ -33,12 +33,13 @@ describe('Preferences', () => {
     expect(groups.map((g) => g.querySelector('h3')?.id)).toEqual(groups.map((g) => g.getAttribute('aria-labelledby')));
   });
 
-  test('the Unidades group holds the three units, each described by the units hint', () => {
+  test('the Unidades group holds the three units, with no hint under them', () => {
     render(<PrefsDialog />);
     const [units] = screen.getAllByRole('group');
     const radios = within(units).getAllByRole('radio');
     expect(radios.map((r) => (r as HTMLInputElement).value)).toEqual(['mm', 'cm', 'in']);
-    for (const radio of radios) expect(referenced(radio, 'aria-describedby')).toBe('Para mostrar y escribir medidas. No cambia el documento ni el PDF.');
+    for (const radio of radios) expect(radio.hasAttribute('aria-describedby')).toBe(false);
+    expect(units.querySelector('.switch-hint')).toBeNull();
   });
 
   test('the Teclado group holds the «Atajos de 1 tecla» switch, described by its hint, on by default', () => {
