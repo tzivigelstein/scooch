@@ -27,7 +27,7 @@ describe('index.html with its texts', () => {
     for (const language of LANGUAGES) expect(noscript).toContain(textsFor(CATALOGUES[language]).t('app.noscript'));
   });
 
-  test('the head’s data: each language’s title, description and heading, and the file of its texts', () => {
+  test('the head’s data: each language’s title, description, heading and loading screen’s name, and the file of its texts', () => {
     const json = /<script type="application\/json" id="boot-copy">([\s\S]*?)<\/script>/.exec(filled)![1];
     expect(json).not.toContain('<');
     const data = JSON.parse(json);
@@ -35,7 +35,7 @@ describe('index.html with its texts', () => {
     expect(data.languages).toEqual([...LANGUAGES]);
     for (const language of LANGUAGES) {
       const { t } = textsFor(CATALOGUES[language]);
-      expect(data.texts[language]).toEqual({ title: t('app.title'), description: t('app.description'), heading: t('app.heading') });
+      expect(data.texts[language]).toEqual({ title: t('app.title'), description: t('app.description'), heading: t('app.heading'), loading: t('busy.loading') });
     }
     expect(data.chunks).toEqual({ es: '/assets/copy-es-x.js' });
   });

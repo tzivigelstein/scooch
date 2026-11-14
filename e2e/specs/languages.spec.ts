@@ -14,6 +14,7 @@ import { LANGUAGES, type Language } from '../../src/core/language.js';
 import { CATALOGUES } from '../../src/copy/all.ts';
 import { textsFor, type Catalogue } from '../../src/copy/index.ts';
 import { AXE_TAGS, readLayout } from '../support/accessibility.ts';
+import { holdApp, layoutShift, readAbout, skeletonShown, watchHandOff } from '../support/boot.ts';
 import { horizontalOverflow } from '../support/layout.ts';
 import { App, expect, test } from '../support/test.ts';
 
@@ -132,7 +133,7 @@ for (const language of LANGUAGES.filter((l) => l !== 'es')) {
     test.use({ locale: LOCALES[language] });
 
     for (const size of WIDTHS) {
-      test(`at ${size.width} px: in ${language} before the app’s script runs, only its texts download, and the key screens show no Spanish, overflow nothing and cut no text`, async ({ page }, info) => {
+      test(`at ${size.width} px: in ${language} before the app’s script runs (its skeleton’s sentence whole on the sheet), only its texts download, nothing moves as the app takes over, and the key screens show no Spanish, overflow nothing and cut no text`, async ({ page }, info) => {
         await page.setViewportSize(size);
         const chunks: string[] = [];
         const devanagari: string[] = [];
@@ -143,23 +144,30 @@ for (const language of LANGUAGES.filter((l) => l !== 'es')) {
         });
         // The advice before downloading off, the summary after on.
         await page.addInitScript(() => localStorage.setItem('scooch:print-preferences', JSON.stringify({ v: 1, tip: false, summary: true })));
-        let release!: () => void;
-        const held = new Promise<void>((done) => (release = done));
-        await page.route(/\/assets\/index-[\w-]+\.js$/, async (route) => {
-          await held;
-          await route.continue();
-        });
+        await page.addInitScript(watchHandOff);
+        const release = await holdApp(page);
         await page.goto('./', { waitUntil: 'commit' });
-        await page.locator('.boot-about').waitFor({ state: 'attached' });
+        await skeletonShown(page);
         expect(
-          await page.evaluate(() => ({ lang: document.documentElement.lang, title: document.title, about: document.querySelector('.boot-about')?.textContent, heading: document.querySelector('.boot h1')?.textContent })),
+          await page.evaluate(() => ({
+            lang: document.documentElement.lang,
+            title: document.title,
+            loading: document.querySelector('.boot')?.getAttribute('aria-label'),
+            about: document.querySelector('.boot-about')?.textContent,
+            heading: document.querySelector('.boot h1')?.textContent,
+          })),
           'the loading screen'
-        ).toEqual({ lang: language, title: t('app.title'), about: t('app.description'), heading: t('app.heading') });
+        ).toEqual({ lang: language, title: t('app.title'), loading: t('busy.loading'), about: t('app.description'), heading: t('app.heading') });
+        expect((await page.evaluate(readAbout)).onSheet, 'the sentence whole on the sheet').toBe(true);
+        expect(await page.locator('.boot-about').evaluate((el) => getComputedStyle(el).fontFamily.includes('Noto Sans Devanagari')), 'the sentence in the Devanagari font').toBe(language === 'hi');
         release();
 
         const app = new App(page, info);
         app.printing = true;
         await app.ready();
+        // The skeleton left in the frame the project arrived, with nothing moving.
+        expect(await page.evaluate(() => window.handOff)).toEqual({ loading: false, sheets: 1, pieces: 0 });
+        expect(await page.evaluate(layoutShift), 'layout shift while loading').toBe(0);
         expect(chunks, 'the texts downloaded').toEqual([language]);
         await expect(page.locator('html')).toHaveAttribute('lang', language);
         await walkScreens(app, language);

@@ -20,6 +20,54 @@ export async function holdApp(page: Page) {
   return release;
 }
 
+declare global {
+  interface Window {
+    /** The page when the skeleton left it (see watchHandOff). */
+    handOff?: { loading: boolean; sheets: number; pieces: number };
+  }
+}
+
+/** For addInitScript: records what the page has at the moment the skeleton leaves it, in window.handOff. */
+export const watchHandOff = () => {
+  let seen = false;
+  new MutationObserver((_, observer) => {
+    if (document.querySelector('.boot')) {
+      seen = true;
+      return;
+    }
+    if (!seen) return;
+    observer.disconnect();
+    window.handOff = { loading: document.body.classList.contains('is-loading'), sheets: document.querySelectorAll('#sheets .sheet').length, pieces: document.querySelectorAll('#sheets .piece').length };
+  }).observe(document, { childList: true, subtree: true });
+};
+
+/** For evaluate: how much the page has moved since it started loading (the sum of its layout shifts), two frames from now. */
+export const layoutShift = () =>
+  new Promise<number>((done) =>
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const observer = new PerformanceObserver(() => {});
+        observer.observe({ type: 'layout-shift', buffered: true });
+        const entries = observer.takeRecords() as (PerformanceEntry & { value: number; hadRecentInput: boolean })[];
+        observer.disconnect();
+        done(entries.filter((e) => !e.hadRecentInput).reduce((sum, e) => sum + e.value, 0));
+      })
+    )
+  );
+
+/** For evaluate: whether all of what the tool does is on the skeleton's sheet, and its text. */
+export const readAbout = () => {
+  const range = document.createRange();
+  range.selectNodeContents(document.querySelector('.boot-about')!);
+  const text = range.getBoundingClientRect();
+  const sheet = document.querySelector('.boot-sheet')!.getBoundingClientRect();
+  return {
+    text: range.toString(),
+    middle: { x: text.x + text.width / 2 - (sheet.x + sheet.width / 2), y: text.y + text.height / 2 - (sheet.y + sheet.height / 2) },
+    onSheet: text.width > 0 && text.left >= sheet.left && text.right <= sheet.right && text.top >= sheet.top && text.bottom <= sheet.bottom,
+  };
+};
+
 /** Waits until index.html is parsed, with the stylesheet and the fonts its skeleton uses. */
 export async function skeletonShown(page: Page) {
   await page.locator('body > noscript').waitFor({ state: 'attached' });

@@ -6,15 +6,8 @@
 import { readFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
 import { DESKTOP, PHONE, sizeTitle } from '../support/accessibility.ts';
-import { holdApp, skeletonShown } from '../support/boot.ts';
+import { holdApp, layoutShift, readAbout, skeletonShown, watchHandOff } from '../support/boot.ts';
 import { App, expect, test } from '../support/test.ts';
-
-declare global {
-  interface Window {
-    /** The page when the skeleton left it (see watchHandOff). */
-    handOff?: { loading: boolean; sheets: number; pieces: number };
-  }
-}
 
 const THEMES = {
   light: { bg: [255, 255, 255], canvas: [238, 240, 243], surface: [255, 255, 255], text: 'rgb(14, 16, 20)' },
@@ -85,34 +78,6 @@ function expectSameBoxes(drawn: Record<string, Box>, shown: Record<string, Box>)
   }
 }
 
-/** Runs before the page: records what the page has at the moment the skeleton leaves it. */
-const watchHandOff = () => {
-  let seen = false;
-  new MutationObserver((_, observer) => {
-    if (document.querySelector('.boot')) {
-      seen = true;
-      return;
-    }
-    if (!seen) return;
-    observer.disconnect();
-    window.handOff = { loading: document.body.classList.contains('is-loading'), sheets: document.querySelectorAll('#sheets .sheet').length, pieces: document.querySelectorAll('#sheets .piece').length };
-  }).observe(document, { childList: true, subtree: true });
-};
-
-/** How much the page has moved since it started loading (the sum of its layout shifts), two frames from now. */
-const layoutShift = () =>
-  new Promise<number>((done) =>
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        const observer = new PerformanceObserver(() => {});
-        observer.observe({ type: 'layout-shift', buffered: true });
-        const entries = observer.takeRecords() as (PerformanceEntry & { value: number; hadRecentInput: boolean })[];
-        observer.disconnect();
-        done(entries.filter((e) => !e.hadRecentInput).reduce((sum, e) => sum + e.value, 0));
-      })
-    )
-  );
-
 test.describe('before the app mounts', () => {
   test.use({ viewport: { width: 1024, height: 768 } });
 
@@ -168,17 +133,13 @@ test.describe('the skeleton of the editor, before the app mounts', () => {
           await expect(page.locator('.boot-name')).toHaveText('Scooch');
           expect(await page.locator('.boot-name').evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/^"Inter Variable", system-ui/);
 
-          // What the tool does, in the middle of the sheet.
-          const about = await page.evaluate(() => {
-            const range = document.createRange();
-            range.selectNodeContents(document.querySelector('.boot-about')!);
-            const r = range.getBoundingClientRect();
-            return { text: range.toString(), x: r.x + r.width / 2, y: r.y + r.height / 2 };
-          });
+          // What the tool does, whole and in the middle of the sheet.
+          const about = await page.evaluate(readAbout);
           const sheet = drawn.sheet!;
           expect(about.text).toMatch(/^Acomoda imágenes y páginas de PDF/);
-          expect(Math.abs(about.x - (sheet.x + sheet.width / 2)), 'centered across the sheet').toBeLessThanOrEqual(1);
-          expect(Math.abs(about.y - (sheet.y + sheet.height / 2)), 'centered down the sheet').toBeLessThanOrEqual(1);
+          expect(about.onSheet, 'on the sheet').toBe(true);
+          expect(Math.abs(about.middle.x), 'centered across the sheet').toBeLessThanOrEqual(1);
+          expect(Math.abs(about.middle.y), 'centered down the sheet').toBeLessThanOrEqual(1);
 
           // The theme from the first paint; the sheet white in both.
           expect(closeTo(await colorAt(page), theme.bg), 'top bar').toBe(true);
@@ -203,7 +164,8 @@ test.describe('the skeleton of the editor, before the app mounts', () => {
               - paragraph: /^Acomoda imágenes y páginas de PDF/
           `);
           await expect(page.getByRole('main')).toHaveAttribute('aria-busy', 'true');
-          expect(await page.locator('.boot > :not(h1, .boot-about, [aria-hidden="true"])').count(), 'all but the heading and what the tool does is hidden from assistive technology').toBe(0);
+          const exposed = page.locator('.boot *:not(h1, .boot-stage, .boot-sheet, .boot-about, [aria-hidden="true"], [aria-hidden="true"] *)');
+          expect(await exposed.count(), 'all but the heading and what the tool does is hidden from assistive technology').toBe(0);
           const h1 = (await page.evaluate(bootState)).h1!;
           expect(h1.w <= 1 && h1.h <= 1 && h1.clip !== 'none', 'the heading takes no visible room').toBe(true);
           await page.keyboard.press('Tab');

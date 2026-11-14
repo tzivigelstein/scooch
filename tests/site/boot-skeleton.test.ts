@@ -127,7 +127,6 @@ describe('the skeleton in index.html', () => {
     const atRest = (value: string) => value.replace(/^calc\((.+) \+ var\(--new-sheet-room\)\)$/, '$1');
     for (const layout of Object.keys(LAYOUTS) as Layout[]) {
       const [top, x, bottom] = parts(skeleton(layout, '.boot-stage', 'padding'));
-      expect(skeleton(layout, '.boot-about', 'padding'), `the description is centered like the sheet (${layout})`).toBe(skeleton(layout, '.boot-stage', 'padding'));
       const [stageTop, stageX, stageBottom] = parts(app(layout, '.stage-area', 'padding')).map(atRest);
       expect(terms(top), `top (${layout})`).toEqual([stageTop, app(layout, '.page-head', 'height')]);
       expect(x, `sides (${layout})`).toBe(stageX);

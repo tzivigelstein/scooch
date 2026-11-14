@@ -136,24 +136,15 @@
          .sheets gap, the .sheets-foot margin and the .add-sheet height): what
          is left is the room fitZoom (canvas/viewport.ts) fits the sheet in,
          with the sheet in its middle. */
-      .boot-about,
       .boot-stage {
         grid-area: canvas;
+        position: relative;
         display: grid;
         place-content: center;
         padding: calc(1.25rem + 2.25rem) 2.25rem calc(4rem + 1.25rem - 0.375rem + 2rem);
         overflow: hidden;
         scrollbar-gutter: stable;
-      }
-      /* What the tool does, on the sheet: read at once on slow loads, and by
-         crawlers that don't run JavaScript. */
-      .boot-about {
-        z-index: 1;
-        grid-template-columns: min(18rem, 100%);
-        margin: 0;
-        color: #555c69;
-        text-align: center;
-        text-wrap: balance;
+        container-type: size;
       }
       .boot-bar {
         grid-area: bar;
@@ -279,18 +270,28 @@
         width: 3rem;
         height: 0.625rem;
       }
-      .boot-stage {
-        position: relative;
-        container-type: size;
-      }
       /* An A4 sheet (the default paper) at the zoom that fits it. */
       .boot-sheet {
+        display: grid;
+        place-content: center;
+        grid-template-columns: min(18rem, 100% - 2.5rem);
         width: min(100cqw, 100cqh * 210 / 297);
         height: min(100cqh, 100cqw * 297 / 210);
-        margin: 0;
+        overflow: hidden;
         border-radius: 0.125rem;
         background: #fff;
         box-shadow: var(--sheet-shadow);
+        container-type: size;
+      }
+      /* What the tool does, on the sheet (the sheet is white in both themes):
+         read at once on slow loads, and by crawlers that don't run
+         JavaScript. Smaller on a small sheet, so it never spills off it. */
+      .boot-about {
+        margin: 0;
+        color: #555c69;
+        font-size: clamp(0.625rem, 4.5cqw, 0.875rem);
+        text-align: center;
+        text-wrap: balance;
       }
       /* The panel buttons of narrow screens, as .dock places them. */
       .boot-dock {
@@ -342,7 +343,6 @@
         .boot {
           grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--right-w);
         }
-        .boot-about,
         .boot-stage {
           padding: calc(1.75rem + 2.25rem) 1.75rem calc(4rem + 1.25rem - 0.375rem + 2rem);
         }
@@ -375,7 +375,6 @@
         .boot {
           grid: "bar" auto "canvas" minmax(0, 1fr) / minmax(0, 1fr);
         }
-        .boot-about,
         .boot-stage {
           padding: calc(4.25rem + 2.75rem) 1rem calc(8.25rem + 1.25rem - 0.375rem + 2.5rem);
         }
@@ -471,7 +470,6 @@
           <rect x="6" y="14.5" width="4" height="4" rx="1" fill="#fff" />
         </svg>
         <p class="boot-name" aria-hidden="true">{{app.name}}</p>
-        <p class="boot-about">{{app.description}}</p>
         <div class="boot-bar" aria-hidden="true">
           <i class="boot-brand"></i>
           <span><i class="boot-txt"></i><i></i></span>
@@ -481,8 +479,9 @@
         <div class="boot-left" aria-hidden="true">
           <div class="boot-pane"><i class="boot-txt"></i><i class="boot-drop"></i><i class="boot-row"></i><i class="boot-row"></i><i class="boot-row"></i></div>
         </div>
-        <div class="boot-stage" aria-hidden="true">
-          <i class="boot-sheet"></i><i class="boot-dock"></i><i class="boot-dock"></i>
+        <div class="boot-stage">
+          <div class="boot-sheet"><p class="boot-about">{{app.description}}</p></div>
+          <i class="boot-dock" aria-hidden="true"></i><i class="boot-dock" aria-hidden="true"></i>
         </div>
         <div class="boot-right" aria-hidden="true">
           <div class="boot-pane"><div class="boot-tabs"><i></i><i></i></div><i class="boot-txt"></i><i class="boot-field"></i><i class="boot-field"></i><i class="boot-txt"></i><i class="boot-field"></i><i class="boot-field"></i></div>
@@ -493,6 +492,7 @@
         (() => {
           const texts = JSON.parse(document.getElementById("boot-copy").textContent).texts[document.documentElement.lang];
           if (!texts) return;
+          document.querySelector(".boot").setAttribute("aria-label", texts.loading);
           document.querySelector(".boot h1").textContent = texts.heading;
           document.querySelector(".boot-about").textContent = texts.description;
         })();
