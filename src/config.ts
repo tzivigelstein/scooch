@@ -9,6 +9,7 @@ export const MAX_UNDO = 50;
 export const EPS = 0.01; // tolerance in mm for edges and overlaps
 export const CROWD_LIMIT = 0.48; // largest size of what is added when there are pieces already
 export const DRAG_THRESHOLD = 3; // px before a press counts as a drag
+export const PINCH_THRESHOLD = 16; // px two fingers spread or close before they zoom (until then they only pan)
 
 /** Narrow screens: no columns, icon-only bar, properties as a bottom sheet. */
 export const NARROW_QUERY = '(max-width: 799.98px)';

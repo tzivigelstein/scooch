@@ -30,6 +30,9 @@
   /* The app keeps the scroll itself (zooming around a point, dragging): the
      browser must not shift it to keep some node in place. */
   overflow-anchor: none;
+  /* One finger scrolls; two zoom the sheets (the gestures' pinch), never the
+     page, whose zoom still works over the panels and dialogs. */
+  touch-action: pan-x pan-y;
 }
 
 /* The sheets, one below the other. With few, they stay vertically centered

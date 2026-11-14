@@ -8,7 +8,7 @@ import { sheetAt } from '../../core/sheets.js';
 import type { Point, Rect } from '../../core/types.ts';
 import { getDocument } from '../../state/document.ts';
 import { dims, findItem, sheetSize } from '../../state/selectors.ts';
-import { clampPercent, fromPercent, stepPercent, toPercent } from '../../core/zoom.js';
+import { clampPercent, fromPercent, pinchSpan, pinchView, stepPercent, toPercent, type PinchPair } from '../../core/zoom.js';
 import { flushUi } from '../../state/flush.ts';
 import { isDragging } from '../../state/gesture.ts';
 import { getView, setView, type ZoomMode } from '../../state/view.ts';
@@ -143,6 +143,53 @@ export function zoomTo(next: number, { at = null as Point | null, mode = 'manual
 
 /** Zooms by `factor` around window point `at` (the middle of the stage by default). */
 export const zoomBy = (factor: number, at: Point | null = null) => zoomTo(viewZoom() * factor, { at });
+
+/** What holds the sheets under the fingers during a pinch: a sheet and where its box's corner should be (window px). */
+export interface PinchAnchor {
+  sheet: number;
+  corner: Point;
+}
+
+/**
+ * One step of a two-finger pinch: the fingers went from `before` to `after`
+ * (window px). Zooms as they spread or close (a zoom of the person's) and
+ * scrolls so the sheet point under their midpoint stays under it. `anchor`:
+ * what the last step returned (null on the first one, which takes the sheet
+ * nearest to the fingers). Nothing changes during a drag.
+ */
+export function pinchTo(before: PinchPair, after: PinchPair, anchor: PinchAnchor | null): PinchAnchor | null {
+  const stageEl = stage();
+  const sheets = sheetsEl();
+  if (!stageEl || !sheets || isDragging()) return anchor;
+  measureBoxes();
+  const mid = pinchSpan(before);
+  const sheet = anchor?.sheet ?? sheetAtLayerY(clientToLayer(mid.x, mid.y).y);
+  const corner = () => {
+    const box = boxes.get(sheet);
+    const origin = sheets.getBoundingClientRect();
+    return box && { x: origin.left + box.left, y: origin.top + box.top };
+  };
+  const shown = corner();
+  if (!shown) return null;
+  // The sheet's box scales from its corner: pinchView's content, scrolled so its origin is at the corner.
+  const at = anchor?.corner ?? shown;
+  const next = pinchView(before, after, { zoom: viewZoom(), scroll: { x: -at.x, y: -at.y } });
+  if (next.zoom !== viewZoom()) {
+    setView({ zoom: next.zoom, zoomMode: 'manual' });
+    flushUi();
+    measureBoxes();
+  }
+  const now = corner()!;
+  const { scrollLeft, scrollTop } = stageEl;
+  stageEl.scrollLeft = stageEl.classList.contains('is-wide') ? scrollLeft + now.x + next.scroll.x : 0;
+  stageEl.scrollTop = scrollTop + now.y + next.scroll.y;
+  // Where the corner ended: where it should be, kept exact so no rounding adds
+  // up over the steps, unless the stage couldn't scroll that far (an end of the
+  // scroll, or across when the sheets fit the width).
+  const x = now.x - (stageEl.scrollLeft - scrollLeft);
+  const y = now.y - (stageEl.scrollTop - scrollTop);
+  return { sheet, corner: { x: Math.abs(x + next.scroll.x) > 1 ? x : -next.scroll.x, y: Math.abs(y + next.scroll.y) > 1 ? y : -next.scroll.y } };
+}
 
 /** One level in (1) or out (−1), around the middle of the stage, and says the new level. */
 export function stepZoom(dir: 1 | -1) {

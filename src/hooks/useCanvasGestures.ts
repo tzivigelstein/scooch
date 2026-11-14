@@ -2,7 +2,8 @@
 // was already among several selected, drags the group; a click without moving
 // leaves only that one selected). With Shift or Ctrl/Cmd, adds or removes it.
 // On a handle: scales the piece or the group. On an empty spot: a marquee to
-// select (a click without dragging clears the selection).
+// select (a click without dragging clears the selection). Two fingers zoom
+// and pan the view, and take back whatever the first one started.
 //
 // Performance: nothing re-renders while the pointer moves. The dragged pieces
 // travel in the drag layer (no clipping, so they can cross sheets) and are
@@ -10,13 +11,13 @@
 // the parts that preview them. The document changes once, on drop.
 
 import { useEffect, type RefObject } from 'react';
-import { DRAG_THRESHOLD } from '../config.ts';
+import { DRAG_THRESHOLD, PINCH_THRESHOLD } from '../config.ts';
 import { bounds, scaleGroup } from '../core/align.js';
 import { maxGrowth, overlapsAny } from '../core/collide.js';
 import { planDrag, planDrop, planScale, scaleBounds, touchedBy, type Drag } from '../core/group.js';
 import { keepCenterInside, placeOnNewSheet } from '../core/sheets.js';
 import type { Box, Point, Rect } from '../core/types.ts';
-import { wheelFactor } from '../core/zoom.js';
+import { pinchSpan, wheelFactor, type PinchPair } from '../core/zoom.js';
 import { clamp, round1, tidy } from '../core/util.ts';
 import { t } from '../copy/index.ts';
 import { announce } from '../components/feedback/announcer.ts';
@@ -28,6 +29,7 @@ import {
   measureBoxes,
   mmToPx,
   newSheetSpot,
+  pinchTo,
   pxToMm,
   sheetAtLayerY,
   sheetAtPoint,
@@ -38,6 +40,7 @@ import {
   zoomBy,
   type BoxOffset,
   type NewSheetSpot,
+  type PinchAnchor,
 } from '../components/canvas/viewport.ts';
 import { paintNewSheetSpot } from '../components/canvas/newSheetDrop.ts';
 import { getAsset } from '../state/assets.ts';
@@ -65,7 +68,7 @@ import {
 } from '../state/selectors.ts';
 import { animateNext, getView, setView } from '../state/view.ts';
 import { focusSheetNode, pieceNode } from '../state/actions/focus.ts';
-import { makePrimary, select, selectTouched, toggleInSelection } from '../state/actions/selection.ts';
+import { makePrimary, select, selectTouched, setSelection, toggleInSelection } from '../state/actions/selection.ts';
 import { moveToNewSheetAt } from '../state/actions/sheets.ts';
 import { startCrop } from '../components/canvas/cropMode.ts';
 import { openContextMenuAt, openContextMenuFromKeyboard } from '../components/canvas/contextMenu.ts';
@@ -232,6 +235,7 @@ function begin(next: Gesture) {
 }
 
 function onPointerDown(e: PointerEvent) {
+  if (e.pointerType === 'touch' && touchDown(e)) return;
   if (pan || gesture) return;
   if (e.button === 1 || (e.button === 0 && space.held)) return startPan(e);
   if (getDocument().busy || e.button !== 0) return;
@@ -359,6 +363,7 @@ function cachedOthers(g: MoveGesture, sheetId: number) {
 }
 
 function onPointerMove(e: PointerEvent) {
+  if (e.pointerType === 'touch' && touchMove(e)) return;
   if (pan && e.pointerId === pan.pointerId) return movePan(e);
   if (longPress && e.pointerId === longPress.pointerId && Math.hypot(e.clientX - longPress.x, e.clientY - longPress.y) > DRAG_THRESHOLD * 3) cancelLongPress();
   const g = gesture;
@@ -604,6 +609,7 @@ function startAutoScroll() {
 }
 
 function onPointerUp(e: PointerEvent) {
+  if (e.pointerType === 'touch' && touchUp(e)) return;
   if (pan && e.pointerId === pan.pointerId) return endPan();
   if (longPress && e.pointerId === longPress.pointerId) cancelLongPress();
   const g = gesture;
@@ -887,6 +893,116 @@ function onWheel(e: WheelEvent) {
   });
 }
 
+// ---------- Two fingers: pinch to zoom, move together to pan ----------
+
+/** The touch pointers down on the stage (window px). */
+const touches = new Map<number, Point>();
+
+interface Pinch {
+  ids: [number, number];
+  /** Where the fingers were at the last step, and where they are now. */
+  last: PinchPair;
+  now: PinchPair;
+  anchor: PinchAnchor | null;
+  /** How far apart they landed: until that changes by PINCH_THRESHOLD, they only pan. */
+  start: number;
+  zooming: boolean;
+}
+
+let pinch: Pinch | null = null;
+let pinchFrame = 0;
+/** The selection when the first finger landed: a pinch leaves it as it was. */
+let touchSelection: { selection: readonly number[]; pinned: boolean; sheet: number } | null = null;
+
+/** A finger landed on the stage. Returns whether it belongs to a pinch (nothing else to do with it). */
+function touchDown(e: PointerEvent) {
+  // The first finger of a new touch: any still listed was lifted where the stage didn't hear it.
+  if (e.isPrimary) touches.clear();
+  touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch) return true;
+  if (touches.size === 1) {
+    touchSelection = { selection: getDocument().selection, pinned: getView().pinned, sheet: getView().sheet };
+    return false;
+  }
+  startPinch();
+  return true;
+}
+
+/**
+ * The second finger: whatever the first one started is cancelled (a dragged
+ * piece goes back, nothing reaches the undo history) and the selection is
+ * left as it was before it.
+ */
+function startPinch() {
+  const [[a, p], [b, q]] = touches;
+  cancelLongPress();
+  if (gesture) finish(null);
+  const before = touchSelection;
+  touchSelection = null;
+  if (before && getDocument().selection !== before.selection) {
+    setSelection(before.selection, { pinned: before.pinned });
+    setView({ sheet: before.sheet });
+  }
+  pinch = { ids: [a, b], last: [p, q], now: [p, q], anchor: null, start: pinchSpan([p, q]).d, zooming: false };
+}
+
+/** Returns whether the move belongs to a pinch. */
+function touchMove(e: PointerEvent) {
+  if (!touches.has(e.pointerId)) return false;
+  touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (!pinch) return false;
+  const i = pinch.ids.indexOf(e.pointerId);
+  if (i >= 0) {
+    const now: [Point, Point] = [...pinch.now];
+    now[i] = { x: e.clientX, y: e.clientY };
+    pinch.now = now;
+    // At most once a frame, like the wheel.
+    pinchFrame ||= requestAnimationFrame(stepPinch);
+  }
+  return true;
+}
+
+/** Returns whether the finger belonged to a pinch. Lifting either of its two ends it. */
+function touchUp(e: PointerEvent) {
+  touches.delete(e.pointerId);
+  if (!pinch) return false;
+  if (pinch.ids.includes(e.pointerId)) {
+    if (pinchFrame) {
+      cancelAnimationFrame(pinchFrame);
+      stepPinch();
+    }
+    pinch = null;
+  }
+  return true;
+}
+
+function stepPinch() {
+  pinchFrame = 0;
+  const p = pinch!;
+  const before = p.last;
+  let after = p.now;
+  p.zooming ||= Math.abs(pinchSpan(after).d - p.start) > PINCH_THRESHOLD;
+  if (!p.zooming) {
+    // Only how far their midpoint moved counts: the zoom (and a fitted mode) stays.
+    const from = pinchSpan(before);
+    const to = pinchSpan(after);
+    after = [
+      { x: before[0].x + to.x - from.x, y: before[0].y + to.y - from.y },
+      { x: before[1].x + to.x - from.x, y: before[1].y + to.y - from.y },
+    ];
+  }
+  p.anchor = pinchTo(before, after, p.anchor);
+  p.last = p.now;
+}
+
+// The browser's own two-finger gestures stay off the canvas: its page zoom
+// (touch-action keeps it off the stage too) and its two-finger scroll, which
+// would cancel the pinch's pointers.
+function onTouch(e: TouchEvent) {
+  const stage = e.currentTarget as HTMLElement;
+  if (e.cancelable && (pinch || [...e.touches].filter((touch) => stage.contains(touch.target as Node)).length > 1)) e.preventDefault();
+}
+
 // ---------- Context menu: right click, the keyboard's (see the shortcuts) and a long press ----------
 
 const LONG_PRESS_MS = 550;
@@ -947,6 +1063,8 @@ export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
     node.addEventListener('pointermove', onPointerMove);
     node.addEventListener('pointerup', onPointerUp);
     node.addEventListener('pointercancel', onPointerUp);
+    node.addEventListener('touchstart', onTouch, { passive: false });
+    node.addEventListener('touchmove', onTouch, { passive: false });
     node.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       node.removeEventListener('dblclick', onDoubleClick);
@@ -959,6 +1077,8 @@ export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);
       node.removeEventListener('pointercancel', onPointerUp);
+      node.removeEventListener('touchstart', onTouch);
+      node.removeEventListener('touchmove', onTouch);
       node.removeEventListener('scroll', onScroll);
     };
   }, [stage]);

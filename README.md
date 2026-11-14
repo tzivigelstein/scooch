@@ -81,8 +81,10 @@ window until the person zooms (Ctrl/⌘ + wheel or pinch, Ctrl/⌘ + / −, the
 control in the canvas corner; Shift+1 and Shift+2 fit again), from 10 % to
 800 %. It is view state: not in the document or the undo history. Every
 conversion between screen pixels and millimetres goes through
-`src/components/canvas/viewport.ts`; the pure part (levels, steps, the wheel)
-is `src/core/zoom.js`.
+`src/components/canvas/viewport.ts`; the pure part (levels, steps, the wheel,
+a pinch step) is `src/core/zoom.js`. On a touch screen two fingers zoom around
+their midpoint and pan; the browser's page zoom stays off the canvas
+(`touch-action` on the stage) and keeps working over the panels and dialogs.
 
 ## Deploying to Vercel
 
