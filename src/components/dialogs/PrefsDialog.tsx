@@ -1,5 +1,5 @@
-// «Preferencias»: units (mm, cm or in), «Atajos de 1 tecla» (WCAG 2.1.4),
-// the advice before printing and the summary after, the theme, and the usage tips.
+// «Preferencias»: units (mm, cm or in), «Atajos de 1 tecla» (WCAG 2.1.4) and
+// the usage tips, the advice before printing and the summary after, and the theme.
 // Settings of this browser: saved in localStorage, outside the history and the project.
 
 import { X } from 'lucide-react';
@@ -48,11 +48,10 @@ export default function PrefsDialog() {
             }))}
           />
         </div>
-        <div className="pref-section" role="group" aria-labelledby="prefs-keys-title">
-          <h3 id="prefs-keys-title" className="pref-title">
-            {t('prefs.keyboard')}
-          </h3>
+        {/* What is only on or off is one switch named by the concept, with no heading (docs/copy.md); those switches go together. */}
+        <div className="pref-section">
           <Switch id="single-keys" label={<span>{t('prefs.singleKeys', { keys: singleKeyExamples() })}</span>} checked={singleKeys} onChange={setSingleKeys} />
+          <Switch id="tips-pref" label={<span>{t('tips.prefsSwitch')}</span>} checked={tipsOn} onChange={setTipsOn} />
         </div>
         <div className="pref-section" role="group" aria-labelledby="prefs-printing-title">
           <h3 id="prefs-printing-title" className="pref-title">
@@ -72,12 +71,6 @@ export default function PrefsDialog() {
             onChange={setTheme}
             options={THEMES.map((value) => ({ value, label: <span>{t(`prefs.themes.${value}`)}</span> }))}
           />
-        </div>
-        <div className="pref-section" role="group" aria-labelledby="prefs-tips-title">
-          <h3 id="prefs-tips-title" className="pref-title">
-            {t('tips.prefsTitle')}
-          </h3>
-          <Switch id="tips-pref" label={<span>{t('tips.prefsSwitch')}</span>} checked={tipsOn} onChange={setTipsOn} />
         </div>
       </div>
       <LegalLinks />

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-// «Preferencias»: two titled groups (Unidades, Teclado), the units hint
-// describing each unit option, and the «Atajos de 1 tecla» switch. Choosing a
-// unit (saved and announced) is in unit-preference.test.tsx; that the choice
-// survives a reload, in e2e/specs/keyboard-only.spec.ts.
+// «Preferencias»: a titled group only for two controls or more (Unidades,
+// Impresión, Tema); «Atajos de 1 tecla» and «Consejos de uso» are switches of
+// their own, named by their labels. Choosing a unit (saved and announced) is in
+// unit-preference.test.tsx; that the choice survives a reload, in
+// e2e/specs/keyboard-only.spec.ts.
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import PrefsDialog from '../../src/components/dialogs/PrefsDialog.tsx';
@@ -27,26 +28,33 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('Preferences', () => {
-  test('five groups, each named by its title: Unidades, Teclado, Impresión, Tema and Consejos de uso', () => {
+  test('three groups, each named by its title and holding two controls or more: Unidades, Impresión and Tema', () => {
     render(<PrefsDialog />);
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Preferencias');
     const groups = screen.getAllByRole('group');
-    expect(groups.map((g) => referenced(g, 'aria-labelledby'))).toEqual(['Unidades', 'Teclado', 'Impresión', 'Tema', 'Consejos de uso']);
+    expect(groups.map((g) => referenced(g, 'aria-labelledby'))).toEqual(['Unidades', 'Impresión', 'Tema']);
     expect(groups.map((g) => g.querySelector('h3')?.id)).toEqual(groups.map((g) => g.getAttribute('aria-labelledby')));
+    for (const group of groups) expect(within(group).queryAllByRole('radio').length + within(group).queryAllByRole('switch').length).toBeGreaterThanOrEqual(2);
+    // No heading outside a group: a section title is there only for two controls or more.
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(groups.length);
   });
 
-  test('every switch is in a group named by its section’s title, so its label doesn’t repeat it', () => {
+  test('a switch in a section is named by its label inside the titled group; one on its own, by its label alone, next to the other one', () => {
     render(<PrefsDialog />);
-    const named = (screen.getAllByRole('switch') as HTMLInputElement[]).map((toggle) => [
-      referenced(toggle.closest('[role="group"]')!, 'aria-labelledby'),
-      plain(toggle.labels?.[0]?.textContent),
-    ]);
-    expect(named).toEqual([
-      ['Teclado', 'Atajos de 1 tecla, como D o R'],
+    const switches = screen.getAllByRole('switch') as HTMLInputElement[];
+    const placed = switches.map((toggle) => {
+      const group = toggle.closest('[role="group"]');
+      return [group && referenced(group, 'aria-labelledby'), plain(toggle.labels?.[0]?.textContent)];
+    });
+    expect(placed).toEqual([
+      [null, 'Atajos de 1 tecla, como D o R'],
+      [null, 'Consejos de uso'],
       ['Impresión', 'Consejo'],
       ['Impresión', 'Resumen'],
-      ['Consejos de uso', 'Mostrar'],
     ]);
+    // The ones on their own go together, not as stray rows.
+    const block = (toggle: Element) => toggle.closest('.switch-row')?.parentElement;
+    expect(block(switches[0])).toBe(block(switches[1]));
   });
 
   test('the Unidades group holds the three units, with no hint under them', () => {
@@ -58,14 +66,13 @@ describe('Preferences', () => {
     expect(units.querySelector('.switch-hint')).toBeNull();
   });
 
-  test('the Teclado group holds the «Atajos de 1 tecla» switch, named with two of those keys and no hint, on by default', () => {
+  test('«Atajos de 1 tecla» is a switch of its own, named with two of those keys and no hint, on by default', () => {
     render(<PrefsDialog />);
-    const [, keyboard] = screen.getAllByRole('group');
-    const toggle = within(keyboard).getByRole('switch', { name: 'Atajos de 1 tecla, como D o R' }) as HTMLInputElement;
+    const toggle = screen.getByRole('switch', { name: 'Atajos de 1 tecla, como D o R' }) as HTMLInputElement;
     expect(toggle.id).toBe('single-keys');
-    expect(plain(toggle.labels?.[0]?.textContent)).toBe('Atajos de 1 tecla, como D o R');
+    expect(toggle.closest('[role="group"]')).toBeNull();
     expect(toggle.hasAttribute('aria-describedby')).toBe(false);
-    expect(keyboard.querySelector('.switch-hint')).toBeNull();
+    expect(toggle.closest('.switch-row')!.querySelector('.switch-hint')).toBeNull();
     expect(toggle.checked).toBe(true);
   });
 
@@ -115,7 +122,7 @@ describe('Preferences', () => {
 
   test('Tema: Automático, Claro and Oscuro, with no hint, automatic by default; the one chosen is saved in this browser', () => {
     render(<PrefsDialog />);
-    const theme = screen.getAllByRole('group')[3];
+    const theme = screen.getByRole('group', { name: 'Tema' });
     const radios = within(theme).getAllByRole('radio') as HTMLInputElement[];
     expect(radios.map((r) => [r.value, plain(r.labels?.[0]?.textContent)])).toEqual([
       ['auto', 'Automático'],
@@ -138,32 +145,32 @@ describe('Preferences', () => {
     expect((screen.getByRole('radio', { name: 'Claro' }) as HTMLInputElement).checked).toBe(true);
   });
 
-  test('Consejos de uso: its switch «Mostrar», on by default, turns them off in this browser; no hint', () => {
+  test('«Consejos de uso» is a switch of its own, on by default, that turns them off in this browser; no hint', () => {
     resetTips();
     render(<PrefsDialog />);
-    const group = screen.getByRole('group', { name: 'Consejos de uso' });
-    const toggle = within(group).getByRole('switch', { name: 'Mostrar' }) as HTMLInputElement;
+    const toggle = screen.getByRole('switch', { name: 'Consejos de uso' }) as HTMLInputElement;
+    expect(toggle.id).toBe('tips-pref');
+    expect(toggle.closest('[role="group"]')).toBeNull();
     expect(toggle.checked).toBe(true);
-    expect(group.querySelector('.switch-hint')).toBeNull();
+    expect(toggle.closest('.switch-row')!.querySelector('.switch-hint')).toBeNull();
     fireEvent.click(toggle);
     expect(useTips.getState().on).toBe(false);
     expect(JSON.parse(localStorage.getItem('scooch:usage-tips')!)).toMatchObject({ v: 1, on: false });
   });
 
-  test('Consejos de uso holds only the switch: no button to bring the dismissed ones back', () => {
+  test('«Consejos de uso» is the switch alone: no button to bring the dismissed ones back', () => {
     resetTips();
     render(<PrefsDialog />);
-    const group = screen.getByRole('group', { name: 'Consejos de uso' });
-    expect(within(group).getAllByRole('switch')).toHaveLength(1);
-    expect(within(group).queryAllByRole('button')).toEqual([]);
+    const row = screen.getByRole('switch', { name: 'Consejos de uso' }).closest('.switch-row') as HTMLElement;
+    expect(within(row).queryAllByRole('button')).toEqual([]);
     expect(screen.queryByRole('button', { name: /mostrar/i })).toBeNull();
   });
 
-  test('turning the switch of Consejos de uso off and on again brings back the dismissed ones', () => {
+  test('turning «Consejos de uso» off and on again brings back the dismissed ones', () => {
     resetTips();
     act(() => neverShow('undoKey'));
     render(<PrefsDialog />);
-    const toggle = within(screen.getByRole('group', { name: 'Consejos de uso' })).getByRole('switch', { name: 'Mostrar' });
+    const toggle = screen.getByRole('switch', { name: 'Consejos de uso' });
     fireEvent.click(toggle);
     expect(useTips.getState()).toMatchObject({ on: false, dismissed: ['undoKey'] });
     fireEvent.click(toggle);

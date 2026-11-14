@@ -854,8 +854,7 @@ const es = {
     // Each unit's accessible name: its visible symbol, then its name (units.names)
     unitLabel: '{symbol}, {name}',
     unitChanged: 'Medidas en {unit}',
-    keyboard: 'Teclado',
-    // {keys}: two of them as alternatives, as this device shows them («D o R»)
+    // A switch of its own, without a heading: {keys}, two of them as alternatives, as this device shows them («D o R»)
     singleKeys: 'Atajos de 1 tecla, como {keys}',
   },
 
@@ -1004,9 +1003,8 @@ const es = {
     zoomPinch: 'También puedes acercar o alejar la vista pellizcando con dos dedos',
     alignButtons: 'Para alinear varias piezas, selecciónalas juntas y usa Alinear, en la pestaña Pieza',
     sameFile: 'Duplicar y Rellenar con copias repiten una pieza sin agregar el archivo otra vez',
-    // «Preferencias»: the section and its switch (the section names its group)
-    prefsTitle: 'Consejos de uso',
-    prefsSwitch: 'Mostrar',
+    // The switch in «Preferencias»: named by the concept, without a heading
+    prefsSwitch: 'Consejos de uso',
   },
 };
 

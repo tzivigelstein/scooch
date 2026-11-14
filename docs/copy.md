@@ -285,11 +285,17 @@ Esc. Las letras y los signos se muestran tal cual.
   es de «Ajustar a la hoja», que cambia el tamaño de una pieza.
 - **Medidas en la unidad elegida**: los textos con medidas reciben el número
   ya formateado («{w} × {h} {unit}»), nunca «mm» fijo.
-- **Una etiqueta no repite el título de su sección** (2026-11): en
-  Preferencias, Impresión tiene «Consejo» y «Resumen» (antes «Consejo antes
-  de imprimir» y «Resumen después de imprimir») y Consejos de uso, «Mostrar»
-  (antes «Mostrar consejos»). Cada sección es un grupo con el nombre de su
-  título, así un lector de pantalla dice «Impresión, Consejo». Donde no hay
-  sección, como en Buscar acciones, el nombre va completo.
+- **Una sola opción no lleva subopción** (2026-11, decisión del dueño): lo
+  que solo se activa o se desactiva es un interruptor con el nombre del
+  concepto, sin título encima: «Consejos de uso», «Atajos de 1 tecla, como D
+  o R» (antes, secciones Consejos de uso y Teclado con un interruptor
+  adentro). Un título de sección va solo sobre 2 controles o más. En
+  Preferencias, los interruptores sueltos van juntos, en un mismo bloque.
+- **Una etiqueta no repite el título de su sección** (2026-11): Impresión
+  tiene «Consejo» y «Resumen» (antes «Consejo antes de imprimir» y «Resumen
+  después de imprimir»). Cada sección es un grupo con el nombre de su título,
+  así un lector de pantalla dice «Impresión, Consejo»; un interruptor suelto
+  se nombra solo con su etiqueta. Donde no hay sección, como en Buscar
+  acciones, el nombre va completo.
 - **Coma decimal**, como en la mayor parte de Sudamérica (es-419 de Google usa
   punto). Si se cambia, es solo `meta.numberLocale` en `es.ts`.
