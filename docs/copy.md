@@ -49,6 +49,11 @@ pedazos en el código.
 
 ## Idiomas
 
+Español (este documento), [inglés](copy/en.md), [chino simplificado](copy/zh-Hans.md),
+[hindi](copy/hi.md) y [francés](copy/fr.md): cada glosario dice las
+convenciones y los términos de su idioma. Las traducciones esperan la
+revisión de hablantes nativos.
+
 - Un archivo por idioma en `src/copy/` (`es.ts`, la fuente, y uno por cada
   otro idioma), con exactamente las claves de `es.ts`, los mismos parámetros
   y los mismos `<link>…</link>`. El tipo `Catalogue` lo exige al compilar y

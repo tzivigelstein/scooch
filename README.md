@@ -6,7 +6,9 @@ A web app to arrange images and PDF pages on sheets of paper at real size and
 download or print an exact PDF. Everything happens in the browser: files are
 never uploaded anywhere.
 
-The interface is in Spanish. React 19 and TypeScript, with Zustand for state
+The editor is in Spanish, English, Simplified Chinese, Hindi and French: the
+browser's language, or the one chosen in Preferences. The site's guides and
+legal pages are in Spanish. React 19 and TypeScript, with Zustand for state
 and [Vite](https://vite.dev) for development and the build. pdf.js (reading
 PDFs) and pdf-lib (writing them) load only when first needed.
 
