@@ -7,9 +7,11 @@
 // one-line control wrapped, no controls covering each other, no horizontal
 // scroll, enough contrast inside modal dialogs. Screenshots of each state (up
 // to 1440 px) are attached to the report. See e2e/support/accessibility.ts.
+import AxeBuilder from '@axe-core/playwright';
 import type { Locator, Page } from '@playwright/test';
 import { App, cards, expect, norm, test } from '../support/test.ts';
-import { Catalogue, DESKTOP, MEDIUM, PHONE, WIDE, readLayout, sizeTitle, type Size } from '../support/accessibility.ts';
+import { AXE_TAGS, Catalogue, DESKTOP, MEDIUM, PHONE, SCHEMES, WIDE, axeSummary, readLayout, sizeTitle, type Size } from '../support/accessibility.ts';
+import { holdApp, skeletonShown } from '../support/boot.ts';
 
 const LONG_NAME = 'Tarjetas de cumpleaños de la abuela Marta (versión final)';
 
@@ -619,6 +621,33 @@ flow('measurement field limit', [DESKTOP, PHONE], async (c, app) => {
   await page.keyboard.type('21312');
   await expect(page.locator('#margin-limit')).toHaveText('Máximo 50 mm');
   await c.state('margin field showing its limit while typing');
+});
+
+// ---------- Before the app mounts ----------
+
+// The skeleton index.html shows while the editor's script loads (held back
+// here), loaded once in each theme: before the app runs, nothing follows a
+// change of the system's theme.
+test.describe('the skeleton before the app mounts', () => {
+  for (const size of [DESKTOP, MEDIUM, PHONE])
+    test.describe(() => {
+      test.use({ viewport: size });
+      test(`${sizeTitle(size)}: axe finds nothing in light and dark, and no text is clipped or scrolls sideways`, async ({ page }, testInfo) => {
+        const release = await holdApp(page);
+        for (const scheme of SCHEMES) {
+          await page.emulateMedia({ colorScheme: scheme });
+          await (scheme === SCHEMES[0] ? page.goto('./', { waitUntil: 'commit' }) : page.reload({ waitUntil: 'commit' }));
+          await skeletonShown(page);
+          await expect(page.locator('html')).toHaveAttribute('data-theme', scheme);
+          const { violations } = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+          expect.soft(axeSummary(violations), `axe violations, ${scheme}`).toEqual([]);
+          const { clipped, overflowX } = await page.evaluate(readLayout);
+          expect.soft({ clipped, overflowX }, `layout, ${scheme}`).toEqual({ clipped: [], overflowX: 0 });
+          await testInfo.attach(`skeleton · ${size.width} px · ${scheme}`, { body: await page.screenshot(), contentType: 'image/png' });
+        }
+        release();
+      });
+    });
 });
 
 // ---------- The piece list's rows ----------

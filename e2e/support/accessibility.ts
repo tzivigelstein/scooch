@@ -362,7 +362,7 @@ async function settle(page: Page, keepPointer: boolean) {
   await page.evaluate(() => document.fonts.ready.then(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))));
 }
 
-const axeSummary = (violations: Awaited<ReturnType<AxeBuilder['analyze']>>['violations']) =>
+export const axeSummary = (violations: Awaited<ReturnType<AxeBuilder['analyze']>>['violations']) =>
   violations.flatMap((v) => v.nodes.map((n) => `${v.impact}:${v.id} ${n.target.join(' ')} — ${(n.failureSummary ?? '').split('\n').slice(0, 2).join(' ')}`));
 
 export interface CheckOptions {
