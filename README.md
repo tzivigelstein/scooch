@@ -147,7 +147,7 @@ Import the repository in Vercel: it detects Vite and needs no configuration
 ## Structure
 
 ```
-index.html              the single page (Vite's entry): critical styles and the loading screen
+index.html              the single page (Vite's entry): critical styles and the editor's skeleton, shown while it loads
 src/
   main.tsx, App.tsx     start and layout
   config.ts             app name, limits and storage keys

@@ -10,7 +10,8 @@ script, built on its own so it never pulls in the editor.
 
 The editor's `index.html` gets its canonical URL, share tags and the
 tool's structured data (`WebApplication`) from the same plugin, and a line
-saying what the tool does inside the loading screen.
+saying what the tool does on the sheet of the skeleton it shows while the
+editor loads.
 
 ## Before publishing
 
