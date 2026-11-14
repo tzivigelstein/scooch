@@ -1,12 +1,47 @@
 import { describe, expect, test } from 'vitest';
+import {
+  CUSTOM_PAPER_STORAGE,
+  DONATE_STORAGE,
+  GRID_STORAGE,
+  JOURNAL_PREFIX,
+  LAST_PROJECT_STORAGE,
+  PRINT_STORAGE,
+  SAVINGS_STORAGE,
+  SECTIONS_STORAGE,
+  SINGLE_KEYS_STORAGE,
+  THEME_STORAGE,
+  UNIT_STORAGE,
+  VIEW_STORAGE,
+} from '../../src/config.ts';
 import { legalPage } from '../../src/site/content/es/legal.ts';
 import { legalLink, legalProblems, publishLegal } from '../../src/site/legal.ts';
 import { renderMarkdown } from '../../src/site/markdown.ts';
 import { readLegal } from '../../src/site/site.ts';
+import { SETTINGS } from '../../src/state/settings.ts';
 
 const ROOT = new URL('../..', import.meta.url).pathname;
 const docs = readLegal(ROOT);
 const doc = (id: string) => docs.find((d) => d.id === id)!;
+
+/**
+ * Where the privacy policy («Qué se guarda en tu dispositivo») tells about
+ * each localStorage key of the settings registry (src/state/settings.ts):
+ * the bold term its item starts with.
+ */
+const POLICY_TERMS: Readonly<Record<string, string>> = {
+  [UNIT_STORAGE]: 'Unidades',
+  [THEME_STORAGE]: 'Tema',
+  [SINGLE_KEYS_STORAGE]: 'Atajos de 1 tecla',
+  [VIEW_STORAGE]: 'Vista',
+  [GRID_STORAGE]: 'Grilla e imán',
+  [SECTIONS_STORAGE]: 'Secciones de Propiedades',
+  [PRINT_STORAGE]: 'Avisos al imprimir',
+  [CUSTOM_PAPER_STORAGE]: 'Papel personalizado',
+  [SAVINGS_STORAGE]: 'Hojas ahorradas',
+  [DONATE_STORAGE]: 'Invitación a aportar',
+  [LAST_PROJECT_STORAGE]: 'Último proyecto',
+  [JOURNAL_PREFIX]: 'Copia temporal',
+};
 
 /** The document with its placeholders filled in and its draft note gone, as the owner will leave it. */
 const finished = (text: string) =>
@@ -62,6 +97,14 @@ describe('the documents in the repository', () => {
     expect(doc('privacy').placeholders).toEqual(expect.arrayContaining(['<TITULAR>', '<CORREO DE CONTACTO>', '<FECHA DE VIGENCIA>']));
     expect(doc('license').placeholders).toEqual(['<COPYRIGHT HOLDER>']);
     expect(doc('notices').placeholders).toEqual([]);
+  });
+
+  test('the privacy policy has an item for every key the settings registry keeps in this browser', () => {
+    const keys = [...new Set(SETTINGS.filter((s) => s.lives === 'device').map((s) => s.storage!))].sort();
+    // A key added to the registry needs its item in the policy, and its term here.
+    expect(Object.keys(POLICY_TERMS).sort()).toEqual(keys);
+    const stored = /## Qué se guarda en tu dispositivo\n([\s\S]*?)\n## /.exec(doc('privacy').markdown)![1];
+    for (const [key, term] of Object.entries(POLICY_TERMS)) expect(stored, key).toContain(`- **${term}:**`);
   });
 
   test('the published privacy policy has no analytics reminder, and still says there is no analytics', () => {

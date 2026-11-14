@@ -40,56 +40,105 @@ navegador. Scooch no los envía a ningún servidor: ni a nosotros ni a nadie má
 El PDF que descargas o imprimes también se crea en tu navegador. Al imprimir,
 el navegador lo envía a la impresora que elijas, como cualquier otro documento.
 
+Lo mismo vale para las imágenes que pegas en Scooch: se tratan como un archivo
+que agregas. Al copiar o cortar piezas, Scooch deja en el portapapeles de tu
+sistema solo una línea de texto (por ejemplo, «2 piezas de Scooch») y la hora
+de la copia, no las imágenes.
+
 ## Qué se guarda en tu dispositivo
 
-Para que no pierdas tu trabajo, Scooch guarda datos en el almacenamiento de tu
-navegador (IndexedDB y localStorage). Esos datos quedan solo en ese navegador,
-en ese dispositivo. No se envían a nosotros ni a nadie más.
+Para que no pierdas tu trabajo y para recordar tus preferencias, Scooch guarda
+datos en el almacenamiento de tu navegador: IndexedDB y localStorage.
+Esos datos quedan solo en ese navegador, en ese dispositivo. No se envían a
+nosotros ni a nadie más. Scooch no guarda cookies.
 
-**Proyectos.** En la base de datos `scooch` de IndexedDB, por cada proyecto:
+### Tus proyectos
 
-- su nombre y las fechas en que se creó y se modificó;
-- el documento: las hojas, el papel, los márgenes, las líneas de corte y, por
-  cada pieza, su posición, tamaño, giro, recorte y el nombre del archivo del
-  que viene;
-- los archivos originales que agregaste (imágenes y PDF);
-- vistas previas de cada pieza y, cuando hace falta, una versión convertida de
-  la imagen para poder incluirla en el PDF;
-- una miniatura de la primera hoja, para la lista de proyectos.
+En la base de datos `scooch` de IndexedDB:
 
-**Preferencias y datos de funcionamiento.** En localStorage, con nombres que
-empiezan con `scooch:`:
+- **Proyectos.** Por cada proyecto: su nombre; cuándo se creó, cuándo se
+  guardó y cuándo lo abriste por última vez; cuántas hojas y piezas tiene; una
+  miniatura de la primera hoja, para la lista de Proyectos, y el documento. El
+  documento tiene las hojas, el papel, el margen, la separación, la rotación
+  automática, si se permite la superposición de piezas, las líneas de corte y,
+  por cada pieza, su posición, tamaño, rotación y recorte, con el nombre y las
+  medidas del archivo del que viene.
+- **Archivos.** Los archivos originales que agregaste (imágenes y PDF), una
+  vista previa de cada pieza y, cuando hace falta, una versión convertida de
+  la imagen para incluirla en el PDF. Cada archivo se guarda una sola vez,
+  aunque lo usen varias piezas o varios proyectos: para reconocerlo, tu
+  navegador calcula una huella de su contenido (un _hash_), que tampoco sale
+  de tu dispositivo.
+- **Historial para deshacer.** Los últimos pasos de cada proyecto (hasta 50),
+  para que Deshacer y Rehacer sigan funcionando si recargas la página o
+  vuelves a abrir el proyecto. Incluye las piezas que esos pasos pueden
+  devolver, con sus archivos, aunque ya las hayas quitado de la hoja.
+- **Piezas cortadas.** Las piezas que cortaste con Cortar y todavía no
+  pegaste, con sus archivos, para que no se pierdan si recargas la página. Se
+  borran al pegarlas, o al copiar o cortar otras piezas.
 
-- tus preferencias: unidades, atajos de 1 tecla, grilla e imán, si se permite
-  la superposición, las secciones de Propiedades que cerraste y la última
-  medida de papel personalizado;
-- si elegiste que no se vuelva a mostrar la invitación a aportar;
-- cuál fue el último proyecto abierto, para abrirlo cuando vuelvas;
-- si cierras la pestaña antes de que termine de guardarse un cambio, una copia
-  temporal del documento abierto (sin los archivos), que se borra cuando el
-  proyecto queda guardado;
-- una marca interna que indica que los datos de una versión anterior de la app
-  ya se pasaron a los nombres actuales.
+Un archivo se borra del navegador cuando ya no lo usa ningún proyecto, ningún
+historial para deshacer ni ninguna pieza cortada.
+
+### Preferencias y datos de funcionamiento
+
+En localStorage, con nombres que empiezan con `scooch:`:
+
+- **Unidades:** mm, cm o in, como elegiste en Preferencias.
+- **Tema:** automático, claro u oscuro.
+- **Atajos de 1 tecla:** si están activados.
+- **Vista:** el zoom (Ver la hoja entera, Ver el ancho de la hoja o el
+  porcentaje que elegiste, pero nunca hasta dónde te desplazaste) y lo que
+  elegiste en Alinear a y Distribuir con.
+- **Grilla e imán:** si se ve la grilla, su tamaño y si el imán está activado.
+- **Secciones de Propiedades:** las que cerraste, y si dejaste abierto Más
+  opciones en las líneas de corte.
+- **Avisos al imprimir:** si se muestran el consejo antes de imprimir o
+  descargar y el resumen después, o si elegiste No volver a mostrar.
+- **Papel personalizado:** la última medida de papel que escribiste.
+- **Hojas ahorradas:** el total de hojas que ahorraste en este dispositivo,
+  que muestra el resumen después de imprimir; una cifra redonda que
+  alcanzaste, si el resumen todavía no te la mostró, y a qué comparación le
+  toca el próximo resumen. Para no contar dos veces el mismo PDF, también una clave corta de
+  cada uno de los últimos 50 PDF y del último que imprimiste, que se suma al
+  total más tarde. La clave se calcula a partir del contenido del PDF, pero no
+  permite reconstruirlo ni ver sus imágenes.
+- **Invitación a aportar:** si elegiste que no se vuelva a mostrar.
+- **Último proyecto:** cuál fue el último proyecto abierto, para abrirlo cuando
+  vuelvas.
+- **Copia temporal:** si cierras la pestaña antes de que termine de guardarse
+  un cambio, una copia del documento abierto (sin los archivos), que se usa
+  al volver y se borra cuando el proyecto queda guardado.
+- **Marca de versión anterior:** una marca interna que indica que los datos de
+  una versión anterior de la app ya se pasaron a los nombres actuales.
 
 Si el navegador tenía datos guardados por una versión anterior de la app (con
 el nombre `pliego`), Scooch los pasa una sola vez a los nombres de arriba y
-después borra los anteriores.
+después borra los anteriores. Algunas preferencias que guardaban las versiones
+anteriores pueden seguir en el navegador, como si se permitía la superposición
+de piezas (hoy se guarda con cada proyecto): Scooch ya no las cambia, solo las
+lee para abrir los proyectos de esa época como estaban.
 
 Al guardar un proyecto con piezas, Scooch le pide al navegador que conserve
 estos datos y que no los borre por su cuenta para liberar espacio. El navegador
-decide si lo acepta.
+decide si lo acepta. En Proyectos, Scooch también le pregunta cuánto espacio
+ocupan los datos y cuánto queda, para mostrártelo.
 
 Si abres Scooch en varias pestañas, las pestañas se avisan entre sí qué
 proyecto tiene abierto cada una, para no pisar cambios. Esos avisos pasan por
-un canal interno del navegador y no salen de tu dispositivo.
+mecanismos internos del navegador (un canal entre pestañas y un bloqueo por
+proyecto) y no salen de tu dispositivo.
 
 ## Cómo borrar estos datos
 
 - **Un proyecto:** en Proyectos, usa Eliminar. El proyecto se borra del
-  navegador con todos sus archivos. No se puede deshacer.
+  navegador con su historial para deshacer y su copia temporal, y sus archivos
+  también, salvo los que todavía use otro proyecto o una pieza cortada. No se
+  puede deshacer.
 - **Todo:** en la configuración de tu navegador, borra los datos que guardó
   este sitio. La opción suele estar en la sección de privacidad o de datos de
-  sitios, según el navegador. Eso borra los proyectos y las preferencias.
+  sitios, según el navegador. Eso borra los proyectos, sus archivos e
+  historiales, las piezas cortadas y las preferencias.
 
 En algunas ventanas privadas, el navegador no permite guardar proyectos.
 Scooch te lo avisa, y lo que hagas se pierde al cerrar la pestaña.
