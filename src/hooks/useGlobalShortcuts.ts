@@ -56,11 +56,15 @@ let spaceOn: HTMLElement | null = null;
 const SHRINKS = new Set(['-', '_', '−']);
 
 // Ctrl/⌘ + these are browser commands the app replaces with its own (open a
-// file, print the page, save the page, the address bar): they never reach the
-// browser, also where the app's shortcut does nothing (a dialog, a menu).
-const CLAIMED = new Set(['o', 'p', 's', 'e']);
+// file, print the page, save the page, the address bar, a bookmark): they
+// never reach the browser, also where the app's shortcut does nothing (a
+// dialog, a menu, a text field). Ctrl/⌘ + Shift + D stays the browser's.
+const CLAIMED = new Set(['o', 'p', 's', 'e', 'd']);
 
-const isClaimed = (e: KeyboardEvent) => (e.ctrlKey || e.metaKey) && !e.altKey && CLAIMED.has(e.key.toLowerCase());
+const isClaimed = (e: KeyboardEvent) => {
+  const lower = e.key.toLowerCase();
+  return (e.ctrlKey || e.metaKey) && !e.altKey && CLAIMED.has(lower) && !(lower === 'd' && e.shiftKey);
+};
 
 /** Captured on the window, before any handler can stop the key on its way to the document. */
 function holdBack(e: KeyboardEvent) {
@@ -146,7 +150,7 @@ function onKeyDown(e: KeyboardEvent) {
   const typing = isTyping(target);
 
   // With Ctrl/Cmd: they always work (except undo while typing, which is the field's).
-  // The claimed ones (O, P, S, E) never reach the browser (holdBack).
+  // The claimed ones (O, P, S, E, D) never reach the browser (holdBack).
   if (mod && !e.altKey) {
     if (lower === 'o') {
       void openProjects();
@@ -170,8 +174,6 @@ function onKeyDown(e: KeyboardEvent) {
       e.preventDefault();
       stepZoom(ZOOM_KEYS[key]);
     } else if (!typing && lower === 'd' && !e.shiftKey) {
-      // Duplicates (never the browser's bookmark dialog).
-      e.preventDefault();
       if (target.classList.contains('piece')) adopt(target);
       if (hasSelection() && !e.repeat) duplicate(1, { focus: true });
     } else if (!typing && lower === 'a' && !e.shiftKey) {

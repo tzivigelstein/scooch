@@ -491,4 +491,23 @@ describe('the keys the browser would take', () => {
     expect(getView().flash).toEqual({ text: 'Los cambios se guardan automáticamente', info: true });
     expect(openProjects).toHaveBeenCalledTimes(1);
   });
+
+  test('Ctrl+D never reaches the browser (its bookmark): it duplicates on the canvas and does nothing while typing, in a dialog or in a menu; Ctrl+Shift+D stays the browser’s', () => {
+    const pressD = (target: Element, init: KeyboardEventInit = {}) => {
+      const event = new KeyboardEvent('keydown', { key: 'd', ctrlKey: true, ...init, bubbles: true, cancelable: true });
+      act(() => void target.dispatchEvent(event));
+      return event.defaultPrevented;
+    };
+    act(() => setDocument({ selection: [1] }));
+    expect(pressD(document.getElementById('text')!)).toBe(true);
+    expect(pressD(document.getElementById('menu-item')!)).toBe(true);
+    document.getElementById('dialog')!.setAttribute('open', '');
+    expect(pressD(document.getElementById('dialog-button')!)).toBe(true);
+    expect(pressD(piece())).toBe(true);
+    document.getElementById('dialog')!.removeAttribute('open');
+    expect(pressD(piece(), { key: 'D', shiftKey: true })).toBe(false);
+    expect(getDocument().items).toHaveLength(1);
+    expect(pressD(piece())).toBe(true);
+    expect(getDocument().items).toHaveLength(2);
+  });
 });
