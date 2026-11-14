@@ -4,7 +4,8 @@
 // two fingers moving together pan, the zoom stops at the ends of its range, a
 // pinch never moves a piece, and the browser's page zoom stays off the canvas
 // but works over a panel. Lifted while panning, the sheets glide on until
-// they stop, and anything new stops them. The pinch's math is in
+// they stop, and anything new stops them. In crop mode two fingers still zoom
+// and pan the view and leave the crop as it was. The pinch's math is in
 // tests/core/zoom.test.js and tests/properties/pinch.test.js, the glide's in
 // tests/core/glide.test.js and tests/properties/glide.test.js; their frames
 // with 150 pieces, in performance.spec.ts.
@@ -378,5 +379,164 @@ test.describe('the glide after two fingers pan', () => {
         if (held instanceof Fingers) await held.lift();
       });
     }
+  });
+});
+
+// ---------- Crop mode ----------
+
+/** The crop in mm from the first sheet's corner: its frame and the whole image under it. */
+const cropMm = (page: Page) =>
+  page.evaluate(() => {
+    const box = document.querySelector('#sheets .sheet-box')!.getBoundingClientRect();
+    const k = 210 / box.width;
+    const mm = (sel: string) => {
+      const r = document.querySelector(sel)!.getBoundingClientRect();
+      return { x: (r.x - box.x) * k, y: (r.y - box.y) * k, w: r.width * k, h: r.height * k };
+    };
+    return { frame: mm('#crop-frame'), image: mm('.crop-ghost') };
+  });
+
+type CropMm = Awaited<ReturnType<typeof cropMm>>;
+
+function expectSameCrop(now: CropMm, then: CropMm, what: string) {
+  for (const part of ['frame', 'image'] as const) {
+    for (const key of ['x', 'y', 'w', 'h'] as const) expect(now[part][key], `${what}: the ${part}'s ${key} (mm)`).toBeCloseTo(then[part][key], 1);
+  }
+}
+
+/** How the whole image sits in the piece's box: image width over box width (a crop shows as more than 1). */
+const cropRatio = (page: Page) =>
+  page.evaluate(() => {
+    const node = document.querySelector<HTMLElement>('#sheets .piece')!;
+    const img = node.querySelector('img')!;
+    return parseFloat(img.style.width) / parseFloat(node.style.width);
+  });
+
+/** One wide image in crop mode with its image zoomed in under the frame (room to move it), focused. */
+async function cropping(app: App) {
+  await app.addFiles(['wide.png']);
+  const [id] = await app.ids();
+  await app.piece(id).focus();
+  await app.page.keyboard.press('k');
+  await expect(app.page.locator('#crop-frame')).toBeFocused();
+  for (let i = 0; i < 4; i++) await app.page.keyboard.press('+');
+  await expect.poll(async () => ((c) => c.image.w / c.frame.w)(await cropMm(app.page))).toBeGreaterThan(1.4);
+}
+
+/** The middle of the crop window, and a spot on the sheet below the whole image (outside the crop). */
+async function cropSpots(page: Page) {
+  const spots = await page.evaluate(() => {
+    const frame = document.getElementById('crop-frame')!.getBoundingClientRect();
+    const image = document.querySelector('.crop-ghost')!.getBoundingClientRect();
+    const sheet = document.querySelector('#sheets .sheet-box')!.getBoundingClientRect();
+    const beside = { x: sheet.left + sheet.width / 2, y: image.bottom + 60 };
+    const hit = document.elementFromPoint(beside.x, beside.y);
+    return { on: { x: frame.left + frame.width / 2, y: frame.top + frame.height / 2 }, beside, onSheet: !!hit?.closest('.sheet') && !hit.closest('.crop, .piece') };
+  });
+  expect(spots.onSheet, 'the spot beside the crop is on the empty sheet').toBe(true);
+  return spots;
+}
+
+/** Spreads two fingers already down at `a` and `b` apart along the line between them, 12 px more a frame for 8 frames. */
+async function spread(fingers: Fingers, a: Spot, b: Spot) {
+  const d = Math.hypot(b.x - a.x, b.y - a.y);
+  const ux = (b.x - a.x) / d;
+  const uy = (b.y - a.y) / d;
+  for (let i = 1; i <= 8; i++) await fingers.move({ 1: { x: a.x - ux * i * 6, y: a.y - uy * i * 6 }, 2: { x: b.x + ux * i * 6, y: b.y + uy * i * 6 } });
+}
+
+/** Crop mode is still on, with its frame focused; Enter applies the crop as `then` showed it, in one undo step. */
+async function enterApplies(app: App, then: CropMm) {
+  const { page } = app;
+  await expect(page.locator('#crop-frame'), 'still in crop mode, ready for the keys').toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#crop-frame')).toHaveCount(0);
+  expect(await cropRatio(page), 'the crop as it was').toBeCloseTo(then.image.w / then.frame.w, 2);
+  await page.keyboard.press('Control+z');
+  await expect.poll(() => cropRatio(page), { message: 'one undo step brings back the whole image' }).toBeCloseTo(1, 3);
+}
+
+test.describe('a pinch in crop mode', () => {
+  test('starting on the crop window, with the other finger beside it, zooms the view and leaves the crop as it was; Enter then applies it', async ({ app, page }) => {
+    await cropping(app);
+    const before = await cropMm(page);
+    const fit = (await stageState(page)).pct;
+    const { on, beside } = await cropSpots(page);
+    const fingers = await Fingers.on(page);
+    await fingers.press({ 1: on });
+    await frames(page, 1);
+    await fingers.press({ 2: beside });
+    await spread(fingers, on, beside);
+    await fingers.lift();
+    expect((await stageState(page)).pct, 'it zoomed').toBeGreaterThan(fit * 1.3);
+    expectSameCrop(await cropMm(page), before, 'after the pinch');
+    await expect(page.locator('.crop')).not.toHaveClass(/\bis-(panning|resizing)\b/);
+    await enterApplies(app, before);
+  });
+
+  test('a second finger while one drags the image puts the image back where it was before it, and the two zoom the view', async ({ app, page }) => {
+    await cropping(app);
+    const before = await cropMm(page);
+    const fit = (await stageState(page)).pct;
+    const { on, beside } = await cropSpots(page);
+    const shown = (await page.locator('.crop-ghost').boundingBox())!;
+    const fingers = await Fingers.on(page);
+    await fingers.press({ 1: on });
+    for (let i = 1; i <= 6; i++) await fingers.move({ 1: { x: on.x + i * 4, y: on.y + i * 3 } });
+    const dragged = (await page.locator('.crop-ghost').boundingBox())!;
+    expect(dragged.x - shown.x, 'one finger moves the image all the way').toBeCloseTo(24, 0);
+    expect(dragged.y - shown.y).toBeCloseTo(18, 0);
+    const held = { x: on.x + 24, y: on.y + 18 };
+    await fingers.press({ 2: beside });
+    await frames(page, 1);
+    expectSameCrop(await cropMm(page), before, 'the second finger landed');
+    await expect(page.locator('.crop')).not.toHaveClass(/\bis-panning\b/);
+    await spread(fingers, held, beside);
+    await fingers.lift();
+    expect((await stageState(page)).pct, 'it zoomed').toBeGreaterThan(fit * 1.3);
+    expectSameCrop(await cropMm(page), before, 'after the pinch');
+    await enterApplies(app, before);
+  });
+
+  test('a second finger while one drags an edge puts the frame back as it was before it', async ({ app, page }) => {
+    await cropping(app);
+    const before = await cropMm(page);
+    const { on } = await cropSpots(page);
+    const edge = (await page.locator('.crop-handle[data-handle="e"]').boundingBox())!;
+    const grab = { x: edge.x + edge.width / 2, y: edge.y + edge.height / 2 };
+    const fingers = await Fingers.on(page);
+    await fingers.press({ 1: grab });
+    for (let i = 1; i <= 6; i++) await fingers.move({ 1: { x: grab.x - i * 5, y: grab.y } });
+    expect((await cropMm(page)).frame.w, 'the frame narrower').toBeLessThan(before.frame.w - 3);
+    await fingers.press({ 2: on });
+    await frames(page, 1);
+    expectSameCrop(await cropMm(page), before, 'the second finger landed');
+    await expect(page.locator('.crop')).not.toHaveClass(/\bis-resizing\b/);
+    await spread(fingers, { x: grab.x - 30, y: grab.y }, on);
+    await fingers.lift();
+    expectSameCrop(await cropMm(page), before, 'after the pinch');
+    await enterApplies(app, before);
+  });
+
+  test('starting beside the crop it zooms the view too and leaves crop mode on; one finger there still applies the crop', async ({ app, page }) => {
+    await cropping(app);
+    const before = await cropMm(page);
+    const fit = (await stageState(page)).pct;
+    const { on, beside } = await cropSpots(page);
+    const fingers = await Fingers.on(page);
+    await fingers.press({ 1: beside });
+    await frames(page, 1);
+    await fingers.press({ 2: on });
+    await spread(fingers, beside, on);
+    await fingers.lift();
+    expect((await stageState(page)).pct, 'it zoomed').toBeGreaterThan(fit * 1.3);
+    expectSameCrop(await cropMm(page), before, 'after the pinch');
+    await expect(page.locator('#crop-frame'), 'still in crop mode').toBeFocused();
+
+    const { beside: tap } = await cropSpots(page);
+    await fingers.press({ 1: tap });
+    await fingers.lift();
+    await expect(page.locator('#crop-frame'), 'a tap beside the crop applies it').toHaveCount(0);
+    expect(await cropRatio(page)).toBeCloseTo(before.image.w / before.frame.w, 2);
   });
 });
