@@ -71,6 +71,14 @@
         font-weight: 800;
         letter-spacing: -0.03em;
       }
+      /* What the tool does, in the page itself: shown on slow loads, and read by crawlers that don't run JavaScript. */
+      .boot-about {
+        max-width: 22rem;
+        margin: 0;
+        padding: 0 1rem;
+        color: #5a6170;
+        text-align: center;
+      }
       .noscript {
         position: fixed;
         inset: 0;
@@ -96,6 +104,9 @@
       }
       :where([data-theme="dark"]) .boot-name {
         color: #eef0f3;
+      }
+      :where([data-theme="dark"]) .boot-about {
+        color: #a3aab7;
       }
       @media (prefers-reduced-motion: reduce) {
         .boot {
@@ -132,6 +143,7 @@
           <rect x="6" y="14.5" width="4" height="4" rx="1" fill="#fff" />
         </svg>
         <p class="boot-name" aria-hidden="true">{{app.name}}</p>
+        <p class="boot-about">{{app.description}}</p>
       </div>
     </div>
     <noscript><p class="noscript">{{app.noscript}}</p></noscript>
