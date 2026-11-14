@@ -237,9 +237,16 @@ function begin(next: Gesture) {
   });
 }
 
+// Every press on the stage, before what is under it sees it (crop mode keeps
+// its presses from the stage): it stops a glide, and the fingers are counted
+// here, so two fingers pinch wherever they land.
+function onPress(e: PointerEvent) {
+  stopGlide();
+  if (e.pointerType === 'touch' && touchDown(e)) e.stopPropagation();
+}
+
 function onPointerDown(e: PointerEvent) {
-  if (e.pointerType === 'touch' && touchDown(e)) return;
-  if (pan || gesture) return;
+  if (pinch || pan || gesture) return;
   if (e.button === 1 || (e.button === 0 && space.held)) return startPan(e);
   if (getDocument().busy || e.button !== 0) return;
   if (e.pointerType === 'touch') startLongPress(e);
@@ -1083,8 +1090,7 @@ export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
     canvas.addEventListener('pointerenter', enter);
     canvas.addEventListener('pointerleave', leave);
     node.addEventListener('mousedown', middle);
-    // A press on the stage stops a glide, before what is under it sees the press (crop mode keeps its presses from the stage).
-    node.addEventListener('pointerdown', stopGlide, true);
+    node.addEventListener('pointerdown', onPress, true);
     node.addEventListener('pointerdown', onPointerDown);
     node.addEventListener('pointermove', onPointerMove);
     node.addEventListener('pointerup', onPointerUp);
@@ -1103,7 +1109,7 @@ export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
       canvas.removeEventListener('pointerenter', enter);
       canvas.removeEventListener('pointerleave', leave);
       node.removeEventListener('mousedown', middle);
-      node.removeEventListener('pointerdown', stopGlide, true);
+      node.removeEventListener('pointerdown', onPress, true);
       node.removeEventListener('pointerdown', onPointerDown);
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);

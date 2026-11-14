@@ -2,7 +2,9 @@
 // Dragging the image (or the arrows) pans it under the frame; the wheel and
 // + / − zoom; the frame's edges and corners resize it (keeping the proportion
 // when the piece has a standard photo size). Enter, a click outside or the
-// focus leaving applies it, in one undo step; Esc cancels.
+// focus leaving applies it, in one undo step; Esc cancels. Two fingers zoom
+// and pan the view, as anywhere on the canvas: they never change, apply or
+// cancel the crop, and a second finger puts back what the first was dragging.
 //
 // Like the other gestures, the live values never re-render React: the session
 // lives here, the overlay is painted directly and the properties panel reads
@@ -63,11 +65,15 @@ interface Drag {
   pointerId: number;
   x: number;
   y: number;
+  /** The crop before the drag, to put it back. */
   frames: CropFrame;
+  resized: boolean;
 }
 
 let session: Session | null = null;
 let drag: Drag | null = null;
+/** A finger that landed outside the crop where one finger scrolls the canvas: it applies the crop when it lifts or scrolls. */
+let pending: number | null = null;
 const els = {
   root: null as HTMLDivElement | null,
   ghost: null as HTMLImageElement | null,
@@ -167,7 +173,7 @@ function onPointerDown(e: PointerEvent) {
   e.preventDefault();
   e.stopPropagation();
   const handle = target.closest<HTMLElement>('.crop-handle')?.dataset.handle as FrameHandle | undefined;
-  drag = { kind: handle ?? 'pan', pointerId: e.pointerId, x: e.clientX, y: e.clientY, frames: s.frames };
+  drag = { kind: handle ?? 'pan', pointerId: e.pointerId, x: e.clientX, y: e.clientY, frames: s.frames, resized: s.resized };
   measureBoxes();
   els.frame?.focus({ preventScroll: true });
   try {
@@ -194,6 +200,17 @@ function onPointerUp(e: PointerEvent) {
   drag = null;
   els.root?.classList.remove('is-resizing', 'is-panning');
   if (session) say(d.kind === 'pan' ? 'moved' : 'resized', d.frames);
+}
+
+/** A second finger landed (a pinch): what the first one was dragging goes back to how it was before it. */
+function dropDrag() {
+  const d = drag;
+  pending = null;
+  if (!d || !session) return;
+  drag = null;
+  els.root?.classList.remove('is-resizing', 'is-panning');
+  session.resized = d.resized;
+  update(d.frames);
 }
 
 function onWheel(e: WheelEvent) {
@@ -270,6 +287,7 @@ function end(how: CropEnd) {
   const piece = result(s);
   session = null;
   drag = null;
+  pending = null;
   gestureStore.setState({ drafts: null });
   setView({ cropping: null });
   if (how === 'apply') commitCrop(s.id, piece);
@@ -282,9 +300,25 @@ function end(how: CropEnd) {
 
 /** A press outside the crop (and its bar) applies it; the press then does what it does. */
 function onOutsidePointerDown(e: PointerEvent) {
+  // A finger that lands while another is down makes a pinch, which zooms the view.
+  if (e.pointerType === 'touch' && !e.isPrimary) return dropDrag();
   const target = e.target as Node;
   if (els.root?.contains(target) || els.bar?.contains(target)) return;
   if ((target as Element).closest?.('[data-crop-toggle]')) return; // the «Recortar» buttons end it themselves
+  // Where one finger scrolls the canvas, a second may still come and make a
+  // pinch: it waits. On a piece or a control, it can't (what it starts there
+  // needs the crop applied first).
+  if (e.pointerType === 'touch' && document.getElementById('stage')?.contains(target) && !(target as Element).closest?.('.piece, button')) {
+    pending = e.pointerId;
+    return;
+  }
+  end('apply');
+}
+
+/** The finger that waited lifted, or the browser took it to scroll: it was one finger, which applies the crop. */
+function onOutsidePointerEnd(e: PointerEvent) {
+  if (e.pointerId !== pending) return;
+  pending = null;
   end('apply');
 }
 
@@ -325,6 +359,8 @@ export default function CropMode() {
     node.addEventListener('pointercancel', onPointerUp);
     node.addEventListener('wheel', onWheel, { passive: false });
     document.addEventListener('pointerdown', onOutsidePointerDown, true);
+    document.addEventListener('pointerup', onOutsidePointerEnd, true);
+    document.addEventListener('pointercancel', onOutsidePointerEnd, true);
     node.addEventListener('focusout', onFocusOut);
     els.bar?.addEventListener('focusout', onFocusOut);
     // Something else changing the document (another tab, undo…) cancels it.
@@ -352,6 +388,8 @@ export default function CropMode() {
       node.removeEventListener('pointercancel', onPointerUp);
       node.removeEventListener('wheel', onWheel);
       document.removeEventListener('pointerdown', onOutsidePointerDown, true);
+      document.removeEventListener('pointerup', onOutsidePointerEnd, true);
+      document.removeEventListener('pointercancel', onOutsidePointerEnd, true);
       node.removeEventListener('focusout', onFocusOut);
       bar?.removeEventListener('focusout', onFocusOut);
       unsubscribe();
@@ -360,6 +398,7 @@ export default function CropMode() {
       cancelAnimationFrame(frame);
       document.getElementById('canvas')?.classList.remove('is-cropping');
       onCropFinish(null);
+      pending = null;
       if (session?.id === id) {
         session = null;
         gestureStore.setState({ drafts: null });
