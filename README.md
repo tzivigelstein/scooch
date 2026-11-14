@@ -119,6 +119,12 @@ Import the repository in Vercel: it detects Vite and needs no configuration
   app starts, filled in at build time.
 - **Dialogs** keep their `<dialog>` shells in the page; the contents of the
   rarely used ones load on first use or when the app is idle.
+- **Commands**: every action the app has is listed once in
+  `src/state/commands.ts` (name, other words that find it, keys from the
+  shortcut table in `src/hooks/shortcuts.ts`, why it can't run now, and the
+  action it calls). The command palette (Ctrl/⌘ + K) lists them, the
+  shortcuts dialog shows their keys, and the context and zoom menus take
+  their entries from there.
 
 ## Contributing
 
@@ -143,7 +149,7 @@ src/
   config.ts             app name, limits and storage keys
   copy/                 every interface text (es.ts) and t(key, params)
   core/                 pure modules (no DOM), with tests in tests/core/
-  state/                Zustand stores, selectors and the undo history
+  state/                Zustand stores, selectors, the undo history and the commands
     actions/            everything that changes the document, by area
   components/
     topbar/             app bar and the open project's name and status
@@ -151,6 +157,7 @@ src/
     canvas/             sheets, pieces, selection frame, piece toolbar
     properties-panel/   piece, sheet, arrange and grid sections
     dialogs/            shortcuts, preferences, projects, the advice before printing, confirm
+    palette/            the command palette and its recent commands
     feedback/           notice pill, tooltip and live regions
     ui/                 shared controls (buttons, fields, switches, dialog)
   hooks/                keyboard shortcuts, pointer gestures, focus rescue
