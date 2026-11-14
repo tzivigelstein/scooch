@@ -83,8 +83,10 @@ control in the canvas corner; Shift+1 and Shift+2 fit again), from 10 % to
 conversion between screen pixels and millimetres goes through
 `src/components/canvas/viewport.ts`; the pure part (levels, steps, the wheel,
 a pinch step) is `src/core/zoom.js`. On a touch screen two fingers zoom around
-their midpoint and pan; the browser's page zoom stays off the canvas
-(`touch-action` on the stage) and keeps working over the panels and dialogs.
+their midpoint and pan, in crop mode too; lifted while panning, the view
+glides on and slows down to a stop (`src/core/glide.js`; not with reduced
+motion). The browser's page zoom stays off the canvas (`touch-action` on the
+stage) and keeps working over the panels and dialogs.
 
 ## Deploying to Vercel
 
