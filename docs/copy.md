@@ -153,7 +153,7 @@ gracias a personas como tú», no «Lo mantengo…»).
 | aporte / aportar | la donación en Patreon | donar, donación, apoyar |
 | proyecto | cada trabajo guardado en el navegador (nombre, hojas, piezas y archivos) | documento, archivo, diseño |
 | nuevo proyecto | empezar otro en blanco; el abierto queda guardado | limpiar, vaciar (eso es «Quitar todas») |
-| guardado / guardar | lo que hace solo el navegador con el proyecto («Guardado», «Guardando…») | sincronizar, subir, nube |
+| guardar | lo que hace solo el navegador con el proyecto («Los cambios se guardan automáticamente»; solo se ve cuando no se puede: «No se guardó», «Sin guardar») | sincronizar, subir, nube |
 | eliminar | borrar un proyecto del navegador, para siempre (no se puede deshacer) | quitar (es para piezas y hojas), borrar |
 | cambiar el nombre | renombrar un proyecto | renombrar, editar el título |
 | preferencias | ajustes de este navegador (unidades, atajos de 1 tecla) | configuración, ajustes |

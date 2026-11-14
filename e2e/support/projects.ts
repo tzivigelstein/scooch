@@ -8,12 +8,20 @@ import { expect, fixture } from './test.ts';
 export const DB = 'scooch';
 export const LAST_PROJECT = 'scooch:last-project';
 
-/** The save status next to the project's name («Guardado», «Guardando…»…). */
+/** What stops the project from being saved, next to its name («No se guardó», «Sin guardar»); nothing shows otherwise. */
 export const status = (page: Page) => page.locator('#project-status-text');
+
+/** The save status the page keeps (not shown: 'saved', 'pending', 'saving', 'loading', 'error', 'off', 'readonly'). */
+export const saveStatus = (page: Page) => page.locator('#project');
 
 /** Waits until the project is saved. */
 export async function saved(page: Page) {
-  await expect(status(page)).toHaveText('Guardado');
+  await expect(saveStatus(page)).toHaveAttribute('data-status', 'saved');
+}
+
+/** Waits until a change is waiting to be saved (or being saved). */
+export async function savePending(page: Page) {
+  await expect(saveStatus(page)).toHaveAttribute('data-status', /^(pending|saving)$/);
 }
 
 /** Per sheet, `<sheet id>:<piece names joined>`: what each piece is and where (its accessible name says it in mm). */

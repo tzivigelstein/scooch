@@ -56,7 +56,7 @@ test.describe('documents saved by other versions of the app', () => {
 
     await app.pieces().first().focus();
     await page.keyboard.press('ArrowRight');
-    await expect(page.locator('#project-status-text')).toHaveText('Guardando…');
+    await expect(page.locator('#project')).toHaveAttribute('data-status', /^(pending|saving)$/);
     await saved(page);
     const stored = await storedRecord(page, 'pv0');
     expect(stored?.version).toBe(DOC_VERSION);
@@ -66,12 +66,12 @@ test.describe('documents saved by other versions of the app', () => {
     await expect(page.locator('#projects .project-card [data-kind="damaged"]')).toHaveCount(0);
   });
 
-  test('a document saved by a newer version: a notice with no Eliminar, a new project opens, and «Proyectos» marks it «Versión más nueva»', async ({ page }, testInfo) => {
+  test('a document saved by a newer version: a notice that offers to reload (not Eliminar), a new project opens, and «Proyectos» marks it «Versión más nueva»', async ({ page }, testInfo) => {
     const newer = { ...documentOf(`v${DOC_VERSION}`), version: DOC_VERSION + 1, somethingNew: { kept: true } };
     await seedStorage(page, scooch([record('pnewer', 'Del futuro', newer)], [], 'pnewer'));
     const app = new App(page, testInfo);
     await app.open();
-    await expect.poll(() => app.notice()).toMatchObject({ text: expect.stringMatching(/versión más nueva/), action: '', warn: true });
+    await expect.poll(() => app.notice()).toMatchObject({ text: expect.stringMatching(/versión más nueva/), action: 'Recargar la página', warn: true });
     await expect(page.locator('#project-name-text')).toHaveText('Sin título');
     await expect(app.pieces()).toHaveCount(0);
 

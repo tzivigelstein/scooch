@@ -23,7 +23,7 @@ export async function dragPieceTo(app: App, id: number, x: number, y: number) {
 
 /** Waits until the project is saved («Guardado» next to its name). */
 export async function saved(page: Page) {
-  await expect(page.locator('#project-status-text')).toHaveText('Guardado');
+  await expect(page.locator('#project')).toHaveAttribute('data-status', 'saved');
 }
 
 /** Turns «Imán» on or off and picks a grid size: a quick size (1, 5…) or one typed («2,5»). */

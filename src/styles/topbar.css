@@ -125,11 +125,6 @@ input.project-name-input {
   height: 0.875rem;
 }
 
-.project-status[data-status="pending"] .icon,
-.project-status[data-status="loading"] .icon {
-  animation: spin 1s linear infinite;
-}
-
 .project-status[data-status="error"] {
   color: var(--danger);
 }

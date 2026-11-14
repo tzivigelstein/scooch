@@ -511,6 +511,7 @@ const es = {
     quota: 'No hay espacio para guardar el proyecto. Elimina proyectos que no uses y vuelve a intentarlo.',
     openFailed: 'No se pudo abrir «{name}» porque sus datos están dañados',
     openNewer: '«{name}» se guardó con una versión más nueva de {app}. Recarga la página para abrirlo.',
+    reload: 'Recargar la página',
     openError: 'No se pudo abrir el proyecto. Inténtalo de nuevo.',
     projectError: 'No se pudo completar la acción en Proyectos. Inténtalo de nuevo.',
     takenOver: 'Este proyecto se abrió en otra pestaña. Aquí ya no se guardan los cambios.',
@@ -710,18 +711,13 @@ const es = {
     nameLabel: '{name}: cambiar el nombre',
     nameField: 'Nombre del proyecto',
     renameTip: 'Cambiar el nombre',
+    // Next to the name, only when something stops the project from being saved
     status: {
-      loading: 'Abriendo…',
-      saved: 'Guardado',
-      pending: 'Guardando…',
       error: 'No se guardó',
       off: 'Sin guardar',
       readonly: 'Sin guardar',
     },
     statusTip: {
-      loading: 'Abriendo el proyecto',
-      saved: 'Se guarda solo en este navegador',
-      pending: 'Se guarda solo en este navegador',
       error: 'No se pudo guardar el último cambio',
       off: 'Este navegador no permite guardar proyectos',
       readonly: 'El proyecto está abierto en otra pestaña',

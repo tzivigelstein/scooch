@@ -31,7 +31,7 @@ test.describe('panel layouts', () => {
       await arrange.click();
       await expect(arrange).toHaveAttribute('aria-expanded', 'false');
       await expect(page.locator('#gap')).toBeHidden();
-      await expect(page.locator('#project-status-text')).toHaveText('Guardado');
+      await expect(page.locator('#project')).toHaveAttribute('data-status', 'saved');
       await page.reload();
       await app.ready();
       await expect(app.pieces()).toHaveCount(3);

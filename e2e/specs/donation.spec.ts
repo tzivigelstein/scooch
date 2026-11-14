@@ -82,7 +82,7 @@ test.describe('downloading', () => {
     await expect(modal(page)).toHaveAttribute('open', '');
     await page.locator('#donate-never').check();
     await Promise.all([page.waitForEvent('download'), page.locator('#donate-skip').click()]);
-    await expect(page.locator('#project-status-text')).toHaveText('Guardado');
+    await expect(page.locator('#project')).toHaveAttribute('data-status', 'saved');
     await page.reload();
     await app.ready();
     await expect(app.pieces()).toHaveCount(2);

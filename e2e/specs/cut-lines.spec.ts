@@ -134,7 +134,7 @@ test('the cut lines, their stroke and margin, and the crops are saved with the p
   const saved = await screenLines(page);
   expect(saved).toMatchObject({ width: '0.5', color: '#000000' });
   const pieces = await app.snapshot();
-  await expect(page.locator('#project-status-text')).toHaveText('Guardado');
+  await expect(page.locator('#project')).toHaveAttribute('data-status', 'saved');
   await page.reload();
   await app.ready();
   await expect(app.pieces()).toHaveCount(3);

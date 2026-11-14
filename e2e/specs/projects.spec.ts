@@ -18,6 +18,8 @@ import {
   patchStored,
   renameInBar,
   saved,
+  savePending,
+  saveStatus,
   status,
   storedProjects,
   storedRecord,
@@ -87,11 +89,12 @@ test.describe('saving and restoring', () => {
       };
     });
     await app.open(); // again, with the counter of persistent-storage requests
-    await test.step('a new project is «Sin título» and saved; its name is a button that says so', async () => {
+    await test.step('a new project is «Sin título» and saved, which shows nothing; its name is a button that says so', async () => {
       await expect(page.locator('#project-name-text')).toHaveText('Sin título');
       await saved(page);
+      await expect(page.locator('#project-status')).toHaveCount(0);
       await expect(page.locator('#project-name')).toHaveAttribute('aria-label', 'Sin título: cambiar el nombre');
-      await expect(page.locator('#project-name')).toHaveAttribute('aria-describedby', 'project-status-text');
+      await expect(page.locator('#project-name')).not.toHaveAttribute('aria-describedby');
     });
 
     await richDocument(app);
@@ -165,7 +168,7 @@ test.describe('saving and restoring', () => {
     for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowRight');
     const moved = await first.getAttribute('aria-label');
     const x = (await app.geometry()).pieces[0].x;
-    await expect(status(page)).toHaveText('Guardando…');
+    await savePending(page);
     await page.reload(); // right away: the ~1 s save hasn't gone out
     await app.ready();
     await expect(first).toHaveAttribute('aria-label', moved!);
@@ -417,7 +420,7 @@ test.describe('two tabs', () => {
     await saved(a);
     await app.pieces().first().focus();
     await a.keyboard.press('ArrowRight');
-    await expect(status(a)).toHaveText('Guardando…');
+    await savePending(a);
 
     const b = await context.newPage();
     const errorsB: string[] = [];
@@ -473,7 +476,7 @@ test.describe('two tabs at once', () => {
     const appC = new App(c, testInfo);
     // Both reload into the last project at once (like a browser restoring its tabs).
     await Promise.all([appB.open(), appC.open()]);
-    const readonly = async (page: Page) => (await status(page).textContent()) === 'Sin guardar';
+    const readonly = async (page: Page) => (await saveStatus(page).getAttribute('data-status')) === 'readonly';
     await expect.poll(async () => [await readonly(a), await readonly(b), await readonly(c)].filter(Boolean).length, { message: 'every tab but one stopped saving' }).toBe(2);
     const tabs = [a, b, c];
     const flags = await Promise.all(tabs.map(readonly));

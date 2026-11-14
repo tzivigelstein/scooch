@@ -1,7 +1,9 @@
-// The open project in the top bar: its name (renamed in place), the save
-// status and the «Proyectos» button.
+// The open project in the top bar: its name (renamed in place), what stops
+// it from being saved, if anything (with what to do about it), and the
+// «Proyectos» button. Saving itself shows nothing: it always happens. The
+// save status is in data-status (tests and styles).
 
-import { Check, CircleAlert, FolderOpen, LoaderCircle, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { CircleAlert, FolderOpen, TriangleAlert, type LucideIcon } from 'lucide-react';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { t } from '../../copy/index.ts';
@@ -13,24 +15,23 @@ import { IconButton } from '../ui/Button.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { announce } from '../feedback/announcer.ts';
 
-type Kind = 'saved' | 'pending' | 'loading' | 'error' | 'off' | 'readonly';
+/** The statuses that are a problem: the only ones shown. */
+type Problem = 'error' | 'off' | 'readonly';
 
-const GLYPHS: Record<Kind, [name: string, icon: LucideIcon]> = {
-  saved: ['check', Check],
-  pending: ['loader-circle', LoaderCircle],
-  loading: ['loader-circle', LoaderCircle],
+const PROBLEMS: Record<Problem, [name: string, icon: LucideIcon]> = {
   error: ['triangle-alert', TriangleAlert],
   off: ['circle-alert', CircleAlert],
   readonly: ['circle-alert', CircleAlert],
 };
+
+const isProblem = (status: string): status is Problem => status in PROBLEMS;
 
 export function ProjectBar() {
   const { id, name, status, storage } = useProject();
   const [renaming, setRenaming] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLInputElement>(null);
-  const kind: Kind = status === 'saving' ? 'pending' : status;
-  const [glyph, icon] = GLYPHS[kind];
+  const problem = isProblem(status) ? status : null;
   const retryText = status === 'error' ? t('projects.retry') : status === 'readonly' && storage ? t('projects.takeOver') : '';
 
   const editing = useRef(false);
@@ -66,13 +67,13 @@ export function ProjectBar() {
 
   return (
     <div className="project-group">
-      <div id="project" className="project" hidden={!id}>
+      <div id="project" className="project" hidden={!id} data-status={status}>
         <button
           ref={button}
           type="button"
           id="project-name"
           className="project-name"
-          aria-describedby="project-status-text"
+          aria-describedby={problem ? 'project-status-text' : undefined}
           aria-label={name !== null ? t('projects.nameLabel', { name }) : undefined}
           data-tip={name ?? undefined}
           data-tip-note={t('projects.renameTip')}
@@ -105,14 +106,16 @@ export function ProjectBar() {
           }}
           onBlur={() => void finish(true, false)}
         />
-        <span id="project-status" className="project-status" data-status={kind} data-tip={t(`projects.statusTip.${kind}`)}>
-          <span id="project-status-icon" className="project-status-icon" aria-hidden="true" data-icon={glyph}>
-            <Icon icon={icon} className="project-status-glyph" />
+        {problem && (
+          <span id="project-status" className="project-status" data-status={problem} data-tip={t(`projects.statusTip.${problem}`)}>
+            <span id="project-status-icon" className="project-status-icon" aria-hidden="true" data-icon={PROBLEMS[problem][0]}>
+              <Icon icon={PROBLEMS[problem][1]} className="project-status-glyph" />
+            </span>
+            <span id="project-status-text" className="project-status-text">
+              {t(`projects.status.${problem}`)}
+            </span>
           </span>
-          <span id="project-status-text" className="project-status-text">
-            {t(`projects.status.${kind}`)}
-          </span>
-        </span>
+        )}
         <button type="button" id="project-retry" className="text-btn project-retry" hidden={!retryText} onClick={() => void (status === 'readonly' ? takeOverWithUi() : retry())}>
           {retryText}
         </button>

@@ -51,7 +51,7 @@ export function openFailed(record: Pick<ProjectRecord, 'id' | 'name'> | null | u
   console.warn(error);
   const name = record?.name ?? t('projects.untitled');
   const code = (error as Failure)?.code;
-  if (code === 'newer') return say(t('notices.openNewer', { name }), { warn: true });
+  if (code === 'newer') return say(t('notices.openNewer', { name }), { warn: true, action: { label: t('notices.reload'), run: () => location.reload() } });
   if (code === 'corrupt' && record?.id) {
     return say(t('notices.openFailed', { name }), {
       warn: true,

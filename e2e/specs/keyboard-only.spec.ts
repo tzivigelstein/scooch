@@ -459,7 +459,7 @@ test.describe('papers, units, sheets and projects with the keyboard only', () =>
     });
 
     await app.addFiles(['small.jpg', 'square.webp', 'tall.png']);
-    await expect(page.locator('#project-status-text')).toHaveText('Guardado');
+    await expect(page.locator('#project')).toHaveAttribute('data-status', 'saved');
 
     await test.step('Ctrl+O and Enter: a new blank project, the focus on the drop zone', async () => {
       await page.keyboard.press('Control+o');
@@ -468,7 +468,7 @@ test.describe('papers, units, sheets and projects with the keyboard only', () =>
       await expect(page.locator('#project-name-text')).toHaveText('Sin título');
       await expect(app.pieces()).toHaveCount(0);
       await expect(page.locator('#empty')).toBeFocused();
-      await expect(page.locator('#project-status-text')).toHaveText('Guardado');
+      await expect(page.locator('#project')).toHaveAttribute('data-status', 'saved');
     });
 
     /** From the first card, ↓ until the focused card is the project named `name` (the order is projects.spec’s). */

@@ -40,7 +40,7 @@ function flow(title: string, sizes: readonly Size[], run: (c: Catalogue, app: Ap
 
 // ---------- Helpers that act like a person ----------
 
-const saved = (page: Page) => expect(page.locator('#project-status-text')).toHaveText('Guardado', { timeout: 15_000 });
+const saved = (page: Page) => expect(page.locator('#project')).toHaveAttribute('data-status', 'saved', { timeout: 15_000 });
 
 async function openDialog(page: Page, opener: string, dialog: string) {
   await page.locator(opener).click();
