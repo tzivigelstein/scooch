@@ -1,6 +1,7 @@
 // The exported PDF against the screen (rasterized by pdf.js in the page) for
 // what only a browser draws on both sides: a cropped and rotated image, a
-// cropped vector PDF page, a PDF page with its own /Rotate and the cut lines;
+// cropped vector PDF page, a PDF page with its own /Rotate and the cut lines
+// (marks and a transparent shape's contour);
 // and against a committed reference, so any change to what the exporter writes
 // shows up (refresh it with --update-snapshots when the change is on purpose).
 import { expect, test, type App } from '../support/test.ts';
@@ -113,6 +114,41 @@ test.describe('the PDF matches the sheet on screen', () => {
       expect(ink.screen / ink.pdf).toBeLessThan(1.33);
       expect(ink.screenMatched, 'the screen’s marks are where the PDF has them').toBeGreaterThan(0.95);
       expect(ink.pdfMatched, 'the PDF’s marks are where the screen has them').toBeGreaterThan(0.95);
+    });
+
+    test('«Silueta» around a transparent shape, rotated and cropped, with a 3 mm margin, thick, in a custom color: the same line in the same places', async ({ app, page }, info) => {
+      await app.addFiles(['sticker.png', 'small.jpg']);
+      const [id] = await app.ids();
+      await app.piece(id).focus();
+      await page.keyboard.press('r');
+      await cropWithKeys(app, id, ['+', 'Shift+ArrowLeft']);
+      expect(await shown(app, id)).toBeLessThan(0.9);
+      await arrange(app);
+      await page.keyboard.press('Escape');
+      await app.openSetting('#cut-mode');
+      await page.locator('#cut-mode input[value="contour"]').click();
+      await page.locator('#cut-options summary').click();
+      await page.locator('#cut-weight input[value="thick"]').click();
+      await page.locator('#cut-colors input[value="custom"]').click();
+      await page.locator('#cut-hex').fill('12a0ff');
+      await page.locator('#cut-hex').press('Enter');
+      await page.locator('#cut-margin').fill('3');
+      await page.locator('#cut-margin').press('Enter');
+      // The shape's loops (not its rectangle) and the photo's outline.
+      await expect.poll(() => page.locator('#sheets .cut-layer path').count()).toBeGreaterThanOrEqual(2);
+      const points = await page.locator('#sheets .cut-layer path').evaluateAll((paths) => paths.map((p) => p.getAttribute('d')!.split('L').length));
+      expect(Math.min(...points), 'curves, not rectangles').toBeGreaterThan(8);
+      await expect(page.locator('#sheets .cut-layer line')).toHaveCount(4);
+      const parity = await rasterParity(app, info, 'contour');
+      expect(parity.mean, 'mean luma difference').toBeLessThan(MEAN);
+      expect(parity.big, 'share of very different pixels').toBeLessThan(BIG);
+      const ink = await inkParity(page, parity.screen, parity.pdf, '#12a0ff');
+      info.annotations.push({ type: 'ink', description: JSON.stringify(ink) });
+      expect(ink.pdf, 'the PDF has the line').toBeGreaterThan(300);
+      expect(ink.screen / ink.pdf, 'as many line pixels on screen as in the PDF').toBeGreaterThan(0.75);
+      expect(ink.screen / ink.pdf).toBeLessThan(1.33);
+      expect(ink.screenMatched, 'the screen’s line is where the PDF has it').toBeGreaterThan(0.95);
+      expect(ink.pdfMatched, 'the PDF’s line is where the screen has it').toBeGreaterThan(0.95);
     });
   });
 });

@@ -5,6 +5,7 @@
 // The gestures are dispatched inside the page, so each move's handler time is
 // measured on its own; frames are the gaps between animation frames, and long
 // tasks come from the browser's PerformanceObserver.
+// And tracing a large image's contour cut line, which must not block the page.
 import { expect, test, tiles, type App } from '../support/test.ts';
 import { outsideMargin, overlapping } from '../support/geometry.ts';
 
@@ -260,4 +261,48 @@ test.describe('with 150 pieces on 10 sheets', () => {
     expect(drag.p95).toBeLessThan(1);
     expect(long(drag.longs)).toEqual([]);
   });
+});
+
+test('tracing the contour of a 4000 × 4000 px transparent image: drawn < 2 s after choosing «Silueta», no long tasks', async ({ app, page }, info) => {
+  // A lobed shape and a dot on a transparent background, drawn in the page.
+  const png = await page.evaluate(async () => {
+    const canvas = new OffscreenCanvas(4000, 4000);
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#e8743b';
+    ctx.beginPath();
+    for (let i = 0; i <= 360; i++) {
+      const a = (i / 360) * 2 * Math.PI;
+      const r = 1400 * (0.7 + 0.3 * Math.cos(5 * a));
+      ctx.lineTo(2000 + r * Math.cos(a), 2000 + r * Math.sin(a));
+    }
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(450, 450, 250, 0, 2 * Math.PI);
+    ctx.fill();
+    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    return [...new Uint8Array(await blob.arrayBuffer())];
+  });
+  await page.locator('#file').setInputFiles({ name: 'grande.png', mimeType: 'image/png', buffer: Buffer.from(png) });
+  await expect(app.pieces()).toHaveCount(1, { timeout: 60_000 });
+  await app.idle();
+  await app.openSetting('#cut-mode');
+  const traced = await page.evaluate(async () => {
+    const frame = () => new Promise((done) => requestAnimationFrame(done));
+    const longs: number[] = [];
+    const observer = new PerformanceObserver((l) => longs.push(...l.getEntries().map((e) => e.duration)));
+    observer.observe({ entryTypes: ['longtask'] });
+    const t0 = performance.now();
+    document.querySelector<HTMLInputElement>('#cut-mode input[value="contour"]')!.click();
+    while (!document.querySelector('#sheets .cut-layer path')) await frame();
+    const ms = performance.now() - t0;
+    await frame();
+    await frame();
+    longs.push(...observer.takeRecords().map((e) => e.duration));
+    observer.disconnect();
+    return { ms, longs, paths: document.querySelectorAll('#sheets .cut-layer path').length };
+  });
+  await attach(info, traced);
+  expect(traced.paths, 'the shape and the dot').toBe(2);
+  expect(traced.ms).toBeLessThan(2000);
+  expect(long(traced.longs)).toEqual([]);
 });
