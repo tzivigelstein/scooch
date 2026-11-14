@@ -68,6 +68,12 @@ const es = {
     Click: 'clic',
     ContextMenu: 'Menú',
     Drag: 'arrastrar',
+    // On Apple devices the modifiers are symbols, written together before the key («⇧⌘Z»)
+    AltMac: '⌥',
+    ShiftMac: '⇧',
+    ControlMac: '⌃',
+    // What screen readers say for each symbol
+    spoken: { ModMac: 'Comando', AltMac: 'Opción', ShiftMac: 'Shift', ControlMac: 'Control' },
   },
 
   // Top bar

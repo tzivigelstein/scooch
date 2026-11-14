@@ -109,15 +109,35 @@ export function splitLink(key: CopyKey, params?: CopyParams): [string, string | 
   return match ? [match[1], match[2], match[3]] : [text, null, ''];
 }
 
-/** Visible name of a key or combination («Mod+Shift+Z» → «Ctrl+Shift+Z»). */
-export const keyLabel = (combo: string) =>
-  combo
-    .split('+')
-    .map((part) => {
-      const name = find(`keys.${part === 'Mod' && isMac() ? 'ModMac' : part}`);
-      return typeof name === 'string' ? name : part;
-    })
-    .join('+');
+const keyName = (part: string) => {
+  const name = find(`keys.${part}`);
+  return typeof name === 'string' ? name : part;
+};
+
+// Apple's order of the modifiers (Control, Option, Shift, Command).
+const APPLE_MODIFIERS = ['Control', 'Alt', 'Shift', 'Mod'];
+
+/**
+ * A key or combination as it shows and as screen readers should say it. On
+ * Apple devices the modifiers are symbols in Apple's order, written together
+ * before the key («Mod+Shift+Z» → «⇧⌘Z», said «Shift+Comando+Z»); elsewhere
+ * both are «Ctrl+Shift+Z».
+ */
+export function keyText(combo: string): { shown: string; spoken: string } {
+  const parts = combo.split('+');
+  if (!isMac()) {
+    const shown = parts.map(keyName).join('+');
+    return { shown, spoken: shown };
+  }
+  const modifiers = APPLE_MODIFIERS.filter((name) => parts.includes(name));
+  const rest = parts.filter((part) => !APPLE_MODIFIERS.includes(part)).map(keyName);
+  const symbols = modifiers.map((name) => keyName(`${name}Mac`));
+  const spoken = [...modifiers.map((name) => keyName(`spoken.${name}Mac`)), ...rest].join('+');
+  return { shown: symbols.join('') + rest.join('+'), spoken };
+}
+
+/** Visible name of a key or combination («Mod+Shift+Z» → «Ctrl+Shift+Z», or «⇧⌘Z» on Apple devices). */
+export const keyLabel = (combo: string) => keyText(combo).shown;
 
 // ---------- Static HTML ----------
 
