@@ -134,6 +134,10 @@ test.describe('the PDF matches the sheet on screen', () => {
       await page.locator('#cut-hex').press('Enter');
       await page.locator('#cut-margin').fill('3');
       await page.locator('#cut-margin').press('Enter');
+      // Off the cut settings, whose focus or hover highlights the lines on the sheet.
+      await page.locator('#cut-margin').blur();
+      await page.mouse.move(0, 0);
+      await expect(page.locator('#sheets .cut-emphasis')).toHaveCount(0);
       // The shape's loops (not its rectangle) and the photo's outline.
       await expect.poll(() => page.locator('#sheets .cut-layer path').count()).toBeGreaterThanOrEqual(2);
       const points = await page.locator('#sheets .cut-layer path').evaluateAll((paths) => paths.map((p) => p.getAttribute('d')!.split('L').length));
