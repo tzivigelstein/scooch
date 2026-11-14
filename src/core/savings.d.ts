@@ -20,4 +20,3 @@ export function suggestArrange(share: number | null, used: number, packed: numbe
 
 export function pdfKey(description: unknown): string;
 export function countPdf(savings: Savings, key: string, saved: number): { savings: Savings; added: number };
-export function uncountPdf(savings: Savings, key: string, added: number): Savings;

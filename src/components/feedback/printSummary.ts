@@ -1,12 +1,10 @@
 // The summary after printing or downloading (see PrintSummary.tsx): what it
 // shows, worked out once the person is back from the print dialog, and where
-// the focus returns. It closes with «Listo», Esc or the backdrop, with «No lo
-// imprimí» (which takes the PDF back out of the total) and with the next print
-// or download.
+// the focus returns. It closes with «Listo», Esc or the backdrop, and with the
+// next print or download.
 
 import { create } from 'zustand';
 import type { EquivalentKind } from '../../core/savings.js';
-import { unrecordSavings } from '../../state/savings.ts';
 import type { OutputKind } from '../dialogs/printTip.ts';
 
 export interface PrintSummary {
@@ -47,11 +45,3 @@ export const showSummary = (summary: PrintSummary, returnTo: Element | null) => 
 export const closeSummary = () => {
   if (usePrintSummary.getState().summary) usePrintSummary.setState({ summary: null });
 };
-
-/** «No lo imprimí»: the sheets this PDF added go back out of the total, and it closes. */
-export function notPrinted() {
-  const summary = usePrintSummary.getState().summary;
-  if (!summary) return;
-  unrecordSavings(summary.key, summary.added);
-  closeSummary();
-}

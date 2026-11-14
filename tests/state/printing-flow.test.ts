@@ -4,10 +4,9 @@
 // the click of its button; closing it otherwise sends nothing; turned off, it
 // goes straight out; nothing else exports meanwhile. What each way of
 // printing says (no tip any more: the advice gave it), and the summary once
-// the person is back, with what it counts on this device: each PDF once, and
-// «No lo imprimí» takes it back.
+// the person is back, with what it counts on this device: each PDF once.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { notPrinted, usePrintSummary } from '../../src/components/feedback/printSummary.ts';
+import { usePrintSummary } from '../../src/components/feedback/printSummary.ts';
 import { askTip } from '../../src/components/dialogs/printTip.ts';
 import { makePdf } from '../../src/services/export.ts';
 import { downloadBytes, printBytes } from '../../src/services/print.ts';
@@ -266,28 +265,6 @@ describe('the summary after', () => {
       nudge();
       await exportPdf();
       expect(shown()).toMatchObject({ total: 18, milestone: null });
-    });
-  });
-
-  describe('«No lo imprimí»', () => {
-    test('takes this PDF’s sheets back out of the total and closes; printing it later counts it again', async () => {
-      localStorage.setItem('scooch:savings', JSON.stringify({ v: 1, sheets: 8, turn: 0 }));
-      await printPdf();
-      expect(saved().sheets).toBe(13);
-      notPrinted();
-      expect(usePrintSummary.getState().summary).toBeNull();
-      expect(saved()).toEqual({ v: 2, sheets: 8, turn: 1, counted: [] });
-      await printPdf();
-      // Taken back, the milestone was never reached: now it is.
-      expect(shown()).toMatchObject({ total: 13, added: 5, milestone: 10 });
-    });
-
-    test('after a PDF that had counted before, nothing to take back: the total stays', async () => {
-      await printPdf();
-      await printPdf();
-      expect(shown().added).toBe(0);
-      notPrinted();
-      expect(saved().sheets).toBe(5);
     });
   });
 

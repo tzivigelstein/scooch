@@ -162,8 +162,7 @@ flow(
     await Promise.all([page.waitForEvent('download'), page.locator('#print-tip-go').click()]);
     await expect(page.locator('#print-summary[open] #summary-donate')).toBeVisible();
     await expect(page.locator('#print-summary .summary-milestone')).toBeVisible();
-    await expect(page.locator('#summary-not-printed')).toBeVisible();
-    await c.state('summary dialog after printing: a milestone, the request for a donation and «No lo imprimí»');
+    await c.state('summary dialog after printing: a milestone and the request for a donation');
   },
   {
     printing: true,

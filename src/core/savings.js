@@ -146,10 +146,3 @@ export function countPdf(savings, key, saved) {
   const counted = added ? [...savings.counted, key] : savings.counted;
   return { savings: { sheets: savings.sheets + added, turn: savings.turn + 1, counted }, added };
 }
-
-/** «No lo imprimí»: takes the `added` sheets back out and forgets the PDF (printing it later counts it). */
-export const uncountPdf = (savings, key, added) => ({
-  ...savings,
-  sheets: Math.max(0, savings.sheets - added),
-  counted: savings.counted.filter((k) => k !== key),
-});

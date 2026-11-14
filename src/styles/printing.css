@@ -450,12 +450,6 @@
   align-items: center;
 }
 
-/* «No lo imprimí»: discreet, apart from «Listo». */
-#summary-not-printed {
-  margin-right: auto;
-  color: var(--muted);
-}
-
 #summary-done {
   min-width: 6rem;
   height: 2.5rem;

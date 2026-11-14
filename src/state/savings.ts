@@ -3,7 +3,7 @@
 // in this browser: never sent anywhere.
 
 import { SAVINGS_STORAGE } from '../config.ts';
-import { countPdf, uncountPdf } from '../core/savings.js';
+import { countPdf } from '../core/savings.js';
 import { parseSavings, serializeSavings, type Savings } from '../core/storedprefs.js';
 import { storageJson, storageSet } from '../services/storage/local.ts';
 
@@ -21,6 +21,3 @@ export function recordSavings(saved: number, key: string) {
   write(savings);
   return { before: before.sheets, after: savings.sheets, turn: before.turn, added };
 }
-
-/** Takes back the `added` sheets of the PDF `key` («No lo imprimí»): printing it later counts it again. */
-export const unrecordSavings = (key: string, added: number) => write(uncountPdf(read(), key, added));

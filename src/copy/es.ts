@@ -726,7 +726,6 @@ const es = {
   summary: {
     title: 'Resumen del PDF',
     done: 'Listo',
-    notPrinted: 'No lo imprimí',
     percent: '{n} %',
     usage: { one: '{pct} de la hoja aprovechada', other: '{pct} de las hojas aprovechadas' },
     sheets: { one: 'Usaste {n} hoja en lugar de {baseline}', other: 'Usaste {n} hojas en lugar de {baseline}' },

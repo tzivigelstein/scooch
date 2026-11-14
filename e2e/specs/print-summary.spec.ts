@@ -1,10 +1,8 @@
 // The summary after printing or downloading, in a real browser: where its
-// ring's label lands (only layout shows it) and «No lo imprimí» reaching the
-// running total, with each PDF counted once. What each line says, when «No lo
-// imprimí» shows and how the total counts are in
-// tests/components/PrintSummary.test.tsx and tests/state/printing-flow.test.ts.
+// ring's label lands (only layout shows it). What each line says is in
+// tests/components/PrintSummary.test.tsx.
 import type { Page } from '@playwright/test';
-import { expect, printCalls, test } from '../support/print.ts';
+import { expect, test } from '../support/print.ts';
 import { norm } from '../support/test.ts';
 
 const summary = (page: Page) => page.locator('#print-summary');
@@ -55,36 +53,4 @@ test.describe('the ring', () => {
         expect(Math.abs(ring.dy), 'off the middle, down').toBeLessThanOrEqual(1);
       });
     });
-});
-
-test.describe('«No lo imprimí»', () => {
-  test.use({ pdfViewer: true, printSpy: 'record' });
-
-  test('takes the PDF back out of the total and closes, back to «Imprimir»; printing the same PDF again counts it once', async ({ app, page }) => {
-    // Two cards on one sheet: 1 sheet saved.
-    await app.addFiles(['card00.png', 'card01.png']);
-    const total = page.locator('#summary-total');
-    const notPrinted = page.locator('#summary-not-printed');
-
-    await page.locator('#print').click();
-    await page.locator('#print-tip-never').check();
-    await page.locator('#print-tip-go').click();
-    await expect.poll(() => printCalls(page)).toHaveLength(1);
-    await expect(summary(page)).toHaveAttribute('open', '');
-    await expect(total).toHaveText('Llevas 1 hoja ahorrada');
-    await notPrinted.click();
-    await expect(summary(page)).not.toHaveAttribute('open');
-    await expect(page.locator('#print')).toBeFocused();
-
-    // Taken back: printing it again counts it, once.
-    await page.locator('#print').click();
-    await expect.poll(() => printCalls(page)).toHaveLength(2);
-    await expect(total).toHaveText('Llevas 1 hoja ahorrada');
-    await expect(notPrinted).toBeVisible();
-    await page.locator('#summary-done').click();
-    await page.locator('#print').click();
-    await expect.poll(() => printCalls(page)).toHaveLength(3);
-    await expect(total).toHaveText('Llevas 1 hoja ahorrada');
-    await expect(notPrinted, 'nothing added this time: nothing to take back').toHaveCount(0);
-  });
 });

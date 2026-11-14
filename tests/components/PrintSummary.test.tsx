@@ -2,9 +2,8 @@
 // The summary after printing, as a dialog: what each line says (and when it
 // doesn't show), the milestone, the suggestion with its «Acomodar» link, the
 // request for a donation (a real link that opens apart, never again after «No
-// volver a mostrar»), «Listo» focused, the ways of closing it and where the
-// focus goes back, and «No lo imprimí» (only after printing a PDF that added
-// to the total).
+// volver a mostrar»), «Listo» focused, and the ways of closing it and where
+// the focus goes back.
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { PrintSummary } from '../../src/components/feedback/PrintSummary.tsx';
@@ -134,25 +133,5 @@ describe('closing the summary', () => {
     show({ kind: 'download' }, document.body);
     fireEvent.click(screen.getByRole('button', { name: 'Listo' }));
     expect(document.activeElement?.id).toBe('export');
-  });
-});
-
-describe('«No lo imprimí»', () => {
-  test('only after printing, and only when this PDF added to the total', () => {
-    show();
-    expect(screen.getByRole('button', { name: 'No lo imprimí' })).toBeTruthy();
-    act(() => usePrintSummary.setState({ summary: { ...base, kind: 'download' } }));
-    expect(screen.queryByRole('button', { name: 'No lo imprimí' })).toBeNull();
-    act(() => usePrintSummary.setState({ summary: { ...base, added: 0 } }));
-    expect(screen.queryByRole('button', { name: 'No lo imprimí' }), 'counted before, or saved nothing').toBeNull();
-  });
-
-  test('takes this PDF’s sheets back out of the total and closes, back to «Imprimir»', () => {
-    localStorage.setItem('scooch:savings', JSON.stringify({ v: 2, sheets: 34, turn: 3, counted: ['pdf-0', 'pdf-1'] }));
-    show();
-    fireEvent.click(screen.getByRole('button', { name: 'No lo imprimí' }));
-    expect(JSON.parse(localStorage.getItem('scooch:savings')!)).toEqual({ v: 2, sheets: 29, turn: 3, counted: ['pdf-0'] });
-    expect(isOpen()).toBe(false);
-    expect(document.activeElement?.id).toBe('print');
   });
 });
