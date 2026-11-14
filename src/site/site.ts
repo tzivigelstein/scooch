@@ -4,7 +4,7 @@
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { t } from '../copy/index.ts';
+import { t } from './copy.ts';
 import { urlProblems, type Site } from './config.ts';
 import * as es from './content/es/index.ts';
 import { esc, scriptJson } from './html.ts';

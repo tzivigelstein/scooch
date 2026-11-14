@@ -15,6 +15,7 @@ import { paperTitle, sizeText } from '../../services/measure.ts';
 import { getAsset } from '../../state/assets.ts';
 import { useDocument, type Piece as PieceData } from '../../state/document.ts';
 import { gestureStore, isDragging } from '../../state/gesture.ts';
+import { useTextsLanguage } from '../../state/language.ts';
 import { usePrefs, type GridPrefs } from '../../state/prefs.ts';
 import { usePreview } from '../../state/preview.ts';
 import { currentSheet, sheetIndex, sheetSize } from '../../state/selectors.ts';
@@ -69,6 +70,7 @@ interface PageProps {
 }
 
 const EmptyDropzone = memo(function EmptyDropzone({ hidden, disabled }: { hidden: boolean; disabled: boolean }) {
+  useTextsLanguage();
   const singleKeys = usePrefs((s) => s.singleKeys);
   const shortcut = useShortcut('drop');
   return (
@@ -87,6 +89,7 @@ const EmptyDropzone = memo(function EmptyDropzone({ hidden, disabled }: { hidden
 });
 
 const Page = memo(function Page({ id, index, total, items, W, H, zoom, margin, empty, current, showGrid, grid, selection, pinned, unit, busy, cropping, cuts }: PageProps) {
+  useTextsLanguage();
   const label = t('sheet.numbered', { i: index + 1, total });
   const n = items.length;
   const many = selection.length > 1;

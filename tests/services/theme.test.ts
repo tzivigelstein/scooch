@@ -8,12 +8,14 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { THEME_STORAGE } from '../../src/config.ts';
+import { fillStaticCopy } from '../../src/copy/static.ts';
 import { parseThemePref, resolveTheme } from '../../src/core/storedprefs.js';
 import { DARK_QUERY, followTheme } from '../../src/services/theme.ts';
 import { getPrefs, setTheme } from '../../src/state/prefs.ts';
 import { resetState } from '../support/state.ts';
 
-const HEAD = readFileSync(join(import.meta.dirname, '../../index.html'), 'utf8').match(/<head>([\s\S]*)<\/head>/)![1];
+// As Vite serves it, with its texts filled in (the head's script also reads them).
+const HEAD = fillStaticCopy(readFileSync(join(import.meta.dirname, '../../index.html'), 'utf8')).match(/<head>([\s\S]*)<\/head>/)![1];
 const BOOT_SCRIPT = [...HEAD.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
 
 const STORAGE_FIXTURES = join(import.meta.dirname, '../fixtures/storage');

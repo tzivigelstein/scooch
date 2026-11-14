@@ -7,6 +7,7 @@ import {
   GRID_MAX,
   GRID_MIN,
   GRID_STORAGE,
+  LANGUAGE_STORAGE,
   PIECES_STORAGE,
   PRINT_STORAGE,
   SECTIONS_STORAGE,
@@ -14,7 +15,20 @@ import {
   THEME_STORAGE,
   UNIT_STORAGE,
 } from '../config.ts';
-import { parsePrintPrefs, parseSections, parseThemePref, serializePrintPrefs, serializeSections, serializeThemePref, type PrintPrefs, type SectionName, type ThemeChoice } from '../core/storedprefs.js';
+import type { LanguageChoice } from '../core/language.js';
+import {
+  parseLanguagePref,
+  parsePrintPrefs,
+  parseSections,
+  parseThemePref,
+  serializeLanguagePref,
+  serializePrintPrefs,
+  serializeSections,
+  serializeThemePref,
+  type PrintPrefs,
+  type SectionName,
+  type ThemeChoice,
+} from '../core/storedprefs.js';
 import { isUnit, type Unit } from '../core/units.js';
 import { clamp } from '../core/util.ts';
 import { storageGet, storageJson, storageSet } from '../services/storage/local.ts';
@@ -41,6 +55,8 @@ export interface PrefsState {
   printing: PrintPrefs;
   /** «Tema»: 'auto' follows the system's (services/theme.ts shows it). */
   theme: ThemeChoice;
+  /** «Idioma»: 'auto' follows the browser's languages (services/language.ts loads and applies it). */
+  language: LanguageChoice;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -65,6 +81,7 @@ function loadPrefs(): PrefsState {
     ...parseSections(storageJson(SECTIONS_STORAGE)),
     printing: parsePrintPrefs(storageJson(PRINT_STORAGE)),
     ...parseThemePref(storageJson(THEME_STORAGE)),
+    ...parseLanguagePref(storageJson(LANGUAGE_STORAGE)),
   };
 }
 
@@ -120,6 +137,14 @@ export function setTheme(theme: ThemeChoice) {
 
 /** Another tab of this browser stored a theme: this one takes it too, without writing it again. */
 export const readStoredTheme = () => usePrefs.setState(parseThemePref(storageJson(THEME_STORAGE)));
+
+export function setLanguage(language: LanguageChoice) {
+  usePrefs.setState({ language });
+  storageSet(LANGUAGE_STORAGE, JSON.stringify(serializeLanguagePref({ language })));
+}
+
+/** Another tab of this browser stored a language: this one takes it too, without writing it again. */
+export const readStoredLanguage = () => usePrefs.setState(parseLanguagePref(storageJson(LANGUAGE_STORAGE)));
 
 /** «Más opciones» of the cut lines opened or closed. */
 export function setCutOptionsOpen(open: boolean) {

@@ -19,7 +19,7 @@ export const unitSymbol = () => t(`units.${unit()}`);
 export const unitName = () => t(`units.names.${unit()}`);
 
 /** Just the number, for a field: «10,5». */
-export const lengthValue = (mm: number) => formatLength(mm, unit(), { locale: numberLocale, withUnit: false });
+export const lengthValue = (mm: number) => formatLength(mm, unit(), { locale: numberLocale(), withUnit: false });
 
 /** Number and unit: «10,5 mm». */
 export const lengthText = (mm: number) => t('units.length', { value: lengthValue(mm), unit: unitSymbol() });
@@ -29,7 +29,7 @@ export const sizeText = (w: number, h: number) => t('units.size', { w: lengthVal
 
 /** Arrow steps for the help texts: {fine, normal, coarse} → «0,1 mm», «1/16 in». */
 export function stepTexts() {
-  const text = (size: StepSize) => t('units.length', { value: stepLabel(unit(), size, { locale: numberLocale }), unit: unitSymbol() });
+  const text = (size: StepSize) => t('units.length', { value: stepLabel(unit(), size, { locale: numberLocale() }), unit: unitSymbol() });
   return { fine: text('fine'), normal: text('normal'), coarse: text('coarse') };
 }
 

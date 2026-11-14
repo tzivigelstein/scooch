@@ -6,9 +6,16 @@
     "Raising a budget needs a reason in the commit message: see docs/testing.md."
   ],
   "initialJs": {
-    "kB": 189,
-    "measured": 179.6,
-    "what": "The JavaScript the editor's index.html loads at start: its module script and every module it preloads. What a first visit waits for; React is about 68 kB of it."
+    "kB": 187,
+    "measured": 177.6,
+    "what": "The JavaScript the editor's index.html loads at start: its module script and every module it preloads. What a first visit waits for, with the texts of one language (see «languages»); React is about 68 kB of it."
+  },
+  "languages": {
+    "*": {
+      "kB": 11.6,
+      "measured": 11.0,
+      "what": "Each language's texts (src/copy/<language>.ts), a chunk of its own: index.html preloads only the one it shows, so what a first visit waits for is «initialJs» plus one of these."
+    }
   },
   "totalJs": {
     "kB": 923,

@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
 // «Preferencias»: a titled group only for two controls or more (Unidades,
-// Impresión, Tema); «Atajos de 1 tecla» and «Consejos de uso» are switches of
-// their own, named by their labels. Choosing a unit (saved and announced) is in
+// Impresión, Tema); «Idioma» is a list and «Atajos de 1 tecla» and «Consejos
+// de uso» switches of their own, named by their labels. Choosing a unit (saved and announced) is in
 // unit-preference.test.tsx; that the choice survives a reload, in
 // e2e/specs/keyboard-only.spec.ts.
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import PrefsDialog from '../../src/components/dialogs/PrefsDialog.tsx';
+import { LANGUAGES, matchLanguage } from '../../src/core/language.js';
+import { LANGUAGE_NAMES } from '../../src/copy/languages.ts';
 import { SHORTCUTS } from '../../src/hooks/shortcuts.ts';
-import { getPrefs, readStoredTheme, setSingleKeys } from '../../src/state/prefs.ts';
+import { getPrefs, readStoredLanguage, readStoredTheme, setSingleKeys } from '../../src/state/prefs.ts';
 import { neverShow, resetTips, useTips } from '../../src/state/tips.ts';
 import { resetState } from '../support/state.ts';
 
@@ -138,6 +140,27 @@ describe('Preferences', () => {
     expect(JSON.parse(localStorage.getItem('scooch:theme-preference')!)).toEqual({ v: 1, theme: 'dark' });
   });
 
+  test('Idioma comes first, one control named by its label (no heading): Automático, with the browser’s language, then each language by its own name and marked with it; the choice is saved in this browser', () => {
+    render(<PrefsDialog />);
+    const select = screen.getByRole('combobox', { name: 'Idioma' }) as HTMLSelectElement;
+    expect(select.closest('.pref-section')).toBe(document.querySelector('.dialog-body > .pref-section'));
+    expect(select.closest('.pref-section')?.querySelector('h3, [role="group"]')).toBeNull();
+    expect(select.labels?.[0]?.textContent).toBe('Idioma');
+    const options = [...select.options];
+    expect(options.map((o) => [o.value, o.textContent, o.lang])).toEqual([['auto', `Automático (${LANGUAGE_NAMES[matchLanguage(navigator.languages, LANGUAGES)]})`, ''], ...LANGUAGES.map((language) => [language, LANGUAGE_NAMES[language], language])]);
+    expect(select.value).toBe('auto');
+    fireEvent.change(select, { target: { value: LANGUAGES.at(-1) } });
+    expect(getPrefs().language).toBe(LANGUAGES.at(-1));
+    expect(JSON.parse(localStorage.getItem('scooch:language-preference')!)).toEqual({ v: 1, language: LANGUAGES.at(-1) });
+  });
+
+  test('Idioma shows a language chosen in another tab', () => {
+    render(<PrefsDialog />);
+    localStorage.setItem('scooch:language-preference', JSON.stringify({ v: 1, language: 'es' }));
+    act(() => readStoredLanguage());
+    expect((screen.getByRole('combobox', { name: 'Idioma' }) as HTMLSelectElement).value).toBe('es');
+  });
+
   test('Tema shows a theme chosen in another tab', () => {
     render(<PrefsDialog />);
     localStorage.setItem('scooch:theme-preference', JSON.stringify({ v: 1, theme: 'light' }));
@@ -179,13 +202,13 @@ describe('Preferences', () => {
 });
 
 describe('the site’s legal pages', () => {
-  test('the foot of Preferencias links to the terms of use and the privacy policy, outside the groups', () => {
+  test('the foot of Preferencias links to the terms of use and the privacy policy, outside the groups, saying they are in Spanish', () => {
     render(<PrefsDialog />);
     const foot = document.getElementById('prefs-legal')!;
     const links = within(foot).getAllByRole('link');
-    expect(links.map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
-      ['Términos de uso', '/es/terminos'],
-      ['Política de privacidad', '/es/privacidad'],
+    expect(links.map((a) => [a.textContent, a.getAttribute('href'), a.getAttribute('hreflang')])).toEqual([
+      ['Términos de uso', '/es/terminos', 'es'],
+      ['Política de privacidad', '/es/privacidad', 'es'],
     ]);
     expect(foot.closest('[role="group"], .dialog-body')).toBeNull();
   });

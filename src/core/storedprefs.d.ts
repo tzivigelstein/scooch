@@ -1,3 +1,5 @@
+import type { LanguageChoice } from './language.js';
+
 export type ZoomMode = 'fit' | 'width' | 'manual';
 
 export interface ViewPrefs {
@@ -32,6 +34,14 @@ export interface ThemePrefs {
 export function parseThemePref(raw: unknown): ThemePrefs;
 export function serializeThemePref(prefs: ThemePrefs): ThemePrefs & { v: 1 };
 export function resolveTheme(theme: ThemeChoice, systemDark: boolean): Theme;
+
+export const LANGUAGE_CHOICES: readonly LanguageChoice[];
+
+export interface LanguagePrefs {
+  language: LanguageChoice;
+}
+export function parseLanguagePref(raw: unknown): LanguagePrefs;
+export function serializeLanguagePref(prefs: LanguagePrefs): LanguagePrefs & { v: 1 };
 
 export type SectionName = 'sheet' | 'arrange' | 'cuts' | 'grid';
 export const SECTION_NAMES: readonly SectionName[];

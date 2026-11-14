@@ -5,6 +5,8 @@
 // and the panel already show), and running it does what its button or key does.
 import { act } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { LANGUAGES } from '../../src/core/language.js';
+import { LANGUAGE_NAMES } from '../../src/copy/languages.ts';
 import { SHORTCUTS } from '../../src/hooks/shortcuts.ts';
 import { COMMAND_IDS, SECTIONS, command, commands, isCommandId, type CommandId } from '../../src/state/commands.ts';
 import { getDocument, setDocument } from '../../src/state/document.ts';
@@ -195,6 +197,16 @@ describe('running a command does what its button or key does', () => {
     expect(choices.find((c) => c.current)?.id).toBe(getDocument().cuts.mode);
     choices.find((c) => c.id === 'contour')!.run();
     expect(getDocument().cuts.mode).toBe('contour');
+  });
+
+  test('the language: «Automático» and each language by its own name (marked with it), the one chosen marked; choosing one saves it', () => {
+    const choices = command('language').choices!();
+    expect(choices.map((c) => [c.id, c.lang])).toEqual([['auto', undefined], ...LANGUAGES.map((language) => [language, language])]);
+    expect(choices.slice(1).map((c) => c.label)).toEqual(LANGUAGES.map((language) => LANGUAGE_NAMES[language]));
+    expect(choices.find((c) => c.current)?.id).toBe('auto');
+    choices.at(-1)!.run();
+    expect(getPrefs().language).toBe(LANGUAGES.at(-1));
+    expect(command('language').choices!().find((c) => c.current)?.id).toBe(LANGUAGES.at(-1));
   });
 
   test('the orientation, the grid and the magnet switch, and the grid and the magnet say so', () => {

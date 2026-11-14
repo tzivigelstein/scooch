@@ -29,6 +29,7 @@ import {
   ImagePlus,
   Images,
   Keyboard,
+  Languages,
   LayoutDashboard,
   List,
   ListChecks,
@@ -61,18 +62,21 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { AlignMode } from '../core/align.js';
+import { LANGUAGES } from '../core/language.js';
 import { PAPER_GROUPS, PAPERS } from '../core/papers.js';
 import type { ThemeChoice } from '../core/storedprefs.js';
 import type { CutMode, PaperId } from '../core/types.ts';
 import type { Unit } from '../core/units.js';
 import { t, type CopyKey } from '../copy/index.ts';
+import { LANGUAGE_NAMES } from '../copy/languages.ts';
 import { startCrop } from '../components/canvas/cropMode.ts';
 import { fitSheet, stepZoom, zoomToPercent } from '../components/canvas/viewport.ts';
 import { focusPieces, focusPropsTab } from '../hooks/useGlobalShortcuts.ts';
 import { SHORTCUTS, type ShortcutKeys, type ShortcutName } from '../hooks/shortcuts.ts';
+import { browserLanguage } from '../services/language.ts';
 import { sizeText } from '../services/measure.ts';
 import { getDocument } from './document.ts';
-import { getPrefs, setTheme } from './prefs.ts';
+import { getPrefs, setLanguage, setTheme } from './prefs.ts';
 import { useProject } from './project.ts';
 import { currentSheet, selectedItems } from './selectors.ts';
 import { used, type Route } from './tips.ts';
@@ -125,6 +129,8 @@ export interface Choice {
   group?: string;
   /** The value in use now. */
   current?: boolean;
+  /** The language its label is in, when not the interface's (a language by its own name). */
+  lang?: string;
   run: () => void;
 }
 
@@ -228,6 +234,15 @@ const theme = (value: ThemeChoice): Definition => ({
 });
 
 const CUT_MODES: readonly CutMode[] = ['none', 'corners', 'outline', 'contour'];
+
+/** «Automático» (with the browser's language) and each language by its own name, as in «Preferencias». */
+function languageChoices(): Choice[] {
+  const chosen = getPrefs().language;
+  return [
+    { id: 'auto', label: t('prefs.languageAuto', { language: LANGUAGE_NAMES[browserLanguage()] }), current: chosen === 'auto', run: () => setLanguage('auto') },
+    ...LANGUAGES.map((language) => ({ id: language, label: LANGUAGE_NAMES[language], lang: language, current: chosen === language, run: () => setLanguage(language) })),
+  ];
+}
 
 function paperChoices(): Choice[] {
   const { paper } = getDocument();
@@ -394,6 +409,7 @@ const DEFINITIONS = {
   themeAuto: theme('auto'),
   themeLight: theme('light'),
   themeDark: theme('dark'),
+  language: { section: 'prefs', label: 'commands.language', icon: Languages, aliases: 'commands.aliases.language', choices: languageChoices },
 } satisfies Record<string, Definition>;
 
 export type CommandId = keyof typeof DEFINITIONS;

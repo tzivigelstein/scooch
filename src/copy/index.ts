@@ -3,27 +3,35 @@
 //   t('nested.key', { n: 3, name: 'foto.jpg' })
 //
 // - `{param}` is replaced by params[param]; numbers are formatted with the
-//   locale of the language (decimal comma, at most one decimal).
+//   locale of the language (decimal comma in Spanish, point in English; at
+//   most one decimal).
 // - `{app}` is always the app name (APP_NAME, in config.ts) and `{mod}` the
 //   main modifier key (Ctrl, or ⌘ on a Mac).
-// - A value can be a plural object ({ one, other, … }) picked with
-//   Intl.PluralRules from params.n; an optional `zero` is used for n = 0
+// - A value can be a plural object picked with the language's
+//   Intl.PluralRules from params.n: { one, other } in Spanish, English,
+//   French and Hindi (French and Hindi say «one» for 0 too), { other } alone
+//   in Chinese. An optional `zero` is used for n = 0 in any language
 //   (Spanish has no zero category of its own: «ya no entran más» instead of
 //   «solo entran 0»).
 //
-// Another language: a sibling file with the same keys (en.ts) chosen in
-// `messages`; missing keys fall back to Spanish.
+// One catalogue per language: es.ts is the source of the keys and their
+// parameters, and en.ts, zh-Hans.ts, hi.ts and fr.ts have exactly the same
+// (tests/core/copy-catalogues.test.ts). Only the active one is loaded
+// (copy/load.ts, applied by services/language.ts) and installed with
+// setTexts; until then t() has nothing to say and throws.
 //
 // index.html has `{{key}}` placeholders for the few texts it carries itself
-// (fillStaticCopy, from vite.config.ts); the rest is rendered by React.
+// (copy/static.ts, from vite.config.ts); the rest is rendered by React.
 
 import { APP_NAME } from '../config.ts';
 import { isApplePlatform } from '../core/platform.js';
-import es from './es.ts';
+import type es from './es.ts';
 
 type Messages = typeof es;
-type Plural = { zero?: string; one: string; other: string };
-type Leaf = string | Plural;
+/** A text with a form for each plural category of its language (`other` always). */
+export type Plural = { zero?: string; one?: string; two?: string; few?: string; many?: string; other: string };
+type SpanishPlural = { zero?: string; one: string; other: string };
+type Leaf = string | SpanishPlural;
 type Paths<T, P extends string = ''> = {
   [K in keyof T & string]: T[K] extends Leaf ? `${P}${K}` : Paths<T[K], `${P}${K}.`>;
 }[keyof T & string];
@@ -32,61 +40,99 @@ type Paths<T, P extends string = ''> = {
 export type CopyKey = Paths<Messages>;
 export type CopyParams = Record<string, string | number>;
 
-const fallback: Messages = es;
-const messages: Messages = es;
+/** The texts of one language: exactly Spanish's keys, with the plural forms of that language. */
+export type Catalogue<T = Messages> = { [K in keyof T]: T[K] extends string ? string : T[K] extends SpanishPlural ? Plural : Catalogue<T[K]> };
 
-/** Locale of the numbers (decimal comma in Spanish). */
-export const numberLocale = messages.meta.numberLocale;
+interface Texts {
+  messages: Catalogue;
+  plurals: Intl.PluralRules;
+  numbers: Intl.NumberFormat;
+  lists: Intl.ListFormat;
+  choices: Intl.ListFormat;
+}
 
-const pluralRules = new Intl.PluralRules(messages.meta.lang);
-const numberFormat = new Intl.NumberFormat(messages.meta.numberLocale, { maximumFractionDigits: 1 });
+const compile = (messages: Catalogue): Texts => ({
+  messages,
+  plurals: new Intl.PluralRules(messages.meta.lang),
+  // Latin digits in every language, like the measures (core/units.js).
+  numbers: new Intl.NumberFormat(messages.meta.numberLocale, { maximumFractionDigits: 1, numberingSystem: 'latn' }),
+  lists: new Intl.ListFormat(messages.meta.lang, { style: 'long', type: 'conjunction' }),
+  choices: new Intl.ListFormat(messages.meta.lang, { style: 'long', type: 'disjunction' }),
+});
 
-/** A number for display: «41,6». */
-export const formatNumber = (value: number) => numberFormat.format(Math.round(value * 10) / 10 || 0);
+let active: Texts | null = null;
+
+/** Makes `messages` the interface's texts (once copy/load.ts has them). */
+export function setTexts(messages: Catalogue) {
+  active = compile(messages);
+}
+
+function current(): Texts {
+  if (!active) throw new Error('No texts installed yet (setTexts)');
+  return active;
+}
+
+/** The language of the texts installed («es», «zh-Hans»…), or null before any. */
+export const textsLanguage = () => active?.messages.meta.lang ?? null;
+
+/** Locale of the numbers of the language (decimal comma in Spanish and French). */
+export const numberLocale = () => current().messages.meta.numberLocale;
 
 const isMac = () => typeof navigator !== 'undefined' && isApplePlatform(navigator);
 
 type TextTree = string | { [key: string]: TextTree };
 
-const lookup = (source: TextTree, key: string): TextTree | undefined =>
-  key.split('.').reduce<TextTree | undefined>((node, part) => (node && typeof node === 'object' ? node[part] : undefined), source);
-const find = (key: string) => lookup(messages, key) ?? lookup(fallback, key);
+const lookup = (source: unknown, key: string): TextTree | undefined =>
+  key.split('.').reduce<TextTree | undefined>((node, part) => (node && typeof node === 'object' ? node[part] : undefined), source as TextTree);
 
-/** Does the key exist? (e.g. paper names only some languages translate) */
-export const hasText = (key: string) => find(key) !== undefined;
+const formatIn = (texts: Texts, value: number) => texts.numbers.format(Math.round(value * 10) / 10 || 0);
 
-/** The text of `key`, with its parameters and the right plural. */
-export function t(key: CopyKey, params: CopyParams = {}): string {
-  let value = find(key);
+function translate(texts: Texts, key: string, params: CopyParams): string {
+  let value = lookup(texts.messages, key);
   if (value && typeof value === 'object') {
     const count = typeof params.n === 'number' ? params.n : Number(params.n ?? 0);
-    value = (count === 0 ? value.zero : undefined) ?? value[pluralRules.select(count)] ?? value.other;
+    value = (count === 0 ? value.zero : undefined) ?? value[texts.plurals.select(count)] ?? value.other;
   }
   if (typeof value !== 'string') throw new Error(`Missing text «${key}»`);
   return value.replace(/\{(\w+)\}/g, (match, name: string) => {
     if (name === 'app') return APP_NAME;
-    if (name === 'mod') return String(find(isMac() ? 'keys.ModMac' : 'keys.Mod'));
+    if (name === 'mod') return String(lookup(texts.messages, isMac() ? 'keys.ModMac' : 'keys.Mod'));
     if (!(name in params)) return match;
     const param = params[name];
-    return typeof param === 'number' ? formatNumber(param) : String(param);
+    return typeof param === 'number' ? formatIn(texts, param) : String(param);
   });
 }
 
-const listFormat = new Intl.ListFormat(messages.meta.lang, { style: 'long', type: 'conjunction' });
+/** A number for display: «41,6» (Spanish), «41.6» (English). */
+export const formatNumber = (value: number) => formatIn(current(), value);
+
+/** The text of `key`, with its parameters and the right plural. */
+export const t = (key: CopyKey, params: CopyParams = {}) => translate(current(), key, params);
 
 /** A list for a sentence: «1, 2 y 3», «foto.jpg y plano.pdf». */
-export const formatList = (items: readonly (string | number)[]) => listFormat.format(items.map(String));
-
-const choiceFormat = new Intl.ListFormat(messages.meta.lang, { style: 'long', type: 'disjunction' });
+export const formatList = (items: readonly (string | number)[]) => current().lists.format(items.map(String));
 
 /** Alternatives («R o Shift+R») as parts, in the language's order: each item and the words between them. */
-export const choiceParts = (items: readonly string[]) => choiceFormat.formatToParts(items);
+export const choiceParts = (items: readonly string[]) => current().choices.formatToParts(items);
+
+/**
+ * The texts of one language whatever the interface's: the site's pages are
+ * Spanish (src/site/copy.ts), and index.html carries texts of every language.
+ */
+export function textsFor(messages: Catalogue) {
+  const texts = compile(messages);
+  return {
+    t: (key: CopyKey, params: CopyParams = {}) => translate(texts, key, params),
+    formatNumber: (value: number) => formatIn(texts, value),
+    formatList: (items: readonly (string | number)[]) => texts.lists.format(items.map(String)),
+  };
+}
 
 /** The text with the language's final period (meta.period), unless it already ends like a sentence. */
-export const asSentence = (text: string) => (/[.!?…:。]$/.test(text.trim()) ? text.trim() : `${text.trim()}${messages.meta.period}`);
+export const asSentence = (text: string) => (/[.!?…:。！？：।]$/.test(text.trim()) ? text.trim() : `${text.trim()}${current().messages.meta.period}`);
 
 /** Messages joined as sentences, each with its final period (what the live regions say). */
-export const joinSentences = (parts: readonly string[]) => parts.filter(Boolean).map(asSentence).join(messages.meta.sentenceGap);
+export const joinSentences = (parts: readonly string[]) => parts.filter(Boolean).map(asSentence).join(current().messages.meta.sentenceGap);
 
 /**
  * Messages shown as one text (docs/copy.md): a single one stays as it is,
@@ -110,7 +156,7 @@ export function splitLink(key: CopyKey, params?: CopyParams): [string, string | 
 }
 
 const keyName = (part: string) => {
-  const name = find(`keys.${part}`);
+  const name = lookup(current().messages, `keys.${part}`);
   return typeof name === 'string' ? name : part;
 };
 
@@ -139,14 +185,3 @@ export function keyText(combo: string): { shown: string; spoken: string } {
 
 /** Visible name of a key or combination («Mod+Shift+Z» → «Ctrl+Shift+Z», or «⇧⌘Z» on Apple devices). */
 export const keyLabel = (combo: string) => keyText(combo).shown;
-
-// ---------- Static HTML ----------
-
-const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-/**
- * Fills the `{{key}}` placeholders of index.html with their texts (from
- * vite.config.ts), so the title, the description and the no-JavaScript
- * message come in the page itself.
- */
-export const fillStaticCopy = (html: string) => html.replace(/\{\{([\w.]+)\}\}/g, (_, key: string) => escapeHtml(t(key as CopyKey)));

@@ -18,10 +18,15 @@ const VITE = 'node ./node_modules/vite/bin/vite.js';
 // (`npx playwright install-deps webkit`); see docs/testing.md. Opt in with E2E_WEBKIT=1.
 const WEBKIT = process.env.E2E_WEBKIT === '1';
 
-/** What every page starts with: the desktop layout, light theme, no animations. */
+/**
+ * What every page starts with: the desktop layout, light theme, no animations,
+ * and a Spanish browser, so the app (on «Automático») shows Spanish; the
+ * specs of the other languages say theirs (e2e/specs/languages.spec.ts).
+ */
 const page = {
   viewport: { width: 1440, height: 900 },
   colorScheme: 'light' as const,
+  locale: 'es-419',
   acceptDownloads: true,
   // A context option, not a test option: at the top level it would be ignored.
   contextOptions: { reducedMotion: 'reduce' as const },

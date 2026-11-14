@@ -114,9 +114,11 @@ Import the repository in Vercel: it detects Vite and needs no configuration
 - **Pure logic** (packing, alignment, groups, crop, cut marks, units, the
   project format) is in `src/core/`, plain JavaScript with `.d.ts` types and
   no DOM, tested in `tests/core/`.
-- **Texts** all come from `src/copy/es.ts` through `t()`; `docs/copy.md` is
-  the copy guide. `index.html` only carries the few texts needed before the
-  app starts, filled in at build time.
+- **Texts** all come from `src/copy/` through `t()`: one file per language
+  (`es.ts` is the source of the keys), and the app downloads only the one it
+  shows; `docs/copy.md` is the copy guide. `index.html` only carries the few
+  texts needed before the app starts, filled in at build time, and a script
+  that picks the language before the first paint.
 - **Dialogs** keep their `<dialog>` shells in the page; the contents of the
   rarely used ones load on first use or when the app is idle.
 - **Commands**: every action the app has is listed once in
@@ -147,7 +149,7 @@ index.html              the single page (Vite's entry): critical styles and the 
 src/
   main.tsx, App.tsx     start and layout
   config.ts             app name, limits and storage keys
-  copy/                 every interface text (es.ts) and t(key, params)
+  copy/                 every interface text, one file per language, and t(key, params)
   core/                 pure modules (no DOM), with tests in tests/core/
   state/                Zustand stores, selectors, the undo history and the commands
     actions/            everything that changes the document, by area

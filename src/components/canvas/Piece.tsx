@@ -3,6 +3,7 @@ import { t } from '../../copy/index.ts';
 import type { AppAsset } from '../../services/assets.ts';
 import type { Piece as PieceData } from '../../state/document.ts';
 import type { Unit } from '../../core/units.js';
+import { useTextsLanguage } from '../../state/language.ts';
 import { pieceView } from './pieceView.ts';
 
 export interface PieceProps {
@@ -22,6 +23,7 @@ export interface PieceProps {
 
 /** A piece on its sheet: a focusable button that clips the image to its crop. */
 export const Piece = memo(function Piece({ item, asset, zoom, selected, grouped, marked, cropping }: PieceProps) {
+  useTextsLanguage();
   const view = pieceView(item, asset, zoom, marked);
   return (
     <div

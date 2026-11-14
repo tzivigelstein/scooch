@@ -9,6 +9,7 @@ import { memo, type CSSProperties } from 'react';
 import { t } from '../../copy/index.ts';
 import type { Rect } from '../../core/types.ts';
 import { getAsset } from '../../state/assets.ts';
+import { useTextsLanguage } from '../../state/language.ts';
 import { usePreview, type Dimension, type Ghost, type Line } from '../../state/preview.ts';
 import { pieceView } from './pieceView.ts';
 
@@ -60,6 +61,7 @@ function DimensionLine({ dimension: { field, box, text }, zoom }: { dimension: D
 }
 
 export const PreviewLayer = memo(function PreviewLayer({ sheet, zoom }: { sheet: number; zoom: number }) {
+  useTextsLanguage();
   const overlay = usePreview((s) => s.overlay);
   const part = overlay?.sheets.get(sheet);
   if (!overlay || (!part && !overlay.margin)) return null;

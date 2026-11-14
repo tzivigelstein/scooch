@@ -8,8 +8,10 @@ import { join } from 'node:path';
 import {
   COUNTED_MAX,
   RECENT_MAX,
+  LANGUAGE_CHOICES,
   TIPS_MAX,
   VIEW_DEFAULTS,
+  parseLanguagePref,
   parsePrintPrefs,
   parseRecents,
   parseSavings,
@@ -18,6 +20,7 @@ import {
   parseTipPrefs,
   parseViewPrefs,
   resolveTheme,
+  serializeLanguagePref,
   serializePrintPrefs,
   serializeRecents,
   serializeSavings,
@@ -41,6 +44,7 @@ const SHAPES = {
   'scooch:print-preferences': { parse: parsePrintPrefs, serialize: serializePrintPrefs },
   'scooch:savings': { parse: parseSavings, serialize: serializeSavings },
   'scooch:theme-preference': { parse: parseThemePref, serialize: serializeThemePref },
+  'scooch:language-preference': { parse: parseLanguagePref, serialize: serializeLanguagePref },
   'scooch:palette-recents': { parse: parseRecents, serialize: serializeRecents },
   'scooch:usage-tips': { parse: parseTipPrefs, serialize: serializeTipPrefs },
 };
@@ -120,6 +124,16 @@ describe('theme', () => {
     ['dark', true, 'dark'],
   ])('%s with a dark system %s shows the %s theme', (theme, systemDark, shown) => {
     expect(resolveTheme(theme, systemDark)).toBe(shown);
+  });
+});
+
+describe('language', () => {
+  test('nothing saved, or something that can’t be read: automatic', () => {
+    for (const raw of [null, 'es', [], { language: 'klingon' }, { language: 'ES' }, { language: 7 }]) expect(parseLanguagePref(raw), JSON.stringify(raw)).toEqual({ language: 'auto' });
+  });
+
+  test('every choice of «Idioma» is kept as it was written', () => {
+    for (const language of LANGUAGE_CHOICES) expect(parseLanguagePref(serializeLanguagePref({ language }))).toEqual({ language });
   });
 });
 

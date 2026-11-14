@@ -14,10 +14,12 @@ Google.
 
 - `src/copy/es.ts`: todas las cadenas, agrupadas por área (`bar`, `pieces`,
   `sheet`, `piecebar`, `props`, `notices`, `busy`, `errors`, `announce`,
-  `donate`, `shortcuts`, `keys`…).
+  `donate`, `shortcuts`, `keys`…). Es la fuente de las claves: cada idioma
+  tiene su archivo con las mismas (ver «Idiomas»).
 - `src/copy/index.ts`: `t('area.clave', { n, … })` interpola `{param}`,
-  formatea los números (coma decimal) y elige el plural con `Intl.PluralRules`
-  según `n` (`{ one: '{n} pieza', other: '{n} piezas' }`). `{app}` es siempre
+  formatea los números con el locale del idioma (coma decimal en español) y
+  elige el plural con `Intl.PluralRules` del idioma según `n`
+  (`{ one: '{n} pieza', other: '{n} piezas' }`). `{app}` es siempre
   el nombre de la app (`APP_NAME`, en `src/config.ts`) y `{mod}` la tecla Ctrl
   (⌘ en Mac). `keyLabel('Mod+Shift+Z')` da el nombre visible de un atajo. Las
   claves tienen tipo (`CopyKey`): una clave que no existe no compila.
@@ -26,14 +28,15 @@ Google.
 - `index.html` solo trae los pocos textos que tienen que estar antes de que
   arranque la app (título, descripción, encabezado, nombre en la pantalla de
   carga y el aviso sin JavaScript), como marcadores `{{clave}}`: Vite los
-  completa al servir y al compilar (`fillStaticCopy`, desde `vite.config.ts`),
-  así la página llega con los textos puestos.
+  completa al servir y al compilar (`fillStaticCopy`, en
+  `src/copy/static.ts`), así la página llega con los textos puestos: en
+  español, más los de cada idioma para el script que elige el idioma antes
+  de pintar.
 - Ningún otro archivo escribe textos de interfaz. Los mensajes de consola y los
   errores internos que nunca ve nadie quedan en el código.
 
-Para sumar otro idioma: un `en.ts` con las mismas claves, elegido en
-`src/copy/index.ts` (lo que falte se toma del español). Cada texto es una
-frase entera, con sus parámetros: nada se arma pegando pedazos en el código.
+Cada texto es una frase entera, con sus parámetros: nada se arma pegando
+pedazos en el código.
 
 - Los mensajes que se muestran o se anuncian juntos se unen con `sentences()`
   y `joinSentences()` (en `src/copy/index.ts`), que ponen el punto y el
@@ -43,6 +46,34 @@ frase entera, con sus parámetros: nada se arma pegando pedazos en el código.
 - Cuando una frase envuelve a otra, la plantilla lo dice con su parámetro
   («{label}, rotada {deg}°», «Hojas {list}: {text}»), y un comentario en
   `es.ts` explica qué llega en cada uno.
+
+## Idiomas
+
+- Un archivo por idioma en `src/copy/` (`es.ts`, la fuente, y uno por cada
+  otro idioma), con exactamente las claves de `es.ts`, los mismos parámetros
+  y los mismos `<link>…</link>`. El tipo `Catalogue` lo exige al compilar y
+  `tests/core/copy-catalogues.test.ts` lo revisa y nombra cada clave que
+  falta o sobra. Una clave nueva va en `es.ts` y en todos los idiomas.
+- Los plurales llevan las formas de su idioma, ni más ni menos: `one` y
+  `other` en español, inglés, francés e hindi; solo `other` en chino. En
+  francés e hindi `one` también es el 0: ahí la forma `one` usa `{n}`, nunca
+  un «1» escrito. `zero`, si está, es para el 0 en cualquier idioma.
+- `meta` dice el idioma (`lang`, lo que va en `<html lang>`), el locale de los
+  números (`numberLocale`) y cómo se juntan las frases (`period`,
+  `sentenceGap`: «。» sin espacio en chino, «।» en hindi).
+- La app descarga solo el idioma que muestra: cada archivo es un chunk propio
+  (`src/copy/load.ts`) y `index.html` precarga el elegido. «Automático» toma
+  el idioma del navegador (`matchLanguage`, en `src/core/language.js`); si no
+  hay ninguno de los nuestros, inglés.
+- Lo que la app escribe en archivos no cambia con el idioma: el título del PDF
+  y el nombre del archivo están en `src/copy/output.ts`, en español, como
+  siempre. Las URL y el documento guardado tampoco dependen del idioma.
+- Las páginas del sitio (`src/site`) son solo en español y usan `es.ts`
+  directamente (`src/site/copy.ts`).
+- Para sumar un idioma: su archivo en `src/copy/`, su nombre propio en
+  `src/copy/languages.ts`, su entrada en `LANGUAGES` (`src/core/language.js`),
+  en `src/copy/load.ts` y en `src/copy/all.ts`, y su glosario en
+  `docs/copy/<idioma>.md`.
 
 ## Reglas
 

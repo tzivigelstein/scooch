@@ -1,0 +1,6 @@
+{
+  "about": "scooch:language-preference version 1: Spanish chosen, whatever the browser's languages",
+  "key": "scooch:language-preference",
+  "value": { "v": 1, "language": "es" },
+  "reads": { "language": "es" }
+}

@@ -1,19 +1,45 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
-import { fillStaticCopy } from './src/copy/index.ts';
+import { LANGUAGES } from './src/core/language.js';
+import { fillStaticCopy, type LanguageFiles } from './src/copy/static.ts';
 import { sitePages } from './src/site/plugin.ts';
 
 // The node_modules package a module belongs to («pdf-lib», «@scope/x»).
 const packageOf = (id: string | null | undefined) => id?.match(/node_modules[\\/]((?:@[^\\/]+[\\/])?[^\\/]+)[\\/]/)?.[1].replace('\\', '/');
+
+/** The language whose texts the module is (src/copy/<language>.ts), or undefined. */
+const catalogueOf = (id: string | null | undefined) => LANGUAGES.find((language) => id?.replace(/\\/g, '/').endsWith(`/src/copy/${language}.ts`));
+
+type Output = { type: 'chunk' | 'asset'; fileName: string; facadeModuleId?: string | null; originalFileNames?: readonly string[] };
+
+/**
+ * Where a build put each language's texts (src/copy/<language>.ts, a chunk of
+ * its own) and the fonts only that language uses, for index.html to preload
+ * the one it shows.
+ */
+function languageFiles(bundle: Record<string, Output>): LanguageFiles {
+  const outputs = Object.values(bundle);
+  const chunks = Object.fromEntries(
+    LANGUAGES.flatMap((language) => {
+      const chunk = outputs.find((o) => o.type === 'chunk' && catalogueOf(o.facadeModuleId) === language);
+      return chunk ? [[language, `/${chunk.fileName}`]] : [];
+    })
+  );
+  return { chunks };
+}
 
 export default defineConfig({
   plugins: [
     react(),
     {
       // The few texts index.html carries itself (title, description, no-JavaScript
-      // message) come from src/copy, like every other text.
+      // message, the loading screen in every language) come from src/copy, like
+      // every other text; in a build, with the files of each language to preload.
       name: 'static-copy',
-      transformIndexHtml: (html: string) => fillStaticCopy(html),
+      transformIndexHtml: {
+        order: 'post',
+        handler: (html, ctx) => fillStaticCopy(html, ctx.bundle ? languageFiles(ctx.bundle as unknown as Record<string, Output>) : {}),
+      },
     },
     // The content pages, legal pages, sitemap, robots.txt and llms.txt (docs/site.md).
     sitePages(),
@@ -43,11 +69,12 @@ export default defineConfig({
       output: {
         // Lazy chunks of dependencies (pdf.js, pdf-lib) are named after their package;
         // otherwise pdf-lib would come out as «es-[hash].js» after its source folder.
-        // The chunk the entry shares with the lazy dialogs (texts, React's shared
-        // part, storage) has no entry module: «shared» says what it is, instead of
-        // the name of whichever module the bundler picks.
+        // Each language's texts are «copy-<language>-[hash].js». The chunk the
+        // entry shares with the lazy dialogs (React's shared part, storage) has
+        // no entry module: «shared» says what it is, instead of the name of
+        // whichever module the bundler picks.
         chunkFileNames: (chunk) =>
-          `assets/${packageOf(chunk.facadeModuleId)?.replace('/', '-') ?? (chunk.facadeModuleId || chunk.name === 'rolldown-runtime' ? '[name]' : 'shared')}-[hash].js`,
+          `assets/${packageOf(chunk.facadeModuleId)?.replace('/', '-') ?? (catalogueOf(chunk.facadeModuleId) ? 'copy-[name]' : chunk.facadeModuleId || chunk.name === 'rolldown-runtime' ? '[name]' : 'shared')}-[hash].js`,
       },
     },
   },

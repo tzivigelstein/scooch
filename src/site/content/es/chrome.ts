@@ -3,7 +3,7 @@
 
 import { CUSTOM_MAX, CUSTOM_MIN, PAPERS } from '../../../core/papers.js';
 import { PHOTO_SIZES } from '../../../core/crop.js';
-import { formatList } from '../../../copy/index.ts';
+import { formatList } from '../../copy.ts';
 import type { Chrome } from '../../layout.ts';
 import { LEGAL_PATHS } from '../../paths.ts';
 import type { AppFacts } from '../../seo.ts';

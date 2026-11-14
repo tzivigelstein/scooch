@@ -2,7 +2,10 @@
 // on Windows, Linux or Android; Apple's symbols in Apple's order on a Mac, an
 // iPhone or an iPad, with a name for screen readers.
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { keyLabel, keyText } from '../../src/copy/index.ts';
+import es from '../../src/copy/es.ts';
+import { keyLabel, keyText, setTexts } from '../../src/copy/index.ts';
+
+setTexts(es);
 
 afterEach(() => vi.unstubAllGlobals());
 

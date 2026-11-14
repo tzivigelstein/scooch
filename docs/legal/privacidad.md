@@ -86,6 +86,8 @@ En localStorage, con nombres que empiezan con `scooch:`:
 
 - **Unidades:** mm, cm o in, como elegiste en Preferencias.
 - **Tema:** automático, claro u oscuro.
+- **Idioma:** automático (el de tu navegador) o el que elegiste en
+  Preferencias.
 - **Atajos de 1 tecla:** si están activados.
 - **Vista:** el zoom (Ver la hoja entera, Ver el ancho de la hoja o el
   porcentaje que elegiste, pero nunca hasta dónde te desplazaste) y lo que

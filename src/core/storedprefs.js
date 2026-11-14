@@ -6,6 +6,7 @@
 // change is a new `v` with its reading of the previous ones here, and a fixture
 // in tests/fixtures/storage/ that tests/core/storedprefs.test.js reads.
 
+import { LANGUAGES } from './language.js';
 import { MILESTONES } from './savings.js';
 import { ZOOM_MAX, ZOOM_MIN } from './zoom.js';
 
@@ -61,6 +62,21 @@ export const serializeThemePref = ({ theme }) => ({ v: 1, theme });
 
 /** The theme the page shows: the chosen one, or the system's on 'auto'. */
 export const resolveTheme = (theme, systemDark) => (theme === 'auto' ? (systemDark ? 'dark' : 'light') : theme);
+
+// ---------- Language (scooch:language-preference) ----------
+//
+// Version 1: {v: 1, language: 'auto' | 'es' | 'en' | 'zh-Hans' | 'hi' | 'fr'};
+// 'auto' follows the browser's languages (core/language.js). The script in
+// index.html reads it too, before the first paint.
+
+export const LANGUAGE_CHOICES = Object.freeze(['auto', ...LANGUAGES]);
+
+export function parseLanguagePref(raw) {
+  const saved = isRecord(raw) ? raw : {};
+  return { language: oneOf(saved.language, LANGUAGE_CHOICES, 'auto') };
+}
+
+export const serializeLanguagePref = ({ language }) => ({ v: 1, language });
 
 // ---------- Panel sections (scooch:panel-sections) ----------
 //

@@ -19,7 +19,7 @@ export function GridSection() {
   const grid = usePrefs((s) => s.grid);
   const unit = usePrefs((s) => s.unit);
   const gridKeys = useShortcut('grid');
-  const presets = gridPresets(unit, { locale: numberLocale });
+  const presets = gridPresets(unit, { locale: numberLocale() });
   const chosen = presets.find((preset) => Math.abs(preset.mm - grid.size) < 1e-6);
   return (
     <Section name="grid" title={t('props.grid')}>

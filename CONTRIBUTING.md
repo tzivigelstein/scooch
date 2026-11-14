@@ -42,7 +42,7 @@ says what each job does and how to reproduce a failure locally.
 ```
 src/
   config.ts       app name, limits and storage keys
-  copy/           every interface text (es.ts) and t()
+  copy/           every interface text, one file per language (es.ts is the source), and t()
   core/           pure logic: plain JavaScript with .d.ts types, no DOM
   state/          Zustand stores; actions/ holds everything that changes the document
   components/     React components, by area
@@ -99,10 +99,12 @@ The [README](README.md) explains how the parts fit together.
 - **Lengths** are in millimetres in the document. Every conversion between
   screen pixels and millimetres goes through
   `src/components/canvas/viewport.ts`.
-- **Interface texts** live only in `src/copy/es.ts` and are used through
-  `t('area.key', params)`. That includes `aria-label`s, tooltips and what is
-  announced to screen readers. Never write the app's name: use `{app}`. Follow
-  [docs/copy.md](docs/copy.md) for tone, punctuation, numbers and terms.
+- **Interface texts** live only in `src/copy/`, one file per language with
+  the keys of `es.ts`, and are used through `t('area.key', params)`. That
+  includes `aria-label`s, tooltips and what is announced to screen readers.
+  A new key goes into every language. Never write the app's name: use
+  `{app}`. Follow [docs/copy.md](docs/copy.md) for tone, punctuation, numbers
+  and terms.
 
 ### Stored formats are frozen
 

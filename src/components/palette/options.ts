@@ -20,6 +20,8 @@ export interface PaletteOption {
   disabled: string | null;
   /** The option in use (a theme, the paper). */
   current: boolean;
+  /** The language of its label, when not the interface's. */
+  lang?: string;
   /** It opens a second step with its choices. */
   more: boolean;
   command: Command | null;
@@ -67,6 +69,7 @@ export function choiceGroups(choices: readonly Choice[], targets: readonly Fuzzy
     shortcut: null,
     disabled: null,
     current: !!c.current,
+    lang: c.lang,
     more: false,
     command: null,
     choice: c,

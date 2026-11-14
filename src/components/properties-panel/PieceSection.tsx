@@ -145,11 +145,13 @@ function NumField({
   );
 }
 
-const FIELDS: readonly { field: LengthFieldName; id: string; prefix: ReactNode; label: CopyKey; tip: CopyKey }[] = [
-  { field: 'x', id: 'pos-x', prefix: t('props.x'), label: 'props.xLabel', tip: 'props.xTip' },
-  { field: 'y', id: 'pos-y', prefix: t('props.y'), label: 'props.yLabel', tip: 'props.yTip' },
-  { field: 'width', id: 'width', prefix: <Icon icon={MoveHorizontal} />, label: 'props.widthLabel', tip: 'props.widthTip' },
-  { field: 'height', id: 'height', prefix: <Icon icon={MoveVertical} />, label: 'props.heightLabel', tip: 'props.heightTip' },
+// X and Y are letters from the texts, looked up as each render needs them (the
+// language can change); width and height are icons.
+const FIELDS: readonly { field: LengthFieldName; id: string; prefix: () => ReactNode; label: CopyKey; tip: CopyKey }[] = [
+  { field: 'x', id: 'pos-x', prefix: () => t('props.x'), label: 'props.xLabel', tip: 'props.xTip' },
+  { field: 'y', id: 'pos-y', prefix: () => t('props.y'), label: 'props.yLabel', tip: 'props.yTip' },
+  { field: 'width', id: 'width', prefix: () => <Icon icon={MoveHorizontal} />, label: 'props.widthLabel', tip: 'props.widthTip' },
+  { field: 'height', id: 'height', prefix: () => <Icon icon={MoveVertical} />, label: 'props.heightLabel', tip: 'props.heightTip' },
 ];
 
 /** The displayed values of a selection (or of a gesture's live copies). */
@@ -285,7 +287,7 @@ export function PieceSection() {
         </p>
         <div className="prop-grid">
           {FIELDS.map(({ field, id, prefix, label, tip }) => (
-            <NumField key={id} prefix={prefix} unit={unit} preview={field}>
+            <NumField key={id} prefix={prefix()} unit={unit} preview={field}>
               <LengthField
                 ref={(handle) => {
                   fields.current[field] = handle;

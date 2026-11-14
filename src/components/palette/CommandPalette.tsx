@@ -150,7 +150,7 @@ export default function CommandPalette() {
         onClick={() => choose(o)}
       >
         <span className="palette-icon">{o.icon && <Icon icon={o.icon} />}</span>
-        <span className="palette-label">
+        <span className="palette-label" lang={o.lang}>
           {marked(o.label, o.ranges)}
         </span>
         <span className="palette-end" aria-hidden="true">

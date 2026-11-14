@@ -113,7 +113,7 @@ function Card({ record, current, thumb, renaming, onRename }: { record: ListedPr
           : record.damaged
           ? t('projects.damagedMeta')
           : t('projects.meta', {
-              when: relativeTime(record.modified, Date.now(), { locale: numberLocale }),
+              when: relativeTime(record.modified, Date.now(), { locale: numberLocale() }),
               sheets: t('projects.sheets', { n: record.counts?.sheets ?? 1 }),
               pieces: t('pieces.count', { n: record.counts?.pieces ?? 0 }),
             })}
@@ -147,7 +147,7 @@ function Card({ record, current, thumb, renaming, onRename }: { record: ListedPr
 function StorageUsage({ usage }: { usage: { usage: number; quota: number } | null }) {
   const share = usage && storageShare(usage.usage, usage.quota);
   if (!usage || !share) return null;
-  const text = t('projects.usage', { used: formatBytes(usage.usage, { locale: numberLocale }), quota: formatBytes(usage.quota, { locale: numberLocale }) });
+  const text = t('projects.usage', { used: formatBytes(usage.usage, { locale: numberLocale() }), quota: formatBytes(usage.quota, { locale: numberLocale() }) });
   const percent = share.percent === null ? t('projects.usageLess') : t('projects.usagePercent', { n: share.percent });
   return (
     <div id="storage-usage" className="storage-usage" data-level={share.warning ? 'warning' : undefined}>

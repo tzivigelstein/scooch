@@ -10,7 +10,8 @@ import { photoSize } from '../core/crop.js';
 import { deepLinkSearch, type DeepLinkRequest } from '../core/deeplink.js';
 import { getPaper, sizeOf } from '../core/papers.js';
 import type { PaperId } from '../core/types.ts';
-import { formatNumber, t, type CopyKey } from '../copy/index.ts';
+import type { CopyKey } from '../copy/index.ts';
+import { formatNumber, t } from './copy.ts';
 import { sheetSvg } from './drawing.ts';
 import { esc, tableHtml } from './html.ts';
 

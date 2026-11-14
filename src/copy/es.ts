@@ -842,6 +842,9 @@ const es = {
   // «Preferencias» dialog (settings of this browser)
   prefs: {
     title: 'Preferencias',
+    language: 'Idioma',
+    // {language}: the browser's language by its own name («English»), the one «Automático» shows
+    languageAuto: 'Automático ({language})',
     theme: 'Tema',
     themes: { auto: 'Automático', light: 'Claro', dark: 'Oscuro' },
     printing: 'Impresión',
@@ -911,6 +914,7 @@ const es = {
     // {unit}: the unit's name (units.names)
     unit: 'Medir en {unit}',
     themes: { auto: 'Usar el tema automático', light: 'Usar el tema claro', dark: 'Usar el tema oscuro' },
+    language: 'Cambiar el idioma',
     // Why an action can't run now (the rest are the menus' reasons)
     reasons: {
       undo: 'No hay cambios para deshacer',
@@ -960,6 +964,8 @@ const es = {
       prefs: 'configuración, ajustes, opciones',
       unit: 'unidades, medidas, mm, cm, in, pulgadas',
       theme: 'tema, colores, apariencia, modo',
+      // Also the word in the other languages, for someone who can't read this one
+      language: 'idioma, lengua, traducir, language, langue, 语言, भाषा',
     },
   },
 

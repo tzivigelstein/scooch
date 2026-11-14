@@ -4,7 +4,8 @@
 import { PHOTO_SIZES } from '../../../core/crop.js';
 import { PAPER_GROUPS, PAPERS } from '../../../core/papers.js';
 import type { PaperId } from '../../../core/types.ts';
-import { t, type CopyKey } from '../../../copy/index.ts';
+import type { CopyKey } from '../../../copy/index.ts';
+import { t } from '../../copy.ts';
 import { calc, type CalcState, type CalcTexts } from '../../calc.ts';
 import { guide } from '../../guide.ts';
 import { esc, scriptJson } from '../../html.ts';

@@ -1,13 +1,17 @@
-// «Preferencias»: units (mm, cm or in), «Atajos de 1 tecla» (WCAG 2.1.4) and
-// the usage tips, the advice before printing and the summary after, and the theme.
+// «Preferencias»: the language, units (mm, cm or in), «Atajos de 1 tecla»
+// (WCAG 2.1.4) and the usage tips, the advice before printing and the summary
+// after, and the theme.
 // Settings of this browser: saved in localStorage, outside the history and the project.
 
 import { X } from 'lucide-react';
+import { LANGUAGES, type LanguageChoice } from '../../core/language.js';
 import { THEMES, type ThemeChoice } from '../../core/storedprefs.js';
 import { UNITS, type Unit } from '../../core/units.js';
 import { choiceParts, keyLabel, t } from '../../copy/index.ts';
+import { LANGUAGE_NAMES } from '../../copy/languages.ts';
 import { SHORTCUTS } from '../../hooks/shortcuts.ts';
-import { setPrinting, setSingleKeys, setTheme, usePrefs } from '../../state/prefs.ts';
+import { browserLanguage } from '../../services/language.ts';
+import { setLanguage, setPrinting, setSingleKeys, setTheme, usePrefs } from '../../state/prefs.ts';
 import { chooseUnit } from '../../state/actions/prefs.ts';
 import { setTipsOn, useTips } from '../../state/tips.ts';
 import { IconButton } from '../ui/Button.tsx';
@@ -21,6 +25,7 @@ export default function PrefsDialog() {
   const singleKeys = usePrefs((s) => s.singleKeys);
   const printing = usePrefs((s) => s.printing);
   const theme = usePrefs((s) => s.theme);
+  const language = usePrefs((s) => s.language);
   const tipsOn = useTips((s) => s.on);
   const close = () => closeDialog('prefs');
   return (
@@ -32,6 +37,20 @@ export default function PrefsDialog() {
         <IconButton id="prefs-close" icon={X} label={t('app.close')} tip={t('app.close')} onClick={close} />
       </div>
       <div className="dialog-body">
+        {/* One control: its label, no heading (docs/copy.md). Each language by its own name, marked with it, so it reads and is said right whatever the interface's. */}
+        <div className="pref-section">
+          <div className="select-row">
+            <label htmlFor="language">{t('prefs.language')}</label>
+            <select id="language" className="language-select" value={language} onChange={(e) => setLanguage(e.target.value as LanguageChoice)}>
+              <option value="auto">{t('prefs.languageAuto', { language: LANGUAGE_NAMES[browserLanguage()] })}</option>
+              {LANGUAGES.map((value) => (
+                <option key={value} value={value} lang={value}>
+                  {LANGUAGE_NAMES[value]}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         <div className="pref-section" role="group" aria-labelledby="prefs-units-title">
           <h3 id="prefs-units-title" className="pref-title">
             {t('prefs.units')}
@@ -84,16 +103,19 @@ const singleKeyExamples = () =>
     .map((part) => part.value)
     .join('');
 
-/** The site's terms and privacy policy (pages of their own: the project saves itself before leaving). */
+/**
+ * The site's terms and privacy policy (pages of their own: the project saves
+ * itself before leaving). They exist only in Spanish: the links say so.
+ */
 function LegalLinks() {
   return (
     <div className="dialog-foot">
       <p id="prefs-legal" className="dialog-note">
-        <a className="link-btn" href={LEGAL_PATHS.terms}>
+        <a className="link-btn" href={LEGAL_PATHS.terms} hrefLang="es">
           {t('legal.terms')}
         </a>
         {t('legal.separator')}
-        <a className="link-btn" href={LEGAL_PATHS.privacy}>
+        <a className="link-btn" href={LEGAL_PATHS.privacy} hrefLang="es">
           {t('legal.privacy')}
         </a>
       </p>

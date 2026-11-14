@@ -24,6 +24,7 @@ import { useFocusRescue } from './hooks/useFocusRescue.ts';
 import { useClipboard } from './hooks/useClipboard.ts';
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts.ts';
 import { stepTexts } from './services/measure.ts';
+import { useTextsLanguage } from './state/language.ts';
 import { usePrefs } from './state/prefs.ts';
 import { getView, setView, useView } from './state/view.ts';
 import { closeDrawer, DRAWER_PANELS, DRAWER_TRIGGERS, isDrawerOpen } from './state/actions/drawers.ts';
@@ -97,6 +98,8 @@ function useDropZone() {
 }
 
 export function App() {
+  // A new language renders everything again (the memoized parts read it too).
+  useTextsLanguage();
   const loading = useView((s) => s.loading);
   const singleKeys = usePrefs((s) => s.singleKeys);
   const drop = useDropZone();

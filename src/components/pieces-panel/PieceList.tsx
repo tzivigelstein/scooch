@@ -15,6 +15,7 @@ import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';
 import { sizeText } from '../../services/measure.ts';
 import { getAsset } from '../../state/assets.ts';
 import { getDocument, useDocument, type Piece } from '../../state/document.ts';
+import { useTextsLanguage } from '../../state/language.ts';
 import { usePrefs } from '../../state/prefs.ts';
 import { dims, problemsById } from '../../state/selectors.ts';
 import { closeDrawer, isDrawerOpen } from '../../state/actions/drawers.ts';
@@ -54,6 +55,7 @@ interface RowProps {
 }
 
 const Row = memo(function Row({ item, selected, tabStop, cut, pastMargin, overlap }: RowProps) {
+  useTextsLanguage();
   const asset = getAsset(item.asset);
   const [w, h] = dims(item);
   const paged = asset.kind === 'pdf' && asset.pages > 1;

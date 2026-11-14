@@ -4,6 +4,7 @@ import {
   DONATE_STORAGE,
   GRID_STORAGE,
   JOURNAL_PREFIX,
+  LANGUAGE_STORAGE,
   LAST_PROJECT_STORAGE,
   PALETTE_STORAGE,
   PRINT_STORAGE,
@@ -33,6 +34,7 @@ const doc = (id: string) => docs.find((d) => d.id === id)!;
 const POLICY_TERMS: Readonly<Record<string, string>> = {
   [UNIT_STORAGE]: 'Unidades',
   [THEME_STORAGE]: 'Tema',
+  [LANGUAGE_STORAGE]: 'Idioma',
   [SINGLE_KEYS_STORAGE]: 'Atajos de 1 tecla',
   [VIEW_STORAGE]: 'Vista',
   [GRID_STORAGE]: 'Grilla e imán',
