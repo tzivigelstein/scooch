@@ -344,3 +344,9 @@ export function setGridVisible(show: boolean) {
   announce(show ? t('announce.gridShown', { size: lengthText(getPrefs().grid.size) }) : t('announce.gridHidden'));
 }
 
+/** The magnet on or off, and says so (from the command palette: its switch is elsewhere). */
+export function setSnap(snap: boolean) {
+  setGrid({ snap });
+  announce(t(snap ? 'announce.snapOn' : 'announce.snapOff'));
+}
+

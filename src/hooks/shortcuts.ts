@@ -1,6 +1,7 @@
 // The keyboard shortcuts: the keys each control announces (aria-keyshortcuts)
-// and shows in its tooltip, and the rows of the shortcuts dialog. The
-// dispatcher is useGlobalShortcuts.
+// and shows in its tooltip. The commands (state/commands.ts) name theirs from
+// here, and the shortcuts dialog shows them. The dispatcher is
+// useGlobalShortcuts.
 
 import { keyLabel, type CopyKey } from '../copy/index.ts';
 import { usePrefs } from '../state/prefs.ts';
@@ -15,6 +16,7 @@ export interface ShortcutKeys {
 }
 
 export const SHORTCUTS = {
+  palette: { kbd: 'Mod+K', aria: 'Control+K Meta+K' },
   projects: { kbd: 'Mod+O', aria: 'Control+O Meta+O' },
   add: { kbd: 'O', aria: 'O', single: true },
   arrange: { kbd: 'A', aria: 'A', single: true },
@@ -23,7 +25,13 @@ export const SHORTCUTS = {
   help: { kbd: '?', aria: '?', single: true },
   download: { kbd: 'Mod+E', aria: 'Control+E Meta+E Control+Shift+S Meta+Shift+S' },
   print: { kbd: 'Mod+P', aria: 'Control+P Meta+P' },
-  pieces: { kbd: 'P' },
+  pieces: { kbd: 'P', single: true },
+  selectAll: { kbd: 'Mod+A', aria: 'Control+A Meta+A' },
+  // Other keys that do the same as one above, shown only in the shortcuts dialog.
+  redoAlt: { kbd: 'Control+Y' },
+  downloadAlt: { kbd: 'Mod+Shift+S' },
+  removeAlt: { kbd: 'Backspace' },
+  duplicateKey: { kbd: 'D', single: true },
   closePanel: { kbd: 'Escape' },
   drop: { aria: 'O', single: true },
   rotateLeft: { kbd: 'Shift+R', aria: 'Shift+R', single: true },
@@ -46,7 +54,7 @@ export const SHORTCUTS = {
   distributeY: { kbd: 'Alt+Shift+Y', aria: 'Alt+Shift+Y' },
   selectSame: { kbd: 'I', aria: 'I', single: true },
   landscape: { kbd: 'L', aria: 'L', single: true },
-  grid: { aria: 'G', single: true },
+  grid: { kbd: 'G', aria: 'G', single: true },
   crop: { kbd: 'K', aria: 'K', single: true },
   cropZoomIn: { kbd: 'Plus' },
   cropZoomOut: { kbd: 'Minus' },

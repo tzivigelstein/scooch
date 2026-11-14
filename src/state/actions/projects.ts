@@ -6,7 +6,7 @@ import { announce } from '../../components/feedback/announcer.ts';
 import { confirmAction } from '../../components/dialogs/confirm.ts';
 import { closeDialog, projectListChanged } from '../../components/dialogs/dialogs.ts';
 import type { ProjectRecord } from '../../core/types.ts';
-import { initProjects, newProject, openProject, projectSession, remove, retry, saveAsNew, takeOver, type ProjectNotice } from '../../services/projects.ts';
+import { duplicate, initProjects, newProject, openProject, projectSession, remove, retry, saveAsNew, takeOver, type ProjectNotice } from '../../services/projects.ts';
 import { setDocument } from '../document.ts';
 import { useProject } from '../project.ts';
 import { setView } from '../view.ts';
@@ -120,6 +120,26 @@ export async function createWithUi() {
     setBusy(false);
     projectFailed('create', '', err);
   }
+}
+
+/**
+ * Duplicates the open project, which stays open: the copy is only in
+ * «Proyectos», so a notice says so and offers to see it.
+ */
+export async function duplicateOpenProject() {
+  const { id, name } = useProject.getState();
+  if (!id || name === null) return;
+  try {
+    await duplicate(id);
+    say(t('announce.projectDuplicated', { name }), { action: { label: t('notices.seeProjects'), run: openProjects } });
+  } catch (err) {
+    projectFailed('duplicate', name, err);
+  }
+}
+
+/** Starts renaming the open project in the top bar (its name becomes a field). */
+export function renameOpenProject() {
+  document.getElementById('project-name')?.click();
 }
 
 /** Delete (already confirmed). */
