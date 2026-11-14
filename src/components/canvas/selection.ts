@@ -141,9 +141,9 @@ export function placeBar(bar: HTMLElement, target: Pick<SelectionTarget, 'sheet'
     h: panel.offsetHeight,
   }));
   const minX = Math.max(edge, ...panels.filter((r) => r.x <= edge).map((r) => r.x + r.w + edge));
-  // The zoom control floats in a corner of the canvas, and the notice and the
-  // summary after printing over it: the bar never covers them.
-  for (const el of document.querySelectorAll('.zoom-control, .print-summary, #pill:not([hidden])')) {
+  // The zoom control floats in a corner of the canvas, and the notice over it:
+  // the bar never covers them.
+  for (const el of document.querySelectorAll('.zoom-control, #pill:not([hidden])')) {
     const r = el.getBoundingClientRect();
     if (r.width) panels.push({ x: r.left - canvas.left, y: r.top - canvas.top, w: r.width, h: r.height });
   }

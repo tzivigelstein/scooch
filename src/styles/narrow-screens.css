@@ -284,20 +284,19 @@
   .piecebar {
     left: calc((100% - var(--stage-bar-right, 0px)) / 2);
     top: auto;
-    /* With the summary after printing showing, above it (--summary-room: its height). */
-    bottom: calc(4.125rem + var(--summary-room, 0px) + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
+    bottom: calc(4.125rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
     transform: translateX(-50%);
     transition: opacity var(--fast) var(--ease);
   }
 
   .pill {
-    bottom: calc(4.25rem + var(--summary-room, 0px) + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
+    bottom: calc(4.25rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
     font-size: 0.8125rem;
   }
 
   /* With the piece toolbar visible, the notice goes above it. */
   .canvas:has(.piecebar:not([hidden])) .pill {
-    bottom: calc(7.875rem + var(--summary-room, 0px) + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
+    bottom: calc(7.875rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
   }
 
   .dialog {
