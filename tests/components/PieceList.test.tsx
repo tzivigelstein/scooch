@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // The list of pieces as a multi-select listbox: clicks with Shift and Ctrl,
-// the arrows with and without modifiers, Shift+Space, and aria-selected kept
-// equal to the document's selection.
+// the arrows with and without modifiers, Shift+Space and Shift+Enter, and
+// aria-selected kept equal to the document's selection.
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { PieceList } from '../../src/components/pieces-panel/PieceList.tsx';
@@ -63,6 +63,16 @@ describe('piece list (listbox)', () => {
     expect(selected()).toEqual([1, 2, 3, 4]);
     key(' ', { shiftKey: true });
     expect(selected()).toEqual([1, 2, 3]);
+  });
+
+  test('Shift+Enter adds or removes the focused row, as on the sheet, instead of going to the piece', () => {
+    fireEvent.click(row(1));
+    key('ArrowDown', { ctrlKey: true });
+    key('Enter', { shiftKey: true });
+    expect(selected()).toEqual([1, 2]);
+    expect(focusedId()).toBe(2);
+    key('Enter', { shiftKey: true });
+    expect(selected()).toEqual([1]);
   });
 
   test('↓ without modifiers selects only the row it lands on', () => {

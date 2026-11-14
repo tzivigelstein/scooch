@@ -1,11 +1,11 @@
 // The list of pieces: a multi-select listbox with a roving tab stop (one Tab
 // stop, arrows to move). Arrows select the focused piece; with Shift they
 // extend the selection from the last one picked (like Shift+click); with
-// Ctrl/Cmd they only move the focus, and Ctrl+Space (or Shift+Space) adds or
-// removes the focused one (like Ctrl/Cmd+click). With several sheets, pieces
-// are grouped by sheet (role="group" with its heading and count); the arrows
-// go from one group to the next. The list's selection and the sheet's are the
-// same.
+// Ctrl/Cmd they only move the focus, and Ctrl+Space (or Shift+Space, or
+// Shift+Enter as on the sheet) adds or removes the focused one (like
+// Ctrl/Cmd+click). With several sheets, pieces are grouped by sheet
+// (role="group" with its heading and count); the arrows go from one group to
+// the next. The list's selection and the sheet's are the same.
 
 import { Layers, SquareArrowOutDownRight, SquareDashed, TriangleAlert, type LucideIcon } from 'lucide-react';
 import { memo, useLayoutEffect, useMemo, useRef, type FocusEvent, type KeyboardEvent, type MouseEvent } from 'react';
@@ -197,7 +197,7 @@ export function PieceList() {
       focusMode.current = e.shiftKey ? 'extend' : mod ? 'move' : 'replace';
       target.focus();
       focusMode.current = null;
-    } else if (e.key === ' ' && (mod || e.shiftKey)) {
+    } else if ((e.key === ' ' && (mod || e.shiftKey)) || (e.key === 'Enter' && e.shiftKey)) {
       e.preventDefault();
       e.stopPropagation();
       if (!e.repeat) toggle(Number((document.activeElement as HTMLElement).dataset.id));
