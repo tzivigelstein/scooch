@@ -31,7 +31,7 @@ export interface DocumentState extends DocumentData {
    * primary (the one of the toolbar, the current sheet and the focus).
    */
   readonly selection: readonly number[];
-  /** «Girar si conviene»: saved with the project but outside the undo history. */
+  /** «Rotación automática»: saved with the project but outside the undo history. */
   readonly rotate: boolean;
   /** Something is loading or being created: actions wait. */
   readonly busy: boolean;

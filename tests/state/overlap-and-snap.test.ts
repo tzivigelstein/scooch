@@ -170,7 +170,7 @@ describe('rotating next to a neighbor', () => {
     expect(getDocument().items).toBe(items);
     expect(historyDepth().undo).toBe(0);
     const flash = getView().flash!;
-    expect(flash).toMatchObject({ text: 'No se puede girar: las piezas se superpondrían', warn: true });
+    expect(flash).toMatchObject({ text: 'No se puede rotar: las piezas se superpondrían', warn: true });
     expect(flash.action?.label).toBe('Permitir superposición');
     flash.action!.run();
     expect(getDocument().allowOverlap).toBe(true);

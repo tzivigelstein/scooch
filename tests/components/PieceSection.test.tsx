@@ -29,17 +29,17 @@ afterEach(cleanup);
 const show = (items: Piece[], selection = [items[0].id]) => act(() => setDocument({ items, selection }));
 
 describe('the piece’s measures', () => {
-  test('turned: «Girada N°» shows, the width and height are what it takes on the sheet and the note describes them', () => {
+  test('turned: «Rotada N°» shows, the width and height are what it takes on the sheet and the note describes them', () => {
     show([piece(1, photo, 30, 30, { r: 90 })]);
     const [w, h] = dims(piece(1, photo, 30, 30, { r: 90 }));
     expect($('rotation-note').hidden).toBe(false);
-    expect($('rotation-angle').textContent).toBe('Girada 90°');
+    expect($('rotation-angle').textContent).toBe('Rotada 90°');
     expect(mm('width')).toBeCloseTo(w, 1);
     expect(mm('height')).toBeCloseTo(h, 1);
     expect(w).toBeLessThan(h); // 50.8 wide once turned
     for (const id of ['width', 'height']) expect($(id).getAttribute('aria-describedby')!.split(' ')).toContain('rotation-note');
     show([piece(1, photo, 30, 30, { r: 270 })]);
-    expect($('rotation-angle').textContent).toBe('Girada 270°');
+    expect($('rotation-angle').textContent).toBe('Rotada 270°');
   });
 
   test('not turned: no note, and the width and height aren’t described by it', () => {

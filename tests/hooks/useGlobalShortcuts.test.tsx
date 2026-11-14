@@ -234,7 +234,7 @@ describe('single keys', () => {
     const depth = historyDepth().undo;
     press('r');
     expect(find(1)).toMatchObject({ r: 0, x: 50, y: 50 });
-    expect(getView().flash).toMatchObject({ text: 'No se puede girar: las piezas se superpondrían', warn: true, action: { label: 'Permitir superposición' } });
+    expect(getView().flash).toMatchObject({ text: 'No se puede rotar: las piezas se superpondrían', warn: true, action: { label: 'Permitir superposición' } });
     expect(historyDepth().undo).toBe(depth);
     expect(document.activeElement).toBe(node(1));
   });

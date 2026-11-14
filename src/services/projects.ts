@@ -277,7 +277,7 @@ function adopt(record: ProjectRecord, stored: Map<string, string>, { remember = 
   setStatus('saved');
 }
 
-// The current project's settings (paper, margin, gap, «Girar si conviene»,
+// The current project's settings (paper, margin, gap, «Rotación automática»,
 // «Permitir superposición», cut lines): a new one keeps them.
 function currentSettings() {
   const { paper, landscape, margin, gap, rotate, allowOverlap, cuts } = getDocument();

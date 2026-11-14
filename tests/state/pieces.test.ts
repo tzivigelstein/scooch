@@ -40,7 +40,7 @@ describe('a single piece is a group of one', () => {
     rotate(1);
     expect(item(1).r).toBe(0);
     expect(historyDepth().undo).toBe(0);
-    expect(getView().flash?.text).toMatch(/No se puede girar/);
+    expect(getView().flash?.text).toMatch(/No se puede rotar/);
     getView().flash?.action?.run(); // «Permitir superposición»
     expect(item(1).r).toBe(90);
     expect(item(1)).toMatchObject({ x: 60, y: 40 });

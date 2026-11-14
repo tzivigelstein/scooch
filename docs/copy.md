@@ -78,7 +78,7 @@ Para sumar otro idioma: un `en.ts` con las mismas claves, elegido en
 
 ### Números y unidades
 
-- Siempre con cifras: «1 pieza», «Atajos de 1 tecla», «Girar 90°».
+- Siempre con cifras: «1 pieza», «Atajos de 1 tecla», «Rotar 90°».
 - Unidad separada por un espacio que no se parte (` `): «10 mm»,
   «300 ppp», «100 %», «40 MB». Las medidas tampoco se parten:
   «210 × 297 mm». El grado va pegado: «90°».
@@ -92,7 +92,7 @@ Para sumar otro idioma: un `en.ts` con las mismas claves, elegido en
 | Botón o acción | Verbo en infinitivo + objeto, lo que hace exactamente | «Quitar de la hoja», «Reducir al 85 % y acomodar» |
 | Tooltip | Igual que el botón; la nota, una instrucción breve | «Descargar PDF» / «Al imprimirlo, elige «Tamaño real» o «100 %»» |
 | Resultado de una acción | «Se» + pretérito | «Se acomodaron 7 piezas», «Se quitó foto.jpg» |
-| Estado después de editar | Participio + valores | «Girada 90°: 41,6 × 30 mm» |
+| Estado después de editar | Participio + valores | «Rotada 90°: 41,6 × 30 mm» |
 | Problema vigente | Qué pasa y su consecuencia, en presente | «1 pieza se sale de la hoja y se corta al imprimir» |
 | Error | Qué pasó y cómo resolverlo | «El margen no deja espacio para las piezas. Reduce el margen.» |
 | Error por archivo | `nombre: qué pasó; cómo resolverlo`, en minúscula | «foto.heic: el navegador no puede abrir este formato; prueba con JPG, PNG o WebP» |
@@ -123,8 +123,9 @@ gracias a personas como tú», no «Lo mantengo…»).
 | hoja actual | la de la pieza seleccionada o, sin selección, la que más se ve | hoja activa |
 | agregar hoja / quitar hoja | sumar una hoja vacía al final / sacar una hoja con sus piezas | nueva página, borrar hoja |
 | acomodar | ubicar todas las piezas sin superponerlas, en las hojas que hagan falta | autoacomodar, organizar, acomodo (como título) |
-| distribución | la sección del panel con la separación, el giro y la superposición | acomodo |
-| girar | rotar 90° | rotar |
+| distribución | la sección del panel con la separación, la rotación automática y la superposición | acomodo |
+| rotar / rotación | dar vuelta una pieza 90° («Rotar a la derecha», «Rotada 90°») | girar, giro |
+| rotación automática | que acomodar y rellenar con copias puedan rotar piezas para que entren mejor | girar si conviene |
 | seleccionar / selección | elegir piezas para actuar sobre ellas («3 piezas seleccionadas», «agregar a la selección o quitarla») | marcar, elegir (como término) |
 | recuadro | el rectángulo que se arrastra en un lugar vacío para seleccionar | lazo, marquesina |
 | seleccionar iguales | seleccionar las piezas del mismo archivo de origen | similares, duplicados |
@@ -171,8 +172,8 @@ Esc. Las letras y los signos se muestran tal cual.
 | Soltá imágenes o PDF, pegá con Ctrl+V o apretá O | Suelta imágenes o PDF, pega con Ctrl+V o presiona O | Tuteo neutro; «presionar» |
 | o soltalos acá | o suéltalos aquí | Tuteo neutro; «aquí» |
 | Seleccioná una pieza para editarla. | Selecciona una pieza para editarla | Tuteo; sin punto en una sola frase |
-| Rotar si conviene | Girar si conviene | Glosario: girar |
-| Rotada a 90°: 41,6 × 30 mm. | Girada 90°: 41,6 × 30 mm | Glosario; estado con participio; sin punto |
+| Girar si conviene | Rotación automática | Glosario: rotar; la opción se nombra, no se explica |
+| Girada a 90°: 41,6 × 30 mm. | Rotada 90°: 41,6 × 30 mm | Glosario; estado con participio; sin punto |
 | Hay elementos superpuestos. | Hay piezas superpuestas | Glosario: pieza |
 | 7 elementos acomodados. | Se acomodaron 7 piezas | Glosario; resultado con «Se» + pretérito |
 | No entran todos con su tamaño actual. | Las piezas no entran con su tamaño actual | Sujeto explícito; sin punto |
@@ -198,11 +199,14 @@ Esc. Las letras y los signos se muestran tal cual.
 - **Retroceso** para la tecla Backspace y **Supr** para Delete, como en la
   documentación en español de Google y Microsoft. Shift y Enter quedan así,
   porque así aparecen en la mayoría de los teclados latinoamericanos.
-- **Distribución** como título de la sección de separación, giro y
-  superposición. Antes era «Acomodo», que se podía leer como el botón
+- **Distribución** como título de la sección de separación, rotación
+  automática y superposición. Antes era «Acomodo», que se podía leer como el botón
   «Acomodar» (una acción) y no como un grupo de ajustes. «Distribuir», como
   verbo, queda para repartir piezas con espacios iguales.
 - **Atajos de 1 tecla**, con cifra, como pide la regla de números.
+- **Rotar** en lugar de girar (2026-11), como en la mayoría de las apps de
+  diseño en español. El interruptor de Distribución se llama **Rotación
+  automática**: el nombre alcanza y no lleva texto de ayuda.
 - **Eliminar** solo para proyectos: es irreversible y por eso usa otra
   palabra que «quitar» (piezas y hojas, que se pueden deshacer).
 - **Preferencias** para los ajustes de este navegador (no del documento): se

@@ -571,7 +571,7 @@ test('multiple selection with the keyboard only: Shift+Space, Shift+Tab without 
 
   await test.step('Enter: the group’s toolbar on its first button; Esc closes its tooltip, Esc again back to the piece', async () => {
     await page.keyboard.press('Enter');
-    await expect.poll(async () => (await focused(page)).label).toBe('Girar 90° a la izquierda');
+    await expect.poll(async () => (await focused(page)).label).toBe('Rotar 90° a la izquierda');
     await expect(page.locator('#piecebar')).toHaveAttribute('aria-label', 'Acciones de 2 piezas');
     await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');

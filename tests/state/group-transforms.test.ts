@@ -98,7 +98,7 @@ describe('group transforms', () => {
     const before = group();
     rotate(1);
     const flash = getView().flash;
-    expect(flash).toMatchObject({ text: 'No se puede girar: las piezas se superpondrían', warn: true });
+    expect(flash).toMatchObject({ text: 'No se puede rotar: las piezas se superpondrían', warn: true });
     expect(flash?.action?.label).toBe('Permitir superposición');
     expect(getDocument().items).toEqual(before);
     expect(historyDepth().undo).toBe(0);
@@ -121,7 +121,7 @@ describe('group transforms', () => {
     expect(center(item(2)).x).toBeCloseTo(cx, 2);
     expect(center(item(2)).y).toBeCloseTo(cy + 35, 2);
     expect(item(3)).toEqual(before[2]);
-    expect(heard()).toBe('Se giraron 2 piezas 90° a la derecha.');
+    expect(heard()).toBe('Se rotaron 2 piezas 90° a la derecha.');
     expect(historyDepth().undo).toBe(1);
     undo();
     expect(getDocument().items).toEqual(before);

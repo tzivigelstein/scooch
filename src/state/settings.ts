@@ -47,7 +47,7 @@ export const SETTINGS: readonly Setting[] = [
   doc('gap'),
   doc('cuts'),
   doc('allowOverlap'),
-  // «Girar si conviene»: changing it moves nothing, so there is nothing to undo.
+  // «Rotación automática»: changing it moves nothing, so there is nothing to undo.
   doc('rotate', false),
   // The selection is in the undo steps (so undo selects what it brought back) but not saved.
   { store: 'document', key: 'selection', lives: 'session' },

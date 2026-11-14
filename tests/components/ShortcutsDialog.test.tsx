@@ -63,7 +63,7 @@ describe('the shortcuts table', () => {
       'Recorrer la barra, los paneles y las piezas; en la hoja, enfocar una pieza la selecciona',
       'Mover la pieza 1 mm (Shift: 10 mm; Alt: 0,1 mm). Si choca con otra, salta al otro lado.',
       'Agrandar o reducir 1 % (Shift: 10 %)',
-      'Girar 90° a la derecha o a la izquierda',
+      'Rotar 90° a la derecha o a la izquierda',
       'Duplicar la pieza',
       'Duplicar la selección (siempre, también con los atajos de 1 tecla desactivados)',
       'Copiar, cortar o pegar piezas. Si copiaste una imagen en otra app, la pega como pieza nueva.',

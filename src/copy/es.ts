@@ -90,7 +90,7 @@ const es = {
     addSub: 'o suéltalos aquí',
     empty: 'Todavía no hay piezas',
     emptyTip:
-      'Agrega imágenes (JPG, PNG, WebP…) o PDF. Cada página es una pieza que puedes mover, girar y cambiar de tamaño.',
+      'Agrega imágenes (JPG, PNG, WebP…) o PDF. Cada página es una pieza que puedes mover, rotar y cambiar de tamaño.',
     listHint:
       'Usa las flechas arriba y abajo para seleccionar una pieza (con Shift, varias seguidas; con {mod}, solo mover el foco), Shift+Espacio para agregar la enfocada a la selección o quitarla, Enter para ir a ella en la hoja y Supr para quitar las seleccionadas',
     count: { one: '{n} pieza', other: '{n} piezas' },
@@ -174,7 +174,7 @@ const es = {
     roleDescription: 'pieza',
     a11y: '{name}{page}, {size}, a {x} del borde izquierdo y {y} del superior{turned}',
     a11yPage: ' (página {page})',
-    a11yTurned: ', girada {deg}°',
+    a11yTurned: ', rotada {deg}°',
     // With several selected (or a pinned selection), at the end of each selected one's name
     a11ySelected: ', seleccionada',
   },
@@ -184,15 +184,15 @@ const es = {
     label: 'Acciones de la pieza',
     labelFor: 'Acciones de {name}',
     labelGroup: 'Acciones de {n} piezas',
-    rotateLeft: 'Girar 90° a la izquierda',
-    rotateLeftTip: 'Girar a la izquierda',
-    rotateRight: 'Girar 90° a la derecha',
-    rotateRightTip: 'Girar a la derecha',
+    rotateLeft: 'Rotar 90° a la izquierda',
+    rotateLeftTip: 'Rotar a la izquierda',
+    rotateRight: 'Rotar 90° a la derecha',
+    rotateRightTip: 'Rotar a la derecha',
     duplicate: 'Duplicar',
     remove: 'Quitar',
     removeTip: 'Quitar de la hoja',
     hint:
-      'Flechas: mover (Shift: {coarse}; Alt: {fine}). Más y menos: agrandar o reducir. R y Shift+R: girar. ' +
+      'Flechas: mover (Shift: {coarse}; Alt: {fine}). Más y menos: agrandar o reducir. R y Shift+R: rotar. ' +
       'D: duplicar. M: ir a sus propiedades. Enter: barra de acciones. Shift+Espacio: agregar a la selección o quitar. Supr: quitar.',
     hintNoKeys:
       'Flechas: mover (Shift: {coarse}; Alt: {fine}). Enter: barra de acciones. Shift+Espacio: agregar a la selección o quitar. Supr: quitar.',
@@ -226,7 +226,7 @@ const es = {
     scaleLabel: 'Escala, en porcentaje',
     scaleTip: 'Escala',
     slider: 'Escala',
-    rotated: 'Girada {deg}°',
+    rotated: 'Rotada {deg}°',
     rotatedNote: ': el ancho y el alto son los que ocupa en la hoja',
     quick: 'Ajustes rápidos de la pieza',
     actual: '100 %',
@@ -304,8 +304,7 @@ const es = {
     arrange: 'Distribución',
     gap: 'Separación',
     gapUnit: ' entre piezas, en {unit}',
-    rotate: 'Girar si conviene',
-    rotateHint: 'Al acomodar y al rellenar',
+    rotate: 'Rotación automática',
     overlap: 'Permitir superposición',
     overlapHint: 'Desactivado, no se superponen al moverlas ni al agrandarlas',
     grid: 'Grilla',
@@ -416,8 +415,8 @@ const es = {
     piece: 'Acciones de la pieza',
     pieces: 'Acciones de {n} piezas',
     sheet: 'Acciones de la hoja {i}',
-    rotateLeft: 'Girar a la izquierda',
-    rotateRight: 'Girar a la derecha',
+    rotateLeft: 'Rotar a la izquierda',
+    rotateRight: 'Rotar a la derecha',
     duplicate: 'Duplicar',
     copy: 'Copiar',
     cut: 'Cortar',
@@ -486,7 +485,7 @@ const es = {
     groupActions: {
       align: 'alinear',
       distribute: 'distribuir',
-      rotate: 'girar',
+      rotate: 'rotar',
       scale: 'cambiar el tamaño',
       move: 'mover',
       size: 'aplicar ese tamaño',
@@ -573,7 +572,7 @@ const es = {
 
   // Screen readers only (live region)
   announce: {
-    rotated: 'Girada {deg}°: {size}',
+    rotated: 'Rotada {deg}°: {size}',
     duplicated: { one: 'Se duplicó la pieza. Hay {n} pieza.', other: 'Se duplicó la pieza. Hay {n} piezas.' },
     duplicatedTo: {
       one: 'Se duplicó la pieza en la hoja {i}. Hay {n} pieza.',
@@ -638,7 +637,7 @@ const es = {
     selectedAll: { one: 'Se seleccionó 1 pieza', other: 'Se seleccionaron las {n} piezas de todas las hojas' },
     noPieces: 'No hay piezas para seleccionar',
     singleOnly: 'Disponible con una sola pieza seleccionada',
-    groupRotated: { one: 'Se giró 1 pieza 90° {dir}', other: 'Se giraron {n} piezas 90° {dir}' },
+    groupRotated: { one: 'Se rotó 1 pieza 90° {dir}', other: 'Se rotaron {n} piezas 90° {dir}' },
     toRight: 'a la derecha',
     toLeft: 'a la izquierda',
     groupScaled: { one: 'Se cambió el tamaño de 1 pieza: {size}', other: 'Se cambió el tamaño de {n} piezas: {size}' },
@@ -823,7 +822,7 @@ const es = {
       tab: 'Recorrer la barra, los paneles y las piezas; en la hoja, enfocar una pieza la selecciona',
       move: 'Mover la pieza {normal} (Shift: {coarse}; Alt: {fine}). Si choca con otra, salta al otro lado.',
       scale: 'Agrandar o reducir 1 % (Shift: 10 %)',
-      rotate: 'Girar 90° a la derecha o a la izquierda',
+      rotate: 'Rotar 90° a la derecha o a la izquierda',
       duplicate: 'Duplicar la pieza',
       duplicateMod: 'Duplicar la selección (siempre, también con los atajos de 1 tecla desactivados)',
       zoom: 'Acercar o alejar la vista (también con {mod} y la rueda, o pellizcando el trackpad)',

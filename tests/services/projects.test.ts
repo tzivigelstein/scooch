@@ -133,7 +133,7 @@ describe('autosave', () => {
 });
 
 describe('the settings a project keeps', () => {
-  test('«Nuevo proyecto» keeps the open one’s settings, «Girar si conviene» and «Permitir superposición» included', async () => {
+  test('«Nuevo proyecto» keeps the open one’s settings, «Rotación automática» and «Permitir superposición» included', async () => {
     const app = await start();
     app.setDocument({ rotate: false, allowOverlap: true, margin: 7, gap: 3, landscape: true });
     await app.projects.newProject();

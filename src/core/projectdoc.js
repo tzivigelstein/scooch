@@ -19,7 +19,7 @@
 //     paper: 'A4' | {custom: true, w, h},   // ids de papers.js; medidas en mm
 //     landscape: false,
 //     margin: 10, gap: 5,                  // mm
-//     rotate: true,                        // «Girar si conviene»
+//     rotate: true,                        // «Rotación automática»
 //     allowOverlap: false,                 // «Permitir superposición» (since 5; before, a device preference)
 //     cuts: {mode: 'none', length: 4, offset: 1.5,   // líneas de corte (cutmarks.js): modo y mm,
 //            weight: 'thin', color: '#000000', dash: 'solid',   // their stroke (since 3)
