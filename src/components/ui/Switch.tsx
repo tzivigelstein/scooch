@@ -16,6 +16,8 @@ export function Switch({
   onChange: (on: boolean) => void;
   'aria-keyshortcuts'?: string;
   'data-single'?: string;
+  'data-tip'?: string;
+  'data-kbd'?: string;
 }) {
   return (
     <div className="switch-row">

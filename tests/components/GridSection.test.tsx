@@ -75,3 +75,16 @@ describe('the custom grid size', () => {
     expect(getPrefs().grid.size).toBe(50);
   });
 });
+
+describe('the switches', () => {
+  test('«Mostrar grilla» is named by its label alone, with its key G in the tooltip; «Imán» is plain text, without an icon', () => {
+    const show = screen.getByRole('switch', { name: 'Mostrar grilla' });
+    expect(show.dataset.tip).toBe('Mostrar grilla');
+    expect(show.dataset.kbd).toBe('G');
+    expect(show.getAttribute('aria-keyshortcuts')).toBe('G');
+    expect(show.closest('.switch-row')!.querySelector('kbd')).toBeNull();
+    const snap = document.getElementById('grid-snap') as HTMLInputElement;
+    expect(snap.labels![0].firstElementChild!.textContent).toBe('Imán');
+    expect(snap.closest('.switch-row')!.querySelector('svg')).toBeNull();
+  });
+});

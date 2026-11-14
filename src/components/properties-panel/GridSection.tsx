@@ -1,16 +1,14 @@
 // The «Grilla» section: show it, its size and snapping. View preferences:
 // saved, but outside the undo history.
 
-import { Magnet } from 'lucide-react';
 import { GRID_MAX, GRID_MIN } from '../../config.ts';
 import { gridPresets } from '../../core/units.js';
 import { clamp } from '../../core/util.ts';
-import { numberLocale, t } from '../../copy/index.ts';
-import { useShortcut } from '../../hooks/shortcuts.ts';
+import { keyLabel, numberLocale, t } from '../../copy/index.ts';
+import { SHORTCUTS, useShortcut } from '../../hooks/shortcuts.ts';
 import { unitName, unitSymbol } from '../../services/measure.ts';
 import { getPrefs, setGrid, usePrefs } from '../../state/prefs.ts';
 import { setGridVisible } from '../../state/actions/sheets.ts';
-import { Icon } from '../ui/Icon.tsx';
 import { LengthField } from '../ui/LengthField.tsx';
 import { Section } from '../ui/Section.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
@@ -24,19 +22,15 @@ export function GridSection() {
   const chosen = presets.find((preset) => Math.abs(preset.mm - grid.size) < 1e-6);
   return (
     <Section name="grid" title={t('props.grid')}>
+      {/* The key goes in the tooltip, like every other control's: not in the name. */}
       <Switch
         id="grid-show"
-        label={
-          <span>
-            <span>{t('props.gridShow')}</span>{' '}
-            <kbd className="inline-kbd" data-single-hint="">
-              G
-            </kbd>
-          </span>
-        }
+        label={<span>{t('props.gridShow')}</span>}
         checked={grid.show}
         onChange={setGridVisible}
         aria-keyshortcuts={gridKeys['aria-keyshortcuts']}
+        data-tip={t('props.gridShow')}
+        data-kbd={keyLabel(SHORTCUTS.grid.aria)}
         data-single=""
       />
       <fieldset className="field">
@@ -65,12 +59,7 @@ export function GridSection() {
       </fieldset>
       <Switch
         id="grid-snap"
-        label={
-          <span className="with-icon">
-            <Icon icon={Magnet} />
-            <span>{t('props.snap')}</span>
-          </span>
-        }
+        label={<span>{t('props.snap')}</span>}
         hint={t('props.snapHint')}
         checked={grid.snap}
         onChange={(snap) => setGrid({ snap })}
