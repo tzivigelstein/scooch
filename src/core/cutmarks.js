@@ -7,8 +7,8 @@ const TOL = 1e-6;
 
 const finite = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
 
-/** Modos de `cutLines`. */
-export const CUT_MODES = Object.freeze(['none', 'corners', 'outline']);
+/** Modos de `cutLines`. ('contour', since document version 6: see contour.js.) */
+export const CUT_MODES = Object.freeze(['none', 'corners', 'outline', 'contour']);
 
 // ---------- Style ----------
 
@@ -199,6 +199,9 @@ function clip(seg, bounds) {
  *   continúan en la misma línea) quedan como un solo segmento. With
  *   overlapping pieces (`rects` in stacking order, the last on top), what of an
  *   outline runs inside a piece above it is left out.
+ * - 'contour': like 'outline', except for the rects in `shaped` (the same
+ *   objects): those get the contour of their shape instead (contour.js), and
+ *   still hide what runs under them.
  * - 'none': [].
  *
  * With `margin` (mm) the lines go on each piece's cut box (see cutBox) instead
@@ -209,7 +212,7 @@ function clip(seg, bounds) {
  * o no finitas se ignoran; `offset` negativo cuenta como 0 y `length` ≤ 0 no
  * dibuja marcas.
  */
-export function cutLines(rects, { mode = 'corners', length = 4, offset = 1.5, margin = 0, bounds = null } = {}) {
+export function cutLines(rects, { mode = 'corners', length = 4, offset = 1.5, margin = 0, bounds = null, shaped = null } = {}) {
   if (!CUT_MODES.includes(mode)) throw new RangeError(`modo de corte desconocido: ${mode}`);
   if (mode === 'none') return [];
   const pieces = rects.filter(
@@ -219,8 +222,9 @@ export function cutLines(rects, { mode = 'corners', length = 4, offset = 1.5, ma
   const boxes = pieces.map((q) => cutBox(q, margin));
   const solid = (q) => q.w > TOL && q.h > TOL;
   let segments;
-  if (mode === 'outline') {
-    segments = boxes.flatMap((q, i) => (solid(q) ? outline(q).flatMap((s) => notUnder(s, [...pieces.slice(i + 1), ...boxes.slice(i + 1)])) : []));
+  if (mode === 'outline' || mode === 'contour') {
+    const drawn = (i) => solid(boxes[i]) && !(mode === 'contour' && shaped?.has(pieces[i]));
+    segments = boxes.flatMap((q, i) => (drawn(i) ? outline(q).flatMap((s) => notUnder(s, [...pieces.slice(i + 1), ...boxes.slice(i + 1)])) : []));
   } else {
     const len = finite(length, 0);
     if (len <= 0) return [];

@@ -66,7 +66,7 @@ describe('the saved undo history', () => {
     const saved = serializeHistory('p1', stacks(), metaOf, hashOf);
     expect(parseHistory(null)).toBeNull();
     expect(parseHistory({ ...saved, v: 2 })).toBeNull();
-    expect(parseHistory({ ...saved, docVersion: DOC_VERSION - 1 })).toBeNull();
+    expect(parseHistory({ ...saved, docVersion: 4 })).toBeNull();
     expect(parseHistory({ ...saved, items: 'x' })).toBeNull();
     expect(parseHistory({ ...saved, undo: [{ ...saved.undo[0], items: [7] }] })).toBeNull();
     expect(parseHistory({ ...saved, items: saved.items.map((item) => ({ ...item, asset: 'a9' })) })).toBeNull();
@@ -116,11 +116,12 @@ describe('stored versions', () => {
   });
 
   test('what is written today has exactly the shape of the fixtures', () => {
+    // The fixtures were written with document version 5, which reads as version 6.
     const history = fixture('history-v1').record;
     const steps = parseHistory(history);
-    expect(serializeHistory(history.project, steps, (key) => history.assets[key], (key) => history.files[key])).toEqual(history);
+    expect(serializeHistory(history.project, steps, (key) => history.assets[key], (key) => history.files[key])).toEqual({ ...history, docVersion: DOC_VERSION });
     const clip = fixture('clip-v1').record;
     const read = parseClip(clip);
-    expect(serializeClip(read.pieces, (key) => clip.assets[key], (key) => clip.files[key])).toEqual(clip);
+    expect(serializeClip(read.pieces, (key) => clip.assets[key], (key) => clip.files[key])).toEqual({ ...clip, docVersion: DOC_VERSION });
   });
 });

@@ -37,4 +37,5 @@ export interface CutWork {
 /** Test-only: add cutLines' work to `counter` from now on (null stops counting). */
 export function countWork(counter: CutWork | null): void;
 
-export function cutLines(rects: readonly Rect[], options?: { mode?: CutMode; length?: number; offset?: number; margin?: number; bounds?: Rect | null }): CutLine[];
+/** `shaped`: in 'contour' mode, the rects (the same objects) that get their shape's contour instead of their outline. */
+export function cutLines(rects: readonly Rect[], options?: { mode?: CutMode; length?: number; offset?: number; margin?: number; bounds?: Rect | null; shaped?: ReadonlySet<Rect> | null }): CutLine[];

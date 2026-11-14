@@ -12,16 +12,17 @@
 // clamped (repair); only what can't be interpreted (no sheets, items or
 // assets, pieces pointing nowhere) makes a document damaged.
 //
-// Forma (versión 5):
+// Forma (versión 6):
 //
 //   {
-//     version: 5,
+//     version: 6,
 //     paper: 'A4' | {custom: true, w, h},   // ids de papers.js; medidas en mm
 //     landscape: false,
 //     margin: 10, gap: 5,                  // mm
 //     rotate: true,                        // «Rotación automática»
 //     allowOverlap: false,                 // «Permitir superposición» (since 5; before, a device preference)
 //     cuts: {mode: 'none', length: 4, offset: 1.5,   // líneas de corte (cutmarks.js): modo y mm,
+//                                          // mode 'none' | 'corners' | 'outline' | 'contour' (since 6)
 //            weight: 'thin', color: '#000000', dash: 'solid',   // their stroke (since 3)
 //            margin: 0},                          // cut margin around each image (mm, −5…20; since 4)
 //     sheets: [{id: 1}, {id: 2}],          // en orden; al menos una
@@ -44,7 +45,7 @@ import { sizeOf } from './papers.js';
 import { MIN_CROP, clampCrop, isIdentity } from './crop.js';
 import { CUT_DASHES, CUT_MODES, CUT_WEIGHTS, isHexColor } from './cutmarks.js';
 
-export const DOC_VERSION = 5;
+export const DOC_VERSION = 6;
 
 /** Cut lines of a new document: none, and thin solid black when turned on. */
 export const DEFAULT_CUTS = Object.freeze({ mode: 'none', length: 4, offset: 1.5, margin: 0, weight: 'thin', color: '#000000', dash: 'solid' });
@@ -175,6 +176,8 @@ const MIGRATIONS = {
   // Until version 4, «Permitir superposición» was this browser's preference,
   // the same for every project: each project takes the value it had.
   4: (doc, context) => ({ ...doc, version: 5, allowOverlap: context.allowOverlap === true }),
+  // Version 6 adds the cut mode 'contour': a version 5 document is a valid version 6 one.
+  5: (doc) => ({ ...doc, version: 6 }),
 };
 
 /**

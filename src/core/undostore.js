@@ -20,7 +20,8 @@
 //   step: {sheets: [id], items: [index], selection: [id], paper, landscape,
 //          margin, gap, cuts, allowOverlap}
 // Steps of another document version than the current one aren't read (the
-// history is dropped once, never the project).
+// history is dropped once, never the project), except those of version 5,
+// which are valid version 6 steps (6 only adds a cut mode).
 //
 // Clipboard, version 1 ({id: 'cut', v: 1, docVersion, …}): what «Cortar» took
 // and wasn't pasted yet:
@@ -31,6 +32,9 @@ import { DOC_VERSION, cleanCrop, cleanCuts, fileKeys, validate } from './project
 
 export const HISTORY_VERSION = 1;
 export const CLIP_VERSION = 1;
+
+/** Document versions whose steps and pieces read as they are. */
+const READABLE_DOC_VERSIONS = [5, DOC_VERSION];
 
 const isRecord = (value) => !!value && typeof value === 'object' && !Array.isArray(value);
 const cleanItem = ({ id, asset, sheet, x, y, scale, r, crop }) => ({ id, asset, sheet, x, y, scale, r, crop: cleanCrop(crop) });
@@ -90,7 +94,7 @@ export function serializeHistory(project, { undo, redo }, metaOf, hashOf) {
  */
 export function parseHistory(raw) {
   try {
-    if (!isRecord(raw) || raw.v !== HISTORY_VERSION || raw.docVersion !== DOC_VERSION) return null;
+    if (!isRecord(raw) || raw.v !== HISTORY_VERSION || !READABLE_DOC_VERSIONS.includes(raw.docVersion)) return null;
     const { items, undo, redo, assets, files } = raw;
     if (!Array.isArray(items) || !Array.isArray(undo) || !Array.isArray(redo) || !isRecord(assets) || !isRecord(files)) return null;
     const pieces = items.map((item) => (isRecord(item) ? cleanItem(item) : null));
@@ -139,7 +143,7 @@ export function serializeClip(pieces, metaOf, hashOf) {
 
 /** The pieces of a stored clipboard ({pieces, assets, files}); null when there is none or it can't be used. */
 export function parseClip(raw) {
-  if (!isRecord(raw) || raw.v !== CLIP_VERSION || raw.docVersion !== DOC_VERSION || !Array.isArray(raw.pieces) || !isRecord(raw.assets) || !isRecord(raw.files)) return null;
+  if (!isRecord(raw) || raw.v !== CLIP_VERSION || !READABLE_DOC_VERSIONS.includes(raw.docVersion) || !Array.isArray(raw.pieces) || !isRecord(raw.assets) || !isRecord(raw.files)) return null;
   const { assets, files } = raw;
   // Checked as the pieces of a one-sheet document.
   const items = raw.pieces.map((piece, i) => (isRecord(piece) ? { id: i + 1, asset: piece.asset, sheet: 1, x: 0, y: 0, scale: piece.scale, r: piece.r, crop: piece.crop ?? null } : null));

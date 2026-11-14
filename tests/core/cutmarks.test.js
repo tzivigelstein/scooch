@@ -20,7 +20,7 @@ function expectedGrid(lines, spans) {
 
 describe('modes', () => {
   test("'none' and unknown modes", () => {
-    assert.deepEqual(CUT_MODES, ['none', 'corners', 'outline']);
+    assert.deepEqual(CUT_MODES, ['none', 'corners', 'outline', 'contour']);
     assert.deepEqual(cutLines(grid(2, 10, 5), { mode: 'none' }), []);
     assert.throws(() => cutLines([], { mode: 'cross' }), RangeError);
     assert.deepEqual(cutLines([]), []);
@@ -243,6 +243,25 @@ describe("'outline'", () => {
       H(90, 80, 100),
       V(80, 90, 100),
     ]);
+  });
+});
+
+describe("'contour'", () => {
+  test('the outline of every rect not in `shaped`; a shaped one draws nothing but still hides what runs under it', () => {
+    const lower = { x: 0, y: 0, w: 40, h: 40 };
+    const shaped = { x: 20, y: 20, w: 40, h: 40 };
+    const beside = { x: 70, y: 0, w: 10, h: 10 };
+    const pieces = [lower, shaped, beside];
+    assert.deepEqual(cutLines(pieces, { mode: 'contour' }), cutLines(pieces, { mode: 'outline' }));
+    const lines = cutLines(pieces, { mode: 'contour', shaped: new Set([shaped]), margin: 1 });
+    const outlines = cutLines([lower, beside], { mode: 'outline', margin: 1 });
+    // Without the shaped rect's own outline, and the lower one's edges stop at its cut box (19 = 20 − 1).
+    assert.ok(!lines.some((s) => s.x1 === 61 || s.y1 === 61), JSON.stringify(lines));
+    assert.ok(lines.some((s) => s.x1 === 41 && s.x2 === 41 && s.y1 === -1 && s.y2 === 19), JSON.stringify(lines));
+    assert.deepEqual(
+      lines.filter((s) => s.x1 >= 69),
+      outlines.filter((s) => s.x1 >= 69)
+    );
   });
 });
 

@@ -99,7 +99,8 @@ export interface CustomPaper {
 /** A preset id or a custom size (stored portrait; the orientation goes apart). */
 export type Paper = PaperId | CustomPaper;
 
-export type CutMode = 'none' | 'corners' | 'outline';
+/** 'contour' (since document version 6): around the opaque shape of an image with transparency. */
+export type CutMode = 'none' | 'corners' | 'outline' | 'contour';
 export type CutWeight = 'thin' | 'medium' | 'thick';
 export type CutDash = 'solid' | 'dotted';
 

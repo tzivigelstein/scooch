@@ -365,7 +365,7 @@ const es = {
   // «Líneas de corte» in the Hojas tab (modes and stroke: src/core/cutmarks.js)
   cuts: {
     title: 'Líneas de corte',
-    modes: { none: 'Ninguna', corners: 'Esquinas', outline: 'Contorno' },
+    modes: { none: 'Ninguna', corners: 'Esquinas', outline: 'Contorno', contour: 'Silueta' },
     more: 'Más opciones',
     margin: 'Margen de corte',
     marginLabel: 'Margen de corte, en {unit}',

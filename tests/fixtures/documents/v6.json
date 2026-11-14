@@ -1,0 +1,113 @@
+{
+  "version": 6,
+  "paper": "A4",
+  "landscape": true,
+  "margin": 6,
+  "gap": 3,
+  "rotate": true,
+  "allowOverlap": false,
+  "sheets": [
+    {
+      "id": 1
+    },
+    {
+      "id": 2
+    }
+  ],
+  "assets": {
+    "a1": {
+      "kind": "image",
+      "name": "logo.png",
+      "src": 1,
+      "px": [
+        1600,
+        1200
+      ],
+      "format": "png",
+      "dpi": 300,
+      "w": 135.47,
+      "h": 101.6,
+      "derived": false
+    },
+    "a2": {
+      "kind": "image",
+      "name": "pegatina.webp",
+      "src": 2,
+      "px": [
+        900,
+        900
+      ],
+      "format": "png",
+      "dpi": 300,
+      "w": 76.2,
+      "h": 76.2,
+      "derived": true
+    },
+    "a3": {
+      "kind": "pdf",
+      "name": "plano.pdf",
+      "src": 3,
+      "page": 1,
+      "pages": 2,
+      "pageRotation": 0,
+      "view": [
+        0,
+        0,
+        595.28,
+        841.89
+      ],
+      "px": [
+        1697,
+        2400
+      ],
+      "w": 210,
+      "h": 297
+    }
+  },
+  "cuts": {
+    "mode": "contour",
+    "length": 4,
+    "offset": 1.5,
+    "weight": "medium",
+    "color": "#1f6feb",
+    "dash": "dotted",
+    "margin": 2.5
+  },
+  "items": [
+    {
+      "id": 1,
+      "asset": "a1",
+      "sheet": 1,
+      "x": 12,
+      "y": 15,
+      "scale": 60,
+      "r": 90,
+      "crop": {
+        "x": 0.1,
+        "y": 0,
+        "w": 0.7,
+        "h": 0.9
+      }
+    },
+    {
+      "id": 2,
+      "asset": "a2",
+      "sheet": 1,
+      "x": 120,
+      "y": 20,
+      "scale": 100,
+      "r": 0,
+      "crop": null
+    },
+    {
+      "id": 3,
+      "asset": "a3",
+      "sheet": 2,
+      "x": 10,
+      "y": 10,
+      "scale": 50,
+      "r": 0,
+      "crop": null
+    }
+  ]
+}
