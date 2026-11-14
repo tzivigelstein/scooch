@@ -2,7 +2,7 @@
 // selection frames, current sheet and the pointer gestures.
 
 import { FilePlus, Trash2, Upload } from 'lucide-react';
-import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FocusEvent } from 'react';
+import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type FocusEvent } from 'react';
 import { t } from '../../copy/index.ts';
 import type { Cuts } from '../../core/types.ts';
 import type { Unit } from '../../core/units.js';
@@ -14,7 +14,7 @@ import { useShortcut } from '../../hooks/shortcuts.ts';
 import { paperTitle, sizeText } from '../../services/measure.ts';
 import { getAsset } from '../../state/assets.ts';
 import { useDocument, type Piece as PieceData } from '../../state/document.ts';
-import { isDragging } from '../../state/gesture.ts';
+import { gestureStore, isDragging } from '../../state/gesture.ts';
 import { usePrefs, type GridPrefs } from '../../state/prefs.ts';
 import { usePreview } from '../../state/preview.ts';
 import { currentSheet, sheetIndex, sheetSize } from '../../state/selectors.ts';
@@ -171,8 +171,9 @@ export function Stage() {
   const besideList = listOpen && medium && !narrow;
   const grid = usePrefs((s) => s.grid);
   const unit = usePrefs((s) => s.unit);
-  // The grid also shows while its size is hovered.
+  // The grid also shows while its size is hovered, and while dragging with «Imán»: what the pieces snap to.
   const gridShown = usePreview((s) => !!s.overlay?.grid);
+  const moving = useSyncExternalStore(gestureStore.subscribe, () => gestureStore.getState().moving);
   const [layout, setLayout] = useState(0);
 
   const [W, H] = sheetSize({ paper, landscape, margin });
@@ -241,7 +242,7 @@ export function Stage() {
             margin={margin}
             empty={empty}
             current={sheet.id === current}
-            showGrid={grid.show || gridShown}
+            showGrid={grid.show || gridShown || (moving && grid.snap)}
             grid={gridCss}
             selection={selection}
             pinned={pinned}

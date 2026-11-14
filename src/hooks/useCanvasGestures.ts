@@ -390,7 +390,7 @@ function updateGesture() {
   if (!g.moved && Math.hypot(px, py) < DRAG_THRESHOLD) return;
   const first = !g.moved;
   g.moved = true;
-  if (first) gestureStore.setState({ dragging: true });
+  if (first) gestureStore.setState({ dragging: true, moving: g.kind === 'move' || g.kind === 'group-move' });
   if (g.kind === 'marquee') return updateMarquee(g, first);
   if (first) {
     el('canvas').classList.add('is-dragging');
@@ -650,7 +650,7 @@ function finish(e: PointerEvent | null) {
   const done = e !== null;
   const active = document.activeElement;
   restore();
-  gestureStore.setState({ drafts: null, dragging: false });
+  gestureStore.setState({ drafts: null, dragging: false, moving: false });
   if (g.kind === 'marquee') return endMarquee(g, done);
   if (g.kind === 'group-move' || g.kind === 'group-resize') {
     const focused = pieceNode(getDocument().selection.at(-1));

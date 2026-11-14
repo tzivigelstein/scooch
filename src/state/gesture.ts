@@ -10,8 +10,10 @@ export interface GestureState {
   drafts: readonly Piece[] | null;
   /** A gesture moved past the drag threshold. */
   dragging: boolean;
+  /** That gesture moves pieces (with «Imán», onto the grid). */
+  moving: boolean;
 }
 
-export const gestureStore = createStore<GestureState>()(() => ({ drafts: null, dragging: false }));
+export const gestureStore = createStore<GestureState>()(() => ({ drafts: null, dragging: false, moving: false }));
 
 export const isDragging = () => gestureStore.getState().dragging;
