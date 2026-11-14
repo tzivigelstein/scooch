@@ -4,6 +4,7 @@
 // as always.
 
 import type { PDFDocument as PdfLibDocument, PDFEmbeddedPage, PDFImage } from 'pdf-lib';
+import type { CutPath } from '../core/contour.js';
 import { cutStyle as styleOf, type CutLine, type CutStyle } from '../core/cutmarks.js';
 import { drawParams } from '../core/crop.js';
 import type { Crop } from '../core/types.ts';
@@ -28,6 +29,7 @@ export interface PdfPiece {
 export interface PdfPage {
   pieces: readonly PdfPiece[];
   lines?: readonly CutLine[];
+  paths?: readonly CutPath[];
 }
 
 type PdfLib = typeof import('pdf-lib');
@@ -51,7 +53,8 @@ function loadPdfLib() {
  * (cutmarks.cutLines), drawn with `cutStyle` (cutmarks.cutStyle: the same
  * weight, color and dash as on screen). A cropped piece is drawn whole with a
  * clipping path (PDF pages stay vector). Each source (image or PDF page) is
- * embedded once even if it shows up on several pages.
+ * embedded once even if it shows up on several pages. `paths` are the contour
+ * cut lines (contour.contourCuts), drawn as vector paths with the same stroke.
  */
 export async function buildPdf({
   width,
@@ -76,7 +79,7 @@ export async function buildPdf({
   const embed = embedder(doc, lib);
   const pt = (mm: number) => mm * PT_PER_MM;
 
-  for (const { pieces, lines = [] } of pages) {
+  for (const { pieces, lines = [], paths = [] } of pages) {
     const page = doc.addPage([pt(width), pt(height)]);
     for (const piece of pieces) {
       const target = await embed(piece.asset);
@@ -91,6 +94,16 @@ export async function buildPdf({
     const dash = cutStyle.dash ? { dashArray: [...cutStyle.dash], dashPhase: 0 } : {};
     for (const line of lines) {
       page.drawLine({ start: { x: pt(line.x1), y: pt(height - line.y1) }, end: { x: pt(line.x2), y: pt(height - line.y2) }, thickness: cutStyle.width, color, ...dash });
+    }
+    if (paths.length) {
+      const ops = [lib.pushGraphicsState(), lib.setStrokingRgbColor(...cutStyle.rgb), lib.setLineWidth(cutStyle.width), lib.setDashPattern(cutStyle.dash ? [...cutStyle.dash] : [], 0)];
+      for (const { points, closed } of paths) {
+        ops.push(lib.moveTo(pt(points[0]), pt(height - points[1])));
+        for (let i = 2; i < points.length; i += 2) ops.push(lib.lineTo(pt(points[i]), pt(height - points[i + 1])));
+        if (closed) ops.push(lib.closePath());
+      }
+      ops.push(lib.stroke(), lib.popGraphicsState());
+      page.pushOperators(...ops);
     }
   }
   return doc.save();

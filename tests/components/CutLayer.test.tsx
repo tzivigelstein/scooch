@@ -1,14 +1,19 @@
 // @vitest-environment jsdom
 // The cut lines on screen: the same segments the PDF gets (cutLines of the
-// pieces' image boxes) and the same stroke (cutStyle), in the sheet's mm.
-import { cleanup, render } from '@testing-library/react';
+// pieces' image boxes), the same contour paths (services/contours.sheetCuts)
+// and the same stroke (cutStyle), in the sheet's mm.
+import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { CutLayer } from '../../src/components/canvas/CutLayer.tsx';
+import { pathData, traceShape } from '../../src/core/contour.js';
 import { cutLines, cutStyle } from '../../src/core/cutmarks.js';
 import { DEFAULT_CUTS } from '../../src/core/projectdoc.js';
 import type { Cuts } from '../../src/core/types.ts';
+import { setTracer, sheetCuts } from '../../src/services/contours.ts';
+import { getAsset } from '../../src/state/assets.ts';
 import type { Piece } from '../../src/state/document.ts';
-import { fakeImageMm, piece, resetState } from '../support/state.ts';
+import { disc, maskOf } from '../support/contour.ts';
+import { fakeImage, fakeImageMm, piece, resetState } from '../support/state.ts';
 
 const MM_PER_PT = 25.4 / 72;
 const W = 210;
@@ -100,5 +105,26 @@ describe('the cut layer', () => {
     expect(dash).toHaveLength(2);
     expect(dash[0]).toBeCloseTo(style.dash![0] * MM_PER_PT, 9);
     expect(dash[1]).toBeCloseTo(style.dash![1] * MM_PER_PT, 9);
+  });
+});
+
+describe('contour cut lines', () => {
+  afterEach(() => setTracer(null));
+
+  test('a transparent image gets its traced shape as a path, the one the PDF gets; the others keep their outline', async () => {
+    const sticker = fakeImage({ name: 'pegatina.png', src: 3, px: [600, 600] });
+    const round = maskOf(600, 600, disc(300, 300, 250));
+    // Only the sticker has transparency: the photos trace as rectangles.
+    setTracer(async (request) => (request.source === getAsset(sticker).preview ? traceShape(round, request) : null));
+    const list = [...items, piece(4, sticker, 120, 120, { r: 90, crop: { x: 0.2, y: 0, w: 0.8, h: 1 } })];
+    const cuts: Cuts = { ...DEFAULT_CUTS, mode: 'contour', margin: 2 };
+    const { container } = render(<CutLayer items={list} cuts={cuts} W={W} H={H} zoom={3} />);
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    const { lines, paths } = sheetCuts(list, cuts, W, H);
+    expect(paths).toHaveLength(1);
+    expect([...container.querySelectorAll('path')].map((p) => p.getAttribute('d'))).toEqual([pathData(paths)]);
+    const drawn = [...container.querySelectorAll('line')].map((l) => ['x1', 'y1', 'x2', 'y2'].map((k) => Number(l.getAttribute(k))));
+    close(drawn, lines.map((l) => [l.x1, l.y1, l.x2, l.y2]));
+    close(drawn, cutLines(boxes, { mode: 'outline', margin: 2, bounds: { x: 0, y: 0, w: W, h: H } }).map((l) => [l.x1, l.y1, l.x2, l.y2]));
   });
 });

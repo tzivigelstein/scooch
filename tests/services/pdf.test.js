@@ -145,6 +145,34 @@ describe('buildPdf', () => {
     assert.match(content, new RegExp(`\\[${style.dash[0]} ${style.dash[1]}\\] 0 d`));
   });
 
+  test('contour cut lines: vector paths after the pieces and the segments, closed ones closed, in the chosen stroke', async () => {
+    const pieces = [{ asset: image, x: 20, y: 20, scale: 100, r: 0, crop: null }];
+    const lines = [{ x1: 10, y1: 10, x2: 60, y2: 10 }];
+    const paths = [
+      { points: [20, 20, 70, 20, 70, 50, 20, 50], closed: true },
+      { points: [100, 100, 120, 110, 140, 100], closed: false },
+    ];
+    const style = cutStyle({ weight: 'medium', color: '#ff8000', dash: 'dotted' });
+    const [withPaths] = await contents(await buildPdf({ ...SHEET, pages: [{ pieces, lines, paths }], title: 't', cutStyle: style }));
+    const [without] = await contents(await buildPdf({ ...SHEET, pages: [{ pieces, lines }], title: 't', cutStyle: style }));
+    assert.ok(withPaths.startsWith(without), 'the paths go last, without changing the rest');
+    const drawn = withPaths.slice(without.length);
+    assert.match(drawn, /\n1 0\.50196\d* 0 RG\n0\.5 w\n/);
+    assert.match(drawn, new RegExp(`\\[${style.dash[0]} ${style.dash[1]}\\] 0 d`));
+    const subpaths = [...drawn.matchAll(/(\S+) (\S+) m\n((?:\S+ \S+ l\n)*)(h\n)?/g)].map((m) => ({
+      points: [m[1], m[2], ...m[3].trim().split(/\s+/).filter((v) => v !== 'l')].map(Number),
+      closed: !!m[4],
+    }));
+    assert.equal(subpaths.length, 2);
+    subpaths.forEach((got, i) => {
+      assert.equal(got.closed, paths[i].closed);
+      const want = paths[i].points.map((v, j) => (j % 2 ? (SHEET.height - v) * PT : v * PT));
+      assert.equal(got.points.length, want.length);
+      got.points.forEach((v, j) => assert.ok(Math.abs(v - want[j]) < 1e-3, `path ${i}: ${v} ≠ ${want[j]}`));
+    });
+    assert.match(drawn, /\nS\nQ\n?$/, 'one stroke for every path');
+  });
+
   test('varias páginas: cada una con lo suyo', async () => {
     const piece = { asset: image, x: 10, y: 10, scale: 100, r: 0, crop: null };
     const out = await buildPdf({ ...SHEET, pages: [{ pieces: [piece] }, { pieces: [piece, { ...piece, x: 100 }] }], title: 't' });
