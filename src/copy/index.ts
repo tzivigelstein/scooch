@@ -120,8 +120,8 @@ const APPLE_MODIFIERS = ['Control', 'Alt', 'Shift', 'Mod'];
 /**
  * A key or combination as it shows and as screen readers should say it. On
  * Apple devices the modifiers are symbols in Apple's order, written together
- * before the key («Mod+Shift+Z» → «⇧⌘Z», said «Shift+Comando+Z»); elsewhere
- * both are «Ctrl+Shift+Z».
+ * before the key («Mod+Shift+Z» → «⇧⌘Z», said «Shift+Comando+Z»; with a «+»
+ * before a key with a name: «⇧+Av Pág»); elsewhere both are «Ctrl+Shift+Z».
  */
 export function keyText(combo: string): { shown: string; spoken: string } {
   const parts = combo.split('+');
@@ -130,10 +130,11 @@ export function keyText(combo: string): { shown: string; spoken: string } {
     return { shown, spoken: shown };
   }
   const modifiers = APPLE_MODIFIERS.filter((name) => parts.includes(name));
-  const rest = parts.filter((part) => !APPLE_MODIFIERS.includes(part)).map(keyName);
-  const symbols = modifiers.map((name) => keyName(`${name}Mac`));
-  const spoken = [...modifiers.map((name) => keyName(`spoken.${name}Mac`)), ...rest].join('+');
-  return { shown: symbols.join('') + rest.join('+'), spoken };
+  const rest = parts.filter((part) => !APPLE_MODIFIERS.includes(part)).map(keyName).join('+');
+  const symbols = modifiers.map((name) => keyName(`${name}Mac`)).join('');
+  const spoken = [...modifiers.map((name) => keyName(`spoken.${name}Mac`)), rest].filter(Boolean).join('+');
+  // Together with a key of one character («⇧⌘Z»); a «+» before a word («⇧+Espacio»).
+  return { shown: [symbols, rest].filter(Boolean).join(rest.length > 1 ? '+' : ''), spoken };
 }
 
 /** Visible name of a key or combination («Mod+Shift+Z» → «Ctrl+Shift+Z», or «⇧⌘Z» on Apple devices). */

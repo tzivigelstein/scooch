@@ -32,6 +32,8 @@ describe('on Apple devices', () => {
     ['Shift+1', '⇧1', 'Shift+1'],
     ['Delete', 'Supr', 'Supr'],
     ['Space+Drag', 'Espacio+arrastrar', 'Espacio+arrastrar'],
+    ['Shift+PageDown', '⇧+Av Pág', 'Shift+Av Pág'],
+    ['Mod+Click', '⌘+clic', 'Comando+clic'],
   ])('%s shows «%s» and is said «%s»', (combo, shown, spoken) => {
     vi.stubGlobal('navigator', { platform: 'MacIntel' });
     expect(keyText(combo)).toEqual({ shown, spoken });
