@@ -51,9 +51,9 @@ describe('the summary after printing', () => {
       'Son unos 25 g de papel menos',
       'Llevas 34 hojas ahorradas',
     ]);
-    expect(nb(dialog.querySelector('.summary-ring text')?.textContent)).toBe('82 %');
+    expect(nb(dialog.querySelector('.ring-label')?.textContent)).toBe('82 %');
     // The ring is decorative: the usage line says it, and the dialog is described by those lines.
-    expect(dialog.querySelector('svg.summary-ring')?.getAttribute('aria-hidden')).toBe('true');
+    expect(dialog.querySelector('.summary-ring')?.getAttribute('aria-hidden')).toBe('true');
     expect(dialog.getAttribute('aria-describedby')).toBe('summary-lines');
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Listo' }));
   });
@@ -80,7 +80,7 @@ describe('the summary after printing', () => {
     show({ total: 52, milestone: 50 });
     expect(lines()).toContain('Llegaste a 50 hojas ahorradas');
     expect(lines()).not.toContain('Llevas 52 hojas ahorradas');
-    expect(document.querySelector<HTMLElement>('#print-summary .summary-main')?.dataset.milestone).toBe('50');
+    expect(document.querySelector<HTMLElement>('#print-summary .summary-ring')?.dataset.milestone).toBe('50');
   });
 
   test('the suggestion, only when it surely saves a sheet, with «Acomodar» as a link that arranges', () => {

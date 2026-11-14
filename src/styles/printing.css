@@ -214,19 +214,33 @@
   gap: 1.125rem;
 }
 
+/* The ring. Its label grows with it, so the widest one («100 %») keeps clear
+   of the stroke. A line height of 1 centres Inter's figures; text-box does the
+   same for a fallback font. */
 .summary-ring {
+  --ring: 8.5rem;
+  position: relative;
+  display: grid;
+  place-items: center;
   flex: none;
-  width: 3.5rem;
-  height: 3.5rem;
+  width: var(--ring);
+  height: var(--ring);
+}
+
+.summary-ring svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .summary-ring circle {
   fill: none;
-  stroke-width: 6;
+  stroke-width: 12;
 }
 
 .summary-ring .ring-track {
-  stroke: var(--surface-2);
+  stroke: var(--accent-soft);
 }
 
 .summary-ring .ring-value {
@@ -243,22 +257,27 @@
   }
 }
 
-.summary-ring text {
-  fill: var(--text);
-  font-size: 0.8125rem;
-  font-weight: 700;
+.ring-label {
+  position: relative;
+  color: var(--text);
+  font-size: calc(var(--ring) * 0.18);
+  font-weight: 750;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  text-box: trim-both cap alphabetic;
 }
 
 /* Reaching a milestone: the ring glows once. */
-.summary-main[data-milestone] .summary-ring {
+.summary-ring[data-milestone] {
   animation: ring-glow 900ms var(--ease) 200ms;
 }
 
 @keyframes ring-glow {
   40% {
-    transform: scale(1.12);
-    filter: drop-shadow(0 0 0.375rem var(--accent));
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 0.5rem var(--accent));
   }
 }
 
@@ -351,4 +370,14 @@
 #summary-done {
   min-width: 6rem;
   height: 2.5rem;
+}
+
+@media (max-width: 479.98px) {
+  .summary-ring {
+    --ring: 6.75rem;
+  }
+
+  .summary-main {
+    gap: 0.875rem;
+  }
 }

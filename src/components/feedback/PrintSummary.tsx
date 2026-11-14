@@ -24,17 +24,18 @@ function equivalentText({ kind, value }: NonNullable<Summary['equivalent']>) {
   return t('summary.stack', { n: value });
 }
 
-function Ring({ share }: { share: number }) {
+/** Decorative: the usage line says the same. */
+function Ring({ share, milestone }: { share: number; milestone: number | null }) {
   const percent = Math.round(share * 100);
   // pathLength 100: the dash is the percent.
   return (
-    <svg className="summary-ring" viewBox="0 0 56 56" aria-hidden="true" focusable="false">
-      <circle className="ring-track" cx="28" cy="28" r="24" />
-      <circle className="ring-value" cx="28" cy="28" r="24" pathLength={100} strokeDasharray="100" strokeDashoffset={100 - percent} />
-      <text x="28" y="32.5" textAnchor="middle">
-        {t('summary.percent', { n: percent })}
-      </text>
-    </svg>
+    <div className="summary-ring" data-milestone={milestone ?? undefined} aria-hidden="true">
+      <svg viewBox="0 0 120 120" focusable="false">
+        <circle className="ring-track" cx="60" cy="60" r="54" />
+        <circle className="ring-value" cx="60" cy="60" r="54" pathLength={100} strokeDasharray="100" strokeDashoffset={100 - percent} />
+      </svg>
+      <span className="ring-label">{t('summary.percent', { n: percent })}</span>
+    </div>
   );
 }
 
@@ -57,8 +58,8 @@ function SummaryContent({ summary }: { summary: Summary }) {
             {note}
           </p>
         )}
-        <div className="summary-main" data-milestone={milestone ?? undefined}>
-          <Ring share={share} />
+        <div className="summary-main">
+          <Ring share={share} milestone={milestone} />
           <div id="summary-lines" className="summary-lines">
             <p className="summary-usage">{t('summary.usage', { n: used, pct: percent })}</p>
             {saved > 0 && <p className="summary-sheets">{t('summary.sheets', { n: used, baseline })}</p>}
