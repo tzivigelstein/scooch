@@ -295,7 +295,8 @@ test.describe('dragging pieces out of the sheets onto a new sheet', () => {
     await page.mouse.up();
   });
 
-  test('by touch: the placeholder shows and dropping creates the sheet (no context menu)', async ({ app, page }) => {
+  test('by touch: the placeholder shows and dropping creates the sheet (no context menu)', async ({ app, page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'the touch goes through the Chrome DevTools Protocol (Input.dispatchTouchEvent), which only Chromium has');
     const [, last3] = await pieceIds(app);
     const cdp = await page.context().newCDPSession(page);
     const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x = 0, y = 0) =>

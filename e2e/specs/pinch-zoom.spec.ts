@@ -16,6 +16,7 @@ import { FRAME_MS, Fingers, type Spot } from '../support/touch.ts';
 import { cards, expect, test, type App } from '../support/test.ts';
 
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+test.skip(({ browserName }) => browserName !== 'chromium', 'the fingers go through the Chrome DevTools Protocol (Input.dispatchTouchEvent), which only Chromium has');
 
 /** The sheet under a window point and that point on it, in mm (A4 portrait). */
 const underPoint = (page: Page, at: Spot) =>

@@ -107,7 +107,8 @@ test.describe('context menus', () => {
     await expect(sheet).toBeFocused();
   });
 
-  test('a long touch press on a piece opens its menu without moving anything, and it stays open when the finger lifts', async ({ app, page }) => {
+  test('a long touch press on a piece opens its menu without moving anything, and it stays open when the finger lifts', async ({ app, page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'the touch goes through the Chrome DevTools Protocol (Input.dispatchTouchEvent), which only Chromium has');
     await app.addFiles(cards(0, 4));
     const ids = await app.ids();
     const target = app.piece(ids[3]);
