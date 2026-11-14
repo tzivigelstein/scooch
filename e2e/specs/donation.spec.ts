@@ -1,8 +1,9 @@
 // The request for a donation in a real browser, with a Patreon URL tried
-// through ?donar= (the app is on 127.0.0.1): never a dialog and never before
-// the printer, but a link at the foot of the summary after printing or
-// downloading, once per page load, that opens Patreon apart without
-// interrupting anything, and «No volver a mostrar» lasting across reloads.
+// through ?donar= (the app is on 127.0.0.1): never a dialog of its own and
+// never before the printer, but a link at the foot of the summary after
+// printing or downloading, once per page load, that opens Patreon apart
+// without interrupting anything, and «No volver a mostrar» lasting across
+// reloads.
 // Its copy and attributes are in tests/components/PrintSummary.test.tsx; when
 // it asks (no URL, invalid URL, once per load), in tests/services/donate.test.ts.
 import type { Page } from '@playwright/test';
@@ -23,7 +24,7 @@ async function output(page: Page, button: '#print' | '#export') {
   // Only one modal before the printer: the advice.
   expect(await page.locator('dialog[open]').count()).toBe(1);
   await page.locator('#print-tip-go').click();
-  await expect(page.locator('#print-summary')).toBeVisible();
+  await expect(page.locator('#print-summary')).toHaveAttribute('open', '');
 }
 
 test.describe('printing, with a PDF viewer', () => {
@@ -40,7 +41,7 @@ test.describe('printing, with a PDF viewer', () => {
       const box = (await page.locator(`#${id}`).boundingBox())!;
       expect(Math.round(box.height), `${id} height`).toBeGreaterThanOrEqual(40);
     }
-    await page.locator('#summary-close').click();
+    await page.locator('#summary-done').click();
     await output(page, '#print');
     await expect.poll(() => printCalls(page)).toHaveLength(2);
     await expect(ask(page)).toHaveCount(0);
@@ -64,7 +65,7 @@ test.describe('downloading', () => {
     await output(page, '#export');
     await page.locator('#summary-donate-never').click();
     await expect(ask(page)).toHaveCount(0);
-    await expect(page.locator('#summary-close')).toBeFocused();
+    await expect(page.locator('#summary-done')).toBeFocused();
     await saved(page);
     await page.reload();
     await app.ready();

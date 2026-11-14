@@ -160,9 +160,9 @@ flow(
     await openDialog(page, '#print', '#print-tip');
     await c.state('advice before printing');
     await Promise.all([page.waitForEvent('download'), page.locator('#print-tip-go').click()]);
-    await expect(page.locator('#print-summary #summary-donate')).toBeVisible();
+    await expect(page.locator('#print-summary[open] #summary-donate')).toBeVisible();
     await expect(page.locator('#print-summary .summary-milestone')).toBeVisible();
-    await c.state('summary after printing: a milestone and the request for a donation');
+    await c.state('summary dialog after printing: a milestone and the request for a donation');
   },
   {
     printing: true,
@@ -182,8 +182,8 @@ flow(
     await page.keyboard.press('Shift+PageDown');
     await expect(page.locator('#sheets .page')).toHaveCount(2);
     await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
-    await expect(page.locator('#print-summary #summary-suggest')).toBeVisible();
-    await c.state('summary suggesting «Acomodar»');
+    await expect(page.locator('#print-summary[open] #summary-suggest')).toBeVisible();
+    await c.state('summary dialog after downloading, suggesting «Acomodar»');
   },
   { printing: true, before: (page) => page.addInitScript(() => localStorage.setItem('scooch:print-preferences', JSON.stringify({ v: 1, tip: false, summary: true }))) }
 );

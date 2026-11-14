@@ -1,14 +1,14 @@
 // Download and print the PDF. The PDF starts right away; meanwhile the advice
 // on printing at real size shows (unless turned off), and its button is the
 // gesture that prints or downloads. Once the person is back (the print dialog
-// closed, the download done), the summary of what the PDF saves shows (unless
-// turned off), with the request for a donation folded in.
+// closed, the download started), the summary of what the PDF saves shows
+// (unless turned off), with the request for a donation folded in, and the
+// focus goes back to whoever started it when it closes.
 
 import { t } from '../../copy/index.ts';
 import { askTip, isTipOpen, shouldShowTip, type OutputKind } from '../../components/dialogs/printTip.ts';
 import { takeDonationAsk } from '../../components/dialogs/donate.ts';
-import { announce } from '../../components/feedback/announcer.ts';
-import { closeSummary, showSummary, type PrintSummary } from '../../components/feedback/printSummary.ts';
+import { closeSummary, showSummary, usePrintSummary, type PrintSummary } from '../../components/feedback/printSummary.ts';
 import { equivalent, milestoneReached, paperFacts, sheetSavings, sheetUsage, suggestArrange, LOW_USAGE } from '../../core/savings.js';
 import { makePdf, pdfContentKey, pdfFileName } from '../../services/export.ts';
 import { downloadBytes, printBytes } from '../../services/print.ts';
@@ -66,22 +66,18 @@ export function summarize(kind: OutputKind, key: string): PrintSummary {
 }
 
 /**
- * Once the person is back: the summary (unless turned off), said to screen
- * readers too. `note`: where the PDF went, if it didn't go to the print
- * dialog; the summary says it (instead of the notice), or the notice does.
+ * Once the person is back: the summary (unless turned off). `note`: where the
+ * PDF went, if it didn't go to the print dialog; the summary says it (instead
+ * of the notice), or the notice does. `opener`: where the focus returns.
  */
-function summaryAfter(kind: OutputKind, key: string, note?: string) {
+function summaryAfter(kind: OutputKind, key: string, opener: Element | null, note?: string) {
   const summary = summarize(kind, key);
   if (!getPrefs().printing.summary) {
     if (note) say(note, kind === 'print' ? { persist: true, info: true } : {});
     return;
   }
   if (note) setView({ flash: null });
-  showSummary({ ...summary, note, ask: takeDonationAsk() });
-  const percent = t('summary.percent', { n: Math.round(summary.share * 100) });
-  const parts = [...(note ? [note] : []), t('summary.usage', { n: summary.used, pct: percent })];
-  if (summary.saved) parts.push(t('summary.sheets', { n: summary.used, baseline: summary.baseline }));
-  announce(parts.join('. '));
+  showSummary({ ...summary, note, ask: takeDonationAsk() }, opener);
 }
 
 async function output(kind: OutputKind) {
@@ -95,6 +91,8 @@ async function output(kind: OutputKind) {
 }
 
 async function sendOut(kind: OutputKind) {
+  // Started from inside an open summary, the focus goes back where that one would have.
+  const opener = usePrintSummary.getState().summary ? usePrintSummary.getState().returnTo : document.activeElement;
   closeSummary();
   const fileName = pdfFileName();
   const key = pdfContentKey();
@@ -106,7 +104,7 @@ async function sendOut(kind: OutputKind) {
   setBusy(false);
   if (kind === 'download') {
     downloadBytes(bytes, fileName);
-    summaryAfter(kind, key, t('notices.downloaded', { file: fileName }));
+    summaryAfter(kind, key, opener, t('notices.downloaded', { file: fileName }));
     return;
   }
   const { how, back } = await printBytes(bytes, fileName);
@@ -114,7 +112,7 @@ async function sendOut(kind: OutputKind) {
   const note = how === 'tab' ? t('notices.printTab') : how === 'download' ? t('notices.printDownload', { file: fileName }) : undefined;
   if (note) say(note, { persist: true, info: true });
   await back;
-  summaryAfter(kind, key, note);
+  summaryAfter(kind, key, opener, note);
 }
 
 export const exportPdf = () => output('download');

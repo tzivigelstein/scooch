@@ -1,16 +1,15 @@
 // The summary after printing or downloading (see PrintSummary.tsx): what it
-// shows, worked out once the person is back from the print dialog. It closes
-// with its button or Esc, with the next print or download, and when the
-// document changes (what it says is about the PDF that went out).
+// shows, worked out once the person is back from the print dialog, and where
+// the focus returns. It closes with «Listo», Esc or the backdrop, and with the
+// next print or download.
 
 import { create } from 'zustand';
 import type { EquivalentKind } from '../../core/savings.js';
-import { useDocument } from '../../state/document.ts';
 import type { OutputKind } from '../dialogs/printTip.ts';
 
 export interface PrintSummary {
   kind: OutputKind;
-  /** Where the PDF went, when that isn't the print dialog («Se descargó…»): the card says it instead of the notice. */
+  /** Where the PDF went, when that isn't the print dialog («Se descargó…»): the summary says it instead of the notice. */
   note?: string;
   /** The share (0–1) of the printable area the pieces use. */
   share: number;
@@ -32,13 +31,17 @@ export interface PrintSummary {
   added: number;
 }
 
-export const usePrintSummary = create<{ summary: PrintSummary | null }>()(() => ({ summary: null }));
+interface SummaryState {
+  summary: PrintSummary | null;
+  /** Who started it: the focus goes back there (or to its button, see PrintSummary.tsx). */
+  returnTo: Element | null;
+  kind: OutputKind;
+}
 
-export const showSummary = (summary: PrintSummary) => usePrintSummary.setState({ summary });
+export const usePrintSummary = create<SummaryState>()(() => ({ summary: null, returnTo: null, kind: 'print' }));
+
+export const showSummary = (summary: PrintSummary, returnTo: Element | null) => usePrintSummary.setState({ summary, returnTo, kind: summary.kind });
+
 export const closeSummary = () => {
   if (usePrintSummary.getState().summary) usePrintSummary.setState({ summary: null });
 };
-
-useDocument.subscribe((state, previous) => {
-  if (state.items !== previous.items || state.sheets !== previous.sheets || state.paper !== previous.paper) closeSummary();
-});

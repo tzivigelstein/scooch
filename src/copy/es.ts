@@ -723,7 +723,7 @@ const es = {
   // The summary after printing or downloading (what the PDF saves)
   summary: {
     title: 'Resumen del PDF',
-    close: 'Cerrar el resumen',
+    done: 'Listo',
     percent: '{n} %',
     usage: { one: '{pct} de la hoja aprovechada', other: '{pct} de las hojas aprovechadas' },
     sheets: { one: 'Usaste {n} hoja en lugar de {baseline}', other: 'Usaste {n} hojas en lugar de {baseline}' },

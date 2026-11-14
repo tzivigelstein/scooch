@@ -4,7 +4,7 @@
 // calls its print() (spied: no dialog opens, and it closes right away);
 // where that can't work the PDF opens in another tab (print() fails, or there
 // is no PDF viewer), or downloads (popups blocked too). Once the person is
-// back, the summary card shows. Their keys never reach the browser, and
+// back, the summary dialog shows. Their keys never reach the browser, and
 // under a dialog they do nothing (the rule itself, in
 // tests/hooks/useGlobalShortcuts.test.tsx). Full Chromium has the PDF viewer; the
 // headless shell (the default) doesn't. What each way says, the advice's
@@ -18,6 +18,14 @@ import { norm } from '../support/test.ts';
 
 const pill = (page: Page) => page.locator('#pill-text');
 const advice = (page: Page) => page.locator('#print-tip');
+const summary = (page: Page) => page.locator('#print-summary');
+
+/** Closes the summary with «Listo» once it shows (it is modal: the bar can't be reached meanwhile). */
+async function closeSummary(page: Page) {
+  await expect(summary(page)).toHaveAttribute('open', '');
+  await page.locator('#summary-done').click();
+  await expect(summary(page)).not.toHaveAttribute('open');
+}
 
 /** Clicks the bar's button and goes on from the advice with its own button. */
 async function throughAdvice(page: Page, button: '#print' | '#export') {
@@ -109,14 +117,13 @@ test.describe('printing with a PDF viewer', () => {
       await expect(page.locator('#pill')).toBeHidden();
     });
 
-    await test.step('back from the print dialog: the summary card, reached with Tab from «Imprimir»', async () => {
-      await expect(page.locator('#print-summary')).toBeVisible();
+    await test.step('back from the print dialog: the summary, a modal dialog focused on «Listo»; Esc closes it, back to «Imprimir»', async () => {
+      await expect(summary(page)).toHaveAttribute('open', '');
+      expect(await summary(page).evaluate((d) => d.matches(':modal'))).toBe(true);
       await expect(page.locator('#print-summary .summary-usage')).toHaveText(/de la hoja aprovechada$/);
-      await page.locator('#print').focus();
-      await page.keyboard.press('Tab');
-      await expect(page.locator('#summary-close')).toBeFocused();
+      await expect(page.locator('#summary-done')).toBeFocused();
       await page.keyboard.press('Escape');
-      await expect(page.locator('#print-summary')).toHaveCount(0);
+      await expect(summary(page)).not.toHaveAttribute('open');
       await expect(page.locator('#print')).toBeFocused();
     });
   });
@@ -129,10 +136,12 @@ test.describe('printing with a PDF viewer', () => {
     await expect.poll(() => printCalls(page)).toHaveLength(1);
     const printed = await pdfInfo(await lastPdf(page));
     expect(printed.pages.map(({ w, h, xobjects }) => ({ w, h, xobjects }))).toEqual([{ w: 210, h: 297, xobjects: 2 }]);
+    await closeSummary(page);
     await page.locator('#print').click();
     await expect.poll(() => printCalls(page)).toHaveLength(2);
     await expect(advice(page)).not.toHaveAttribute('open');
     await expect(printFrames(page)).toHaveCount(1);
+    await closeSummary(page);
     const downloaded = await app.downloadPdf();
     expect(downloaded.name).toBe('scooch-a4.pdf');
     expect(downloaded.info.pages.map(({ streams: _s, ...page }) => page)).toEqual(printed.pages.map(({ streams: _s, ...page }) => page));
@@ -265,7 +274,8 @@ test.describe('downloading', () => {
     const [first] = await Promise.all([page.waitForEvent('download'), page.locator('#print-tip-go').click()]);
     expect(first.suggestedFilename()).toBe('scooch-a4.pdf');
     expect(readFileSync((await first.path())!).subarray(0, 5).toString()).toBe('%PDF-');
-    await expect(page.locator('#print-summary')).toBeVisible();
+    await closeSummary(page);
+    await expect(page.locator('#export')).toBeFocused();
     await page.keyboard.press('Control+e');
     await expect(advice(page)).toHaveAttribute('open', '');
     const [download] = await Promise.all([page.waitForEvent('download'), page.keyboard.press('Enter')]);

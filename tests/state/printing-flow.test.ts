@@ -213,6 +213,13 @@ describe('the summary after', () => {
     expect(saved()).toEqual({ v: 2, sheets: 5, turn: 1, counted: [summary.key] });
   });
 
+  test('the focus goes back to who started it: the element focused when printing began', async () => {
+    document.body.innerHTML = '<button id="print">Imprimir</button>';
+    document.getElementById('print')!.focus();
+    await printPdf();
+    expect(usePrintSummary.getState().returnTo).toBe(document.getElementById('print'));
+  });
+
   test('another PDF adds to the total, with the next equivalent; reaching 10 is a milestone', async () => {
     await printPdf();
     nudge();
@@ -283,12 +290,5 @@ describe('the summary after', () => {
     setPrinting({ tip: false });
     await printPdf();
     expect(usePrintSummary.getState().summary).toMatchObject({ used: 1, suggest: false });
-  });
-
-  test('it closes when the document changes (it was about the PDF that went out)', async () => {
-    await printPdf();
-    expect(usePrintSummary.getState().summary).not.toBeNull();
-    setDocument({ items: [] });
-    expect(usePrintSummary.getState().summary).toBeNull();
   });
 });

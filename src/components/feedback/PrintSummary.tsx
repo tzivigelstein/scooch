@@ -1,20 +1,21 @@
-// The summary after printing or downloading (see printSummary.ts): a small
-// card, not a celebration. A ring with how much of the sheets is used, the
-// sheets against one per piece (with that baseline said in small print), one
-// practical equivalent that takes turns, the running total on this device
-// (with a line and a brief glow at its milestones) and, at most, a fuller
-// arrangement when it surely saves a sheet. The request for a donation, when
-// it applies, is a link at its foot. Not modal: it sits after the top bar in
-// the order of the page (Tab from «Imprimir» reaches it), and Esc closes it.
+// The summary after printing or downloading (see printSummary.ts): the dialog
+// that ends the job. Where the PDF went (when not to the print dialog), a ring
+// with how much of the sheets is used, the sheets against one per piece (with
+// that baseline in small print), one practical equivalent that takes turns,
+// the running total on this device (with a line and a brief glow at its
+// milestones) and, at most, a fuller arrangement when it surely saves a sheet.
+// The request for a donation, when it applies, is a link at its foot.
+// «Listo» starts focused.
 
-import { Heart, X } from 'lucide-react';
-import { useLayoutEffect, useRef, type KeyboardEvent, type RefObject } from 'react';
+import { Heart, Layers, LayoutDashboard, Leaf, Trophy } from 'lucide-react';
 import { splitLink, t } from '../../copy/index.ts';
 import { arrangeAll } from '../../state/actions/edit.ts';
+import { Dialog } from '../ui/Dialog.tsx';
 import { Icon } from '../ui/Icon.tsx';
-import { IconButton } from '../ui/Button.tsx';
 import { donateUrl, neverAskDonation } from '../dialogs/donate.ts';
 import { closeSummary, usePrintSummary, type PrintSummary as Summary } from './printSummary.ts';
+
+const focusDone = () => document.getElementById('summary-done');
 
 /** The equivalent's sentence: «Son unos 25 g de papel menos»… */
 function equivalentText({ kind, value }: NonNullable<Summary['equivalent']>) {
@@ -37,108 +38,116 @@ function Ring({ share }: { share: number }) {
   );
 }
 
-/** Back to «Imprimir» (or «Descargar PDF») when it closes from inside. */
-function closeFromInside(kind: Summary['kind']) {
-  const back = document.getElementById(kind === 'print' ? 'print' : 'export') as HTMLButtonElement | null;
-  closeSummary();
-  if (back && !back.disabled) back.focus();
-}
-
-/**
- * Tells the page how tall the card is (--summary-room): on narrow screens it
- * sits above «Piezas» and «Propiedades», and the toolbar and the notice go above it.
- */
-function useRoom(card: RefObject<HTMLElement | null>, shown: boolean) {
-  useLayoutEffect(() => {
-    const el = card.current;
-    const root = document.documentElement;
-    if (!shown || !el) return;
-    const measure = () => root.style.setProperty('--summary-room', `${el.offsetHeight + 8}px`);
-    measure();
-    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
-    observer?.observe(el);
-    return () => {
-      observer?.disconnect();
-      root.style.removeProperty('--summary-room');
-    };
-  }, [card, shown]);
+function SummaryContent({ summary }: { summary: Summary }) {
+  const { note, share, used, baseline, saved, equivalent, total, milestone, suggest, ask } = summary;
+  const percent = t('summary.percent', { n: Math.round(share * 100) });
+  const [before, link, after] = splitLink('summary.suggest');
+  const url = donateUrl();
+  const more = !!equivalent || total > 0 || !!milestone || suggest;
+  return (
+    <>
+      <div className="dialog-head">
+        <h2 id="summary-title" className="dialog-title">
+          {t('summary.title')}
+        </h2>
+      </div>
+      <div className="dialog-body summary-body">
+        {note && (
+          <p id="summary-note" className="summary-where">
+            {note}
+          </p>
+        )}
+        <div className="summary-main" data-milestone={milestone ?? undefined}>
+          <Ring share={share} />
+          <div id="summary-lines" className="summary-lines">
+            <p className="summary-usage">{t('summary.usage', { n: used, pct: percent })}</p>
+            {saved > 0 && <p className="summary-sheets">{t('summary.sheets', { n: used, baseline })}</p>}
+            {saved > 0 && <p className="summary-note">{t('summary.baseline')}</p>}
+          </div>
+        </div>
+        {more && (
+          <div className="summary-more">
+            {equivalent && (
+              <p id="summary-equivalent">
+                <Icon icon={Leaf} />
+                <span>{equivalentText(equivalent)}</span>
+              </p>
+            )}
+            {milestone ? (
+              <p id="summary-total" className="summary-milestone">
+                <Icon icon={Trophy} />
+                <span>{t('summary.milestone', { n: milestone })}</span>
+              </p>
+            ) : (
+              total > 0 && (
+                <p id="summary-total">
+                  <Icon icon={Layers} />
+                  <span>{t('summary.total', { n: total })}</span>
+                </p>
+              )
+            )}
+            {suggest && (
+              <p id="summary-suggest">
+                <Icon icon={LayoutDashboard} />
+                <span>
+                  {before}
+                  <button type="button" className="link-btn" onClick={() => (closeSummary(), arrangeAll())}>
+                    {link}
+                  </button>
+                  {after}
+                </span>
+              </p>
+            )}
+          </div>
+        )}
+        {ask && url && (
+          <div className="summary-ask">
+            <a id="summary-donate" href={url} target="_blank" rel="noopener noreferrer" data-tip={t('donate.ctaNote')}>
+              <Icon icon={Heart} />
+              <span>{t('donate.cta')}</span>
+            </a>
+            <button
+              type="button"
+              id="summary-donate-never"
+              className="text-btn"
+              onClick={() => {
+                neverAskDonation();
+                usePrintSummary.setState({ summary: { ...summary, ask: false } });
+                focusDone()?.focus();
+              }}
+            >
+              {t('donate.never')}
+            </button>
+          </div>
+        )}
+      </div>
+      <div className="dialog-actions summary-actions">
+        <button type="button" id="summary-done" className="btn primary" onClick={closeSummary}>
+          {t('summary.done')}
+        </button>
+      </div>
+    </>
+  );
 }
 
 export function PrintSummary() {
   const summary = usePrintSummary((s) => s.summary);
-  const card = useRef<HTMLElement>(null);
-  useRoom(card, !!summary);
-  if (!summary) return null;
-  const { kind, note, share, used, baseline, saved, equivalent, total, milestone, suggest, ask } = summary;
-  const percent = t('summary.percent', { n: Math.round(share * 100) });
-  const [before, link, after] = splitLink('summary.suggest');
-  const url = donateUrl();
-  const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key !== 'Escape') return;
-    e.preventDefault();
-    e.stopPropagation();
-    closeFromInside(kind);
-  };
+  const returnTo = usePrintSummary((s) => s.returnTo);
+  const kind = usePrintSummary((s) => s.kind);
   return (
-    <aside ref={card} id="print-summary" className="print-summary" aria-labelledby="summary-title" data-milestone={milestone ?? undefined} onKeyDown={onKeyDown}>
-      <div className="summary-head">
-        <h2 id="summary-title" className="summary-title">
-          {t('summary.title')}
-        </h2>
-        <IconButton id="summary-close" className="icon-btn small" icon={X} label={t('summary.close')} tip={t('summary.close')} onClick={() => closeFromInside(kind)} />
-      </div>
-      {note && (
-        <p id="summary-note" className="summary-where">
-          {note}
-        </p>
-      )}
-      <div className="summary-main">
-        <Ring share={share} />
-        <div className="summary-lines">
-          <p className="summary-usage">{t('summary.usage', { n: used, pct: percent })}</p>
-          {saved > 0 && <p>{t('summary.sheets', { n: used, baseline })}</p>}
-          {saved > 0 && <p className="summary-note">{t('summary.baseline')}</p>}
-        </div>
-      </div>
-      <div className="summary-more">
-        {equivalent && <p id="summary-equivalent">{equivalentText(equivalent)}</p>}
-        {milestone ? (
-          <p id="summary-total" className="summary-milestone">
-            {t('summary.milestone', { n: milestone })}
-          </p>
-        ) : (
-          total > 0 && <p id="summary-total">{t('summary.total', { n: total })}</p>
-        )}
-        {suggest && (
-          <p id="summary-suggest">
-            {before}
-            <button type="button" className="link-btn" onClick={() => (closeSummary(), arrangeAll())}>
-              {link}
-            </button>
-            {after}
-          </p>
-        )}
-      </div>
-      {ask && url && (
-        <div className="summary-ask">
-          <a id="summary-donate" href={url} target="_blank" rel="noopener noreferrer" data-tip={t('donate.ctaNote')}>
-            <Icon icon={Heart} />
-            <span>{t('donate.cta')}</span>
-          </a>
-          <button
-            type="button"
-            id="summary-donate-never"
-            className="text-btn"
-            onClick={(e) => {
-              neverAskDonation();
-              usePrintSummary.setState({ summary: { ...summary, ask: false } });
-              e.currentTarget.closest<HTMLElement>('.print-summary')?.querySelector<HTMLElement>('#summary-close')?.focus();
-            }}
-          >
-            {t('donate.never')}
-          </button>
-        </div>
-      )}
-    </aside>
+    <Dialog
+      id="print-summary"
+      className="dialog print-summary"
+      labelledBy="summary-title"
+      describedBy={summary ? (summary.note ? 'summary-note summary-lines' : 'summary-lines') : undefined}
+      open={!!summary}
+      returnTo={returnTo}
+      // When nothing usable had the focus (Safari doesn't focus a clicked button): its button.
+      fallback={() => document.getElementById(kind === 'print' ? 'print' : 'export')}
+      initialFocus={focusDone}
+      onClose={closeSummary}
+    >
+      {summary && <SummaryContent summary={summary} />}
+    </Dialog>
   );
 }
