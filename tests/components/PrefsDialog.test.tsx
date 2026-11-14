@@ -25,11 +25,11 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('Preferences', () => {
-  test('two groups, each named by its title: Unidades and Teclado', () => {
+  test('three groups, each named by its title: Unidades, Teclado and Impresión', () => {
     render(<PrefsDialog />);
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Preferencias');
     const groups = screen.getAllByRole('group');
-    expect(groups.map((g) => referenced(g, 'aria-labelledby'))).toEqual(['Unidades', 'Teclado']);
+    expect(groups.map((g) => referenced(g, 'aria-labelledby'))).toEqual(['Unidades', 'Teclado', 'Impresión']);
     expect(groups.map((g) => g.querySelector('h3')?.id)).toEqual(groups.map((g) => g.getAttribute('aria-labelledby')));
   });
 
@@ -55,7 +55,7 @@ describe('Preferences', () => {
 
   test('the switch turns the single keys off and on again, saved in this browser', () => {
     render(<PrefsDialog />);
-    const toggle = screen.getByRole('switch') as HTMLInputElement;
+    const toggle = screen.getByRole('switch', { name: /^Atajos de 1 tecla/ }) as HTMLInputElement;
     fireEvent.click(toggle);
     expect(getPrefs().singleKeys).toBe(false);
     expect(toggle.checked).toBe(false);
@@ -68,6 +68,18 @@ describe('Preferences', () => {
   test('the switch shows a change made elsewhere', () => {
     render(<PrefsDialog />);
     act(() => setSingleKeys(false));
-    expect((screen.getByRole('switch') as HTMLInputElement).checked).toBe(false);
+    expect((screen.getByRole('switch', { name: /^Atajos de 1 tecla/ }) as HTMLInputElement).checked).toBe(false);
+  });
+
+  test('Impresión: the advice before printing and the summary after, each a switch saved in this browser', () => {
+    render(<PrefsDialog />);
+    const tip = screen.getByRole('switch', { name: 'Consejo antes de imprimir' }) as HTMLInputElement;
+    const summary = screen.getByRole('switch', { name: 'Resumen después de imprimir' }) as HTMLInputElement;
+    expect([tip.checked, summary.checked]).toEqual([true, true]);
+    fireEvent.click(summary);
+    expect(getPrefs().printing).toEqual({ tip: true, summary: false });
+    expect(JSON.parse(localStorage.getItem('scooch:print-preferences')!)).toEqual({ v: 1, tip: true, summary: false });
+    fireEvent.click(tip);
+    expect(getPrefs().printing.tip).toBe(false);
   });
 });

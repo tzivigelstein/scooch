@@ -21,7 +21,18 @@ export const cards = (from: number, n: number) => Array.from({ length: n }, (_, 
 /** Replaces non-breaking spaces with plain ones (the copy uses them between numbers and units). */
 export const norm = (s: string | null | undefined) => String(s ?? '').replace(/ /g, ' ');
 
+/** Pages whose app starts with the advice before printing and the summary after turned off. */
+const quietPages = new WeakSet<Page>();
+
 export class App {
+  /**
+   * Whether the advice before printing (and downloading) and the summary
+   * after show. Off unless a test turns them on before open(): they have
+   * their own specs (print-and-download, donation), and other specs print or
+   * download only to read the PDF.
+   */
+  printing = false;
+
   constructor(
     readonly page: Page,
     private readonly info: TestInfo
@@ -29,6 +40,13 @@ export class App {
 
   /** Goes to the app (optionally with a query string) and waits until the project is open. */
   async open(query = '') {
+    if (!this.printing && !quietPages.has(this.page)) {
+      quietPages.add(this.page);
+      // Only where the page hasn't got a preference of its own yet.
+      await this.page.addInitScript(() => {
+        if (localStorage.getItem('scooch:print-preferences') === null) localStorage.setItem('scooch:print-preferences', JSON.stringify({ v: 1, tip: false, summary: false }));
+      });
+    }
     await this.page.goto(query ? `./${query}` : './');
     await this.ready();
   }

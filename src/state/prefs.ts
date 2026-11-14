@@ -8,11 +8,12 @@ import {
   GRID_MIN,
   GRID_STORAGE,
   PIECES_STORAGE,
+  PRINT_STORAGE,
   SECTIONS_STORAGE,
   SINGLE_KEYS_STORAGE,
   UNIT_STORAGE,
 } from '../config.ts';
-import { parseSections, serializeSections, type SectionName } from '../core/storedprefs.js';
+import { parsePrintPrefs, parseSections, serializePrintPrefs, serializeSections, type PrintPrefs, type SectionName } from '../core/storedprefs.js';
 import { isUnit, type Unit } from '../core/units.js';
 import { clamp } from '../core/util.ts';
 import { storageGet, storageJson, storageSet } from '../services/storage/local.ts';
@@ -35,6 +36,8 @@ export interface PrefsState {
   sections: Partial<Record<SectionName, boolean>>;
   /** «Más opciones» of the cut lines is open. */
   cutOptions: boolean;
+  /** The advice before printing or downloading, and the summary after, show. */
+  printing: PrintPrefs;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -57,6 +60,7 @@ function loadPrefs(): PrefsState {
     singleKeys: storageGet(SINGLE_KEYS_STORAGE) !== 'off',
     grid: loadGrid(),
     ...parseSections(storageJson(SECTIONS_STORAGE)),
+    printing: parsePrintPrefs(storageJson(PRINT_STORAGE)),
   };
 }
 
@@ -96,6 +100,13 @@ const savePanels = () => storageSet(SECTIONS_STORAGE, JSON.stringify(serializeSe
 export function setSectionOpen(name: SectionName, open: boolean) {
   usePrefs.setState({ sections: { ...getPrefs().sections, [name]: open } });
   savePanels();
+}
+
+/** Turns the advice before printing or the summary after on or off. */
+export function setPrinting(changes: Partial<PrintPrefs>) {
+  const printing = { ...getPrefs().printing, ...changes };
+  usePrefs.setState({ printing });
+  storageSet(PRINT_STORAGE, JSON.stringify(serializePrintPrefs(printing)));
 }
 
 /** «Más opciones» of the cut lines opened or closed. */

@@ -1,23 +1,30 @@
-// Download and print the PDF (the donation dialog may show meanwhile).
+// Download and print the PDF. The PDF starts right away; meanwhile the advice
+// on printing at real size shows (unless turned off), and its button is the
+// gesture that prints or downloads. Once the person is back (the print dialog
+// closed, the download done), the summary of what the PDF saves shows (unless
+// turned off), with the request for a donation folded in.
 
 import { t } from '../../copy/index.ts';
-import { askDonation, isDonationOpen, shouldAskDonation } from '../../components/dialogs/donate.ts';
+import { askTip, isTipOpen, shouldShowTip, type OutputKind } from '../../components/dialogs/printTip.ts';
+import { takeDonationAsk } from '../../components/dialogs/donate.ts';
+import { announce } from '../../components/feedback/announcer.ts';
+import { closeSummary, showSummary, type PrintSummary } from '../../components/feedback/printSummary.ts';
+import { equivalent, milestoneReached, paperFacts, sheetSavings, sheetUsage, suggestArrange, LOW_USAGE } from '../../core/savings.js';
 import { makePdf, pdfFileName } from '../../services/export.ts';
-import { paperName } from '../../services/measure.ts';
 import { downloadBytes, printBytes } from '../../services/print.ts';
 import { getDocument } from '../document.ts';
+import { getPrefs } from '../prefs.ts';
+import { setView } from '../view.ts';
+import { recordSavings } from '../savings.ts';
+import { area, boxOf, itemsOn } from '../selectors.ts';
 import { setBusy } from './files.ts';
+import { sheetsNeeded } from './layout.ts';
 import { say } from './notify.ts';
 
-/**
- * Starts the PDF right away and, if it applies, shows the donation dialog
- * while it is built. Returns the bytes (or null if it couldn't be built) once
- * the dialog closed by any means: the export always goes on.
- */
-async function preparePdf(busyText: string) {
-  const job = makePdf();
-  job.catch(() => {}); // handled below, after the dialog
-  if (shouldAskDonation()) await askDonation();
+const canExport = () => getDocument().items.length > 0 && !getDocument().busy && !isTipOpen();
+
+/** The PDF's bytes once made (or null, saying it couldn't be), with the pill saying it meanwhile. */
+async function finished(job: Promise<Uint8Array>, busyText: string) {
   setBusy(true, busyText);
   try {
     return await job;
@@ -29,26 +36,73 @@ async function preparePdf(busyText: string) {
   }
 }
 
-const canExport = () => getDocument().items.length > 0 && !getDocument().busy && !isDonationOpen();
-
-export async function exportPdf() {
-  if (!canExport()) return;
-  const fileName = pdfFileName();
-  const bytes = await preparePdf(t('busy.pdf'));
-  if (!bytes) return;
-  downloadBytes(bytes, fileName);
-  setBusy(false);
-  say(t('notices.downloaded', { file: fileName }));
+/** What the PDF that just went out saves (and counts it on this device). */
+export function summarize(kind: OutputKind): PrintSummary {
+  const { sheets, items } = getDocument();
+  const printed = sheets.map((sheet) => itemsOn(sheet.id)).filter((list) => list.length);
+  const { W, H, m, aw, ah } = area();
+  const share = sheetUsage(printed.map((list) => list.map(boxOf)), { x: m, y: m, w: aw, h: ah }) ?? 0;
+  const { used, baseline, saved } = sheetSavings(items.length, printed.length);
+  const { after, before, turn } = recordSavings(saved);
+  // The packing check costs a little: only when a fuller arrangement could be worth suggesting.
+  const suggest = share < LOW_USAGE && suggestArrange(share, used, sheetsNeeded());
+  return {
+    kind,
+    share,
+    used,
+    baseline,
+    saved,
+    equivalent: saved ? equivalent(turn, paperFacts(saved, W, H)) : null,
+    total: after,
+    milestone: milestoneReached(before, after),
+    suggest,
+    ask: false,
+  };
 }
+
+/**
+ * Once the person is back: the summary (unless turned off), said to screen
+ * readers too. `note`: where the PDF went, if it didn't go to the print
+ * dialog; the summary says it (instead of the notice), or the notice does.
+ */
+function summaryAfter(kind: OutputKind, note?: string) {
+  const summary = summarize(kind);
+  if (!getPrefs().printing.summary) {
+    if (note) say(note, kind === 'print' ? { persist: true, info: true } : {});
+    return;
+  }
+  if (note) setView({ flash: null });
+  showSummary({ ...summary, note, ask: takeDonationAsk() });
+  const percent = t('summary.percent', { n: Math.round(summary.share * 100) });
+  const parts = [...(note ? [note] : []), t('summary.usage', { n: summary.used, pct: percent })];
+  if (summary.saved) parts.push(t('summary.sheets', { n: summary.used, baseline: summary.baseline }));
+  announce(parts.join('. '));
+}
+
+async function output(kind: OutputKind) {
+  if (!canExport()) return;
+  closeSummary();
+  const fileName = pdfFileName();
+  const job = makePdf();
+  job.catch(() => {}); // handled once it is needed
+  if (shouldShowTip() && !(await askTip(kind))) return;
+  const bytes = await finished(job, t(kind === 'print' ? 'busy.print' : 'busy.pdf'));
+  if (!bytes) return;
+  setBusy(false);
+  if (kind === 'download') {
+    downloadBytes(bytes, fileName);
+    summaryAfter(kind, t('notices.downloaded', { file: fileName }));
+    return;
+  }
+  const { how, back } = await printBytes(bytes, fileName);
+  // In the print dialog the advice was already given; elsewhere, where the PDF went (said now, and in the summary).
+  const note = how === 'tab' ? t('notices.printTab') : how === 'download' ? t('notices.printDownload', { file: fileName }) : undefined;
+  if (note) say(note, { persist: true, info: true });
+  await back;
+  summaryAfter(kind, note);
+}
+
+export const exportPdf = () => output('download');
 
 /** Prints the same PDF that downloads, without going through the download. */
-export async function printPdf() {
-  if (!canExport()) return;
-  const fileName = pdfFileName();
-  const bytes = await preparePdf(t('busy.print'));
-  if (!bytes) return;
-  setBusy(false);
-  const how = await printBytes(bytes, fileName);
-  const key = ({ dialog: 'notices.printDialog', tab: 'notices.printTab' } as const)[how as 'dialog' | 'tab'] ?? 'notices.printDownload';
-  say(t(key, { paper: paperName(), file: fileName }), { persist: true, info: key === 'notices.printDialog' });
-}
+export const printPdf = () => output('print');

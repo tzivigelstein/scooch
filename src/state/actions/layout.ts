@@ -5,7 +5,7 @@
 import { CROWD_LIMIT, MAX_ITEMS } from '../../config.ts';
 import { overlapsAny } from '../../core/collide.js';
 import { isIdentity, pieceSize } from '../../core/crop.js';
-import { fitScale, pack } from '../../core/pack.js';
+import { fitScale, pack, packSheets } from '../../core/pack.js';
 import { arrangeSheets, freeSpotNear, keepCenterInside, placeIntoSheets, samePlan, type ArrangePlan } from '../../core/sheets.js';
 import type { Item } from '../../core/types.ts';
 import { clamp, tidy } from '../../core/util.ts';
@@ -158,6 +158,18 @@ export function arrange(): 'arranged' | 'same' | 'error' | null {
   }
   say(arrangedText(n, plan.packed));
   return 'arranged';
+}
+
+/**
+ * How many sheets the pieces would take arranged (a quick check, without
+ * changing anything), or null when some don't fit even alone.
+ */
+export function sheetsNeeded(): number | null {
+  const { aw, ah } = area();
+  const { items } = getDocument();
+  if (!items.length || aw <= 0 || ah <= 0) return null;
+  const { sheets, unplaced } = packSheets(rects(items), aw, ah, packOptions());
+  return unplaced.length ? null : sheets.length;
 }
 
 /** «Ajustar a la hoja» for the pieces that didn't fit even alone, in one step. */

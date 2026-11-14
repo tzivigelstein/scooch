@@ -1,6 +1,7 @@
 // Download and print. Printing uses the same PDF as the download, loaded in a
 // hidden iframe; if the browser doesn't allow it, the PDF opens in another tab
-// (or, if that's blocked too, it downloads).
+// (or, if that's blocked too, it downloads). Each says when the person is back
+// (the print dialog closed, or the tab is seen again): the summary shows then.
 
 import { t } from '../copy/index.ts';
 
@@ -26,6 +27,25 @@ let frame: HTMLIFrameElement | null = null; // one iframe, reused between prints
 let frameUrl: string | null = null;
 let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
 
+/** Without a sign that the person is back (afterprint, the window's focus), this long after printing is taken as back. */
+const BACK_FALLBACK = 1500;
+
+/**
+ * Resolves when the person is back on the page: `signals` (events that say
+ * so, on their targets), or the fallback a moment after it was asked.
+ */
+function backOn(signals: readonly [EventTarget, string][]) {
+  return new Promise<void>((resolve) => {
+    const done = () => {
+      clearTimeout(timer);
+      for (const [target, type] of signals) target.removeEventListener(type, done);
+      resolve();
+    };
+    for (const [target, type] of signals) target.addEventListener(type, done, { once: true });
+    const timer = setTimeout(done, BACK_FALLBACK);
+  });
+}
+
 /**
  * Can an embedded PDF be printed? First by capability (no built-in PDF
  * viewer, e.g. on phones, no); Safari and iOS print the page instead of the
@@ -45,8 +65,10 @@ function releaseFrame() {
   frameUrl = null;
 }
 
+/** Prints the PDF in the iframe; resolves once print() was called, with when its dialog closed. */
 function printInFrame(url: string) {
-  return new Promise<void>((resolve, reject) => {
+  // (In an object: a promise resolved with a promise would wait for it.)
+  return new Promise<{ closed: Promise<void> }>((resolve, reject) => {
     releaseFrame();
     if (!frame) {
       frame = document.createElement('iframe');
@@ -73,11 +95,16 @@ function printInFrame(url: string) {
       try {
         const win = target.contentWindow!;
         win.addEventListener('afterprint', () => (releaseFrame(), restore()), { once: true });
+        const closed = backOn([
+          [win, 'afterprint'],
+          [window, 'afterprint'],
+          [window, 'focus'],
+        ]);
         win.focus();
         win.print();
         window.addEventListener('focus', restore, { once: true });
         requestAnimationFrame(restore);
-        resolve();
+        resolve({ closed });
       } catch (err) {
         restore();
         reject(err);
@@ -104,21 +131,34 @@ function openOrDownload(url: string, fileName: string): 'tab' | 'download' {
   return 'download';
 }
 
-/**
- * Sends the bytes to print. Returns 'dialog' if the print dialog opened,
- * 'tab' if the PDF opened in another tab or 'download' if it downloaded.
- */
-export async function printBytes(bytes: Uint8Array, fileName: string): Promise<'dialog' | 'tab' | 'download'> {
+export interface Printed {
+  /** 'dialog': the print dialog opened; 'tab': the PDF opened in another tab; 'download': it downloaded. */
+  how: 'dialog' | 'tab' | 'download';
+  /** When the person is back: the print dialog closed, or this tab is seen again. */
+  back: Promise<void>;
+}
+
+const backFrom = (how: 'tab' | 'download') =>
+  how === 'download'
+    ? Promise.resolve()
+    : backOn([
+        [window, 'focus'],
+        [document, 'visibilitychange'],
+      ]);
+
+/** Sends the bytes to print (see Printed). */
+export async function printBytes(bytes: Uint8Array, fileName: string): Promise<Printed> {
   const url = pdfUrl(bytes);
   if (canPrintInFrame()) {
     try {
-      await printInFrame(url);
-      return 'dialog';
+      return { how: 'dialog', back: (await printInFrame(url)).closed };
     } catch (err) {
       console.warn('Could not print directly; opening the PDF.', err);
       releaseFrame();
-      return openOrDownload(pdfUrl(bytes), fileName);
+      const how = openOrDownload(pdfUrl(bytes), fileName);
+      return { how, back: backFrom(how) };
     }
   }
-  return openOrDownload(url, fileName);
+  const how = openOrDownload(url, fileName);
+  return { how, back: backFrom(how) };
 }

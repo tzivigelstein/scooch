@@ -18,6 +18,8 @@ interface FlowOptions {
   query?: string;
   /** Runs before the app loads (e.g. an init script). */
   before?: (page: Page) => Promise<unknown>;
+  /** The advice before printing and the summary after show (off elsewhere: see App.printing). */
+  printing?: boolean;
 }
 
 /** One test per viewport, each with its own page at that size and the app opened. */
@@ -29,6 +31,7 @@ function flow(title: string, sizes: readonly Size[], run: (c: Catalogue, app: Ap
         test(sizeTitle(size), async ({ page }, testInfo) => {
           await options.before?.(page);
           const app = new App(page, testInfo);
+          app.printing = !!options.printing;
           await app.open(options.query);
           const c = new Catalogue(app, testInfo, size);
           await run(c, app);
@@ -140,16 +143,49 @@ flow('editing', [DESKTOP, MEDIUM, PHONE], async (c, app) => {
   await c.state('tooltip of the focused toolbar button');
 });
 
-// Opened straight with a donation link.
+// ---------- Printing: the advice before, the summary after ----------
+
+// With a donation link, and 8 sheets saved before: printing 12 cards on 2 sheets reaches 10.
 flow(
-  'donation dialog',
+  'printing',
+  [DESKTOP, MEDIUM, PHONE, WIDE],
+  async (c, app) => {
+    const page = c.page;
+    await app.addFiles(cards(0, 12));
+    await openDialog(page, '#export', '#print-tip');
+    await c.state('advice before downloading');
+    await closeWithEscape(page, '#print-tip');
+    // Printing without a PDF viewer opens another tab: blocked here, so it downloads instead.
+    await page.evaluate(() => (window.open = () => null));
+    await openDialog(page, '#print', '#print-tip');
+    await c.state('advice before printing');
+    await Promise.all([page.waitForEvent('download'), page.locator('#print-tip-go').click()]);
+    await expect(page.locator('#print-summary #summary-donate')).toBeVisible();
+    await expect(page.locator('#print-summary .summary-milestone')).toBeVisible();
+    await c.state('summary after printing: a milestone and the request for a donation');
+  },
+  {
+    printing: true,
+    query: `?donar=${encodeURIComponent('https://www.patreon.com/ejemplo')}`,
+    before: (page) => page.addInitScript(() => localStorage.getItem('scooch:savings') ?? localStorage.setItem('scooch:savings', JSON.stringify({ v: 1, sheets: 8, turn: 0 }))),
+  }
+);
+
+// Two cards, each alone on a sheet: arranged they'd take one.
+flow(
+  'summary suggesting a fuller arrangement',
   [DESKTOP, PHONE],
   async (c, app) => {
-    await app.addFiles(['small.jpg']);
-    await openDialog(c.page, '#export', '#donate');
-    await c.state('donation dialog');
+    const page = c.page;
+    await app.addFiles(cards(0, 2));
+    await focusPiece(app.pieces().last());
+    await page.keyboard.press('Shift+PageDown');
+    await expect(page.locator('#sheets .page')).toHaveCount(2);
+    await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
+    await expect(page.locator('#print-summary #summary-suggest')).toBeVisible();
+    await c.state('summary suggesting «Acomodar»');
   },
-  { query: `?donar=${encodeURIComponent('https://www.patreon.com/ejemplo')}` }
+  { printing: true, before: (page) => page.addInitScript(() => localStorage.setItem('scooch:print-preferences', JSON.stringify({ v: 1, tip: false, summary: true }))) }
 );
 
 // ---------- Dialogs over a document ----------
@@ -271,6 +307,13 @@ flow('sheets', [DESKTOP, MEDIUM, PHONE], async (c, app) => {
   await c.state('confirm removing a sheet');
   await closeWithEscape(page, '#confirm');
 
+  await openList(c);
+  await page.locator('#clear').click();
+  await expect(page.locator('#confirm[open]')).toBeVisible();
+  await c.state('confirm removing every piece');
+  await closeWithEscape(page, '#confirm');
+  await closeList(c);
+
   // The end of the canvas, with «add a sheet».
   await focusPiece(app.pieces().first());
   await page.keyboard.press('Escape');
@@ -330,6 +373,18 @@ flow('projects', [DESKTOP, MEDIUM, PHONE], async (c, app) => {
   await expect(page.locator('#project-name-input')).toBeFocused();
   await c.state('project name being edited in the top bar');
 });
+
+// The browser says the space is nearly full.
+flow(
+  'projects with little space left',
+  [DESKTOP, PHONE],
+  async (c) => {
+    await openDialog(c.page, '#projects-open', '#projects');
+    await expect(c.page.locator('#storage-low')).toBeVisible();
+    await c.state('projects dialog warning that space is running out');
+  },
+  { before: (page) => page.addInitScript(() => Object.defineProperty(navigator.storage, 'estimate', { value: async () => ({ usage: 8.6e9, quota: 1e10 }), configurable: true })) }
+);
 
 flow(
   'without storage',

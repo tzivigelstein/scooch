@@ -65,7 +65,7 @@ describe('printBytes', () => {
     const print = vi.fn();
     const sent = (await printBytes())(PDF, 'scooch-a4.pdf');
     const frame = await frameLoaded(print);
-    expect(await sent).toBe('dialog');
+    expect((await sent).how).toBe('dialog');
     expect(print).toHaveBeenCalledTimes(1);
     expect(frame.src).toBe('blob:test/1');
     expect(open).not.toHaveBeenCalled();
@@ -78,7 +78,7 @@ describe('printBytes', () => {
     await frameLoaded(() => {
       throw new Error('cannot print');
     });
-    expect(await sent).toBe('tab');
+    expect((await sent).how).toBe('tab');
     expect(open).toHaveBeenCalledWith('blob:test/2', '_blank');
   });
 
@@ -89,14 +89,14 @@ describe('printBytes', () => {
     { name: 'Chrome on an iPad that says it is a Mac', ua: IPAD_CHROME_AS_MAC, viewer: true, touch: 5 },
   ])('$name: another tab, no iframe', async ({ ua, viewer, touch }) => {
     browser({ ua, viewer, touch });
-    expect(await (await printBytes())(PDF, 'scooch-a4.pdf')).toBe('tab');
+    expect((await (await printBytes())(PDF, 'scooch-a4.pdf')).how).toBe('tab');
     expect(open).toHaveBeenCalledWith('blob:test/1', '_blank');
     expect(document.querySelector('iframe')).toBeNull();
   });
 
   test('with popups blocked too: it downloads with the file’s name', async () => {
     browser({ viewer: false, popups: false });
-    expect(await (await printBytes())(PDF, 'scooch-a4.pdf')).toBe('download');
+    expect((await (await printBytes())(PDF, 'scooch-a4.pdf')).how).toBe('download');
     expect(downloads).toEqual([{ href: 'blob:test/1', download: 'scooch-a4.pdf' }]);
   });
 
@@ -109,8 +109,42 @@ describe('printBytes', () => {
     await first;
     const second = send(PDF, 'scooch-a4.pdf');
     await frameLoaded(print);
-    expect(await second).toBe('dialog');
+    expect((await second).how).toBe('dialog');
     expect(print).toHaveBeenCalledTimes(2);
     expect(document.querySelectorAll('iframe.print-frame')).toHaveLength(1);
+  });
+
+  test('the person is back when the print dialog closes (afterprint), or a moment after printing without that sign', async () => {
+    browser();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const send = await printBytes();
+      const sent = send(PDF, 'scooch-a4.pdf');
+      const frame = await frameLoaded(() => {});
+      let back = false;
+      void (await sent).back.then(() => (back = true));
+      await vi.advanceTimersByTimeAsync(100);
+      expect(back).toBe(false);
+      frame.contentWindow!.dispatchEvent(new Event('afterprint'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(back).toBe(true);
+      // Without afterprint (some PDF viewers don't send it): a moment later.
+      const again = send(PDF, 'scooch-a4.pdf');
+      await frameLoaded(() => {});
+      let backAgain = false;
+      void (await again).back.then(() => (backAgain = true));
+      await vi.advanceTimersByTimeAsync(1600);
+      expect(backAgain).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test('downloaded instead: back right away', async () => {
+    browser({ viewer: false, popups: false });
+    let back = false;
+    void (await (await printBytes())(PDF, 'scooch-a4.pdf')).back.then(() => (back = true));
+    await Promise.resolve();
+    expect(back).toBe(true);
   });
 });

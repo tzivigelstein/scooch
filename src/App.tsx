@@ -14,6 +14,7 @@ import { preloadCrop } from './components/canvas/cropMode.ts';
 import { ContextMenuContent, preloadContextMenu, useContextMenu } from './components/canvas/contextMenu.ts';
 import { LiveRegions } from './components/feedback/LiveRegions.tsx';
 import { NoticePill } from './components/feedback/NoticePill.tsx';
+import { PrintSummary } from './components/feedback/PrintSummary.tsx';
 import { Tooltip } from './components/feedback/Tooltip.tsx';
 import { PiecesPanel } from './components/pieces-panel/PiecesPanel.tsx';
 import { PropertiesPanel } from './components/properties-panel/PropertiesPanel.tsx';
@@ -163,6 +164,7 @@ export function App() {
         {t('app.skip')}
       </a>
       <Topbar />
+      <PrintSummary />
       <div id="workspace" className="workspace" {...drop}>
         <Rail />
         <PiecesPanel />

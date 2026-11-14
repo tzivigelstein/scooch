@@ -73,7 +73,7 @@ export const piece = (id: number, asset: string, x: number, y: number, props: Pa
  * keys on; no notice. `doc` patches the document on top of that.
  */
 export function resetState(doc: Partial<DocumentState> = {}) {
-  usePrefs.setState({ unit: 'mm', singleKeys: true, grid: { ...GRID_DEFAULTS }, sections: {}, cutOptions: false });
+  usePrefs.setState({ unit: 'mm', singleKeys: true, grid: { ...GRID_DEFAULTS }, sections: {}, cutOptions: false, printing: { tip: true, summary: true } });
   setView({ sheet: 1, pinned: false, flash: null, busyText: '', alignTo: 'selection', distribute: 'gap', drawer: null, propsTab: 'sheet', editing: false, cropping: null, loading: false });
   setDocument({
     sheets: [{ id: 1 }],

@@ -82,11 +82,12 @@ export function Tooltip() {
     // With the keyboard, the next focus is a keyboard one.
     const onKeyDown = () => (s.lastPointer = -Infinity);
     // Esc closes the tooltip without moving the focus and does nothing else. In
-    // a panel or a dialog, Esc also does its own thing (back to the piece,
-    // close), and the tooltip goes with it.
+    // a panel, a dialog or the summary card, Esc also does its own thing (back
+    // to the piece, close), and the tooltip goes with it.
     const onEscape = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || !s.target) return;
-      const inOverlay = (e.target as Element).closest?.('.panel, dialog') || s.target.closest('.panel, dialog');
+      const overlays = '.panel, dialog, .print-summary';
+      const inOverlay = (e.target as Element).closest?.(overlays) || s.target.closest(overlays);
       hide();
       if (inOverlay) return;
       e.preventDefault();

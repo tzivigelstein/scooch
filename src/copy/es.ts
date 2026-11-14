@@ -79,9 +79,7 @@ const es = {
     redo: 'Rehacer',
     shortcuts: 'Atajos de teclado',
     download: 'Descargar PDF',
-    downloadNote: 'Al imprimirlo, elige «Tamaño real» o «100 %»',
     print: 'Imprimir',
-    printNote: 'En el diálogo de impresión, elige «Tamaño real» o «100 %»',
   },
 
   // «Piezas» panel and piece names
@@ -504,7 +502,7 @@ const es = {
     cleared: { one: 'Se quitó 1 pieza', other: 'Se quitaron las {n} piezas' },
     pageCropDropped: 'La página {page} tiene otro tamaño, así que se quitó el recorte',
     sizeOutOfRange: { one: '{names} no se puede llevar a ese tamaño: su escala pasaría de 1 % a 1000 %', other: '{n} piezas no se pueden llevar a ese tamaño: su escala pasaría de 1 % a 1000 %' },
-    downloaded: 'Se descargó {file}. Al imprimirlo, elige «Tamaño real» o «100 %».',
+    downloaded: 'Se descargó {file}',
     // Ctrl+S: there is nothing to save by hand
     autosave: 'Los cambios se guardan automáticamente',
     // Projects
@@ -520,10 +518,8 @@ const es = {
     saveAsNew: 'Guardar como nuevo',
     deleteProject: 'Eliminar',
     seeProjects: 'Ver proyectos',
-    printDialog: 'En el diálogo de impresión, elige «Tamaño real» o «100 %» y el papel {paper}',
-    printTab:
-      'Se abrió el PDF en otra pestaña. Imprímelo desde ahí con «Tamaño real» o «100 %» y el papel {paper}.',
-    printDownload: 'Se descargó {file}. Ábrelo e imprímelo con «Tamaño real» o «100 %» y el papel {paper}.',
+    printTab: 'Se abrió el PDF en otra pestaña. Imprímelo desde ahí.',
+    printDownload: 'Se descargó {file}. Ábrelo para imprimirlo.',
   },
 
   // While something loads or is created (in the pill)
@@ -685,22 +681,46 @@ const es = {
     fallbackName: 'hoja',
   },
 
-  // Donation dialog (on the first Print or Download PDF)
+  // The request for a donation, at the bottom of the summary after printing
   donate: {
-    close: 'Cerrar y seguir sin aportar',
-    title: '¿Te ahorró tiempo y papel?',
-    body1: '{app} es gratis, sin anuncios ni marcas de agua, y no pide cuenta. Se mantiene gracias a personas como tú.',
-    body2: 'Si te sirvió, con un aporte en Patreon ayudas a que siga siendo gratis y a que mejore.',
-    benefits: {
-      noAds: 'Sin anuncios',
-      noWatermark: 'Sin marcas de agua',
-      private: 'Tus archivos no salen del navegador',
-    },
     cta: 'Aportar en Patreon',
-    ctaNote: 'Se abre en otra pestaña y tu PDF sigue en curso',
-    skip: 'Seguir sin aportar',
-    never: 'No volver a mostrar en este dispositivo',
-    thanks: 'Gracias por usar {app}, con o sin aporte',
+    ctaNote: 'Se abre en otra pestaña',
+    never: 'No volver a mostrar',
+  },
+
+  // The advice before printing or downloading
+  printTip: {
+    title: 'Antes de imprimir',
+    titleDownload: 'Antes de descargar',
+    lead: 'En el diálogo de impresión, elige:',
+    leadDownload: 'Cuando lo imprimas, elige:',
+    scaleStep: 'Escala: «Tamaño real» o «100 %»',
+    paperStep: 'Papel: {paper}',
+    // The drawing of a print dialog (the browser's options, as they read there)
+    scale: 'Escala',
+    paper: 'Papel',
+    fit: 'Ajustar a la página',
+    actual: '100 %',
+    never: 'No volver a mostrar',
+    print: 'Imprimir',
+    download: 'Descargar',
+    cancel: 'Cancelar',
+  },
+
+  // The summary after printing or downloading (what the PDF saves)
+  summary: {
+    title: 'Resumen del PDF',
+    close: 'Cerrar el resumen',
+    percent: '{n} %',
+    usage: { one: '{pct} de la hoja aprovechada', other: '{pct} de las hojas aprovechadas' },
+    sheets: { one: 'Usaste {n} hoja en lugar de {baseline}', other: 'Usaste {n} hojas en lugar de {baseline}' },
+    baseline: 'Comparado con imprimir cada pieza en su propia hoja',
+    grams: 'Son unos {n} g de papel menos',
+    ream: 'Es el {n} % de una resma de 500 hojas',
+    stack: 'Es una pila de {n} mm menos',
+    total: { one: 'Llevas {n} hoja ahorrada', other: 'Llevas {n} hojas ahorradas' },
+    milestone: 'Llegaste a {n} hojas ahorradas',
+    suggest: 'Con <link>Acomodar</link> podrían entrar en una hoja menos',
   },
 
   // Projects saved in the browser
@@ -775,6 +795,9 @@ const es = {
   // «Preferencias» dialog (settings of this browser)
   prefs: {
     title: 'Preferencias',
+    printing: 'Impresión',
+    printTip: 'Consejo antes de imprimir',
+    printSummary: 'Resumen después de imprimir',
     units: 'Unidades',
     unitsHint: 'Para mostrar y escribir medidas. No cambia el documento ni el PDF.',
     // After the visible symbol («mm»), for screen readers

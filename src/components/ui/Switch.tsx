@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-/** A labeled on/off switch with a hint (a checkbox with role="switch"). */
+/** A labeled on/off switch, with an optional hint (a checkbox with role="switch"). */
 export function Switch({
   id,
   label,
@@ -11,7 +11,7 @@ export function Switch({
 }: {
   id: string;
   label: ReactNode;
-  hint: string;
+  hint?: string;
   checked: boolean;
   onChange: (on: boolean) => void;
   'aria-keyshortcuts'?: string;
@@ -21,11 +21,13 @@ export function Switch({
     <div className="switch-row">
       <label htmlFor={id}>
         {label}
-        <span className="switch-hint" id={`${id}-hint`}>
-          {hint}
-        </span>
+        {hint && (
+          <span className="switch-hint" id={`${id}-hint`}>
+            {hint}
+          </span>
+        )}
       </label>
-      <input type="checkbox" role="switch" id={id} aria-describedby={`${id}-hint`} checked={checked} onChange={(e) => onChange(e.target.checked)} {...rest} />
+      <input type="checkbox" role="switch" id={id} aria-describedby={hint ? `${id}-hint` : undefined} checked={checked} onChange={(e) => onChange(e.target.checked)} {...rest} />
     </div>
   );
 }

@@ -1,7 +1,9 @@
-// Printing and the donation dialog: a `test` whose `app` can start with
+// Printing and the summary after it: a `test` whose `app` starts with the
+// advice before printing and the summary after turned on, and can start with
 //   - a spy on the print iframe's print() (`printSpy`): it records each call
 //     (the iframe's src and its document's type) instead of opening the
-//     browser's dialog, or throws ('throw') like a browser that can't print it;
+//     browser's dialog, then closes it (afterprint), or throws ('throw') like
+//     a browser that can't print it;
 //   - a query string (`appQuery`, e.g. ?donar=… for the donation dialog);
 //   - localStorage keys set before the app starts (`initialStorage`);
 //   - full Chromium, which has a PDF viewer (`pdfViewer`), instead of the
@@ -47,6 +49,8 @@ function installPrintSpy(mode: PrintSpy) {
         win.print = () => {
           if (state.mode === 'throw') throw new Error('print() failed (forced by the test)');
           state.calls.push({ src: frame.src, contentType: frame.contentDocument?.contentType ?? null });
+          // The person closes the print dialog.
+          setTimeout(() => win.dispatchEvent(new Event('afterprint')), 0);
         };
       }
       return win;
@@ -91,6 +95,7 @@ export const test = base.extend<PrintFixtures>({
     if (printSpy) await page.addInitScript(installPrintSpy, printSpy);
     if (Object.keys(initialStorage).length) await page.addInitScript(seedLocalStorage, initialStorage);
     const app = new App(page, info);
+    app.printing = true;
     await app.open(appQuery);
     await use(app);
   },

@@ -1,20 +1,10 @@
-// The donation dialog when printing or downloading. Honest: continuing without
-// donating is just as easy, there are no countdowns or guilt, and the export
-// asked for always goes on, however the dialog closes.
+// The request for a donation: a discreet link at the bottom of the summary
+// after printing or downloading (never a dialog, never before the printer).
+// Only with a valid https Patreon URL, once per page load (DONATE_EVERY), and
+// never again on this device after «No volver a mostrar».
 
-import { create } from 'zustand';
 import { DONATE_EVERY, DONATE_STORAGE, DONATE_URL } from '../../config.ts';
 import { storageGet, storageSet } from '../../services/storage/local.ts';
-import { DonateContent } from './lazy.ts';
-
-export type DonateVia = 'cta' | 'skip' | 'close' | 'esc' | 'backdrop';
-
-interface DonateState {
-  /** Open, with what resolves askDonation and who opened it. */
-  request: { resolve: (via: DonateVia) => void; opener: Element | null } | null;
-}
-
-export const useDonate = create<DonateState>()(() => ({ request: null }));
 
 let askedThisSession = false;
 
@@ -26,31 +16,13 @@ export function donateUrl() {
   return /^https:\/\/\S+$/.test(url) ? url : '';
 }
 
-/** Should the dialog show now? */
-export function shouldAskDonation() {
-  if (!donateUrl()) return false;
-  if (storageGet(DONATE_STORAGE) === 'never') return false;
-  return DONATE_EVERY === 'always' || !askedThisSession;
-}
-
-export const isDonationOpen = () => !!useDonate.getState().request;
-
-/**
- * Opens the dialog. The promise resolves with how it closed ('cta', 'skip',
- * 'close', 'esc' or 'backdrop') in the same user gesture that closed it.
- */
-export async function askDonation(): Promise<DonateVia> {
+/** Should this summary ask? (Asking counts: the next one, in this page load, won't.) */
+export function takeDonationAsk() {
+  if (!donateUrl() || storageGet(DONATE_STORAGE) === 'never') return false;
+  if (DONATE_EVERY === 'session' && askedThisSession) return false;
   askedThisSession = true;
-  const opener = document.activeElement;
-  await DonateContent.preload();
-  return new Promise((resolve) => useDonate.setState({ request: { resolve, opener } }));
+  return true;
 }
 
-/** Every way of closing it ends here, and the export goes on. */
-export function finishDonation(via: DonateVia) {
-  const request = useDonate.getState().request;
-  if (!request) return;
-  if ((document.getElementById('donate-never') as HTMLInputElement | null)?.checked) storageSet(DONATE_STORAGE, 'never');
-  useDonate.setState({ request: null });
-  request.resolve(via);
-}
+/** «No volver a mostrar»: never asks again on this device. */
+export const neverAskDonation = () => storageSet(DONATE_STORAGE, 'never');

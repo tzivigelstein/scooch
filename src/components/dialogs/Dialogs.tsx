@@ -6,33 +6,32 @@ import { usePrefs } from '../../state/prefs.ts';
 import { Dialog } from '../ui/Dialog.tsx';
 import { ConfirmDialog } from './ConfirmDialog.tsx';
 import { closeDialog, useDialogs, type DialogName } from './dialogs.ts';
-import { finishDonation, useDonate } from './donate.ts';
-import { DonateContent, PrefsContent, ProjectsContent, ShortcutsContent } from './lazy.ts';
+import { PrefsContent, PrintTipContent, ProjectsContent, ShortcutsContent } from './lazy.ts';
+import { finishTip, usePrintTip } from './printTip.ts';
 
 const byId = (id: string) => () => document.getElementById(id);
 const otherDialogOpen = (name: DialogName) => () => Object.keys(useDialogs.getState().open).some((other) => other !== name);
 
 export function Dialogs() {
   const open = useDialogs((s) => s.open);
-  const donate = useDonate((s) => s.request);
+  const tip = usePrintTip((s) => s.request);
   const singleKeys = usePrefs((s) => s.singleKeys);
   return (
     <>
       <Dialog
-        id="donate"
-        className="donate"
-        labelledBy="donate-title"
-        describedBy="donate-body"
-        open={!!donate}
-        returnTo={donate?.opener ?? null}
-        // The focus on the title: a hurried Enter doesn't open Patreon by accident.
-        initialFocus={byId('donate-title')}
-        onCancel={() => finishDonation('esc')}
-        onClose={() => finishDonation('close')}
+        id="print-tip"
+        className="dialog print-tip"
+        labelledBy="print-tip-title"
+        describedBy="print-tip-steps"
+        open={!!tip}
+        returnTo={tip?.opener ?? null}
+        // On its button: Enter prints (or downloads) right away; Esc cancels.
+        initialFocus={byId('print-tip-go')}
+        onClose={() => finishTip(false)}
       >
-        {donate && (
+        {tip && (
           <Suspense fallback={null}>
-            <DonateContent />
+            <PrintTipContent />
           </Suspense>
         )}
       </Dialog>

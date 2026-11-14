@@ -70,12 +70,11 @@ export function Topbar() {
           icon={Download}
           label={t('bar.download')}
           tip={t('bar.download')}
-          note={t('bar.downloadNote')}
           shortcut="download"
           disabled={off('export', busy || empty)}
           onClick={() => void exportPdf()}
         />
-        <Button id="print" className="btn primary" icon={Printer} tip={t('bar.print')} note={t('bar.printNote')} shortcut="print" disabled={off('print', busy || empty)} onClick={() => void printPdf()}>
+        <Button id="print" className="btn primary" icon={Printer} tip={t('bar.print')} shortcut="print" disabled={off('print', busy || empty)} onClick={() => void printPdf()}>
           <span className="btn-label">{t('bar.print')}</span>
         </Button>
       </div>
