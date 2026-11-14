@@ -1,28 +1,23 @@
 // «Foto carnet y de pasaporte para imprimir»: the app's document photo sizes
 // (only those: src/core/crop.js, group 'id'), a sheet of copies, and the
-// requirements the app doesn't check.
+// requirements the app doesn't check. Which size a procedure asks for is the
+// office's to say: the page names no country or procedure for a size.
 
+import { PHOTO_SIZES } from '../../../core/crop.js';
 import type { PaperId } from '../../../core/types.ts';
 import { LEGAL_PATHS } from '../../paths.ts';
 import { guide } from '../../guide.ts';
 import { app, capacity, editorHref, link, mm, note, num, paperName, paragraphs, photo, photoName, sheetFigure, size, steps, table, ui, type Layout } from '../../kit.ts';
 import { PATHS } from './paths.ts';
 
-/** Where each size is asked for: examples whose official size is that one. */
-const USES: Readonly<Record<string, string>> = {
-  'id-4x4': 'Foto carnet habitual en Argentina',
-  'passport-35x45': 'Pasaporte del Reino Unido y visa Schengen, entre otros',
-  'visa-5x5': 'Pasaporte y visa de Estados Unidos (2 × 2 pulgadas)',
-};
-
 export function idPhotos() {
-  const ids = Object.keys(USES);
+  const ids = PHOTO_SIZES.filter((s) => s.group === 'id').map((s) => s.id);
   const layout = { margin: 5, gap: 2 };
   const papers: PaperId[] = ['A4', 'letter'];
   const counts = (id: string, paper: PaperId) => capacity(photo(id), { paper, ...layout });
   const rows = ids.map((id) => {
     const p = photo(id);
-    return [photoName(id), size(p.w, p.h), USES[id], ...papers.map((paper) => num(counts(id, paper).grid.count))];
+    return [photoName(id), size(p.w, p.h), ...papers.map((paper) => num(counts(id, paper).grid.count))];
   });
   // Where «Acomodar» fits more than the grid (mixing upright and turned photos).
   const more = ids.flatMap((id) => papers.filter((paper) => counts(id, paper).count > counts(id, paper).grid.count).map((paper) => `${num(counts(id, paper).count)} de ${photoName(id)} en ${paperName(paper)}`));
@@ -49,12 +44,12 @@ export function idPhotos() {
         h2: `Medidas que trae ${app}`,
         html:
           table(
-            [{ head: `Tamaño en ${app}` }, { head: 'Medida' }, { head: 'Se pide, por ejemplo, en' }, ...papers.map((p) => ({ head: `En ${paperName(p)}`, num: true }))],
+            [{ head: `Tamaño en ${app}` }, { head: 'Medida' }, ...papers.map((p) => ({ head: `En ${paperName(p)}`, num: true }))],
             rows,
             `Copias por hoja con ${ui('props.fill')}, con márgenes de ${mm(layout.margin)} y ${mm(layout.gap)} de separación para cortarlas.`
           ) +
           paragraphs(
-            'Las medidas y los ejemplos son orientativos: lo que vale es lo que indique la entidad que pide la foto.',
+            `La medida la decide la oficina que pide la foto, y cambia según el país y el trámite. Revisa su requisito antes de elegir uno de estos tamaños. Si pide otra medida, elige Otra medida en la ${link(PATHS.howMany, 'calculadora')} y abre la hoja desde ahí.`,
             ...(more.length ? [`Con ${ui('bar.arrange')}, que mezcla fotos derechas y rotadas, a veces entran más: ${more.join(', ')}. La ${link(PATHS.howMany, 'calculadora')} lo muestra para cada medida.`] : [])
           ),
       },

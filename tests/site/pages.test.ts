@@ -4,7 +4,9 @@
 // that can be checked by machine. The build's own output is checked in
 // e2e/specs/site-pages.spec.ts.
 import { describe, expect, test } from 'vitest';
+import { PHOTO_SIZES } from '../../src/core/crop.js';
 import { deepLinkSearch, parseDeepLink, setsUp } from '../../src/core/deeplink.js';
+import { photoName } from '../../src/site/kit.ts';
 import { alternates } from '../../src/site/seo.ts';
 import { pageFile, readLegal, sitePages, siteFiles } from '../../src/site/site.ts';
 import type { SitePage } from '../../src/site/types.ts';
@@ -113,6 +115,14 @@ describe('links that open the editor', () => {
     expect(setsUp(link)).toBe(true);
     const photo = link!.photo && (link!.photo.id ?? { w: link!.photo.w, h: link!.photo.h });
     expect(deepLinkSearch({ ...link!.settings, ...(photo ? { photo } : {}) })).toBe(href.slice(1));
+  });
+});
+
+describe('the photo ID guide', () => {
+  test('its table lists exactly the app’s document photo sizes, and no size is called the usual one anywhere', () => {
+    const d = doc(pages.find((p) => p.id === 'id-photos')!);
+    expect([...d.querySelectorAll('tbody th')].map((th) => th.textContent)).toEqual(PHOTO_SIZES.filter((s) => s.group === 'id').map((s) => photoName(s.id)));
+    expect(d.body.textContent).not.toMatch(/habitual|usual/i);
   });
 });
 
