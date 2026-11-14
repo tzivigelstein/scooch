@@ -80,12 +80,13 @@ test('a two-page PDF: page 1 keeps A5’s proportion, page 2 is 2:1, and changin
   await expect(page.locator('#page')).toHaveValue('2');
 });
 
-test('the downloaded PDF is named after the app and the paper, and the notice says how to print it', async ({ app, page }) => {
+test('the downloaded PDF is named after the app and the paper, and the notice names the file', async ({ app, page }) => {
   await app.addFiles(['small.jpg']);
   await expect(page.locator('#paper-label')).toHaveText('A4 · 210 × 297 mm', { useInnerText: true });
   const a4 = await app.download();
   expect(a4.name).toBe('scooch-a4.pdf');
-  expect((await app.notice()).text).toMatch(/^Se descargó scooch-a4\.pdf\. .*Tamaño real.*100 %/);
+  // How to print it is the advice before downloading (print-and-download.spec, turned off here).
+  expect((await app.notice()).text).toBe('Se descargó scooch-a4.pdf');
   await app.openSheet();
   await page.locator('#landscape').check();
   await page.locator('#paper').selectOption('A3');

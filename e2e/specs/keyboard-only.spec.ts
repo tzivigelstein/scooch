@@ -241,7 +241,7 @@ test.describe('editing with the keyboard only', () => {
       const popup = page.context().waitForEvent('page');
       await page.keyboard.press('Control+p');
       const tab = await popup;
-      await expect.poll(async () => (await app.notice()).text).toMatch(/^Se abrió el PDF en otra pestaña\. Imprímelo desde ahí con «Tamaño real»/);
+      await expect.poll(async () => (await app.notice()).text).toBe('Se abrió el PDF en otra pestaña. Imprímelo desde ahí.');
       await tab.close();
     });
   });

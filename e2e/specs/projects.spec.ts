@@ -713,11 +713,14 @@ for (const viewport of [
       await audit('confirmation');
       await page.keyboard.press('Escape');
 
+      // The summary after downloading (and its request for a donation): the advice and the summary on.
+      await page.evaluate(() => localStorage.setItem('scooch:print-preferences', JSON.stringify({ v: 1, tip: true, summary: true })));
       await app.open(`?donar=${encodeURIComponent('https://www.patreon.com/ejemplo')}`);
       await page.locator('#export').click();
-      await expect(page.locator('#donate[open] #donate-close')).toBeVisible();
-      await audit('donation');
-      await page.keyboard.press('Escape');
+      await expect(page.locator('#print-tip')).toHaveAttribute('open', '');
+      await Promise.all([page.waitForEvent('download'), page.locator('#print-tip-go').click()]);
+      await expect(page.locator('#print-summary #summary-donate')).toBeVisible();
+      await audit('summary after downloading');
       expect(missing).toEqual([]);
     });
   });
