@@ -13,16 +13,22 @@ export interface Spot {
 /** How far apart moves are on the fingers' clock (ms): a frame at 60 Hz. */
 export const FRAME_MS = 16;
 
+/**
+ * How far ahead of the system clock the fingers' clock starts (ms). The
+ * browser turns a time since the epoch into its own clock with an offset it
+ * takes once, and this machine's system clock moves against it while the
+ * browser runs (2.5 s back a few minutes into a full run): a time taken from
+ * Date.now() then lands before the page was opened, where every event reads
+ * 0. An hour ahead it never does, and the page only compares the fingers'
+ * times with each other.
+ */
+const CLOCK_AHEAD_MS = 3_600_000;
+
 export class Fingers {
   private readonly down = new Map<number, Spot>();
 
-  /**
-   * When the events say they happened (ms since the epoch), or null for when
-   * each is sent. With a clock, each move comes FRAME_MS after the last one
-   * (and `wait` adds a pause), so the page sees the fingers move at exact
-   * speeds, whatever the machine's load.
-   */
-  clock: number | null = null;
+  /** When the next event says it happened (ms since the epoch), or null for when it is sent. */
+  private clock: number | null = null;
 
   private constructor(
     private readonly page: Page,
@@ -37,6 +43,16 @@ export class Fingers {
   private send(type: 'touchStart' | 'touchMove' | 'touchEnd') {
     const timestamp = this.clock === null ? {} : { timestamp: this.clock / 1000 };
     return this.cdp.send('Input.dispatchTouchEvent', { type, touchPoints: [...this.down].map(([id, p]) => ({ id, x: p.x, y: p.y })), ...timestamp });
+  }
+
+  /**
+   * From now on the events carry the fingers' own clock: each move comes
+   * FRAME_MS after the last one and `wait` adds a pause, so the page sees the
+   * fingers move at exact speeds, whatever the machine's load.
+   */
+  timed() {
+    this.clock = Date.now() + CLOCK_AHEAD_MS;
+    return this;
   }
 
   /** Lets `ms` go by on the fingers' clock before the next event. */

@@ -246,24 +246,30 @@ async function fiveSheets(app: App) {
  * step / FRAME_MS px per ms); still down.
  */
 async function panTogether(page: Page, at: Spot, step: Spot) {
-  const fingers = await Fingers.on(page);
-  fingers.clock = Date.now();
+  await page.evaluate(() => {
+    const w = window as unknown as { moveTimes?: number[] };
+    if (!w.moveTimes) document.addEventListener('pointermove', (e) => e.isPrimary && e.pointerType === 'touch' && w.moveTimes!.push(e.timeStamp), true);
+    w.moveTimes = [];
+  });
+  const fingers = (await Fingers.on(page)).timed();
   const pair = (i: number) => ({ 1: { x: at.x - 50 + step.x * i, y: at.y + step.y * i }, 2: { x: at.x + 50 + step.x * i, y: at.y + step.y * i } });
   await fingers.press(pair(0));
   for (let i = 1; i <= 8; i++) await fingers.move(pair(i));
+  const times = await page.evaluate(() => (window as unknown as { moveTimes: number[] }).moveTimes);
+  expect(times.slice(1).map((t, i) => Math.round(t - times[i])), `the page got each move on the fingers' clock (${times.join(', ')})`).toEqual(Array<number>(7).fill(FRAME_MS));
   return fingers;
 }
 
-/** Starts noting the stage's scroll every frame (until scrollsNoted). */
+/** Starts noting the stage's scroll at every frame, with the frame's time (until scrollsNoted). */
 const noteScrolls = (page: Page) =>
   page.evaluate(() => {
-    const w = window as unknown as { scrolls: number[]; noting: boolean };
+    const w = window as unknown as { scrolls: [number, number][]; noting: boolean };
     const stage = document.getElementById('stage')!;
     w.scrolls = [];
     w.noting = true;
-    const note = () => {
+    const note = (t: number) => {
       if (!w.noting) return;
-      w.scrolls.push(stage.scrollTop);
+      w.scrolls.push([t, stage.scrollTop]);
       requestAnimationFrame(note);
     };
     requestAnimationFrame(note);
@@ -272,27 +278,30 @@ const noteScrolls = (page: Page) =>
 /** For how many frames the stage's scroll has stayed where it is. */
 const stillFor = (page: Page) =>
   page.evaluate(() => {
-    const s = (window as unknown as { scrolls: number[] }).scrolls;
+    const s = (window as unknown as { scrolls: [number, number][] }).scrolls;
     let n = 0;
-    while (n < s.length - 1 && s[s.length - 1 - n] === s[s.length - 2 - n]) n++;
+    while (n < s.length - 1 && s[s.length - 1 - n][1] === s[s.length - 2 - n][1]) n++;
     return n;
   });
 
-/** Stops noting and returns the scroll of each frame. */
+/** Stops noting and returns the time of each frame (ms) and the scroll then. */
 const scrollsNoted = (page: Page) =>
   page.evaluate(() => {
-    const w = window as unknown as { scrolls: number[]; noting: boolean };
+    const w = window as unknown as { scrolls: [number, number][]; noting: boolean };
     w.noting = false;
     return w.scrolls;
   });
 
-/** Lifts the fingers and waits until the stage has stayed put for 10 frames; returns its scroll each frame. */
+/** Lifts the fingers and waits until the stage has stayed put for 10 frames; returns each frame's time and scroll. */
 async function liftAndSettle(page: Page, fingers: Fingers) {
   await noteScrolls(page);
   await fingers.lift();
   await expect.poll(() => stillFor(page), { message: 'the sheets come to rest' }).toBeGreaterThanOrEqual(10);
   return scrollsNoted(page);
 }
+
+/** The scroll positions some noted frames went through. */
+const tops = (noted: [number, number][]) => new Set(noted.map(([, top]) => top));
 
 test.describe('the glide after two fingers pan', () => {
   test.beforeEach(async ({ page }) => {
@@ -305,13 +314,17 @@ test.describe('the glide after two fingers pan', () => {
     const fingers = await panTogether(page, await emptySpot(page), { x: 0, y: -24 });
     const released = (await stageState(page)).scrollTop;
     expect(released - fit.scrollTop, 'the fingers panned 8 × 24 px').toBeCloseTo(192, 0);
-    const seen = (await liftAndSettle(page, fingers)).filter((top, i, all) => i === 0 || top !== all[i - 1]);
-    expect(seen.every((top, i) => i === 0 || top > seen[i - 1]), `always down: ${seen.join(', ')}`).toBe(true);
-    const glided = seen.at(-1)! - released;
+    // The frames where the scroll changed, with the frame's time.
+    const moved = (await liftAndSettle(page, fingers)).filter(([, top], i, all) => i > 0 && top !== all[i - 1][1]);
+    expect(moved.every(([, top], i) => top > (i ? moved[i - 1][1] : released)), `always down: ${moved.map(([, top]) => top).join(', ')}`).toBe(true);
+    const glided = moved.at(-1)![1] - released;
     expect(Math.abs(glided - glideDistance(24 / FRAME_MS)), `${glided} px after the fingers lifted`).toBeLessThanOrEqual(2);
-    // Each frame noted while it moved: the first half of them went much further than the second.
-    const half = Math.floor(seen.length / 2);
-    expect(seen[half] - seen[0], 'it slows down').toBeGreaterThan(3 * (seen.at(-1)! - seen[half]));
+    // Its speed over its first 200 ms and over the 200 ms before it stopped (px per ms).
+    const speed = (a: [number, number], b: [number, number]) => (b[1] - a[1]) / (b[0] - a[0]);
+    const [first, last] = [moved[0], moved.at(-1)!];
+    const early = speed(first, moved.find(([t]) => t >= first[0] + 200)!);
+    const late = speed(moved.findLast(([t]) => t <= last[0] - 200)!, last);
+    expect(early, `it slows down: ${early} px/ms at first, ${late} px/ms at the end`).toBeGreaterThan(10 * late);
     const now = await stageState(page);
     expect(now.pct, 'the zoom as it was').toBe(fit.pct);
     expect(now.scrollLeft).toBe(0);
@@ -324,16 +337,15 @@ test.describe('the glide after two fingers pan', () => {
     const held = await stageState(page);
     // A tenth of a second still before lifting.
     fingers.wait(100);
-    expect(new Set(await liftAndSettle(page, fingers)), 'no glide').toEqual(new Set([held.scrollTop]));
+    expect(tops(await liftAndSettle(page, fingers)), 'no glide').toEqual(new Set([held.scrollTop]));
 
     // One finger still and the other moving away from it: the midpoint moves too, but the fingers were zooming.
-    const zoom = await Fingers.on(page);
-    zoom.clock = Date.now();
+    const zoom = (await Fingers.on(page)).timed();
     await zoom.press({ 1: { x: at.x - 60, y: at.y }, 2: { x: at.x, y: at.y } });
     for (let i = 1; i <= 8; i++) await zoom.move({ 2: { x: at.x + i * 12, y: at.y - i * 4 } });
     const zoomed = await stageState(page);
     expect(zoomed.pct, 'it zoomed').toBeGreaterThan(held.pct * 1.5);
-    expect(new Set(await liftAndSettle(page, zoom)), 'no glide').toEqual(new Set([zoomed.scrollTop]));
+    expect(tops(await liftAndSettle(page, zoom)), 'no glide').toEqual(new Set([zoomed.scrollTop]));
     const after = await stageState(page);
     expect(after.pct, 'the zoom stopped with the fingers').toBe(zoomed.pct);
     expect(after.scrollLeft).toBe(zoomed.scrollLeft);
@@ -344,7 +356,7 @@ test.describe('the glide after two fingers pan', () => {
     await fiveSheets(app);
     const fingers = await panTogether(page, await emptySpot(page), { x: 0, y: -24 });
     const released = (await stageState(page)).scrollTop;
-    expect(new Set(await liftAndSettle(page, fingers))).toEqual(new Set([released]));
+    expect(tops(await liftAndSettle(page, fingers))).toEqual(new Set([released]));
   });
 
   test('a new touch, the wheel, a key or the zoom buttons stop the glide at once', async ({ app, page }) => {
@@ -369,8 +381,7 @@ test.describe('the glide after two fingers pan', () => {
         const fingers = await panTogether(page, at, { x: 0, y: -24 });
         await fingers.lift();
         const lifted = (await stageState(page)).scrollTop;
-        await frames(page, 1);
-        expect((await stageState(page)).scrollTop, 'gliding').toBeGreaterThan(lifted);
+        await expect.poll(async () => (await stageState(page)).scrollTop, { message: 'gliding' }).toBeGreaterThan(lifted);
         const held = await stop();
         await frames(page, 2);
         const stopped = (await stageState(page)).scrollTop;
