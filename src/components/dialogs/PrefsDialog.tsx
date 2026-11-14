@@ -1,5 +1,5 @@
 // «Preferencias»: units (mm, cm or in), «Atajos de 1 tecla» (WCAG 2.1.4),
-// the advice before printing and the summary after, and the theme.
+// the advice before printing and the summary after, the theme, and the usage tips.
 // Settings of this browser: saved in localStorage, outside the history and the project.
 
 import { X } from 'lucide-react';
@@ -8,6 +8,8 @@ import { UNITS, type Unit } from '../../core/units.js';
 import { t } from '../../copy/index.ts';
 import { setPrinting, setSingleKeys, setTheme, usePrefs } from '../../state/prefs.ts';
 import { chooseUnit } from '../../state/actions/prefs.ts';
+import { restoreTips, setTipsOn, useTips } from '../../state/tips.ts';
+import { announce } from '../feedback/announcer.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
 import { Switch } from '../ui/Switch.tsx';
@@ -19,6 +21,8 @@ export default function PrefsDialog() {
   const singleKeys = usePrefs((s) => s.singleKeys);
   const printing = usePrefs((s) => s.printing);
   const theme = usePrefs((s) => s.theme);
+  const tipsOn = useTips((s) => s.on);
+  const dismissed = useTips((s) => s.dismissed.length > 0);
   const close = () => closeDialog('prefs');
   return (
     <>
@@ -69,6 +73,26 @@ export default function PrefsDialog() {
             onChange={setTheme}
             options={THEMES.map((value) => ({ value, label: <span>{t(`prefs.themes.${value}`)}</span> }))}
           />
+        </div>
+        <div className="pref-section" role="group" aria-labelledby="prefs-tips-title">
+          <h3 id="prefs-tips-title" className="pref-title">
+            {t('tips.prefsTitle')}
+          </h3>
+          <Switch id="tips-pref" label={<span>{t('tips.prefsSwitch')}</span>} checked={tipsOn} onChange={setTipsOn} />
+          {/* Stays focusable when there is nothing to bring back: pressing it then does nothing. */}
+          <button
+            type="button"
+            id="tips-restore"
+            className="chip-btn pref-btn"
+            aria-disabled={!dismissed || undefined}
+            onClick={() => {
+              if (!dismissed) return;
+              restoreTips();
+              announce(t('tips.restored'));
+            }}
+          >
+            {t('tips.restore')}
+          </button>
         </div>
       </div>
       <LegalLinks />

@@ -4,10 +4,11 @@
 // unit (saved and announced) is in unit-preference.test.tsx; that the choice
 // survives a reload, in e2e/specs/keyboard-only.spec.ts.
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import PrefsDialog from '../../src/components/dialogs/PrefsDialog.tsx';
 import { getPrefs, readStoredTheme, setSingleKeys } from '../../src/state/prefs.ts';
-import { resetState } from '../support/state.ts';
+import { neverShow, resetTips, useTips } from '../../src/state/tips.ts';
+import { heard, listen, resetState } from '../support/state.ts';
 
 const plain = (s: string | null | undefined) => String(s ?? '').replace(/ /g, ' ').trim();
 /** The text of the elements an aria-describedby / aria-labelledby points to. */
@@ -25,11 +26,11 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('Preferences', () => {
-  test('four groups, each named by its title: Unidades, Teclado, Impresión and Tema', () => {
+  test('five groups, each named by its title: Unidades, Teclado, Impresión, Tema and Consejos de uso', () => {
     render(<PrefsDialog />);
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Preferencias');
     const groups = screen.getAllByRole('group');
-    expect(groups.map((g) => referenced(g, 'aria-labelledby'))).toEqual(['Unidades', 'Teclado', 'Impresión', 'Tema']);
+    expect(groups.map((g) => referenced(g, 'aria-labelledby'))).toEqual(['Unidades', 'Teclado', 'Impresión', 'Tema', 'Consejos de uso']);
     expect(groups.map((g) => g.querySelector('h3')?.id)).toEqual(groups.map((g) => g.getAttribute('aria-labelledby')));
   });
 
@@ -107,6 +108,38 @@ describe('Preferences', () => {
     localStorage.setItem('scooch:theme-preference', JSON.stringify({ v: 1, theme: 'light' }));
     act(() => readStoredTheme());
     expect((screen.getByRole('radio', { name: 'Claro' }) as HTMLInputElement).checked).toBe(true);
+  });
+
+  test('Consejos de uso: «Mostrar consejos», on by default, turns them off in this browser; no hint', () => {
+    resetTips();
+    render(<PrefsDialog />);
+    const group = screen.getAllByRole('group')[4];
+    const toggle = within(group).getByRole('switch', { name: 'Mostrar consejos' }) as HTMLInputElement;
+    expect(toggle.checked).toBe(true);
+    expect(group.querySelector('.switch-hint')).toBeNull();
+    fireEvent.click(toggle);
+    expect(useTips.getState().on).toBe(false);
+    expect(JSON.parse(localStorage.getItem('scooch:usage-tips')!)).toMatchObject({ v: 1, on: false });
+  });
+
+  test('«Volver a mostrar los consejos» brings back the dismissed ones and says so; with none, it does nothing', () => {
+    listen();
+    resetTips();
+    render(<PrefsDialog />);
+    const restore = screen.getByRole('button', { name: 'Volver a mostrar los consejos' });
+    expect(restore.getAttribute('aria-disabled')).toBe('true');
+    fireEvent.click(restore);
+    expect(heard()).toBe('');
+    act(() => neverShow('undoKey'));
+    expect(restore.hasAttribute('aria-disabled')).toBe(false);
+    restore.focus();
+    fireEvent.click(restore);
+    expect(useTips.getState().dismissed).toEqual([]);
+    expect(heard()).toBe('Los consejos que ocultaste vuelven a mostrarse.');
+    // It stays where it was, focused, now with nothing to bring back.
+    expect(document.activeElement).toBe(restore);
+    expect(restore.getAttribute('aria-disabled')).toBe('true');
+    vi.useRealTimers();
   });
 });
 

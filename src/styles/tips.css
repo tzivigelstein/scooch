@@ -117,3 +117,13 @@
     bottom: calc(7.875rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
   }
 }
+
+/* «Volver a mostrar los consejos» in Preferencias. */
+.pref-btn {
+  justify-self: start;
+}
+
+.pref-btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: default;
+}
