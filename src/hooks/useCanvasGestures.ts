@@ -3,7 +3,8 @@
 // leaves only that one selected). With Shift or Ctrl/Cmd, adds or removes it.
 // On a handle: scales the piece or the group. On an empty spot: a marquee to
 // select (a click without dragging clears the selection). Two fingers zoom
-// and pan the view, and take back whatever the first one started.
+// and pan the view, and take back whatever the first one started; lifted
+// while panning, the view glides on.
 //
 // Performance: nothing re-renders while the pointer moves. The dragged pieces
 // travel in the drag layer (no clipping, so they can cross sheets) and are
@@ -15,6 +16,7 @@ import { DRAG_THRESHOLD, PINCH_THRESHOLD } from '../config.ts';
 import { bounds, scaleGroup } from '../core/align.js';
 import { maxGrowth, overlapsAny } from '../core/collide.js';
 import { planDrag, planDrop, planScale, scaleBounds, touchedBy, type Drag } from '../core/group.js';
+import { GLIDE_WINDOW, releaseVelocity, type GlideSample } from '../core/glide.js';
 import { keepCenterInside, placeOnNewSheet } from '../core/sheets.js';
 import type { Box, Point, Rect } from '../core/types.ts';
 import { pinchSpan, wheelFactor, type PinchPair } from '../core/zoom.js';
@@ -43,6 +45,7 @@ import {
   type PinchAnchor,
 } from '../components/canvas/viewport.ts';
 import { paintNewSheetSpot } from '../components/canvas/newSheetDrop.ts';
+import { startGlide, stopGlide } from '../components/canvas/glide.ts';
 import { getAsset } from '../state/assets.ts';
 import { getDocument, patchItems, useDocument, type Piece } from '../state/document.ts';
 import { flushUi } from '../state/flush.ts';
@@ -880,6 +883,7 @@ let pendingZoom: { factor: number; at: { x: number; y: number } } | null = null;
 let zoomFrame = 0;
 
 function onWheel(e: WheelEvent) {
+  stopGlide();
   if (!(e.ctrlKey || e.metaKey)) return;
   // Never the browser's page zoom over the canvas.
   e.preventDefault();
@@ -907,6 +911,8 @@ interface Pinch {
   /** How far apart they landed: until that changes by PINCH_THRESHOLD, they only pan. */
   start: number;
   zooming: boolean;
+  /** Where they were lately (their midpoint and distance), for the glide when they lift. */
+  samples: GlideSample[];
 }
 
 let pinch: Pinch | null = null;
@@ -924,7 +930,7 @@ function touchDown(e: PointerEvent) {
     touchSelection = { selection: getDocument().selection, pinned: getView().pinned, sheet: getView().sheet };
     return false;
   }
-  startPinch();
+  startPinch(e.timeStamp);
   return true;
 }
 
@@ -933,7 +939,7 @@ function touchDown(e: PointerEvent) {
  * piece goes back, nothing reaches the undo history) and the selection is
  * left as it was before it.
  */
-function startPinch() {
+function startPinch(t: number) {
   const [[a, p], [b, q]] = touches;
   cancelLongPress();
   if (gesture) finish(null);
@@ -943,7 +949,17 @@ function startPinch() {
     setSelection(before.selection, { pinned: before.pinned });
     setView({ sheet: before.sheet });
   }
-  pinch = { ids: [a, b], last: [p, q], now: [p, q], anchor: null, start: pinchSpan([p, q]).d, zooming: false };
+  pinch = { ids: [a, b], last: [p, q], now: [p, q], anchor: null, start: pinchSpan([p, q]).d, zooming: false, samples: [] };
+  sample(pinch, t);
+}
+
+/** Notes where the fingers are at time `t` (ms); both fingers' moves of one frame make one sample. */
+function sample(p: Pinch, t: number) {
+  const { x, y, d } = pinchSpan(p.now);
+  const last = p.samples.at(-1);
+  if (last?.t === t) Object.assign(last, { x, y, d });
+  else p.samples.push({ t, x, y, d });
+  while (p.samples[0].t < t - GLIDE_WINDOW) p.samples.shift();
 }
 
 /** Returns whether the move belongs to a pinch. */
@@ -956,6 +972,7 @@ function touchMove(e: PointerEvent) {
     const now: [Point, Point] = [...pinch.now];
     now[i] = { x: e.clientX, y: e.clientY };
     pinch.now = now;
+    sample(pinch, e.timeStamp);
     // At most once a frame, like the wheel.
     pinchFrame ||= requestAnimationFrame(stepPinch);
   }
@@ -971,7 +988,14 @@ function touchUp(e: PointerEvent) {
       cancelAnimationFrame(pinchFrame);
       stepPinch();
     }
+    const { samples } = pinch;
     pinch = null;
+    // Lifted while panning, the view glides on (its scroll goes against the
+    // fingers); a zoom never does, nor a finger the browser took.
+    if (e.type === 'pointerup') {
+      const v = releaseVelocity(samples, e.timeStamp);
+      startGlide({ x: -v.x, y: -v.y });
+    }
   }
   return true;
 }
@@ -1059,6 +1083,8 @@ export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
     canvas.addEventListener('pointerenter', enter);
     canvas.addEventListener('pointerleave', leave);
     node.addEventListener('mousedown', middle);
+    // A press on the stage stops a glide, before what is under it sees the press (crop mode keeps its presses from the stage).
+    node.addEventListener('pointerdown', stopGlide, true);
     node.addEventListener('pointerdown', onPointerDown);
     node.addEventListener('pointermove', onPointerMove);
     node.addEventListener('pointerup', onPointerUp);
@@ -1066,13 +1092,18 @@ export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
     node.addEventListener('touchstart', onTouch, { passive: false });
     node.addEventListener('touchmove', onTouch, { passive: false });
     node.addEventListener('scroll', onScroll, { passive: true });
+    // A key pressed (one that scrolls, a shortcut…): the person has moved on from the glide.
+    document.addEventListener('keydown', stopGlide, true);
     return () => {
+      stopGlide();
+      document.removeEventListener('keydown', stopGlide, true);
       node.removeEventListener('dblclick', onDoubleClick);
       node.removeEventListener('contextmenu', onContextMenu);
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('pointerenter', enter);
       canvas.removeEventListener('pointerleave', leave);
       node.removeEventListener('mousedown', middle);
+      node.removeEventListener('pointerdown', stopGlide, true);
       node.removeEventListener('pointerdown', onPointerDown);
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);

@@ -13,6 +13,7 @@ import { flushUi } from '../../state/flush.ts';
 import { isDragging } from '../../state/gesture.ts';
 import { getView, setView, type ZoomMode } from '../../state/view.ts';
 import { announce, cancelAnnounce } from '../feedback/announcer.ts';
+import { stopGlide } from './glide.ts';
 
 export interface BoxOffset {
   left: number;
@@ -120,6 +121,7 @@ export function fitZoom(mode: 'fit' | 'width') {
  * it is) unless it is a fit. Nothing changes during a drag.
  */
 export function zoomTo(next: number, { at = null as Point | null, mode = 'manual' as ZoomMode } = {}) {
+  stopGlide();
   const stageEl = stage();
   const sheets = sheetsEl();
   if (!stageEl || !sheets || isDragging()) return;
@@ -422,6 +424,7 @@ const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)'
  * over a short distance and without reduced motion.
  */
 export function revealRect(sheet: number, rect: Rect) {
+  stopGlide();
   const stageEl = stage();
   const sheets = sheetsEl();
   measureBoxes();
@@ -475,6 +478,7 @@ export function revealPieces(ids: readonly number[], primary: number) {
 
 /** Back to the top of the first sheet (another project opened: its sheets are another column). */
 export function scrollToStart() {
+  stopGlide();
   const stageEl = stage();
   if (!stageEl) return;
   stageEl.scrollTop = 0;
@@ -483,6 +487,7 @@ export function scrollToStart() {
 
 /** Shows the sheet (with its heading). */
 export function revealSheet(id: number) {
+  stopGlide();
   const page = pageNode(id);
   const box = measureBoxes().get(id);
   if (!page || !box) return;
