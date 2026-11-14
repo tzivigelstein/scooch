@@ -114,7 +114,10 @@ export const suggestArrange = (share, used, packed) => share !== null && share <
 // The browser doesn't say whether the person printed, so the total counts
 // what goes out, once per PDF: printing or downloading the same document
 // again adds nothing. A PDF is told apart by what it contains (its key), not
-// by when it was made.
+// by when it was made. A download is a file and counts at once; a print's
+// sheets wait (pending) and join the total later: at the next page load, when
+// another PDF goes out or when that one is downloaded. Whatever reaches a
+// milestone, the next summary shows it.
 
 /**
  * A short key for what a PDF contains, from any JSON-able description of it:
@@ -135,14 +138,38 @@ export function pdfKey(description) {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 
+const highest = (a, b) => (a === null ? b : b === null ? a : Math.max(a, b));
+
+/** Adds `n` sheets to the total, keeping the milestone they reach for the next summary. */
+function addToTotal(savings, n) {
+  const sheets = savings.sheets + n;
+  return { ...savings, sheets, milestone: highest(savings.milestone, milestoneReached(savings.sheets, sheets)) };
+}
+
+/** The pending print joins the total and the PDFs counted (`savings` unchanged without one). */
+export function settlePending(savings) {
+  const { pending } = savings;
+  if (!pending) return savings;
+  return { ...addToTotal(savings, pending.sheets), counted: [...savings.counted, pending.key], pending: null };
+}
+
 /**
  * Counts a PDF that went out (`savings` as storedprefs.parseSavings reads
- * it): its `saved` sheets go into the total unless that PDF was counted
- * before, and the next equivalent takes its turn either way. Returns the new
- * savings and the sheets `added` now.
+ * it), printed or downloaded (`how`). First the pending print settles, unless
+ * it is this same PDF printed again. Then this PDF's `saved` sheets, unless it
+ * was counted (or is pending) already: downloaded, into the total; printed,
+ * pending. The next equivalent takes its turn either way. Returns the new
+ * savings, the sheets this PDF `added` (now or once it settles) and the
+ * `milestone` this summary shows: reached now or since the last summary (the
+ * new savings keep none).
  */
-export function countPdf(savings, key, saved) {
-  const added = savings.counted.includes(key) ? 0 : Math.max(0, saved);
-  const counted = added ? [...savings.counted, key] : savings.counted;
-  return { savings: { ...savings, sheets: savings.sheets + added, turn: savings.turn + 1, counted }, added };
+export function countPdf(savings, key, saved, how) {
+  const { pending } = savings;
+  const settled = pending && (pending.key !== key || how === 'download') ? settlePending(savings) : savings;
+  const known = settled.counted.includes(key) || settled.pending?.key === key;
+  const added = known ? 0 : Math.max(0, saved);
+  let next = { ...settled, turn: settled.turn + 1 };
+  if (added && how === 'download') next = { ...addToTotal(next, added), counted: [...next.counted, key] };
+  else if (added) next = { ...next, pending: { key, sheets: added } };
+  return { savings: { ...next, milestone: null }, added, milestone: next.milestone };
 }

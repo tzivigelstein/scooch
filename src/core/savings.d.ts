@@ -19,4 +19,5 @@ export function milestoneReached(before: number, after: number): number | null;
 export function suggestArrange(share: number | null, used: number, packed: number | null): boolean;
 
 export function pdfKey(description: unknown): string;
-export function countPdf(savings: Savings, key: string, saved: number): { savings: Savings; added: number };
+export function settlePending(savings: Savings): Savings;
+export function countPdf(savings: Savings, key: string, saved: number, how: 'print' | 'download'): { savings: Savings; added: number; milestone: number | null };

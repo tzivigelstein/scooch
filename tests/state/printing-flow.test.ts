@@ -4,7 +4,8 @@
 // the click of its button; closing it otherwise sends nothing; turned off, it
 // goes straight out; nothing else exports meanwhile. What each way of
 // printing says (no tip any more: the advice gave it), and the summary once
-// the person is back, with what it counts on this device: each PDF once.
+// the person is back, with what it counts on this device: each PDF once, a
+// print only once it settles (a page load, another PDF, its download).
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { usePrintSummary } from '../../src/components/feedback/printSummary.ts';
 import { askTip } from '../../src/components/dialogs/printTip.ts';
@@ -12,6 +13,7 @@ import { makePdf } from '../../src/services/export.ts';
 import { downloadBytes, printBytes } from '../../src/services/print.ts';
 import { getDocument, setDocument } from '../../src/state/document.ts';
 import { setPrinting } from '../../src/state/prefs.ts';
+import { settleSavings } from '../../src/state/savings.ts';
 import { getView } from '../../src/state/view.ts';
 import { exportPdf, printPdf } from '../../src/state/actions/output.ts';
 import { fakeImageMm, piece, resetState } from '../support/state.ts';
@@ -196,7 +198,7 @@ describe('what printing says', () => {
 describe('the summary after', () => {
   beforeEach(() => setPrinting({ tip: false }));
 
-  test('once the person is back from the print dialog: usage, 2 sheets instead of 7, an equivalent and the total, counted on this device', async () => {
+  test('once the person is back from the print dialog: usage, 2 sheets instead of 7 and an equivalent; its sheets wait to join the total', async () => {
     let back!: () => void;
     vi.mocked(printBytes).mockResolvedValue({ how: 'dialog', back: new Promise<void>((resolve) => (back = resolve)) });
     const printing = printPdf();
@@ -205,12 +207,12 @@ describe('the summary after', () => {
     back();
     await printing;
     const summary = shown();
-    expect(summary).toMatchObject({ kind: 'print', used: 2, baseline: 7, saved: 5, total: 5, milestone: null, ask: false, added: 5 });
+    expect(summary).toMatchObject({ kind: 'print', used: 2, baseline: 7, saved: 5, total: 0, milestone: null, ask: false, added: 5 });
     // 7 pieces of 60 × 60 mm over two printable areas of 190 × 277 mm.
     expect(summary.share).toBeCloseTo((7 * 3600) / (2 * 190 * 277), 3);
     expect(summary.equivalent).toMatchObject({ kind: 'grams' });
     expect(summary.equivalent!.value).toBeCloseTo(5 * 0.21 * 0.297 * 80, 6);
-    expect(saved()).toEqual({ v: 3, sheets: 5, turn: 1, counted: [summary.key], pending: null, milestone: null });
+    expect(saved()).toEqual({ v: 3, sheets: 0, turn: 1, counted: [], pending: { key: summary.key, sheets: 5 }, milestone: null });
   });
 
   test('the focus goes back to who started it: the element focused when printing began', async () => {
@@ -237,10 +239,10 @@ describe('the summary after', () => {
       const key = shown().key;
       vi.setSystemTime(Date.now() + 3 * 24 * 3600_000);
       await printPdf();
-      expect(shown()).toMatchObject({ key, total: 5, added: 0, milestone: null });
+      expect(shown()).toMatchObject({ key, total: 0, added: 0, milestone: null });
       await exportPdf();
       expect(shown()).toMatchObject({ key, total: 5, added: 0 });
-      expect(saved()).toMatchObject({ sheets: 5, counted: [key] });
+      expect(saved()).toMatchObject({ sheets: 5, counted: [key], pending: null });
     });
 
     test('a change to what prints (a piece moved, the paper, the cut lines) makes it another PDF', async () => {
@@ -253,13 +255,15 @@ describe('the summary after', () => {
         keys.add(shown().key);
       }
       expect(keys.size).toBe(4);
-      expect(saved().sheets).toBe(20);
+      expect(saved()).toMatchObject({ sheets: 15, pending: { sheets: 5 } });
     });
 
     test('a milestone shows once: the same PDF again doesn’t reach it again', async () => {
       localStorage.setItem('scooch:savings', JSON.stringify({ v: 1, sheets: 8, turn: 0 }));
-      await printPdf();
+      await exportPdf();
       expect(shown()).toMatchObject({ total: 13, milestone: 10 });
+      await exportPdf();
+      expect(shown()).toMatchObject({ total: 13, milestone: null });
       await printPdf();
       expect(shown()).toMatchObject({ total: 13, milestone: null });
       nudge();
@@ -268,11 +272,71 @@ describe('the summary after', () => {
     });
   });
 
-  test('turned off: no summary (the total still counts)', async () => {
+  describe('a print joins the total once it settles', () => {
+    beforeEach(() => localStorage.setItem('scooch:savings', JSON.stringify({ v: 2, sheets: 8, turn: 0, counted: [] })));
+
+    test('printing leaves the total as it was, with no milestone', async () => {
+      await printPdf();
+      expect(shown()).toMatchObject({ saved: 5, added: 5, total: 8, milestone: null });
+      expect(saved()).toMatchObject({ sheets: 8, pending: { key: shown().key, sheets: 5 } });
+    });
+
+    test('at the next page load it joins the total, and the next summary shows the milestone it reached, once', async () => {
+      await printPdf();
+      settleSavings();
+      expect(saved()).toMatchObject({ sheets: 13, pending: null, milestone: 10 });
+      await printPdf();
+      expect(shown()).toMatchObject({ total: 13, milestone: 10, added: 0 });
+      expect(saved().milestone).toBeNull();
+      await printPdf();
+      expect(shown()).toMatchObject({ total: 13, milestone: null });
+    });
+
+    test('another PDF printed settles it: that summary shows the total with it and its milestone, and the new print waits', async () => {
+      await printPdf();
+      const first = shown().key;
+      nudge();
+      await printPdf();
+      expect(shown()).toMatchObject({ total: 13, milestone: 10, added: 5 });
+      expect(saved()).toMatchObject({ sheets: 13, counted: [first], pending: { key: shown().key, sheets: 5 } });
+    });
+
+    test('the same PDF printed again keeps one pending print and doesn’t settle it', async () => {
+      await printPdf();
+      await printPdf();
+      expect(shown()).toMatchObject({ total: 8, milestone: null, added: 0 });
+      expect(saved()).toMatchObject({ sheets: 8, counted: [], pending: { key: shown().key, sheets: 5 } });
+    });
+
+    test('downloading the pending PDF settles it at once, counted once, with its milestone', async () => {
+      await printPdf();
+      await exportPdf();
+      expect(shown()).toMatchObject({ kind: 'download', total: 13, milestone: 10, added: 0 });
+      expect(saved()).toMatchObject({ sheets: 13, counted: [shown().key], pending: null });
+      await exportPdf();
+      expect(shown()).toMatchObject({ total: 13, milestone: null });
+    });
+
+    test('printing that ends in a download (no way to print it here) counts at once, like downloading', async () => {
+      vi.mocked(printBytes).mockResolvedValue({ how: 'download', back: Promise.resolve() });
+      await printPdf();
+      expect(shown()).toMatchObject({ kind: 'print', total: 13, milestone: 10, added: 5 });
+      expect(saved().pending).toBeNull();
+    });
+
+    test('printing to another tab waits, like the print dialog', async () => {
+      vi.mocked(printBytes).mockResolvedValue({ how: 'tab', back: Promise.resolve() });
+      await printPdf();
+      expect(shown()).toMatchObject({ total: 8, milestone: null });
+      expect(saved().pending).toMatchObject({ sheets: 5 });
+    });
+  });
+
+  test('turned off: no summary (a print still waits to join the total)', async () => {
     setPrinting({ summary: false });
     await printPdf();
     expect(usePrintSummary.getState().summary).toBeNull();
-    expect(saved().sheets).toBe(5);
+    expect(saved()).toMatchObject({ sheets: 0, pending: { sheets: 5 } });
   });
 
   test('a fuller arrangement is suggested only when little is used and packing surely takes a sheet fewer', async () => {

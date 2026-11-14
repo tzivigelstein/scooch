@@ -9,7 +9,7 @@ import { t } from '../../copy/index.ts';
 import { askTip, isTipOpen, shouldShowTip, type OutputKind } from '../../components/dialogs/printTip.ts';
 import { takeDonationAsk } from '../../components/dialogs/donate.ts';
 import { closeSummary, showSummary, usePrintSummary, type PrintSummary } from '../../components/feedback/printSummary.ts';
-import { equivalent, milestoneReached, paperFacts, sheetSavings, sheetUsage, suggestArrange, LOW_USAGE } from '../../core/savings.js';
+import { equivalent, paperFacts, sheetSavings, sheetUsage, suggestArrange, LOW_USAGE } from '../../core/savings.js';
 import { makePdf, pdfContentKey, pdfFileName } from '../../services/export.ts';
 import { downloadBytes, printBytes } from '../../services/print.ts';
 import { getDocument } from '../document.ts';
@@ -39,14 +39,18 @@ async function finished(job: Promise<Uint8Array>, busyText: string) {
   }
 }
 
-/** What the PDF that just went out (`key`, see pdfContentKey) saves, and counts it on this device once. */
-export function summarize(kind: OutputKind, key: string): PrintSummary {
+/**
+ * What the PDF that just went out (`key`, see pdfContentKey) saves, and counts
+ * it on this device once: `countAs` a download (a file: into the total now)
+ * or a print (nothing confirms it: later, see core/savings.js countPdf).
+ */
+export function summarize(kind: OutputKind, key: string, countAs: OutputKind = kind): PrintSummary {
   const { sheets, items } = getDocument();
   const printed = sheets.map((sheet) => itemsOn(sheet.id)).filter((list) => list.length);
   const { W, H, m, aw, ah } = area();
   const share = sheetUsage(printed.map((list) => list.map(boxOf)), { x: m, y: m, w: aw, h: ah }) ?? 0;
   const { used, baseline, saved } = sheetSavings(items.length, printed.length);
-  const { after, before, turn, added } = recordSavings(saved, key);
+  const { total, turn, added, milestone } = recordSavings(saved, key, countAs);
   // The packing check costs a little: only when a fuller arrangement could be worth suggesting.
   const suggest = share < LOW_USAGE && suggestArrange(share, used, sheetsNeeded());
   return {
@@ -56,8 +60,8 @@ export function summarize(kind: OutputKind, key: string): PrintSummary {
     baseline,
     saved,
     equivalent: saved ? equivalent(turn, paperFacts(saved, W, H)) : null,
-    total: after,
-    milestone: milestoneReached(before, after),
+    total,
+    milestone,
     suggest,
     ask: false,
     key,
@@ -69,9 +73,10 @@ export function summarize(kind: OutputKind, key: string): PrintSummary {
  * Once the person is back: the summary (unless turned off). `note`: where the
  * PDF went, if it didn't go to the print dialog; the summary says it (instead
  * of the notice), or the notice does. `opener`: where the focus returns.
+ * `countAs`: see summarize.
  */
-function summaryAfter(kind: OutputKind, key: string, opener: Element | null, note?: string) {
-  const summary = summarize(kind, key);
+function summaryAfter(kind: OutputKind, key: string, opener: Element | null, note?: string, countAs: OutputKind = kind) {
+  const summary = summarize(kind, key, countAs);
   if (!getPrefs().printing.summary) {
     if (note) say(note, kind === 'print' ? { persist: true, info: true } : {});
     return;
@@ -112,7 +117,8 @@ async function sendOut(kind: OutputKind) {
   const note = how === 'tab' ? t('notices.printTab') : how === 'download' ? t('notices.printDownload', { file: fileName }) : undefined;
   if (note) say(note, { persist: true, info: true });
   await back;
-  summaryAfter(kind, key, opener, note);
+  // Downloaded instead of printed, the file exists just as with «Descargar PDF».
+  summaryAfter(kind, key, opener, note, how === 'download' ? 'download' : 'print');
 }
 
 export const exportPdf = () => output('download');

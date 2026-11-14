@@ -1,9 +1,10 @@
 // What a PDF saves (src/core/savings.js): the share of the printable area the
 // pieces use, the sheets against one sheet per piece, those sheets in plain
 // physical terms, the running total's milestones, when a fuller arrangement
-// may be suggested, and counting each PDF once.
+// may be suggested, counting each PDF once, and a print joining the total
+// only once it settles.
 import { describe, expect, test } from 'vitest';
-import { countPdf, equivalent, milestoneReached, paperFacts, pdfKey, sheetSavings, sheetUsage, suggestArrange, unionArea } from '../../src/core/savings.js';
+import { countPdf, equivalent, milestoneReached, paperFacts, pdfKey, settlePending, sheetSavings, sheetUsage, suggestArrange, unionArea } from '../../src/core/savings.js';
 
 const r = (x, y, w, h) => ({ x, y, w, h });
 const A4_AREA = r(10, 10, 190, 277); // A4 with a 10 mm margin
@@ -93,8 +94,9 @@ describe('suggestArrange', () => {
   });
 });
 
+const before = { sheets: 8, turn: 4, counted: ['older'], pending: null, milestone: null };
+
 describe('counting each PDF once', () => {
-  const before = { sheets: 8, turn: 4, counted: ['older'] };
 
   test('pdfKey: the same description gives the same key, any change another one', () => {
     const pdf = { size: [210, 297], pages: [[['file-a', 0, 56, 80, 10, 10, 100, 0, null]]] };
@@ -106,16 +108,65 @@ describe('counting each PDF once', () => {
     expect(new Set([pdf, moved, otherFile, otherPaper].map(pdfKey)).size).toBe(4);
   });
 
-  test('a new PDF adds its sheets to the total and is remembered; the equivalent takes its turn', () => {
-    expect(countPdf(before, 'k1', 5)).toEqual({ savings: { sheets: 13, turn: 5, counted: ['older', 'k1'] }, added: 5 });
+  test('a new PDF downloaded adds its sheets to the total at once and is remembered; the equivalent takes its turn and the milestone shows now', () => {
+    expect(countPdf(before, 'k1', 5, 'download')).toEqual({ savings: { sheets: 13, turn: 5, counted: ['older', 'k1'], pending: null, milestone: null }, added: 5, milestone: 10 });
   });
 
-  test('the same PDF again adds nothing (the equivalent still takes its turn)', () => {
-    const { savings } = countPdf(before, 'k1', 5);
-    expect(countPdf(savings, 'k1', 5)).toEqual({ savings: { sheets: 13, turn: 6, counted: ['older', 'k1'] }, added: 0 });
+  test.each(['print', 'download'])('the same PDF again, %s, adds nothing (the equivalent still takes its turn)', (how) => {
+    const { savings } = countPdf(before, 'k1', 5, 'download');
+    expect(countPdf(savings, 'k1', 5, how)).toEqual({ savings: { ...savings, turn: 6 }, added: 0, milestone: null });
   });
 
-  test('a PDF that saves nothing adds nothing and isn’t remembered', () => {
-    expect(countPdf(before, 'k1', 0)).toEqual({ savings: { sheets: 8, turn: 5, counted: ['older'] }, added: 0 });
+  test.each(['print', 'download'])('a PDF that saves nothing, %s, adds nothing and isn’t remembered', (how) => {
+    expect(countPdf(before, 'k1', 0, how)).toEqual({ savings: { ...before, turn: 5 }, added: 0, milestone: null });
+  });
+});
+
+describe('a print joins the total once it settles', () => {
+  const printed = countPdf(before, 'k1', 5, 'print').savings;
+
+  test('its sheets wait out of the total, and reach no milestone yet', () => {
+    expect(countPdf(before, 'k1', 5, 'print')).toEqual({ savings: { ...before, turn: 5, pending: { key: 'k1', sheets: 5 } }, added: 5, milestone: null });
+  });
+
+  test('the same PDF printed again: still one pending print, not settled', () => {
+    expect(countPdf(printed, 'k1', 5, 'print')).toEqual({ savings: { ...printed, turn: 6 }, added: 0, milestone: null });
+  });
+
+  test.each([
+    ['print', { sheets: 13, pending: { key: 'k2', sheets: 3 } }],
+    ['download', { sheets: 16, pending: null }],
+  ])('another PDF going out (%s) settles it first, and that summary shows the milestone', (how, after) => {
+    expect(countPdf(printed, 'k2', 3, how)).toEqual({
+      savings: { ...printed, ...after, turn: 6, counted: how === 'print' ? ['older', 'k1'] : ['older', 'k1', 'k2'], milestone: null },
+      added: 3,
+      milestone: 10,
+    });
+  });
+
+  test('downloading the pending PDF settles it at once, counted once', () => {
+    const downloaded = countPdf(printed, 'k1', 5, 'download');
+    expect(downloaded).toEqual({ savings: { sheets: 13, turn: 6, counted: ['older', 'k1'], pending: null, milestone: null }, added: 0, milestone: 10 });
+    for (const how of ['print', 'download']) expect(countPdf(downloaded.savings, 'k1', 5, how).savings.sheets, how).toBe(13);
+  });
+
+  test('settling on its own (a page load): into the total, with the milestone kept for the next summary, which shows it once', () => {
+    const settled = settlePending(printed);
+    expect(settled).toEqual({ sheets: 13, turn: 5, counted: ['older', 'k1'], pending: null, milestone: 10 });
+    const next = countPdf(settled, 'k1', 5, 'print');
+    expect(next).toMatchObject({ added: 0, milestone: 10, savings: { sheets: 13, milestone: null } });
+    expect(countPdf(next.savings, 'k1', 5, 'print').milestone, 'not twice').toBeNull();
+  });
+
+  test('without a pending print, settling changes nothing', () => {
+    expect(settlePending(before)).toBe(before);
+  });
+
+  test('a milestone waiting and a higher one reached now: the summary shows the higher', () => {
+    const settled = settlePending({ ...before, sheets: 45, pending: { key: 'k1', sheets: 3 } });
+    expect(settled.milestone).toBeNull();
+    const waiting = settlePending({ ...before, sheets: 7, pending: { key: 'k1', sheets: 38 } });
+    expect(waiting).toMatchObject({ sheets: 45, milestone: 10 });
+    expect(countPdf(waiting, 'k2', 5, 'download').milestone).toBe(50);
   });
 });

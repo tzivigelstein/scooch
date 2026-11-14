@@ -19,14 +19,17 @@ export interface PrintSummary {
   saved: number;
   /** The practical equivalent of what was saved (none when nothing was). */
   equivalent: { kind: EquivalentKind; value: number } | null;
-  /** The sheets saved on this device so far, and the milestone reached now. */
+  /**
+   * The sheets saved on this device so far (a print's join later, see
+   * core/savings.js countPdf), and the milestone reached since the last summary.
+   */
   total: number;
   milestone: number | null;
   /** Arranging would take one sheet fewer (checked). */
   suggest: boolean;
   /** It asks for a donation (once per page load, see donate.ts). */
   ask: boolean;
-  /** The PDF's key (see pdfContentKey) and the sheets it added to the total now (0 when it was counted before). */
+  /** The PDF's key (see pdfContentKey) and the sheets it adds to the total, now or once it settles (0 when it was counted before). */
   key: string;
   added: number;
 }

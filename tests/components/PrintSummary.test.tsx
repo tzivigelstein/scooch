@@ -71,6 +71,11 @@ describe('the summary after printing', () => {
     expect(lines()).toContain('Es una pila de 0,5 mm menos');
   });
 
+  test('a first print, whose sheets aren’t in the total yet: its own figures, and no total line while the total is 0', () => {
+    show({ total: 0 });
+    expect(lines()).toEqual(['82 % de las hojas aprovechadas', 'Usaste 2 hojas en lugar de 7', 'Comparado con imprimir cada pieza en su propia hoja', 'Son unos 25 g de papel menos']);
+  });
+
   test('nothing saved: no savings, no equivalent, never a scolding; one sheet: «de la hoja»', () => {
     show({ used: 1, baseline: 1, saved: 0, equivalent: null, share: 0.35, total: 0, added: 0 });
     expect(lines()).toEqual(['35 % de la hoja aprovechada']);
