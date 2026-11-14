@@ -344,10 +344,14 @@ export function endSheetBox(): LayerRect | null {
 export function setNewSheetRoom(on: boolean) {
   const area = areaEl();
   const sheets = sheetsEl();
-  const box = on && endSheetBox();
   if (!area || !sheets) return;
-  if (!box) return area.style.removeProperty('--new-sheet-room');
-  if (area.style.getPropertyValue('--new-sheet-room')) return;
+  const set = area.style.getPropertyValue('--new-sheet-room') !== '';
+  if (!on) {
+    if (set) area.style.removeProperty('--new-sheet-room');
+    return;
+  }
+  const box = !set && endSheetBox();
+  if (!box) return;
   const top = sheets.getBoundingClientRect().top - area.getBoundingClientRect().top;
   const room = newSheetRoom({ bottom: top + box.top + box.height, pad: parseFloat(getComputedStyle(area).paddingBottom), height: area.offsetHeight });
   area.style.setProperty('--new-sheet-room', `${room}px`);

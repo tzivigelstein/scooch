@@ -18,10 +18,9 @@ export function paintNewSheetSpot(spot: NewSheetSpot | null | false) {
   const bar = document.getElementById('new-sheet-gap');
   if (!sheets || !end || !bar) return;
   const on = spot !== false;
-  if (sheets.classList.contains('has-new-sheet') !== on) {
-    sheets.classList.toggle('has-new-sheet', on);
-    setNewSheetRoom(on);
-  }
+  if (sheets.classList.contains('has-new-sheet') !== on) sheets.classList.toggle('has-new-sheet', on);
+  // Not tied to that class: React rewrites #sheets' classes when it renders it.
+  setNewSheetRoom(on);
   end.hidden = !on;
   bar.hidden = !(spot && spot.kind === 'gap');
   if (!on) return;

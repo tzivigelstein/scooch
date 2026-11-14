@@ -380,6 +380,8 @@ test.describe('something held at an edge of the stage scrolls it only as far as 
         expect(await scrollOf(page), 'held past the window’s bottom, nothing grows either').toEqual(held);
 
         if (end === 'cancel') {
+          // React renders #sheets' classes anew when an animation ends, whatever the drag added.
+          await page.evaluate(() => (document.getElementById('sheets')!.className = 'sheets'));
           await page.keyboard.press('Escape');
           await page.mouse.up();
           await frames(page);
