@@ -13,6 +13,7 @@ import { IconButton } from '../ui/Button.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
 import { Switch } from '../ui/Switch.tsx';
 import { closeDialog } from './dialogs.ts';
+import { LEGAL_PATHS } from '../../site/paths.ts';
 
 export default function PrefsDialog() {
   const unit = usePrefs((s) => s.unit);
@@ -75,6 +76,24 @@ export default function PrefsDialog() {
           />
         </div>
       </div>
+      <LegalLinks />
     </>
+  );
+}
+
+/** The site's terms and privacy policy (pages of their own: the project saves itself before leaving). */
+function LegalLinks() {
+  return (
+    <div className="dialog-foot">
+      <p id="prefs-legal" className="dialog-note">
+        <a className="link-btn" href={LEGAL_PATHS.terms}>
+          {t('legal.terms')}
+        </a>
+        {t('legal.separator')}
+        <a className="link-btn" href={LEGAL_PATHS.privacy}>
+          {t('legal.privacy')}
+        </a>
+      </p>
+    </div>
   );
 }

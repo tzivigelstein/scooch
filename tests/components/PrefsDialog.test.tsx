@@ -109,3 +109,16 @@ describe('Preferences', () => {
     expect((screen.getByRole('radio', { name: 'Claro' }) as HTMLInputElement).checked).toBe(true);
   });
 });
+
+describe('the site’s legal pages', () => {
+  test('the foot of Preferencias links to the terms of use and the privacy policy, outside the groups', () => {
+    render(<PrefsDialog />);
+    const foot = document.getElementById('prefs-legal')!;
+    const links = within(foot).getAllByRole('link');
+    expect(links.map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
+      ['Términos de uso', '/es/terminos'],
+      ['Política de privacidad', '/es/privacidad'],
+    ]);
+    expect(foot.closest('[role="group"], .dialog-body')).toBeNull();
+  });
+});

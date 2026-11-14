@@ -810,6 +810,13 @@ const es = {
     createdCustom: 'Se creó un proyecto nuevo con papel {paper}. Las fotos que agregues se recortan a {size}.',
   },
 
+  // Links to the site's legal pages (at the foot of Preferencias)
+  legal: {
+    terms: 'Términos de uso',
+    privacy: 'Política de privacidad',
+    separator: ' · ',
+  },
+
   // «Preferencias» dialog (settings of this browser)
   prefs: {
     title: 'Preferencias',
