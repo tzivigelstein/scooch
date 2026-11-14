@@ -67,6 +67,12 @@
   --fast: 140ms;
 }
 
+/* Chinese: Inter for Latin letters and numbers, the system's Chinese font
+   for the rest (none is shipped: it would weigh megabytes). */
+:root:lang(zh-Hans) {
+  --font: "Inter Variable", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+}
+
 /* The dark theme: chosen in «Preferencias», or the system's on «Automático»
    (index.html and src/services/theme.ts set data-theme). */
 :root[data-theme="dark"] {

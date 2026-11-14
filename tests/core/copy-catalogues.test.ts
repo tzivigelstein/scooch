@@ -46,7 +46,15 @@ const TYPOGRAPHY: Record<string, readonly { rule: string; bad: RegExp }[]> = {
     { rule: 'curly quotes and apostrophes (“ ” ’), not straight ones or guillemets', bad: /["'«»]/ },
     { rule: 'no space before %', bad: /\d %|\} %/ },
   ],
+  'zh-Hans': [
+    { rule: 'full-width punctuation next to Chinese (，。：；！？（）)', bad: /[㐀-鿿][,.:;!?()]|[,:;!?(][㐀-鿿]/ },
+    { rule: 'no space between Chinese and a number or a Latin word', bad: /[㐀-鿿] [\w{]|[\w}] [㐀-鿿]/ },
+    { rule: 'Chinese quotes (“ ”), not guillemets or straight ones', bad: /["«»]/ },
+  ],
 };
+
+/** The words that find a command in the palette: search data, never shown (commas split them). */
+const SEARCH_ONLY = /^commands\.aliases\./;
 
 /** A number and its unit, and a measurement, never break: a no-break space in every language. */
 const UNBREAKABLE = ['units.length', 'units.size', 'props.gridChip', 'cuts.weightTip'];
@@ -91,7 +99,10 @@ describe.each(LANGUAGES.map((language) => [language, CATALOGUES[language]] as co
   });
 
   test('follows its typography; numbers and units never break apart', () => {
-    for (const [key, value] of own) for (const text of forms(value)) for (const { rule, bad } of TYPOGRAPHY[language] ?? []) expect(bad.test(text), `${key}: ${rule}: «${text}»`).toBe(false);
+    for (const [key, value] of own) {
+      if (SEARCH_ONLY.test(key)) continue;
+      for (const text of forms(value)) for (const { rule, bad } of TYPOGRAPHY[language] ?? []) expect(bad.test(text), `${key}: ${rule}: «${text}»`).toBe(false);
+    }
     for (const key of UNBREAKABLE) expect(own.get(key), key).not.toMatch(/\} \{| \{unit\}| pt$/);
   });
 

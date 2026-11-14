@@ -1,4 +1,4 @@
-export type Language = 'es' | 'en';
+export type Language = 'es' | 'en' | 'zh-Hans';
 /** The option of «Idioma»: 'auto' follows the browser's languages. */
 export type LanguageChoice = 'auto' | Language;
 
