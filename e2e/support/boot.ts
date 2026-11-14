@@ -55,15 +55,17 @@ export const layoutShift = () =>
     )
   );
 
-/** For evaluate: whether all of what the tool does is on the skeleton's sheet, and its text. */
+/** For evaluate: what the tool does on the skeleton's sheet: its text, whether all of it is on the sheet, and how far its column is from the sheet's middle (px). */
 export const readAbout = () => {
+  const about = document.querySelector('.boot-about')!;
   const range = document.createRange();
-  range.selectNodeContents(document.querySelector('.boot-about')!);
+  range.selectNodeContents(about);
   const text = range.getBoundingClientRect();
+  const column = about.getBoundingClientRect();
   const sheet = document.querySelector('.boot-sheet')!.getBoundingClientRect();
   return {
     text: range.toString(),
-    middle: { x: text.x + text.width / 2 - (sheet.x + sheet.width / 2), y: text.y + text.height / 2 - (sheet.y + sheet.height / 2) },
+    offCenter: column.x + column.width / 2 - (sheet.x + sheet.width / 2),
     onSheet: text.width > 0 && text.left >= sheet.left && text.right <= sheet.right && text.top >= sheet.top && text.bottom <= sheet.bottom,
   };
 };

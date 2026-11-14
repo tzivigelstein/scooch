@@ -273,7 +273,7 @@
       /* An A4 sheet (the default paper) at the zoom that fits it. */
       .boot-sheet {
         display: grid;
-        place-content: center;
+        place-content: start center;
         grid-template-columns: min(18rem, 100% - 2.5rem);
         width: min(100cqw, 100cqh * 210 / 297);
         height: min(100cqh, 100cqw * 297 / 210);
@@ -285,12 +285,13 @@
       }
       /* What the tool does, on the sheet (the sheet is white in both themes):
          read at once on slow loads, and by crawlers that don't run
-         JavaScript. Smaller on a small sheet, so it never spills off it. */
+         JavaScript. Smaller on a small sheet, so it never spills off it.
+         Anchored at its top and its lines' start: when the fonts arrive and
+         it rewraps, it only grows or shrinks downward, so nothing shifts. */
       .boot-about {
-        margin: 0;
+        margin: 35cqh 0 0;
         color: #555c69;
         font-size: clamp(0.625rem, 4.5cqw, 0.875rem);
-        text-align: center;
         text-wrap: balance;
       }
       /* The panel buttons of narrow screens, as .dock places them. */

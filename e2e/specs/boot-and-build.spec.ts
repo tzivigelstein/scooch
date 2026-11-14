@@ -136,13 +136,12 @@ test.describe('the skeleton of the editor, before the app mounts', () => {
           await expect(page.locator('.boot-name')).toHaveText('Scooch');
           expect(await page.locator('.boot-name').evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/^"Inter Variable", system-ui/);
 
-          // What the tool does, whole and in the middle of the sheet.
+          // What the tool does, whole on the sheet, its column in the middle.
           const about = await page.evaluate(readAbout);
           const sheet = drawn.sheet!;
           expect(about.text).toMatch(/^Acomoda imágenes y páginas de PDF/);
           expect(about.onSheet, 'on the sheet').toBe(true);
-          expect(Math.abs(about.middle.x), 'centered across the sheet').toBeLessThanOrEqual(1);
-          expect(Math.abs(about.middle.y), 'centered down the sheet').toBeLessThanOrEqual(1);
+          expect(Math.abs(about.offCenter), 'its column centered across the sheet').toBeLessThanOrEqual(1);
 
           // The theme from the first paint; the sheet white in both.
           expect(closeTo(await colorAt(page), theme.bg), 'top bar').toBe(true);
