@@ -515,7 +515,11 @@ const es = {
     openNewer: '«{name}» se guardó con una versión más nueva de {app}. Recarga la página para abrirlo.',
     reload: 'Recargar la página',
     openError: 'No se pudo abrir el proyecto. Inténtalo de nuevo.',
-    projectError: 'No se pudo completar la acción en Proyectos. Inténtalo de nuevo.',
+    // Each action of «Proyectos» that failed
+    renameFailed: 'No se pudo cambiar el nombre. Inténtalo de nuevo.',
+    duplicateFailed: 'No se pudo duplicar «{name}». Inténtalo de nuevo.',
+    deleteFailed: 'No se pudo eliminar «{name}». Inténtalo de nuevo.',
+    createFailed: 'No se pudo crear el proyecto nuevo. Inténtalo de nuevo.',
     takenOver: 'Este proyecto se abrió en otra pestaña. Aquí ya no se guardan los cambios.',
     deletedElsewhere: 'Este proyecto se eliminó en otra pestaña. Aquí ya no se guardan los cambios.',
     saveAsNew: 'Guardar como proyecto nuevo',

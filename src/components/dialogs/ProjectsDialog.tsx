@@ -10,7 +10,7 @@ import { duplicate, projectSession, rename } from '../../services/projects.ts';
 import { flushUi } from '../../state/flush.ts';
 import { useProject } from '../../state/project.ts';
 import { refreshProjectList, useProjectList } from '../../state/actions/dialogs.ts';
-import { createWithUi, openFailed, openWithUi, removeWithUi } from '../../state/actions/projects.ts';
+import { createWithUi, openWithUi, projectFailed, removeWithUi } from '../../state/actions/projects.ts';
 import { announce } from '../feedback/announcer.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { Icon } from '../ui/Icon.tsx';
@@ -209,7 +209,7 @@ export default function ProjectsDialog() {
         const name = await rename(id, value);
         announce(t('announce.projectRenamed', { name }));
       } catch (err) {
-        openFailed(null, err);
+        projectFailed('rename', before, err);
       }
     }
     await refreshProjectList();
@@ -235,7 +235,7 @@ export default function ProjectsDialog() {
         focusCard(copy.id);
         announce(t('announce.projectDuplicated', { name }));
       } catch (err) {
-        openFailed(null, err);
+        projectFailed('duplicate', name, err);
       }
       return;
     }
@@ -258,7 +258,7 @@ export default function ProjectsDialog() {
     try {
       await removeWithUi(id, name);
     } catch (err) {
-      openFailed(null, err);
+      projectFailed('delete', name, err);
     }
     if (!isDialogOpen('projects')) return;
     await refreshProjectList();

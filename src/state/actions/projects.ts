@@ -69,7 +69,17 @@ export function openFailed(record: Pick<ProjectRecord, 'id' | 'name'> | null | u
       },
     });
   }
-  say(t(record ? 'notices.openError' : 'notices.projectError'), { warn: true });
+  say(t('notices.openError'), { warn: true });
+}
+
+/**
+ * Renaming, duplicating, deleting or creating a project failed: the notice
+ * says which (with no room left, that there is no room, and where to make it).
+ */
+export function projectFailed(action: 'rename' | 'duplicate' | 'delete' | 'create', name: string, error: unknown) {
+  console.warn(error);
+  if (isQuota(error)) return say(t('notices.quota'), { warn: true, action: { label: t('notices.seeProjects'), run: openProjects } });
+  say(t(`notices.${action}Failed`, { name }), { warn: true });
 }
 
 /** After opening, creating or replacing the open project. */
@@ -107,7 +117,7 @@ export async function createWithUi() {
     projectOpened(record, 'new', previous);
   } catch (err) {
     setBusy(false);
-    openFailed(null, err);
+    projectFailed('create', '', err);
   }
 }
 

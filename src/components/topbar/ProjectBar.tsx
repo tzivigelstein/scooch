@@ -10,7 +10,7 @@ import { t } from '../../copy/index.ts';
 import { rename, retry } from '../../services/projects.ts';
 import { useProject } from '../../state/project.ts';
 import { openProjects } from '../../state/actions/dialogs.ts';
-import { openFailed, takeOverWithUi } from '../../state/actions/projects.ts';
+import { projectFailed, takeOverWithUi } from '../../state/actions/projects.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { announce } from '../feedback/announcer.ts';
@@ -61,7 +61,7 @@ export function ProjectBar() {
       announce(t('announce.projectRenamed', { name: renamed }));
     } catch (err) {
       console.error(err);
-      openFailed(null, err);
+      projectFailed('rename', name ?? '', err);
     }
   };
 
