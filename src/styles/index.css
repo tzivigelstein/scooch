@@ -12,6 +12,7 @@
 @import "./properties.css";
 @import "./controls.css";
 @import "./canvas.css";
+@import "./preview.css";
 @import "./notice.css";
 @import "./tooltip.css";
 @import "./dialogs.css";

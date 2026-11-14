@@ -1,0 +1,220 @@
+/* ---------- What a hovered or focused control shows on the sheets ---------- */
+
+/* Over the pieces and beside the sheet (unclipped), under the selection frame
+   and the dragged pieces; never in the pointer's way. The sheet is always
+   white, so the colors are the canvas's fixed ones; every line has a white
+   halo, so it shows over a dark photo too. Nothing here animates. */
+.preview {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.preview > * {
+  position: absolute;
+}
+
+/* «Margen»: the band of the sheet the margin leaves free. */
+.preview-margin {
+  inset: 0;
+  border: 0 solid rgb(0 102 255 / 0.22);
+  box-shadow: inset 0 0 0 1px var(--sel-strong), inset 0 0 0 2px rgb(255 255 255 / 0.9);
+}
+
+/* «Separación»: the gaps between neighbors. */
+.preview-gap {
+  background: repeating-linear-gradient(-45deg, rgb(0 102 255 / 0.55) 0 0.125rem, rgb(0 102 255 / 0.2) 0.125rem 0.3125rem);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.9);
+}
+
+/* The pieces «Rellenar con copias» would replace. */
+.preview-dimmed {
+  background: rgb(255 255 255 / 0.72);
+}
+
+/* What aligning goes against (the printable area or the selection's box) and
+   the line the pieces go to. */
+.preview-reference {
+  box-shadow: 0 0 0 1px var(--sel-strong), 0 0 0 2px rgb(255 255 255 / 0.9), inset 0 0 0 1px rgb(255 255 255 / 0.9);
+}
+
+.preview-line {
+  min-width: 0.1875rem;
+  min-height: 0.1875rem;
+  margin: -0.09375rem 0 0 -0.09375rem;
+  background: var(--sel);
+  box-shadow: 0 0 0 1px #fff;
+}
+
+/* Where an action would leave a piece: the image faded, a dashed ring (a real
+   piece has none, a selected one a solid frame). */
+.preview-ghost {
+  overflow: hidden;
+  overflow: clip;
+  outline: 0.125rem dashed var(--sel-strong);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 0.25rem rgb(255 255 255 / 0.85);
+}
+
+.preview-ghost img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: none;
+  opacity: 0.5;
+}
+
+/* It wouldn't apply (it would overlap another piece or leave the sheet). */
+.preview-ghost.is-blocked {
+  outline-color: var(--blocked);
+}
+
+/* A piece pointed out (its row in the list) or the ones a notice is about:
+   a ring a little off the piece, rounded unlike the selection frame. */
+.preview-outline {
+  margin: -0.375rem;
+  padding: 0.375rem;
+  box-sizing: content-box;
+  border-radius: 0.375rem;
+  border: 0.1875rem solid var(--sel-strong);
+  box-shadow: 0 0 0 1px #fff, inset 0 0 0 1px #fff;
+}
+
+.preview-outline.is-problem {
+  border-style: dashed;
+  border-color: var(--blocked);
+}
+
+/* X, Y, width and height: a dimension line with its value. */
+.preview-dimension {
+  --tick: 0.5rem;
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff);
+}
+
+.preview-dimension.is-horizontal {
+  height: 0;
+  border-top: 0.125rem solid var(--sel-strong);
+  margin-top: -0.0625rem;
+}
+
+.preview-dimension.is-vertical {
+  width: 0;
+  border-left: 0.125rem solid var(--sel-strong);
+  margin-left: -0.0625rem;
+}
+
+.preview-dimension::before,
+.preview-dimension::after {
+  content: "";
+  position: absolute;
+  background: var(--sel-strong);
+}
+
+.preview-dimension.is-horizontal::before,
+.preview-dimension.is-horizontal::after {
+  top: calc(var(--tick) / -2 - 0.0625rem);
+  width: 0.125rem;
+  height: var(--tick);
+}
+
+.preview-dimension.is-horizontal::before {
+  left: -0.0625rem;
+}
+
+.preview-dimension.is-horizontal::after {
+  right: -0.0625rem;
+}
+
+.preview-dimension.is-vertical::before,
+.preview-dimension.is-vertical::after {
+  left: calc(var(--tick) / -2 - 0.0625rem);
+  width: var(--tick);
+  height: 0.125rem;
+}
+
+.preview-dimension.is-vertical::before {
+  top: -0.0625rem;
+}
+
+.preview-dimension.is-vertical::after {
+  bottom: -0.0625rem;
+}
+
+.preview-value,
+.preview-more {
+  padding: 0.0625rem 0.375rem;
+  border-radius: 62.4375rem;
+  background: var(--sel-strong);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px #fff;
+}
+
+.preview-value {
+  position: absolute;
+}
+
+.preview-dimension.is-horizontal .preview-value {
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, calc(-50% - 0.0625rem));
+}
+
+.preview-dimension.is-vertical .preview-value {
+  left: 0;
+  top: 50%;
+  transform: translate(calc(-50% - 0.0625rem), -50%);
+}
+
+/* Beside the piece, the value goes on the far side of the line, off the piece. */
+.preview-dimension[data-field="width"] .preview-value {
+  transform: translate(-50%, 0.3125rem);
+}
+
+.preview-dimension[data-field="height"] .preview-value {
+  transform: translate(0.4375rem, -50%);
+}
+
+/* «Duplicar»: how many copies would go to other sheets. */
+.preview-more {
+  right: 0.5rem;
+  bottom: 0.5rem;
+}
+
+/* The piece's toolbar steps aside meanwhile (unless it is what shows it). */
+.canvas:has(.preview) .piecebar:not(:hover, :focus-within) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The cut lines, emphasized while their settings are hovered or focused. */
+.cut-layer .cut-emphasis {
+  stroke: rgb(0 102 255 / 0.5);
+}
+
+@media (forced-colors: active) {
+  .preview-margin,
+  .preview-reference {
+    border-color: Highlight;
+    box-shadow: inset 0 0 0 1px Highlight;
+  }
+
+  .preview-gap,
+  .preview-line,
+  .preview-value,
+  .preview-more {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .preview-ghost,
+  .preview-outline {
+    outline-color: Highlight;
+    border-color: Highlight;
+  }
+}

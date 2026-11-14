@@ -134,6 +134,8 @@ const es = {
     drop: 'Suelta imágenes o PDF, pega con {mod}+V o presiona O',
     dropNoKeys: 'Suelta imágenes o PDF, pega con {mod}+V o haz clic aquí',
     private: 'Tus archivos no salen del navegador',
+    // On the sheet while «Duplicar» is hovered: how many copies would go to other sheets
+    moreCopies: '+{n}',
   },
 
   // Papers: visible names of the ids in src/core/papers.js

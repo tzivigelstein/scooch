@@ -8,6 +8,7 @@ import type { Cuts } from '../../core/types.ts';
 import type { Unit } from '../../core/units.js';
 import { LEFT_DRAWER_QUERY, NARROW_QUERY } from '../../config.ts';
 import { useCanvasGestures } from '../../hooks/useCanvasGestures.ts';
+import { usePreviewTriggers } from '../../hooks/usePreviewTriggers.ts';
 import { useMediaQuery } from '../../hooks/useMediaQuery.ts';
 import { useShortcut } from '../../hooks/shortcuts.ts';
 import { paperTitle, sizeText } from '../../services/measure.ts';
@@ -15,6 +16,7 @@ import { getAsset } from '../../state/assets.ts';
 import { useDocument, type Piece as PieceData } from '../../state/document.ts';
 import { isDragging } from '../../state/gesture.ts';
 import { usePrefs, type GridPrefs } from '../../state/prefs.ts';
+import { usePreview } from '../../state/preview.ts';
 import { currentSheet, sheetIndex, sheetSize } from '../../state/selectors.ts';
 import { getView, setView, useView } from '../../state/view.ts';
 import { openFiles } from '../../state/actions/files.ts';
@@ -24,6 +26,7 @@ import { Icon } from '../ui/Icon.tsx';
 import { CropContent } from './cropMode.ts';
 import { CutLayer } from './CutLayer.tsx';
 import { Piece } from './Piece.tsx';
+import { PreviewLayer } from './PreviewLayer.tsx';
 import { fitZoom, sheetsAreWide, syncStageBars } from './viewport.ts';
 import { SelectionOverlay } from './SelectionOverlay.tsx';
 
@@ -137,6 +140,7 @@ const Page = memo(function Page({ id, index, total, items, W, H, zoom, margin, e
           })}
           <CutLayer items={items} cuts={cuts} W={W} H={H} zoom={zoom} />
         </div>
+        <PreviewLayer sheet={id} zoom={zoom} />
       </div>
     </div>
   );
@@ -167,6 +171,8 @@ export function Stage() {
   const besideList = listOpen && medium && !narrow;
   const grid = usePrefs((s) => s.grid);
   const unit = usePrefs((s) => s.unit);
+  // The grid also shows while its size is hovered.
+  const gridShown = usePreview((s) => !!s.overlay?.grid);
   const [layout, setLayout] = useState(0);
 
   const [W, H] = sheetSize({ paper, landscape, margin });
@@ -202,6 +208,7 @@ export function Stage() {
   }, [updateZoom]);
 
   useCanvasGestures(stage);
+  usePreviewTriggers();
   // The scrollbars come and go with the zoom and the window: what floats over the stage avoids them.
   useLayoutEffect(syncStageBars);
 
@@ -234,7 +241,7 @@ export function Stage() {
             margin={margin}
             empty={empty}
             current={sheet.id === current}
-            showGrid={grid.show}
+            showGrid={grid.show || gridShown}
             grid={gridCss}
             selection={selection}
             pinned={pinned}

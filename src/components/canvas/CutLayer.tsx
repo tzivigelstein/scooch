@@ -9,12 +9,16 @@ import { cutStyle } from '../../core/cutmarks.js';
 import type { Cuts } from '../../core/types.ts';
 import { sheetCuts, shapesVersion, showShapes, subscribeShapes } from '../../services/contours.ts';
 import type { Piece } from '../../state/document.ts';
+import { usePreview } from '../../state/preview.ts';
 
 const MM_PER_PT = 25.4 / 72;
+/** How wide the highlight under the lines is while their settings are hovered or focused (px). */
+const EMPHASIS_PX = 7;
 
 export const CutLayer = memo(function CutLayer({ items, cuts, W, H, zoom }: { items: readonly Piece[]; cuts: Readonly<Cuts>; W: number; H: number; zoom: number }) {
   const scope = useId();
   const contour = cuts.mode === 'contour';
+  const emphasized = usePreview((s) => !!s.overlay?.cuts);
   // Drawn again when a shape is ready.
   useSyncExternalStore(subscribeShapes, shapesVersion);
   useEffect(() => {
@@ -37,6 +41,16 @@ export const CutLayer = memo(function CutLayer({ items, cuts, W, H, zoom }: { it
       data-color={style.hex}
       data-dash={style.dash ? style.dash.join(' ') : ''}
     >
+      {emphasized && (
+        <g className="cut-emphasis" fill="none" strokeWidth={EMPHASIS_PX} strokeLinecap="round" vectorEffect="non-scaling-stroke">
+          {lines.map((line, i) => (
+            <line key={i} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} vectorEffect="non-scaling-stroke" />
+          ))}
+          {paths.map((path, i) => (
+            <path key={i} d={pathData([path])} vectorEffect="non-scaling-stroke" />
+          ))}
+        </g>
+      )}
       <g fill="none" stroke={style.hex} strokeWidth={width} strokeDasharray={style.dash ? style.dash.map((v) => v * MM_PER_PT).join(' ') : undefined}>
         {lines.map((line, i) => (
           <line key={i} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
