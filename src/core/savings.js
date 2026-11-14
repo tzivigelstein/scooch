@@ -144,5 +144,5 @@ export function pdfKey(description) {
 export function countPdf(savings, key, saved) {
   const added = savings.counted.includes(key) ? 0 : Math.max(0, saved);
   const counted = added ? [...savings.counted, key] : savings.counted;
-  return { savings: { sheets: savings.sheets + added, turn: savings.turn + 1, counted }, added };
+  return { savings: { ...savings, sheets: savings.sheets + added, turn: savings.turn + 1, counted }, added };
 }

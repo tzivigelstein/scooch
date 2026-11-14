@@ -53,7 +53,11 @@ export interface Savings {
   turn: number;
   /** The keys of the last PDFs that added to the total, the newest last. */
   counted: string[];
+  /** The last print, whose sheets aren't in the total until it settles. */
+  pending: { key: string; sheets: number } | null;
+  /** A milestone the total reached that no summary has shown yet. */
+  milestone: number | null;
 }
 export const COUNTED_MAX: number;
 export function parseSavings(raw: unknown): Savings;
-export function serializeSavings(savings: Savings): Savings & { v: 2 };
+export function serializeSavings(savings: Savings): Savings & { v: 3 };

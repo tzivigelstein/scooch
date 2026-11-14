@@ -1,0 +1,6 @@
+{
+  "about": "scooch:savings version 3: 34 sheets saved on this device, the third equivalent's turn next, the keys of the two PDFs that added to the total, and the last print, whose 5 sheets join the total when it settles (no milestone waiting to show)",
+  "key": "scooch:savings",
+  "value": { "v": 3, "sheets": 34, "turn": 2, "counted": ["1x9k2m4q7a", "3f0zp81c2d"], "pending": { "key": "0b7rk2xw5e", "sheets": 5 }, "milestone": null },
+  "reads": { "sheets": 34, "turn": 2, "counted": ["1x9k2m4q7a", "3f0zp81c2d"], "pending": { "key": "0b7rk2xw5e", "sheets": 5 }, "milestone": null }
+}

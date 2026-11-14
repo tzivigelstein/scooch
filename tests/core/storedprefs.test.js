@@ -72,16 +72,28 @@ describe('printing preferences and savings', () => {
   test('both on unless turned off; a total that can’t be read is 0', () => {
     expect(parsePrintPrefs(null)).toEqual({ tip: true, summary: true });
     expect(parsePrintPrefs({ tip: 'no' })).toEqual({ tip: true, summary: true });
-    expect(parseSavings({ sheets: -3, turn: 1.5 })).toEqual({ sheets: 0, turn: 0, counted: [] });
-    expect(parseSavings('34')).toEqual({ sheets: 0, turn: 0, counted: [] });
+    const none = { sheets: 0, turn: 0, counted: [], pending: null, milestone: null };
+    expect(parseSavings({ sheets: -3, turn: 1.5 })).toEqual(none);
+    expect(parseSavings('34')).toEqual(none);
   });
 
-  test('the PDFs counted are only read from version 2, keys only, and only the last ones are kept', () => {
+  test('the PDFs counted are only read from version 2 on, keys only, and only the last ones are kept', () => {
     expect(parseSavings({ v: 1, sheets: 3, turn: 0, counted: ['a'] }).counted).toEqual([]);
     expect(parseSavings({ v: 2, sheets: 3, turn: 0, counted: ['a', 7, '', null, 'b'] }).counted).toEqual(['a', 'b']);
+    expect(parseSavings({ v: 3, sheets: 3, turn: 0, counted: ['a', 7, '', null, 'b'] }).counted).toEqual(['a', 'b']);
     const many = Array.from({ length: COUNTED_MAX + 5 }, (_, i) => `k${i}`);
     expect(parseSavings({ v: 2, sheets: 3, turn: 0, counted: many }).counted).toEqual(many.slice(5));
-    expect(serializeSavings({ sheets: 3, turn: 0, counted: many }).counted).toEqual(many.slice(5));
+    expect(serializeSavings({ sheets: 3, turn: 0, counted: many, pending: null, milestone: null }).counted).toEqual(many.slice(5));
+  });
+
+  test('the pending print and the milestone not shown yet are only read from version 3, and only when they make sense', () => {
+    const pending = { key: 'k1', sheets: 5 };
+    expect(parseSavings({ v: 2, sheets: 3, turn: 0, counted: [], pending, milestone: 10 })).toMatchObject({ pending: null, milestone: null });
+    expect(parseSavings({ v: 3, sheets: 3, turn: 0, counted: [], pending, milestone: 10 })).toMatchObject({ pending, milestone: 10 });
+    for (const bad of [{ key: '', sheets: 5 }, { key: 'k1', sheets: 0 }, { key: 'k1', sheets: 2.5 }, { sheets: 5 }, 'k1', []])
+      expect(parseSavings({ v: 3, sheets: 3, turn: 0, counted: [], pending: bad }).pending, JSON.stringify(bad)).toBeNull();
+    for (const bad of [7, '10', 0, -10])
+      expect(parseSavings({ v: 3, sheets: 3, turn: 0, counted: [], milestone: bad }).milestone, `${JSON.stringify(bad)} isn’t a milestone`).toBeNull();
   });
 });
 

@@ -210,7 +210,7 @@ describe('the summary after', () => {
     expect(summary.share).toBeCloseTo((7 * 3600) / (2 * 190 * 277), 3);
     expect(summary.equivalent).toMatchObject({ kind: 'grams' });
     expect(summary.equivalent!.value).toBeCloseTo(5 * 0.21 * 0.297 * 80, 6);
-    expect(saved()).toEqual({ v: 2, sheets: 5, turn: 1, counted: [summary.key] });
+    expect(saved()).toEqual({ v: 3, sheets: 5, turn: 1, counted: [summary.key], pending: null, milestone: null });
   });
 
   test('the focus goes back to who started it: the element focused when printing began', async () => {

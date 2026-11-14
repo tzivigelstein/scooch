@@ -2,5 +2,5 @@
   "about": "scooch:savings version 2: 34 sheets saved on this device, the third equivalent's turn next, and the keys of the two PDFs that added to the total",
   "key": "scooch:savings",
   "value": { "v": 2, "sheets": 34, "turn": 2, "counted": ["1x9k2m4q7a", "3f0zp81c2d"] },
-  "reads": { "sheets": 34, "turn": 2, "counted": ["1x9k2m4q7a", "3f0zp81c2d"] }
+  "reads": { "sheets": 34, "turn": 2, "counted": ["1x9k2m4q7a", "3f0zp81c2d"], "pending": null, "milestone": null }
 }

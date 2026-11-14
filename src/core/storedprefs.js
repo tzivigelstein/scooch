@@ -6,6 +6,7 @@
 // change is a new `v` with its reading of the previous ones here, and a fixture
 // in tests/fixtures/storage/ that tests/core/storedprefs.test.js reads.
 
+import { MILESTONES } from './savings.js';
 import { ZOOM_MAX, ZOOM_MIN } from './zoom.js';
 
 const isRecord = (value) => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -91,14 +92,23 @@ export const serializeSections = ({ sections, cutOptions }) => {
 // Version 2: {v: 2, sheets, turn, counted}: also the keys of the last PDFs
 // that added to the total (core/savings.js pdfKey, the newest last, at most
 // COUNTED_MAX), so the same PDF doesn't count twice. Version 1 read as none.
+// Version 3: {v: 3, sheets, turn, counted, pending, milestone}: also the last
+// print, whose sheets aren't in the total until it settles ({key, sheets}, or
+// null), and a milestone the total reached that no summary has shown yet (or
+// null). Versions 1 and 2 read as neither.
 
 export const COUNTED_MAX = 50;
+
+const isKey = (key) => typeof key === 'string' && key !== '';
 
 export function parseSavings(raw) {
   const saved = isRecord(raw) ? raw : {};
   const count = (v) => (Number.isInteger(v) && v >= 0 ? v : 0);
-  const counted = saved.v === 2 && Array.isArray(saved.counted) ? saved.counted.filter((key) => typeof key === 'string' && key).slice(-COUNTED_MAX) : [];
-  return { sheets: count(saved.sheets), turn: count(saved.turn), counted };
+  const counted = (saved.v === 2 || saved.v === 3) && Array.isArray(saved.counted) ? saved.counted.filter(isKey).slice(-COUNTED_MAX) : [];
+  const v3 = saved.v === 3;
+  const pending = v3 && isRecord(saved.pending) && isKey(saved.pending.key) && count(saved.pending.sheets) > 0 ? { key: saved.pending.key, sheets: saved.pending.sheets } : null;
+  const milestone = v3 && MILESTONES.includes(saved.milestone) ? saved.milestone : null;
+  return { sheets: count(saved.sheets), turn: count(saved.turn), counted, pending, milestone };
 }
 
-export const serializeSavings = ({ sheets, turn, counted }) => ({ v: 2, sheets, turn, counted: counted.slice(-COUNTED_MAX) });
+export const serializeSavings = ({ sheets, turn, counted, pending, milestone }) => ({ v: 3, sheets, turn, counted: counted.slice(-COUNTED_MAX), pending, milestone });
