@@ -116,7 +116,8 @@ test.describe('the canvas shows what a control does', () => {
   test.describe('on a touch screen', () => {
     test.use({ hasTouch: true });
 
-    test('tapping a field shows nothing on the canvas', async ({ app, page }) => {
+    test('tapping a field shows nothing on the canvas', async ({ app, page, browserName }) => {
+      test.skip(browserName !== 'chromium', 'the touch goes through the Chrome DevTools Protocol (Input.dispatchTouchEvent), which only Chromium has');
       await app.addFiles(tiles(0, 1));
       await app.openSetting('#margin');
       const r = (await page.locator('#margin').boundingBox())!;
