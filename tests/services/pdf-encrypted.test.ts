@@ -12,7 +12,7 @@ import { buildPdf, type PdfSource } from '../../src/services/pdf.ts';
 
 const fixture = (name: string) => new Uint8Array(readFileSync(resolve(import.meta.dirname, '../../e2e/fixtures', name)));
 
-const PASSWORD_PDF = fixture('password.pdf');
+const ENCRYPTED_PDF = fixture('password.pdf');
 // The preview the app rendered for it (any PNG does: it is embedded as it is).
 const PREVIEW = fixture('tile000.png');
 const SHEET = { width: 210, height: 297 };
@@ -33,13 +33,13 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('exporting a page of an encrypted PDF', () => {
   test('pdf-lib refuses the fixture (so the exporter can’t embed it as a vector)', async () => {
-    await expect(PDFDocument.load(PASSWORD_PDF)).rejects.toThrow(/encrypted/i);
+    await expect(PDFDocument.load(ENCRYPTED_PDF)).rejects.toThrow(/encrypted/i);
   });
 
   test('falls back to the page’s preview image, drawn at the piece’s place, and says why in the console', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const url = URL.createObjectURL(new Blob([PREVIEW], { type: 'image/png' }));
-    const asset: PdfSource = { kind: 'pdf', src: 1, page: 1, pageRotation: 0, view: [0, 0, 200, 200], bytes: PASSWORD_PDF, url, w: 200 * MM, h: 200 * MM };
+    const asset: PdfSource = { kind: 'pdf', src: 1, page: 1, pageRotation: 0, view: [0, 0, 200, 200], bytes: ENCRYPTED_PDF, url, w: 200 * MM, h: 200 * MM };
     try {
       const out = await buildPdf({ ...SHEET, pages: [{ pieces: [{ asset, x: 20, y: 30, scale: 50, r: 0, crop: null }] }], title: 't' });
       const { kinds, text } = await firstPage(out);
