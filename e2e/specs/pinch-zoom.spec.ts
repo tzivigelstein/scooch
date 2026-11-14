@@ -212,12 +212,13 @@ test('the page zoom stays off the canvas and keeps working over a panel', async 
   await app.showTab('sheet');
   const panel = (await page.locator('#props-panel').boundingBox())!;
   const at = { x: panel.x + panel.width / 2, y: panel.y + Math.min(panel.height / 2, 160) };
-  const chain = await page.evaluate(({ x, y }) => {
-    const out: string[] = [];
-    for (let el = document.elementFromPoint(x, y); el; el = el.parentElement) out.push(getComputedStyle(el).touchAction);
-    return out;
+  const { inPanel, chain } = await page.evaluate(({ x, y }) => {
+    const hit = document.elementFromPoint(x, y);
+    const values: string[] = [];
+    for (let el = hit; el; el = el.parentElement) values.push(getComputedStyle(el).touchAction);
+    return { inPanel: !!hit?.closest('#props-panel'), chain: values };
   }, at);
-  expect(chain.length, 'the panel is under the fingers').toBeGreaterThan(3);
+  expect(inPanel, 'the panel is under the fingers').toBe(true);
   expect(chain.every((value) => value === 'auto'), `from the panel up, nothing holds the page zoom back (${chain.join(' < ')})`).toBe(true);
   const fingers = await Fingers.on(page);
   await fingers.pinch(at, 60, 240);
