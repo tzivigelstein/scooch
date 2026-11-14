@@ -1,7 +1,7 @@
 // Keyboard shortcuts. Single-key ones never act while typing, inside a
 // dialog or with Ctrl/Cmd/Alt involved, and they can be turned off (WCAG
 // 2.1.4); the Ctrl ones, the Alt+Shift ones (align and distribute) and the
-// arrows/Delete on a piece keep working.
+// arrows/Delete on a piece keep working. While a dialog is open, none acts.
 
 import { useEffect } from 'react';
 import type { AlignMode } from '../core/align.js';
@@ -54,6 +54,18 @@ const ZOOM_KEYS: Record<string, 1 | -1> = { '+': 1, '=': 1, '-': -1, _: -1 };
 // A Space press that started a pan over the canvas, on this piece (it acts on release if it didn't pan).
 let spaceOn: HTMLElement | null = null;
 const SHRINKS = new Set(['-', '_', '−']);
+
+// Ctrl/⌘ + these are browser commands the app replaces with its own (open a
+// file, print the page, save the page, the address bar): they never reach the
+// browser, also where the app's shortcut does nothing (a dialog, a menu).
+const CLAIMED = new Set(['o', 'p', 's', 'e']);
+
+const isClaimed = (e: KeyboardEvent) => (e.ctrlKey || e.metaKey) && !e.altKey && CLAIMED.has(e.key.toLowerCase());
+
+/** Captured on the window, before any handler can stop the key on its way to the document. */
+function holdBack(e: KeyboardEvent) {
+  if (isClaimed(e)) e.preventDefault();
+}
 
 const busy = () => getDocument().busy;
 const hasSelection = () => getDocument().selection.length > 0 && !busy();
@@ -123,31 +135,28 @@ function escape(target: Element) {
 }
 
 function onKeyDown(e: KeyboardEvent) {
-  if (e.defaultPrevented || e.isComposing) return;
+  if ((e.defaultPrevented && !isClaimed(e)) || e.isComposing) return;
   const target = e.target instanceof Element ? e.target : document.body;
+  // With a dialog open (focused in it or not, whichever it is), nothing here acts:
+  // the <dialog> handles Esc and Tab on its own, and the claimed keys were held back.
+  if (target.closest('dialog') || document.querySelector('dialog[open]')) return;
   const key = e.key;
   const lower = key.length === 1 ? key.toLowerCase() : key;
   const mod = e.ctrlKey || e.metaKey;
   const typing = isTyping(target);
-  // Mod+O opens «Proyectos» (never the browser's file dialog).
-  if (mod && !e.altKey && lower === 'o') {
-    e.preventDefault();
-    if (!target.closest('dialog')) void openProjects();
-    return;
-  }
-  if (target.closest('dialog')) return; // the <dialog> handles Esc and Tab on its own
 
   // With Ctrl/Cmd: they always work (except undo while typing, which is the field's).
+  // The claimed ones (O, P, S, E) never reach the browser (holdBack).
   if (mod && !e.altKey) {
-    if (lower === 'e' || (lower === 's' && e.shiftKey)) {
-      e.preventDefault();
+    if (lower === 'o') {
+      void openProjects();
+    } else if (lower === 'e' || (lower === 's' && e.shiftKey)) {
       void exportPdf();
     } else if (lower === 's') {
-      // Never the browser's «Save page»: changes save themselves, and it says so.
-      e.preventDefault();
+      // Changes save themselves, and it says so.
       if (!e.repeat) explainSaving();
     } else if (lower === 'p') {
-      e.preventDefault(); // replaces printing the page with printing the real-size PDF
+      // The real-size PDF, instead of the page.
       void printPdf();
     } else if (!typing && lower === 'z') {
       e.preventDefault();
@@ -331,10 +340,12 @@ export function useGlobalShortcuts() {
       spaceOn = null;
       releaseSpace();
     };
+    window.addEventListener('keydown', holdBack, true);
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', blur);
     return () => {
+      window.removeEventListener('keydown', holdBack, true);
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', blur);

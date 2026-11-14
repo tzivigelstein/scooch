@@ -4,7 +4,9 @@
 // calls its print() (spied: no dialog opens, and it closes right away);
 // where that can't work the PDF opens in another tab (print() fails, or there
 // is no PDF viewer), or downloads (popups blocked too). Once the person is
-// back, the summary card shows. Full Chromium has the PDF viewer; the
+// back, the summary card shows. Their keys never reach the browser, and
+// under a dialog they do nothing (the rule itself, in
+// tests/hooks/useGlobalShortcuts.test.tsx). Full Chromium has the PDF viewer; the
 // headless shell (the default) doesn't. What each way says, the advice's
 // contents and the summary's lines are in tests/state/printing-flow.test.ts
 // and the components' tests.
@@ -22,6 +24,50 @@ async function throughAdvice(page: Page, button: '#print' | '#export') {
   await page.locator(button).click();
   await expect(advice(page)).toHaveAttribute('open', '');
   await page.locator('#print-tip-go').click();
+}
+
+interface KeyWindow {
+  __keys: { keys: string; prevented: boolean }[];
+  __pagePrints: number;
+}
+
+/**
+ * From now on, records each Ctrl key press with a letter and whether the page
+ * kept it from the browser (its default prevented), and counts the calls to
+ * the page's own print() (the browser printing the page instead of the PDF).
+ */
+async function watchKeys(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as KeyWindow;
+    w.__keys = [];
+    w.__pagePrints = 0;
+    window.print = () => void w.__pagePrints++;
+    window.addEventListener(
+      'keydown',
+      (e) => {
+        if (!e.ctrlKey || !/^Key[A-Z]$/.test(e.code)) return;
+        const keys = `Control+${e.shiftKey ? 'Shift+' : ''}${e.code.slice(3)}`;
+        // Read once every listener had its turn, even one that stopped the event on its way.
+        setTimeout(() => w.__keys.push({ keys, prevented: e.defaultPrevented }));
+      },
+      true
+    );
+  });
+}
+
+const watchedKeys = (page: Page) => page.evaluate(() => (window as unknown as KeyWindow).__keys);
+const pagePrints = (page: Page) => page.evaluate(() => (window as unknown as KeyWindow).__pagePrints);
+const openDialogs = (page: Page) => page.evaluate(() => [...document.querySelectorAll('dialog[open]')].map((d) => d.id));
+
+/** Print, download (both keys) and the note on saving. */
+const OUTPUT_KEYS = ['Control+p', 'Control+e', 'Control+Shift+S', 'Control+s'];
+
+/** Presses the keys and waits until the page saw each one, kept from the browser. */
+async function pressHeldBack(page: Page, keys: readonly string[]) {
+  const before = (await watchedKeys(page)).length;
+  for (const k of keys) await page.keyboard.press(k);
+  const expected = keys.map((k) => ({ keys: k.replace(/[a-z]$/, (c) => c.toUpperCase()), prevented: true }));
+  await expect.poll(async () => (await watchedKeys(page)).slice(before)).toEqual(expected);
 }
 
 test.describe('printing with a PDF viewer', () => {
@@ -132,6 +178,80 @@ test.describe('printing without a PDF viewer', () => {
     await expect(printFrames(page)).toHaveCount(0);
     // Said in the summary once the person is back (the notice goes).
     await expect(page.locator('#summary-note')).toHaveText('Se descargó scooch-a4.pdf. Ábrelo para imprimirlo.');
+  });
+});
+
+test.describe('print and download keys', () => {
+  test.use({ printSpy: 'record' });
+
+  test('Ctrl+P twice: the advice stays open, the PDF isn’t printed and the browser never prints the page', async ({ app, page }) => {
+    await app.addFiles(['small.jpg']);
+    await app.pieces().first().focus();
+    await watchKeys(page);
+    await pressHeldBack(page, ['Control+p']);
+    await expect(advice(page)).toHaveAttribute('open', '');
+    await expect(page.locator('#print-tip-go')).toBeFocused();
+    await pressHeldBack(page, ['Control+p']);
+    await expect(advice(page)).toHaveAttribute('open', '');
+    await expect(page.locator('#print-tip-title')).toHaveText('Antes de imprimir');
+    expect(await printCalls(page)).toEqual([]);
+    expect(await openedUrls(page)).toEqual([]);
+    expect(await pagePrints(page)).toBe(0);
+  });
+
+  test('with the advice open, Ctrl+P, Ctrl+E, Ctrl+Shift+S and Ctrl+S do nothing: it stays as it is, and nothing prints or downloads', async ({ app, page }) => {
+    await app.addFiles(['small.jpg']);
+    await app.pieces().first().focus();
+    await watchKeys(page);
+    let downloads = 0;
+    page.on('download', () => downloads++);
+    for (const [opener, title] of [
+      ['Control+p', 'Antes de imprimir'],
+      ['Control+e', 'Antes de descargar'],
+    ] as const) {
+      await pressHeldBack(page, [opener]);
+      await expect(page.locator('#print-tip-title')).toHaveText(title);
+      await pressHeldBack(page, OUTPUT_KEYS);
+      expect(await openDialogs(page)).toEqual(['print-tip']);
+      await expect(page.locator('#print-tip-title')).toHaveText(title);
+      await expect(page.locator('#print-tip-go')).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(advice(page)).not.toHaveAttribute('open');
+    }
+    expect(await printCalls(page)).toEqual([]);
+    expect(await openedUrls(page)).toEqual([]);
+    expect(await pagePrints(page)).toBe(0);
+    expect(downloads).toBe(0);
+    expect((await app.notice()).text).toBe('');
+  });
+
+  test('under Preferencias, Atajos de teclado, Proyectos or a confirmation, Ctrl+P, Ctrl+E, Ctrl+Shift+S and Ctrl+S do nothing and never reach the browser', async ({ app, page }) => {
+    await app.addFiles(['small.jpg']);
+    await watchKeys(page);
+    let downloads = 0;
+    page.on('download', () => downloads++);
+    const modals = [
+      { id: 'prefs', open: () => page.locator('#prefs-open').click() },
+      { id: 'shortcuts', open: () => page.locator('#help').click() },
+      { id: 'projects', open: () => page.locator('#projects-open').click() },
+      { id: 'confirm', open: () => page.locator('#clear').click() },
+    ];
+    for (const modal of modals) {
+      await test.step(modal.id, async () => {
+        await modal.open();
+        await expect(page.locator(`#${modal.id}`)).toHaveAttribute('open', '');
+        await pressHeldBack(page, OUTPUT_KEYS);
+        expect(await openDialogs(page)).toEqual([modal.id]);
+        expect((await app.notice()).text).toBe('');
+        await page.keyboard.press('Escape');
+        await expect(page.locator(`#${modal.id}`)).not.toHaveAttribute('open');
+      });
+    }
+    await expect(app.pieces()).toHaveCount(1);
+    expect(await printCalls(page)).toEqual([]);
+    expect(await openedUrls(page)).toEqual([]);
+    expect(await pagePrints(page)).toBe(0);
+    expect(downloads).toBe(0);
   });
 });
 

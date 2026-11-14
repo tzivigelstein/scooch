@@ -12,10 +12,15 @@ import { getPrefs, setSingleKeys, setUnit } from '../../src/state/prefs.ts';
 import { dims } from '../../src/state/selectors.ts';
 import { getView, setView } from '../../src/state/view.ts';
 import { piece as makePiece, resetState } from '../support/state.ts';
-import { exportPdf } from '../../src/state/actions/output.ts';
+import { exportPdf, printPdf } from '../../src/state/actions/output.ts';
 import { useProject } from '../../src/state/project.ts';
+import { openProjects } from '../../src/state/actions/dialogs.ts';
 
 vi.mock('../../src/state/actions/output.ts', () => ({ exportPdf: vi.fn(async () => {}), printPdf: vi.fn(async () => {}) }));
+vi.mock('../../src/state/actions/dialogs.ts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/state/actions/dialogs.ts')>()),
+  openProjects: vi.fn(async () => {}),
+}));
 
 const key = addAsset({
   kind: 'image',
@@ -57,6 +62,17 @@ function Harness() {
       </div>
       <div id="live-polite" />
       <div id="live-assertive" />
+      {/* Like the menus, it keeps every key it gets to itself. */}
+      <div role="menu" onKeyDown={(e) => e.stopPropagation()}>
+        <button type="button" id="menu-item" role="menuitem">
+          Rotar
+        </button>
+      </div>
+      <dialog id="dialog">
+        <button type="button" id="dialog-button">
+          Cerrar
+        </button>
+      </dialog>
     </div>
   );
 }
@@ -425,5 +441,54 @@ describe('saving and downloading', () => {
     fireEvent.keyDown(piece(), { key: 'e', ctrlKey: true });
     fireEvent.keyDown(piece(), { key: 'S', ctrlKey: true, shiftKey: true });
     expect(exportPdf).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('the keys the browser would take', () => {
+  /** Ctrl+P, Ctrl+E, Ctrl+Shift+S, Ctrl+S and Ctrl+O (⌘ on a Mac): print, download, the note on saving, Proyectos. */
+  const KEYS = [{ key: 'p' }, { key: 'e' }, { key: 'S', shiftKey: true }, { key: 's' }, { key: 'o', metaKey: true }];
+
+  /** Presses them on `target`; returns whether the browser was kept from each one. */
+  function pressAll(target: Element) {
+    return KEYS.map((init) => {
+      const event = new KeyboardEvent('keydown', { ctrlKey: !init.metaKey, ...init, bubbles: true, cancelable: true });
+      act(() => void target.dispatchEvent(event));
+      return event.defaultPrevented;
+    });
+  }
+
+  const nothingHappened = () => {
+    expect(printPdf).not.toHaveBeenCalled();
+    expect(exportPdf).not.toHaveBeenCalled();
+    expect(openProjects).not.toHaveBeenCalled();
+    expect(getView().flash).toBeNull();
+  };
+
+  beforeEach(() => {
+    vi.mocked(printPdf).mockClear();
+    vi.mocked(exportPdf).mockClear();
+    vi.mocked(openProjects).mockClear();
+    setView({ flash: null });
+    act(() => useProject.setState({ status: 'saved' }));
+  });
+
+  test('with a dialog open they never reach the browser and do nothing, with the focus in it or left outside', () => {
+    document.getElementById('dialog')!.setAttribute('open', '');
+    expect(pressAll(document.getElementById('dialog-button')!)).toEqual([true, true, true, true, true]);
+    expect(pressAll(piece())).toEqual([true, true, true, true, true]);
+    nothingHappened();
+  });
+
+  test('in a menu, which keeps its keys, they never reach the browser and do nothing', () => {
+    expect(pressAll(document.getElementById('menu-item')!)).toEqual([true, true, true, true, true]);
+    nothingHappened();
+  });
+
+  test('with no dialog open they act once each', () => {
+    expect(pressAll(piece())).toEqual([true, true, true, true, true]);
+    expect(printPdf).toHaveBeenCalledTimes(1);
+    expect(exportPdf).toHaveBeenCalledTimes(2);
+    expect(getView().flash).toEqual({ text: 'Los cambios se guardan automáticamente', info: true });
+    expect(openProjects).toHaveBeenCalledTimes(1);
   });
 });
