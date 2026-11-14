@@ -5,7 +5,8 @@
 // the running total on this device (with a line and a brief glow at its
 // milestones) and, at most, a fuller arrangement when it surely saves a sheet.
 // The request for a donation, when it applies, is a panel of its own.
-// «Listo» starts focused.
+// «Listo» starts focused; after printing, «No lo imprimí» takes the PDF's
+// sheets back out of the total.
 
 import { Heart, Layers, LayoutDashboard, Leaf, Trophy } from 'lucide-react';
 import { splitLink, t } from '../../copy/index.ts';
@@ -13,7 +14,7 @@ import { arrangeAll } from '../../state/actions/edit.ts';
 import { Dialog } from '../ui/Dialog.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { donateUrl, neverAskDonation } from '../dialogs/donate.ts';
-import { closeSummary, usePrintSummary, type PrintSummary as Summary } from './printSummary.ts';
+import { closeSummary, notPrinted, usePrintSummary, type PrintSummary as Summary } from './printSummary.ts';
 
 const focusDone = () => document.getElementById('summary-done');
 
@@ -75,7 +76,7 @@ function DonationAsk({ url }: { url: string }) {
 }
 
 function SummaryContent({ summary }: { summary: Summary }) {
-  const { note, share, used, baseline, saved, equivalent, total, milestone, suggest, ask } = summary;
+  const { kind, note, share, used, baseline, saved, equivalent, total, milestone, suggest, ask, added } = summary;
   const percent = t('summary.percent', { n: Math.round(share * 100) });
   const [before, link, after] = splitLink('summary.suggest');
   const url = donateUrl();
@@ -139,6 +140,11 @@ function SummaryContent({ summary }: { summary: Summary }) {
         {ask && url && <DonationAsk url={url} />}
       </div>
       <div className="dialog-actions summary-actions">
+        {kind === 'print' && added > 0 && (
+          <button type="button" id="summary-not-printed" className="btn ghost" onClick={notPrinted}>
+            {t('summary.notPrinted')}
+          </button>
+        )}
         <button type="button" id="summary-done" className="btn primary" onClick={closeSummary}>
           {t('summary.done')}
         </button>

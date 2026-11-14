@@ -3,7 +3,7 @@
 // physical terms, the running total's milestones, when a fuller arrangement
 // may be suggested, and counting each PDF once.
 import { describe, expect, test } from 'vitest';
-import { countPdf, equivalent, milestoneReached, paperFacts, pdfKey, sheetSavings, sheetUsage, suggestArrange, unionArea } from '../../src/core/savings.js';
+import { countPdf, equivalent, milestoneReached, paperFacts, pdfKey, sheetSavings, sheetUsage, suggestArrange, uncountPdf, unionArea } from '../../src/core/savings.js';
 
 const r = (x, y, w, h) => ({ x, y, w, h });
 const A4_AREA = r(10, 10, 190, 277); // A4 with a 10 mm margin
@@ -117,5 +117,13 @@ describe('counting each PDF once', () => {
 
   test('a PDF that saves nothing adds nothing and isn’t remembered', () => {
     expect(countPdf(before, 'k1', 0)).toEqual({ savings: { sheets: 8, turn: 5, counted: ['older'] }, added: 0 });
+  });
+
+  test('uncounting takes the added sheets back out and forgets the PDF, so it counts again later', () => {
+    const { savings, added } = countPdf(before, 'k1', 5);
+    const back = uncountPdf(savings, 'k1', added);
+    expect(back).toEqual({ sheets: 8, turn: 5, counted: ['older'] });
+    expect(countPdf(back, 'k1', 5).added).toBe(5);
+    expect(uncountPdf({ sheets: 2, turn: 0, counted: [] }, 'k1', 5).sheets, 'never below 0').toBe(0);
   });
 });
