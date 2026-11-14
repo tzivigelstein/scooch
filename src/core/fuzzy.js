@@ -8,7 +8,8 @@
 // more than the other words, the whole query at the start of the name more
 // still, and a shorter name wins a tie.
 
-const WORD = /[\p{L}\p{N}]/u;
+// Marks too: Devanagari vowel signs are inside a word, not between words.
+const WORD = /[\p{L}\p{M}\p{N}]/u;
 const SPACE = /\s/;
 
 /** The text in lowercase, without accents, with any space as « »: one character per character, so indices stay valid. */

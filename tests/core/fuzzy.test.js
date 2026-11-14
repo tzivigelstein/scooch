@@ -66,6 +66,14 @@ describe('what a query finds', () => {
     expect(fuzzyMatch('girar izq', prepare('Rotar a la izquierda', 'girar, voltear')).ranges).toEqual([[11, 14]]);
   });
 
+  test('in Chinese and Hindi too: a Chinese name is one word, and Devanagari vowel signs are inside a word', () => {
+    expect(parts('删除页面', fuzzyMatch('删页', prepare('删除页面')).ranges)).toEqual(['删', '页']);
+    // «पृष्ठ» starts a word after the space only: its vowel sign doesn't start another.
+    const name = 'पृष्ठ हटाएँ';
+    expect(parts(name, fuzzyMatch('हटा', prepare(name)).ranges)).toEqual(['हटा']);
+    expect(fuzzyMatch('ृष', prepare(name)).score).toBeLessThan(fuzzyMatch('पृष', prepare(name)).score);
+  });
+
   test('an empty query (or only spaces) finds everything, in its order', () => {
     expect(fuzzyMatch('  ', prepare('Deshacer'))).toEqual({ score: 0, ranges: [] });
     expect(names('', [['Deshacer'], ['Rehacer'], ['Imprimir']])).toEqual(['Deshacer', 'Rehacer', 'Imprimir']);
