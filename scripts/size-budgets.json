@@ -12,9 +12,9 @@
   },
   "languages": {
     "*": {
-      "kB": 11.6,
-      "measured": 11.0,
-      "what": "Each language's texts (src/copy/<language>.ts), a chunk of its own: index.html preloads only the one it shows, so what a first visit waits for is «initialJs» plus one of these."
+      "kB": 12.2,
+      "measured": 11.6,
+      "what": "Each language's texts (src/copy/<language>.ts), a chunk of its own: index.html preloads only the one it shows, so what a first visit waits for is «initialJs» plus one of these. Set on the largest, French."
     },
     "hi": {
       "kB": 13.5,

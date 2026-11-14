@@ -12,6 +12,7 @@ const CATALOGUES: Readonly<Record<Language, () => Promise<Module>>> = {
   en: () => import('./en.ts'),
   'zh-Hans': () => import('./zh-Hans.ts'),
   hi: () => Promise.all([import('./hi.ts'), import('../styles/devanagari.css')]).then(([texts]) => texts),
+  fr: () => import('./fr.ts'),
 };
 
 const loaded = new Map<Language, Promise<Catalogue>>();

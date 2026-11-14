@@ -8,4 +8,5 @@ export const LANGUAGE_NAMES: Readonly<Record<Language, string>> = Object.freeze(
   en: 'English',
   'zh-Hans': '简体中文',
   hi: 'हिन्दी',
+  fr: 'Français',
 });

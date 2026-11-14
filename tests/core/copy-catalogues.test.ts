@@ -37,8 +37,8 @@ const integerCategories = (lang: string) => {
 
 const SPANISH = leaves(es as unknown as Tree);
 
-/** Words a text may keep from Spanish in another language: key names, a paper's name, technical terms. */
-const SHARED_WORDS = new Set(['ctrl', 'control', 'shift', 'alt', 'tab', 'enter', 'esc', 'pdf', 'jpg', 'png', 'webp', 'folio', 'general', 'original', 'zoom', 'color', 'patreon']);
+/** Words a text may share with Spanish in another language: key names, a paper's name, technical terms, a few that French spells the same. */
+const SHARED_WORDS = new Set(['ctrl', 'control', 'shift', 'alt', 'tab', 'enter', 'esc', 'pdf', 'jpg', 'png', 'webp', 'folio', 'general', 'original', 'zoom', 'color', 'patreon', 'clic', 'visa', 'gris']);
 
 /** What no text of a language may have (its typography: docs/copy/<language>.md). */
 const TYPOGRAPHY: Record<string, readonly { rule: string; bad: RegExp }[]> = {
@@ -50,6 +50,10 @@ const TYPOGRAPHY: Record<string, readonly { rule: string; bad: RegExp }[]> = {
     { rule: 'full-width punctuation next to Chinese (，。：；！？（）)', bad: /[㐀-鿿][,.:;!?()]|[,:;!?(][㐀-鿿]/ },
     { rule: 'no space between Chinese and a number or a Latin word', bad: /[㐀-鿿] [\w{]|[\w}] [㐀-鿿]/ },
     { rule: 'Chinese quotes (“ ”), not guillemets or straight ones', bad: /["«»]/ },
+  ],
+  fr: [
+    { rule: 'a no-break space before : and inside « », a narrow one before ; ! ? and %', bad: /[^  ][:;!?»%]|«[^  ]/ },
+    { rule: 'typographic apostrophe (’), not a straight one', bad: /['"]/ },
   ],
   hi: [
     { rule: 'a sentence ends with ।, not with a point', bad: /[ऀ-ॿ]\.(\s|$)/ },
