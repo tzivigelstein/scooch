@@ -410,6 +410,8 @@ export class Catalogue {
       await settle(this.page, !!options.keepPointer);
       for (const scheme of SCHEMES) {
         await this.page.emulateMedia({ colorScheme: scheme });
+        // On «Automático» the app follows the system from a media query listener.
+        await expect(this.page.locator('html')).toHaveAttribute('data-theme', scheme);
         const where = `«${name}» at ${this.width} px, ${scheme}`;
         const result = await new AxeBuilder({ page: this.page }).withTags(AXE_TAGS).analyze();
         this.scans++;
@@ -424,6 +426,7 @@ export class Catalogue {
         if (this.width <= DESKTOP.width) await this.info.attach(`${name} · ${this.width} px · ${scheme}`, { body: await this.page.screenshot(), contentType: 'image/png' });
       }
       await this.page.emulateMedia({ colorScheme: 'light' });
+      await expect(this.page.locator('html')).toHaveAttribute('data-theme', 'light');
     });
   }
 }

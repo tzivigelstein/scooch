@@ -7,8 +7,23 @@
     <title>{{app.title}}</title>
     <meta name="description" content="{{app.description}}" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#121418" media="(prefers-color-scheme: dark)" />
+    <meta id="theme-color-light" name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta id="theme-color-dark" name="theme-color" content="#121418" media="(prefers-color-scheme: dark)" />
+    <script>
+      // The theme before the first paint: the one chosen in «Preferencias»
+      // (read like parseThemePref in src/core/storedprefs.js) or the system's.
+      // Afterwards src/services/theme.ts applies it the same way (applyTheme).
+      (() => {
+        let theme;
+        try {
+          theme = JSON.parse(localStorage.getItem("scooch:theme-preference")).theme;
+        } catch {}
+        if (theme !== "light" && theme !== "dark") theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.theme = theme;
+        document.querySelector('meta[name="color-scheme"]').setAttribute("content", theme);
+        for (const option of ["light", "dark"]) document.getElementById("theme-color-" + option).setAttribute("media", option === theme ? "all" : "not all");
+      })();
+    </script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='7' y='2.5' width='14' height='17' rx='2.5' fill='%230066ff' opacity='.3'/><rect x='3' y='5' width='14' height='17' rx='2.5' fill='%230066ff'/><rect x='6' y='8.5' width='4' height='5' rx='1' fill='white'/><rect x='11' y='8.5' width='3' height='3' rx='.8' fill='white'/><rect x='11' y='12.5' width='3' height='6' rx='.8' fill='white'/><rect x='6' y='14.5' width='4' height='4' rx='1' fill='white'/></svg>" />
     <!-- Inter's Latin subset: the only one the interface needs (the rest load by text). -->
     <link rel="preload" href="/node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
@@ -70,17 +85,17 @@
           opacity: 1;
         }
       }
-      @media (prefers-color-scheme: dark) {
-        body {
-          background: #15171c;
-          color: #eef0f3;
-        }
-        .boot {
-          color: #5c9dff;
-        }
-        .boot-name {
-          color: #eef0f3;
-        }
+      /* The dark theme the script above chose. :where() keeps these as weak as
+         the rules above, so the stylesheet's own rules win once it arrives. */
+      :where([data-theme="dark"]) body {
+        background: #15171c;
+        color: #eef0f3;
+      }
+      :where([data-theme="dark"]) .boot {
+        color: #5c9dff;
+      }
+      :where([data-theme="dark"]) .boot-name {
+        color: #eef0f3;
       }
       @media (prefers-reduced-motion: reduce) {
         .boot {
@@ -88,7 +103,20 @@
         }
       }
     </style>
-    <noscript><style>.boot { display: none; }</style></noscript>
+    <noscript>
+      <style>
+        .boot {
+          display: none;
+        }
+        /* No script, no data-theme: the system's dark theme over the stylesheet's light one. */
+        @media (prefers-color-scheme: dark) {
+          html body {
+            background: #15171c;
+            color: #eef0f3;
+          }
+        }
+      </style>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </head>
   <body class="is-loading">

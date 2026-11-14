@@ -285,11 +285,9 @@
   color: var(--warn-text);
 }
 
-@media (prefers-color-scheme: light) {
-  .row-badge[data-kind="pastMargin"],
-  .row-badge[data-kind="lowRes"] {
-    color: #8a4b00;
-  }
+:root:not([data-theme="dark"]) .row-badge[data-kind="pastMargin"],
+:root:not([data-theme="dark"]) .row-badge[data-kind="lowRes"] {
+  color: #8a4b00;
 }
 
 .row-badge[data-kind="overlap"] {
