@@ -6,6 +6,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import PrefsDialog from '../../src/components/dialogs/PrefsDialog.tsx';
+import { SHORTCUTS } from '../../src/hooks/shortcuts.ts';
 import { getPrefs, readStoredTheme, setSingleKeys } from '../../src/state/prefs.ts';
 import { neverShow, resetTips, useTips } from '../../src/state/tips.ts';
 import { resetState } from '../support/state.ts';
@@ -43,16 +44,28 @@ describe('Preferences', () => {
     expect(units.querySelector('.switch-hint')).toBeNull();
   });
 
-  test('the Teclado group holds the «Atajos de 1 tecla» switch, described by its hint, on by default', () => {
+  test('the Teclado group holds the «Atajos de 1 tecla» switch, named with two of those keys and no hint, on by default', () => {
     render(<PrefsDialog />);
     const [, keyboard] = screen.getAllByRole('group');
-    const toggle = within(keyboard).getByRole('switch') as HTMLInputElement;
+    const toggle = within(keyboard).getByRole('switch', { name: 'Atajos de 1 tecla, como D o R' }) as HTMLInputElement;
     expect(toggle.id).toBe('single-keys');
-    expect(plain(toggle.labels?.[0]?.firstChild?.textContent)).toBe('Atajos de 1 tecla');
-    expect(referenced(toggle, 'aria-describedby')).toBe(
-      'Desactívalos si usas control por voz o si se activan sin querer. Los atajos con Ctrl, las flechas y Supr sobre una pieza siguen funcionando.'
-    );
+    expect(plain(toggle.labels?.[0]?.textContent)).toBe('Atajos de 1 tecla, como D o R');
+    expect(toggle.hasAttribute('aria-describedby')).toBe(false);
+    expect(keyboard.querySelector('.switch-hint')).toBeNull();
     expect(toggle.checked).toBe(true);
+  });
+
+  test('the keys in the «Atajos de 1 tecla» label come from the shortcut table (duplicate and rotate)', () => {
+    const { duplicateKey, rotateRight } = SHORTCUTS;
+    const before = [duplicateKey.kbd, rotateRight.kbd];
+    try {
+      duplicateKey.kbd = 'J';
+      rotateRight.kbd = 'Shift+Q';
+      render(<PrefsDialog />);
+      expect(screen.getByRole('switch', { name: 'Atajos de 1 tecla, como J o Shift+Q' }).id).toBe('single-keys');
+    } finally {
+      [duplicateKey.kbd, rotateRight.kbd] = before;
+    }
   });
 
   test('the switch turns the single keys off and on again, saved in this browser', () => {

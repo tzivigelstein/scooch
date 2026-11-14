@@ -854,9 +854,8 @@ const es = {
     unitLabel: '{symbol}, {name}',
     unitChanged: 'Medidas en {unit}',
     keyboard: 'Teclado',
-    singleKeys: 'Atajos de 1 tecla',
-    singleKeysHint:
-      'Desactívalos si usas control por voz o si se activan sin querer. Los atajos con {mod}, las flechas y Supr sobre una pieza siguen funcionando.',
+    // {keys}: two of them as alternatives, as this device shows them («D o R»)
+    singleKeys: 'Atajos de 1 tecla, como {keys}',
   },
 
   // «Atajos de teclado» dialog

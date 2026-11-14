@@ -129,7 +129,8 @@ frase entera, con sus parámetros: nada se arma pegando pedazos en el código.
 
 Un control que necesita una frase para explicar qué hace es un control mal
 nombrado: se cambia el nombre («Rotación automática», «Tamaño de foto»,
-«Separación (5 mm)», «Distancia a la esquina») en lugar de agregar la frase.
+«Separación (5 mm)», «Distancia a la esquina», «Atajos de 1 tecla, como D o
+R») en lugar de agregar la frase.
 Los tooltips repiten el nombre (y el atajo) y no explican. Una nota queda
 solo para una consecuencia que no se ve y que importa.
 
@@ -241,7 +242,7 @@ Esc. Las letras y los signos se muestran tal cual.
 | Se abrió el PDF: imprimilo desde ahí. Al imprimir, elegí… | Se abrió el PDF en otra pestaña. Imprímelo desde ahí. | Dice dónde; tuteo; más corto |
 | Vaciar la hoja | Quitar todas | Glosario: quitar |
 | Ahí no había lugar libre: la pieza volvió a su lugar. | No hay espacio ahí. La pieza volvió a su lugar. | Sin relleno («así que»); qué pasa y qué hizo |
-| Apagalos si usás control por voz o se te disparan sin querer. | Desactívalos si usas control por voz o si se activan sin querer. | Tuteo; registro neutro |
+| Atajos de 1 tecla, con la nota «Desactívalos si usas control por voz o si se activan sin querer…» | Atajos de 1 tecla, como D o R | La nota se leía de dos maneras (¿se activa la opción o los atajos?); el ejemplo dice qué son, sin nota. Las teclas salen de la tabla de atajos |
 | Atajos de una tecla | Atajos de 1 tecla | Números con cifras (como «Verificación en 2 pasos») |
 | Apoyar en Patreon | Aportar en Patreon | Un solo término para la donación |
 | Se admiten hasta 200 piezas en total, así que ya no entran más copias | Ya hay 200 piezas, el máximo. Quita alguna para duplicar. | Sin relleno; qué pasó y cómo seguir |

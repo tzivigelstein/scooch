@@ -5,7 +5,8 @@
 import { X } from 'lucide-react';
 import { THEMES, type ThemeChoice } from '../../core/storedprefs.js';
 import { UNITS, type Unit } from '../../core/units.js';
-import { t } from '../../copy/index.ts';
+import { choiceParts, keyLabel, t } from '../../copy/index.ts';
+import { SHORTCUTS } from '../../hooks/shortcuts.ts';
 import { setPrinting, setSingleKeys, setTheme, usePrefs } from '../../state/prefs.ts';
 import { chooseUnit } from '../../state/actions/prefs.ts';
 import { setTipsOn, useTips } from '../../state/tips.ts';
@@ -51,7 +52,7 @@ export default function PrefsDialog() {
           <h3 id="prefs-keys-title" className="pref-title">
             {t('prefs.keyboard')}
           </h3>
-          <Switch id="single-keys" label={<span>{t('prefs.singleKeys')}</span>} hint={t('prefs.singleKeysHint')} checked={singleKeys} onChange={setSingleKeys} />
+          <Switch id="single-keys" label={<span>{t('prefs.singleKeys', { keys: singleKeyExamples() })}</span>} checked={singleKeys} onChange={setSingleKeys} />
         </div>
         <div className="pref-section" role="group" aria-labelledby="prefs-printing-title">
           <h3 id="prefs-printing-title" className="pref-title">
@@ -83,6 +84,12 @@ export default function PrefsDialog() {
     </>
   );
 }
+
+/** Two single-key shortcuts everyone meets (duplicate and rotate), from the shortcut table: the label says by example what the switch turns off. */
+const singleKeyExamples = () =>
+  choiceParts([SHORTCUTS.duplicateKey.kbd, SHORTCUTS.rotateRight.kbd].map(keyLabel))
+    .map((part) => part.value)
+    .join('');
 
 /** The site's terms and privacy policy (pages of their own: the project saves itself before leaving). */
 function LegalLinks() {
