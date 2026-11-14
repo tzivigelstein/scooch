@@ -211,7 +211,7 @@ const es = {
   props: {
     title: 'Propiedades',
     close: 'Cerrar el panel de propiedades',
-    tabs: { piece: 'Pieza', sheet: 'Hojas' },
+    tabs: { piece: 'Pieza', project: 'Proyecto' },
     piece: 'Pieza',
     empty: 'Selecciona una pieza para editarla',
     pieceNamePage: '{name} · página {page}',
@@ -362,7 +362,7 @@ const es = {
     unchanged: 'El recorte no cambió',
   },
 
-  // «Líneas de corte» in the Hojas tab (modes and stroke: src/core/cutmarks.js)
+  // «Líneas de corte» in the Proyecto tab (modes and stroke: src/core/cutmarks.js)
   cuts: {
     title: 'Líneas de corte',
     modes: { none: 'Ninguna', corners: 'Esquinas', outline: 'Contorno', contour: 'Silueta' },
@@ -636,7 +636,7 @@ const es = {
     copiedText: { one: '1 pieza de {app}', other: '{n} piezas de {app}' },
     // The properties panel switched tabs on its own (after a keyboard action)
     propsPiece: 'Propiedades muestra la pestaña Pieza',
-    propsSheet: 'Propiedades muestra la pestaña Hojas',
+    propsProject: 'Propiedades muestra la pestaña Proyecto',
     // Multiple selection
     selectedCount: { one: '1 pieza seleccionada', other: '{n} piezas seleccionadas' },
     selectionPinned: '1 pieza seleccionada. Ve a otra con Tab y agrégala con Shift+Espacio.',
@@ -887,7 +887,7 @@ const es = {
       sendPage: 'Mover la pieza a la hoja anterior o a la siguiente (si no hay lugar, a una hoja nueva)',
       remove: 'Quitar la pieza',
       measures: 'Ir a la pestaña Pieza de Propiedades',
-      sheet: 'Ir a la pestaña Hojas de Propiedades',
+      project: 'Ir a la pestaña Proyecto de Propiedades',
       list: 'Ir a la lista de piezas',
       arrange: 'Acomodar las piezas sin superponerlas',
       add: 'Agregar imágenes o PDF',

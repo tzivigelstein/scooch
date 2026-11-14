@@ -69,14 +69,14 @@ export function removeSheet(id: number, { viaKeyboard = false } = {}) {
 
 /**
  * A sheet's title: that sheet becomes the current one, nothing stays
- * selected and Propiedades shows Hoja (opening it on narrow screens). The
+ * selected and Propiedades shows Proyecto (opening it on narrow screens). The
  * focus stays where it is.
  */
 export function showSheetSettings(id: number) {
   if (sheetIndex(id) < 0) return;
   setView({ sheet: id });
   if (getDocument().selection.length) setSelection([]);
-  showPropsTab('sheet');
+  showPropsTab('project');
   revealPanel('props');
 }
 

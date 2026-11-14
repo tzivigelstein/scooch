@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // What the side panels show, on the real stores: the pieces panel (its empty
 // state, one row per piece with its name and size, the total) and the count on
-// the narrow screens' «Piezas» button; the Hoja tab's collapsible sections and
+// the narrow screens' «Piezas» button; the Proyecto tab's collapsible sections and
 // the selected piece's name. (Where the panels go at each width, the drawer and
 // the bottom sheet, and a collapsed section kept across a reload are in
 // e2e/specs/panels-and-tabs.spec.ts; the list as a listbox in PieceList.test.)
@@ -71,7 +71,7 @@ describe('the pieces panel', () => {
   });
 });
 
-describe('the Hoja tab’s sections', () => {
+describe('the Proyecto tab’s sections', () => {
   beforeEach(() => {
     resetState({ items: threePieces() });
     render(<PropertiesPanel />);

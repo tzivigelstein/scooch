@@ -26,9 +26,9 @@ export const readTabs = () => {
   const active = document.activeElement as HTMLElement | null;
   const piecePanel = panel('piece');
   return {
-    selected: ['piece', 'sheet'].filter((name) => tab(name).getAttribute('aria-selected') === 'true').join(),
-    tabStops: ['piece', 'sheet'].filter((name) => tab(name).tabIndex === 0).join(),
-    hidden: { piece: piecePanel.hidden, sheet: panel('sheet').hidden },
+    selected: ['piece', 'project'].filter((name) => tab(name).getAttribute('aria-selected') === 'true').join(),
+    tabStops: ['piece', 'project'].filter((name) => tab(name).tabIndex === 0).join(),
+    hidden: { piece: piecePanel.hidden, project: panel('project').hidden },
     /** The focused element's id, or its class. */
     active: active?.id || String(active?.className ?? ''),
     /** The focused piece's id, if a piece has the focus. */

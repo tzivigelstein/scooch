@@ -1,5 +1,5 @@
 // The properties panel's tabs. Selecting pieces shows «Pieza» and clearing
-// the selection shows «Hoja»; the person can switch at any time, and that
+// the selection shows «Proyecto»; the person can switch at any time, and that
 // choice stays until the selection changes again. Switching on its own never
 // moves the focus; it is announced only when the keyboard caused it.
 
@@ -9,14 +9,14 @@ import { getDocument, useDocument } from '../document.ts';
 import { flushUi } from '../flush.ts';
 import { getView, setView, type PropsTab } from '../view.ts';
 
-export const TAB_PANELS: Record<PropsTab, string> = { piece: 'props-piece', sheet: 'props-sheet' };
+export const TAB_PANELS: Record<PropsTab, string> = { piece: 'props-piece', project: 'props-project' };
 
 let lastInput: 'keyboard' | 'pointer' = 'pointer';
 
 const sameSet = (a: readonly number[], b: readonly number[]) => a.length === b.length && a.every((id) => b.includes(id));
 
 /** The tab that fits the selection. */
-export const tabFor = (selection: readonly number[]): PropsTab => (selection.length ? 'piece' : 'sheet');
+export const tabFor = (selection: readonly number[]): PropsTab => (selection.length ? 'piece' : 'project');
 
 /** Shows a tab (the person's choice, or a shortcut's); with `focus`, the focus goes to the tab. */
 export function showPropsTab(tab: PropsTab, { focus = false } = {}) {
@@ -42,7 +42,7 @@ function selectionChanged(selection: readonly number[]) {
   if (tab === current || typingIn(current)) return;
   setView({ propsTab: tab });
   // A switch the pointer caused also drops a pending one the keyboard caused: it would name the other tab.
-  if (lastInput === 'keyboard') announce(t(tab === 'piece' ? 'announce.propsPiece' : 'announce.propsSheet'), { key: 'props-tab', delay: 400 });
+  if (lastInput === 'keyboard') announce(t(tab === 'piece' ? 'announce.propsPiece' : 'announce.propsProject'), { key: 'props-tab', delay: 400 });
   else cancelAnnounce('props-tab');
 }
 

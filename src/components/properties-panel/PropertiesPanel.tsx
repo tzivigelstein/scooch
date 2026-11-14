@@ -1,6 +1,6 @@
 // The «Propiedades» panel, in two tabs: «Pieza» (the selection's properties)
-// and «Hojas» (the settings every sheet shares: paper, arrangement, cut lines,
-// grid). The tab
+// and «Proyecto» (the open project's settings, for every sheet: paper,
+// arrangement, cut lines, grid). The tab
 // follows the selection (state/actions/panels.ts).
 
 import { X } from 'lucide-react';
@@ -25,7 +25,7 @@ export function PropertiesPanel() {
   const open = useView((s) => s.drawer === 'props') && collapsible;
   const tab = useView((s) => s.propsTab);
   const pieceKeys = useShortcut('tabPiece');
-  const sheetKeys = useShortcut('tabSheet');
+  const projectKeys = useShortcut('tabProject');
   const className = `panel panel-right${collapsible ? ' is-drawer' : ''}${open ? ' is-open' : ''}`;
   return (
     <aside id="props-panel" className={className} aria-label={t('props.title')} hidden={collapsible && !open} onBlur={open ? closeOnFocusOut('props') : undefined}>
@@ -41,13 +41,13 @@ export function PropertiesPanel() {
         onChange={(value, { focus }) => showPropsTab(value, { focus })}
         options={[
           { value: 'piece', label: t('props.tabs.piece'), panel: TAB_PANELS.piece, attrs: { 'data-tip': t('props.tabs.piece'), ...pieceKeys } },
-          { value: 'sheet', label: t('props.tabs.sheet'), panel: TAB_PANELS.sheet, attrs: { 'data-tip': t('props.tabs.sheet'), ...sheetKeys } },
+          { value: 'project', label: t('props.tabs.project'), panel: TAB_PANELS.project, attrs: { 'data-tip': t('props.tabs.project'), ...projectKeys } },
         ]}
       />
       <div id={TAB_PANELS.piece} className="tab-panel" role="tabpanel" aria-labelledby="props-tab-piece" hidden={tab !== 'piece'}>
         <PieceSection />
       </div>
-      <div id={TAB_PANELS.sheet} className="tab-panel" role="tabpanel" aria-labelledby="props-tab-sheet" hidden={tab !== 'sheet'}>
+      <div id={TAB_PANELS.project} className="tab-panel" role="tabpanel" aria-labelledby="props-tab-project" hidden={tab !== 'project'}>
         <SheetSection />
         <ArrangeSection />
         <CutsSection />

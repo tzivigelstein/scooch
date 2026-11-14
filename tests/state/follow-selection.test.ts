@@ -27,7 +27,7 @@ beforeEach(() => {
   document.body.innerHTML = `
     <div id="live-polite"></div><div id="live-assertive"></div>
     <div id="props-piece"><input id="pos-x"></div>
-    <div id="props-sheet"><input id="gap"></div>
+    <div id="props-project"><input id="gap"></div>
     <button id="elsewhere"></button>`;
   const key = fakeImage();
   resetState({ items: [piece(1, key, 10, 10), piece(2, key, 80, 10), piece(3, key, 10, 80)] });
@@ -55,22 +55,22 @@ function heard() {
 }
 
 describe('tabFor', () => {
-  test('nothing selected: Hoja; one piece or several: Pieza', () => {
-    expect(tabFor([])).toBe('sheet');
+  test('nothing selected: Proyecto; one piece or several: Pieza', () => {
+    expect(tabFor([])).toBe('project');
     expect(tabFor([2])).toBe('piece');
     expect(tabFor([1, 2, 3])).toBe('piece');
   });
 });
 
 describe('the tab follows the selection', () => {
-  test('when it starts: Hoja with nothing selected, Pieza with a selection', () => {
+  test('when it starts: Proyecto with nothing selected, Pieza with a selection', () => {
     stop();
     setView({ propsTab: 'piece' });
     stop = followSelection();
-    expect(tab()).toBe('sheet');
+    expect(tab()).toBe('project');
     stop();
     setSelection([2]);
-    setView({ propsTab: 'sheet' });
+    setView({ propsTab: 'project' });
     stop = followSelection();
     expect(tab()).toBe('piece');
   });
@@ -84,32 +84,32 @@ describe('the tab follows the selection', () => {
     expect(heard()).toBe('');
   });
 
-  test('choosing Hoja with a piece selected sticks through an edit, its undo and selecting the same piece again', () => {
+  test('choosing Proyecto with a piece selected sticks through an edit, its undo and selecting the same piece again', () => {
     select(1);
-    showPropsTab('sheet');
+    showPropsTab('project');
     setSheetLength('margin', 12, { final: true });
     expect(getDocument().margin).toBe(12);
     undo();
     expect(getDocument().margin).toBe(10);
     expect(getDocument().selection).toEqual([1]);
-    expect(tab()).toBe('sheet');
+    expect(tab()).toBe('project');
     select(1);
     setSelection([1]);
-    expect(tab()).toBe('sheet');
+    expect(tab()).toBe('project');
   });
 
   test('selecting another piece switches to Pieza', () => {
     select(1);
-    showPropsTab('sheet');
+    showPropsTab('project');
     select(2);
     expect(tab()).toBe('piece');
   });
 
-  test('clearing the selection opens Hoja', () => {
+  test('clearing the selection opens Proyecto', () => {
     select(1);
     expect(tab()).toBe('piece');
     select(null);
-    expect(tab()).toBe('sheet');
+    expect(tab()).toBe('project');
   });
 
   test('Ctrl+A (selectAll) selects the three pieces and opens Pieza', () => {
@@ -126,9 +126,9 @@ describe('the tab follows the selection', () => {
     const depth = historyDepth();
     expect(depth).toEqual({ undo: 1, redo: 1 });
     const items = getDocument().items;
-    showPropsTab('sheet');
+    showPropsTab('project');
     showPropsTab('piece');
-    showPropsTab('sheet');
+    showPropsTab('project');
     expect(historyDepth()).toEqual(depth);
     expect(getDocument().items).toBe(items);
     expect(getDocument().margin).toBe(12);
@@ -140,7 +140,7 @@ describe('the tab follows the selection', () => {
     expect(heard()).toBe('Propiedades muestra la pestaña Pieza.');
     byKeyboard();
     select(null);
-    expect(heard()).toBe('Propiedades muestra la pestaña Hojas.');
+    expect(heard()).toBe('Propiedades muestra la pestaña Proyecto.');
     byPointer();
     select(2);
     expect(tab()).toBe('piece');
@@ -166,7 +166,7 @@ describe('the tab follows the selection', () => {
     focus('gap');
     byKeyboard();
     select(1);
-    expect(tab()).toBe('sheet');
+    expect(tab()).toBe('project');
     expect(heard()).toBe('');
     // Once the field is left, the next change switches again.
     focus('elsewhere');
@@ -181,6 +181,6 @@ describe('the tab follows the selection', () => {
   test('once stopped, the tab no longer follows', () => {
     stop();
     select(1);
-    expect(tab()).toBe('sheet');
+    expect(tab()).toBe('project');
   });
 });

@@ -183,9 +183,9 @@ test.describe('editing with the keyboard only', () => {
     await app.addFiles(['small.jpg']);
     await app.pieces().first().focus();
 
-    await test.step('H: the Hoja tab; Tab: the «Papel» header, then the paper size', async () => {
+    await test.step('H: the Proyecto tab; Tab: the «Papel» header, then the paper size', async () => {
       await page.keyboard.press('h');
-      await expect(page.locator('#props-tab-sheet')).toBeFocused();
+      await expect(page.locator('#props-tab-project')).toBeFocused();
       await page.keyboard.press('Tab');
       await expect(page.locator('[aria-controls="section-sheet"]')).toBeFocused();
       await page.keyboard.press('Tab');
@@ -324,7 +324,7 @@ test.describe('papers, units, sheets and projects with the keyboard only', () =>
 
     await test.step('H, Tab, Tab: the paper size; End: «Personalizado», with width and height', async () => {
       await page.keyboard.press('h');
-      await expect(page.locator('#props-tab-sheet')).toBeFocused();
+      await expect(page.locator('#props-tab-project')).toBeFocused();
       await page.keyboard.press('Tab');
       await page.keyboard.press('Tab');
       await expect(page.locator('#paper')).toBeFocused();

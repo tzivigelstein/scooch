@@ -53,7 +53,7 @@ export function tenByFifteen() {
           `Agrega tus fotos con ${ui('bar.add')} o suéltalas sobre la hoja. Cada una queda recortada a ${name}, centrada; las horizontales, a 15 × 10.`,
           `Si alguna no quedó bien encuadrada, haz doble clic sobre ella para recortarla y mueve la imagen.`,
           `Presiona ${ui('bar.arrange')}: entran ${num(onA4)} por hoja, y ${app} suma las hojas que hagan falta.`,
-          `Si vas a cortarlas, activa las ${ui('cuts.title')} en ${ui('props.title')}, en la pestaña ${ui('props.tabs.sheet')}.`,
+          `Si vas a cortarlas, activa las ${ui('cuts.title')} en ${ui('props.title')}, en la pestaña ${ui('props.tabs.project')}.`,
           `Presiona ${ui('bar.print')} y elige «Tamaño real» o «100 %» en el diálogo de impresión.`,
         ]),
       },

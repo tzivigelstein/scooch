@@ -28,7 +28,7 @@ import {
 
 const PDFJS = /pdfjs-dist|pdf\.worker/;
 
-/** The document settings as the Hoja tab shows them. */
+/** The document settings as the Proyecto tab shows them. */
 async function settings(app: App) {
   const page = app.page;
   await app.openSheet();

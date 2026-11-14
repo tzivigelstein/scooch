@@ -30,8 +30,8 @@ export type DrawerName = 'pieces' | 'props';
 /** How the zoom is chosen: fitting the sheet or its width (again when the window changes), or the person's. */
 export type ZoomMode = 'fit' | 'width' | 'manual';
 
-/** The tabs of the properties panel: the selection's properties or the document's settings. */
-export type PropsTab = 'piece' | 'sheet';
+/** The tabs of the properties panel: the selection's properties or the project's settings. */
+export type PropsTab = 'piece' | 'project';
 
 export interface ViewState {
   /** The current sheet when no piece is selected. */
@@ -79,7 +79,7 @@ export const useView = create<ViewState>()(() => ({
   zoom: fromPercent(remembered.zoomPct),
   zoomMode: remembered.zoomMode,
   drawer: null,
-  propsTab: 'sheet',
+  propsTab: 'project',
   animating: false,
   loading: true,
   editing: false,

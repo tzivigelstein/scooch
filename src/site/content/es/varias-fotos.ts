@@ -35,7 +35,7 @@ export function severalPhotos() {
       {
         h2: 'Cómo hacerlo',
         html: steps([
-          `Abre ${app} con el papel que vas a usar. Si es otro, cámbialo en ${ui('props.title')}, en la pestaña ${ui('props.tabs.sheet')}: hay A4, Carta, Oficio, papel fotográfico y medidas personalizadas.`,
+          `Abre ${app} con el papel que vas a usar. Si es otro, cámbialo en ${ui('props.title')}, en la pestaña ${ui('props.tabs.project')}: hay A4, Carta, Oficio, papel fotográfico y medidas personalizadas.`,
           `Presiona ${ui('bar.add')} o suelta las fotos sobre la hoja. Puedes agregar varias a la vez, y también PDF: cada página es una pieza más.`,
           `Presiona ${ui('bar.arrange')}: ${app} ubica todas las fotos sin superponerlas y suma las hojas que hagan falta.`,
           `Si quieres que todas tengan la misma medida, selecciónalas y elige un ${ui('crop.size')} (${photoName('10x15')}, ${photoName('13x18')}, ${photoName('id-4x4')}…) o escribe el ancho y el alto.`,

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// «Líneas de corte» in the Hoja tab: the modes, the gap note, the stroke
+// «Líneas de corte» in the Proyecto tab: the modes, the gap note, the stroke
 // options (the custom color and its hex field) and the cut margin field.
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';

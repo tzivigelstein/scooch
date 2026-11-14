@@ -57,7 +57,7 @@ export const SHORTCUTS = {
   fitSheet: { kbd: 'Shift+1', aria: 'Shift+1', single: true },
   fitWidth: { kbd: 'Shift+2', aria: 'Shift+2', single: true },
   tabPiece: { kbd: 'M', aria: 'M', single: true },
-  tabSheet: { kbd: 'H', aria: 'H', single: true },
+  tabProject: { kbd: 'H', aria: 'H', single: true },
 } satisfies Record<string, ShortcutKeys>;
 
 export type ShortcutName = keyof typeof SHORTCUTS;
@@ -107,7 +107,7 @@ export const SHORTCUT_ROWS: readonly [keys: readonly string[], action: CopyKey, 
   [['Shift+PageUp', 'Shift+PageDown'], 'shortcuts.rows.sendPage', false],
   [['Delete', 'Backspace'], 'shortcuts.rows.remove', false],
   [['M'], 'shortcuts.rows.measures', true],
-  [['H'], 'shortcuts.rows.sheet', true],
+  [['H'], 'shortcuts.rows.project', true],
   [['P'], 'shortcuts.rows.list', true],
   [['A'], 'shortcuts.rows.arrange', true],
   [['O'], 'shortcuts.rows.add', true],

@@ -128,7 +128,7 @@ flow('editing', [DESKTOP, MEDIUM, PHONE], async (c, app) => {
 
   await page.keyboard.press('Control+z');
   await page.keyboard.press('Control+z');
-  await app.showTab('sheet');
+  await app.showTab('project');
   const arrange = page.locator('[aria-controls="section-arrange"]');
   await arrange.click();
   await expect(arrange).toHaveAttribute('aria-expanded', 'false');
@@ -481,7 +481,7 @@ flow('canvas tools in the properties panel', [DESKTOP, MEDIUM, PHONE, WIDE], asy
   const page = c.page;
   await app.addFiles(cards(0, 12));
   const ids = await app.ids();
-  const tab = async (name: 'piece' | 'sheet') => {
+  const tab = async (name: 'piece' | 'project') => {
     await openProps(c);
     await page.locator(`#props-tab-${name}`).click();
     await expect(page.locator(`#props-tab-${name}`)).toHaveAttribute('aria-selected', 'true');
@@ -502,8 +502,8 @@ flow('canvas tools in the properties panel', [DESKTOP, MEDIUM, PHONE, WIDE], asy
 
   await page.locator('#sheets .piece.is-selected').first().focus();
   await page.keyboard.press('h');
-  await expect(page.locator('#props-tab-sheet')).toBeFocused();
-  await c.state('Hoja tab focused with H');
+  await expect(page.locator('#props-tab-project')).toBeFocused();
+  await c.state('Proyecto tab focused with H');
   await closeSheet();
 
   await app.selectIds([ids[4]]);
@@ -523,7 +523,7 @@ flow('canvas tools in the properties panel', [DESKTOP, MEDIUM, PHONE, WIDE], asy
   await page.keyboard.press('Control+z');
 
   await page.keyboard.press('Escape');
-  await tab('sheet');
+  await tab('project');
   await page.locator('#cut-mode input[value="corners"]').check({ force: true });
   const options = page.locator('#cut-options');
   if ((await options.getAttribute('open')) === null) await options.locator('summary').click();

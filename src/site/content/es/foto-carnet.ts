@@ -67,7 +67,7 @@ export function idPhotos() {
             'Si la cara no quedó bien encuadrada, haz doble clic sobre la foto para recortarla y mueve la imagen.',
             `Con la foto seleccionada, presiona ${ui('props.fill')} en ${ui('props.title')}, en la pestaña ${ui('props.tabs.piece')}.`,
             `Presiona ${ui('bar.print')} y elige «Tamaño real» o «100 %». Mide una copia con una regla antes de cortarlas todas.`,
-          ]) + paragraphs(`¿Usas papel Carta? Cámbialo en ${ui('props.title')}, en la pestaña ${ui('props.tabs.sheet')}, antes de rellenar la hoja.`),
+          ]) + paragraphs(`¿Usas papel Carta? Cámbialo en ${ui('props.title')}, en la pestaña ${ui('props.tabs.project')}, antes de rellenar la hoja.`),
       },
     ],
     faq: [

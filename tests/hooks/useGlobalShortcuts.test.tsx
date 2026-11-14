@@ -56,8 +56,8 @@ function Harness() {
         <button type="button" id="props-tab-piece">
           Pieza
         </button>
-        <button type="button" id="props-tab-sheet">
-          Hoja
+        <button type="button" id="props-tab-project">
+          Proyecto
         </button>
       </div>
       <div id="live-polite" />
@@ -337,11 +337,11 @@ describe('single keys', () => {
     expect(getDocument().landscape).toBe(false);
   });
 
-  test('H focuses the Hoja tab; M the Pieza tab, selecting the focused piece; Esc from a tab goes back to the piece', () => {
+  test('H focuses the Proyecto tab; M the Pieza tab, selecting the focused piece; Esc from a tab goes back to the piece', () => {
     place([[50, 50]]);
     press('h');
-    expect(getView().propsTab).toBe('sheet');
-    expect(document.activeElement?.id).toBe('props-tab-sheet');
+    expect(getView().propsTab).toBe('project');
+    expect(document.activeElement?.id).toBe('props-tab-project');
     expect(getDocument().selection).toEqual([]);
     node(1).focus();
     press('m');
@@ -350,7 +350,7 @@ describe('single keys', () => {
     expect(getDocument().selection).toEqual([1]);
     // On the tab they keep switching.
     press('h');
-    expect(document.activeElement?.id).toBe('props-tab-sheet');
+    expect(document.activeElement?.id).toBe('props-tab-project');
     press('m');
     expect(document.activeElement?.id).toBe('props-tab-piece');
     press('Escape');

@@ -18,7 +18,7 @@ test('a deep link opens a new project set up, leaves the saved one as it was, an
   await expect(page).toHaveURL(/\/\?utm_source=guide$/);
   expect(norm((await app.notice()).text)).toBe('Se creó un proyecto nuevo con papel Carta horizontal. Las fotos que agregues se recortan a 10 × 15: 101,6 × 152,4 mm.');
   await expect(app.pieces()).toHaveCount(0);
-  await app.showTab('sheet');
+  await app.showTab('project');
   await expect(page.locator('#paper')).toHaveValue('letter');
   await expect(page.locator('#landscape')).toBeChecked();
   await expect(page.locator('#margin')).toHaveValue('5');

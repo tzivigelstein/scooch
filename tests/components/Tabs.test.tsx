@@ -28,47 +28,47 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-const tab = (name: 'piece' | 'sheet') => document.getElementById(`props-tab-${name}`)!;
-const panel = (name: 'piece' | 'sheet') => document.getElementById(`props-${name}`)!;
+const tab = (name: 'piece' | 'project') => document.getElementById(`props-tab-${name}`)!;
+const panel = (name: 'piece' | 'project') => document.getElementById(`props-${name}`)!;
 
 describe('the «Propiedades» tabs', () => {
-  test('a tablist named «Propiedades» with two tabs, Pieza and Hojas, each wired to its panel', () => {
+  test('a tablist named «Propiedades» with two tabs, Pieza and Proyecto, each wired to its panel', () => {
     const list = screen.getByRole('tablist', { name: 'Propiedades' });
     const tabs = within(list).getAllByRole('tab');
-    expect(tabs.map((t) => t.textContent)).toEqual(['Pieza', 'Hojas']);
+    expect(tabs.map((t) => t.textContent)).toEqual(['Pieza', 'Proyecto']);
     for (const t of tabs) {
       const controlled = document.getElementById(t.getAttribute('aria-controls')!)!;
       expect(controlled.getAttribute('role')).toBe('tabpanel');
       expect(controlled.getAttribute('aria-labelledby')).toBe(t.id);
     }
-    expect(tabs.map((t) => t.getAttribute('aria-controls'))).toEqual(['props-piece', 'props-sheet']);
+    expect(tabs.map((t) => t.getAttribute('aria-controls'))).toEqual(['props-piece', 'props-project']);
   });
 
   test('the selected tab is the only tab stop and only its panel shows', () => {
-    expect(tab('sheet').getAttribute('aria-selected')).toBe('true');
+    expect(tab('project').getAttribute('aria-selected')).toBe('true');
     expect(tab('piece').getAttribute('aria-selected')).toBe('false');
-    expect([tab('piece').tabIndex, tab('sheet').tabIndex]).toEqual([-1, 0]);
-    expect([panel('piece').hidden, panel('sheet').hidden]).toEqual([true, false]);
+    expect([tab('piece').tabIndex, tab('project').tabIndex]).toEqual([-1, 0]);
+    expect([panel('piece').hidden, panel('project').hidden]).toEqual([true, false]);
     act(() => showPropsTab('piece'));
     expect(tab('piece').getAttribute('aria-selected')).toBe('true');
-    expect([tab('piece').tabIndex, tab('sheet').tabIndex]).toEqual([0, -1]);
-    expect([panel('piece').hidden, panel('sheet').hidden]).toEqual([false, true]);
+    expect([tab('piece').tabIndex, tab('project').tabIndex]).toEqual([0, -1]);
+    expect([panel('piece').hidden, panel('project').hidden]).toEqual([false, true]);
   });
 
   test('← and → move between the tabs and wrap, Home and End go to the ends; each shows its tab with the focus on it', async () => {
     const user = userEvent.setup();
-    tab('sheet').focus();
+    tab('project').focus();
     await user.keyboard('{ArrowLeft}');
     expect(getView().propsTab).toBe('piece');
     expect(document.activeElement).toBe(tab('piece'));
     await user.keyboard('{ArrowLeft}');
-    expect(getView().propsTab).toBe('sheet');
-    expect(document.activeElement).toBe(tab('sheet'));
+    expect(getView().propsTab).toBe('project');
+    expect(document.activeElement).toBe(tab('project'));
     await user.keyboard('{ArrowRight}');
     expect(getView().propsTab).toBe('piece');
     await user.keyboard('{End}');
-    expect(getView().propsTab).toBe('sheet');
-    expect(document.activeElement).toBe(tab('sheet'));
+    expect(getView().propsTab).toBe('project');
+    expect(document.activeElement).toBe(tab('project'));
     await user.keyboard('{Home}');
     expect(getView().propsTab).toBe('piece');
     expect(document.activeElement).toBe(tab('piece'));
@@ -85,21 +85,21 @@ describe('the «Propiedades» tabs', () => {
 
   test('the tabs show their shortcut (M, H) in the tooltip and in aria-keyshortcuts, which goes when single keys are off', () => {
     expect(tab('piece').dataset.tip).toBe('Pieza');
-    expect(tab('sheet').dataset.tip).toBe('Hojas');
+    expect(tab('project').dataset.tip).toBe('Proyecto');
     expect(tab('piece').dataset.kbd).toBe('M');
     expect(tab('piece').getAttribute('aria-keyshortcuts')).toBe('M');
-    expect(tab('sheet').dataset.kbd).toBe('H');
-    expect(tab('sheet').getAttribute('aria-keyshortcuts')).toBe('H');
+    expect(tab('project').dataset.kbd).toBe('H');
+    expect(tab('project').getAttribute('aria-keyshortcuts')).toBe('H');
     act(() => usePrefs.setState({ singleKeys: false }));
     expect(tab('piece').hasAttribute('aria-keyshortcuts')).toBe(false);
-    expect(tab('sheet').hasAttribute('aria-keyshortcuts')).toBe(false);
+    expect(tab('project').hasAttribute('aria-keyshortcuts')).toBe(false);
   });
 });
 
 describe('what each tab shows', () => {
-  test('Hojas is named for every sheet and starts with its first section, with no note above it', () => {
-    expect(tab('sheet').textContent).toBe('Hojas');
-    expect(panel('sheet').firstElementChild!.classList.contains('prop-section')).toBe(true);
+  test('Proyecto starts with its first section, with no note above it', () => {
+    expect(tab('project').textContent).toBe('Proyecto');
+    expect(panel('project').firstElementChild!.classList.contains('prop-section')).toBe(true);
   });
 
   test('Pieza with nothing selected shows only the hint', () => {
@@ -116,7 +116,7 @@ describe('what each tab shows', () => {
     fireEvent.click(toggle());
     expect(toggle().getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(tab('piece'));
-    fireEvent.click(tab('sheet'));
+    fireEvent.click(tab('project'));
     expect(toggle().getAttribute('aria-expanded')).toBe('false');
     expect(document.getElementById('section-arrange')!.hidden).toBe(true);
   });

@@ -535,7 +535,7 @@ input[type="range"] {
   gap: 0.5rem;
 }
 
-/* Tabs of the properties panel: «Pieza» and «Hoja». Selected: text color,
+/* Tabs of the properties panel: «Pieza» and «Proyecto». Selected: text color,
    weight and an underline (not just color). They stay at the top on scroll. */
 .props-tabs {
   position: sticky;

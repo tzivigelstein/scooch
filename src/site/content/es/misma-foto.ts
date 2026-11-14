@@ -42,7 +42,7 @@ export function samePhoto() {
             `Presiona ${ui('props.fill')}, en la pestaña ${ui('props.tabs.piece')}. Antes de aplicarlo, dice cuántas copias entran. Reemplaza las otras piezas de esa hoja, y puedes deshacerlo.`,
             `¿Quieres una cantidad exacta? Usa ${ui('props.duplicate')}: cada copia va a un hueco libre y, si no hay, a una hoja nueva.`,
             `Presiona ${ui('bar.print')} y elige «Tamaño real» o «100 %». Las ${ui('cuts.title').toLowerCase()} marcan dónde cortar cada copia.`,
-          ]) + paragraphs(`Para dejar más espacio entre copias, sube la ${ui('props.gap')} en la pestaña ${ui('props.tabs.sheet')} antes de rellenar la hoja.`),
+          ]) + paragraphs(`Para dejar más espacio entre copias, sube la ${ui('props.gap')} en la pestaña ${ui('props.tabs.project')} antes de rellenar la hoja.`),
       },
       {
         h2: 'Cuántas copias entran',
@@ -66,7 +66,7 @@ export function samePhoto() {
       { q: '¿Las copias pierden calidad?', a: `No. Todas usan el archivo original. Si la imagen tiene poca resolución para la medida elegida, ${app} avisa que puede verse pixelada.` },
       {
         q: '¿Cómo dejo espacio para cortar?',
-        a: `Sube la ${ui('props.gap')} en ${ui('props.title')}, en la pestaña ${ui('props.tabs.sheet')}, y activa las ${ui('cuts.title').toLowerCase()}. Con unos milímetros de separación es más fácil cortar.`,
+        a: `Sube la ${ui('props.gap')} en ${ui('props.title')}, en la pestaña ${ui('props.tabs.project')}, y activa las ${ui('cuts.title').toLowerCase()}. Con unos milímetros de separación es más fácil cortar.`,
       },
     ],
   });

@@ -26,7 +26,7 @@ test.describe('panel layouts', () => {
 
     test('a collapsed section stays collapsed after a reload, and opens again', async ({ app, page }) => {
       await app.addFiles(['small.jpg', 'square.webp', 'tall.png']);
-      await app.showTab('sheet');
+      await app.showTab('project');
       const arrange = page.locator('[aria-controls="section-arrange"]');
       await arrange.click();
       await expect(arrange).toHaveAttribute('aria-expanded', 'false');
@@ -35,7 +35,7 @@ test.describe('panel layouts', () => {
       await page.reload();
       await app.ready();
       await expect(app.pieces()).toHaveCount(3);
-      await app.showTab('sheet');
+      await app.showTab('project');
       await expect(arrange).toHaveAttribute('aria-expanded', 'false');
       await expect(page.locator('#gap')).toBeHidden();
       await arrange.click();
@@ -151,7 +151,7 @@ test.describe('wide screens', () => {
 });
 
 test.describe('properties tabs', () => {
-  test('the sheet’s title: a click, and Enter or Space after Shift+Tab, show Hoja with nothing selected and the focus on the title; Tab onto a piece shows Pieza', async ({ app, page }) => {
+  test('the sheet’s title: a click, and Enter or Space after Shift+Tab, show Proyecto with nothing selected and the focus on the title; Tab onto a piece shows Pieza', async ({ app, page }) => {
     await app.addFiles(['small.jpg', 'square.webp', 'tall.png']);
     const title = page.locator('.page-label');
     // The lowest piece, so its toolbar isn't over the title.
@@ -159,7 +159,7 @@ test.describe('properties tabs', () => {
     await app.piece(Number(lowest)).click();
     await expect.poll(() => tabs(app)).toMatchObject({ selected: 'piece', activePiece: Number(lowest) });
     await title.click();
-    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'sheet', active: 'page-label' });
+    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'page-label' });
     expect(await app.selectedIds()).toEqual([]);
     await expect(title).toHaveRole('button');
     await expect(title).toHaveAccessibleName('Hoja 1 de 1');
@@ -173,7 +173,7 @@ test.describe('properties tabs', () => {
         for (let i = 0; i < 10 && !(await title.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press('Shift+Tab');
         await expect(title).toBeFocused();
         await page.keyboard.press(key);
-        await expect.poll(() => tabs(app)).toMatchObject({ selected: 'sheet', active: 'page-label' });
+        await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'page-label' });
         expect(await app.selectedIds()).toEqual([]);
       });
     }
@@ -190,14 +190,14 @@ test.describe('properties tabs', () => {
     await app.addFiles(['small.jpg', 'square.webp', 'tall.png']);
     const first = app.pieces().first();
     await first.focus();
-    await page.locator('#props-tab-sheet').click();
+    await page.locator('#props-tab-project').click();
     await first.focus();
-    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'sheet' });
+    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project' });
 
     await page.keyboard.press('m');
     await expect.poll(() => tabs(app)).toMatchObject({ selected: 'piece', active: 'props-tab-piece', tabStops: 'piece' });
     await page.keyboard.press('h');
-    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'sheet', active: 'props-tab-sheet', tabStops: 'sheet' });
+    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'props-tab-project', tabStops: 'project' });
     await page.keyboard.press('Tab');
     await expect(page.locator('[aria-controls="section-sheet"]')).toBeFocused();
     await page.keyboard.press('Tab');
@@ -215,16 +215,16 @@ test.describe('properties tabs', () => {
     await expect.poll(() => page.evaluate(() => !!document.activeElement?.closest('#sheets'))).toBe(true);
   });
 
-  test('a selection change while typing in a Hoja field doesn’t hide the field', async ({ app, page }) => {
-    // Nothing selected: Hoja shows. Files that finish loading get selected,
+  test('a selection change while typing in a Proyecto field doesn’t hide the field', async ({ app, page }) => {
+    // Nothing selected: Proyecto shows. Files that finish loading get selected,
     // which would switch to Pieza — but the field being typed in stays.
     await app.openSetting('#gap');
     const gap = page.locator('#gap');
     await gap.focus();
-    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'sheet', active: 'gap' });
+    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'gap' });
     await app.addFiles(tiles(0, 2));
     expect((await app.selectedIds()).length).toBeGreaterThan(0);
-    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'sheet', active: 'gap' });
+    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'gap' });
     await expect(gap).toBeVisible();
     // Once the field is left, the next selection change switches.
     await app.pieces().first().focus();
@@ -238,7 +238,7 @@ test.describe('properties tabs', () => {
     test.describe(`at ${width} px`, () => {
       test.use({ viewport: { width, height } });
 
-      test('Propiedades opens on the contextual tab, switches to Hoja, has touch-sized tabs; H and M open it with the focus on the tab, Tab reaches the first field and Esc goes back to the piece', async ({ app, page }) => {
+      test('Propiedades opens on the contextual tab, switches to Proyecto, has touch-sized tabs; H and M open it with the focus on the tab, Tab reaches the first field and Esc goes back to the piece', async ({ app, page }) => {
         const narrow = width < 800;
         const props = page.locator('#props-panel');
         await app.addFiles(['small.jpg', 'square.webp']);
@@ -251,35 +251,35 @@ test.describe('properties tabs', () => {
         await expect.poll(() => tabs(app)).toMatchObject({ selected: 'piece' });
 
         if (narrow) {
-          await test.step('the sheet’s title opens the bottom sheet on Hoja, the focus stays on the title', async () => {
+          await test.step('the sheet’s title opens the bottom sheet on Proyecto, the focus stays on the title', async () => {
             await page.keyboard.press('Escape');
             await first.focus();
             await page.locator('.page-label').first().click();
             await expect(props).toBeVisible();
-            await expect.poll(() => tabs(app)).toMatchObject({ selected: 'sheet', active: 'page-label' });
+            await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'page-label' });
             await first.focus();
             if (!(await props.isVisible())) await page.locator('#props-toggle').click();
             await page.locator('#props-tab-piece').click();
           });
         }
 
-        await page.locator('#props-tab-sheet').click();
+        await page.locator('#props-tab-project').click();
         await expect(page.locator('#paper')).toBeVisible();
-        await expect.poll(() => tabs(app)).toMatchObject({ selected: 'sheet' });
-        const tab = (await page.locator('#props-tab-sheet').boundingBox())!;
+        await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project' });
+        const tab = (await page.locator('#props-tab-project').boundingBox())!;
         expect(tab.height).toBeGreaterThanOrEqual(40);
         expect(tab.width).toBeGreaterThanOrEqual(40);
         expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
 
         if (narrow) {
-          await page.locator('#props-tab-sheet').focus();
+          await page.locator('#props-tab-project').focus();
           await page.keyboard.press('Escape');
           await expect(props).toBeHidden();
         }
         await first.focus();
         await page.keyboard.press('h');
         await expect(props).toBeVisible();
-        await expect.poll(() => tabs(app)).toMatchObject({ selected: 'sheet', active: 'props-tab-sheet' });
+        await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'props-tab-project' });
         await page.keyboard.press('m');
         await expect.poll(() => tabs(app)).toMatchObject({ selected: 'piece', active: 'props-tab-piece' });
         await page.keyboard.press('Tab');

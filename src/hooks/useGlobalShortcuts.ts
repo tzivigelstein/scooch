@@ -83,7 +83,7 @@ function adopt(target: Element) {
 }
 
 /**
- * M / H: the Pieza or Hojas tab of Propiedades (opening it where it is
+ * M / H: the Pieza or Proyecto tab of Propiedades (opening it where it is
  * collapsed), with the focus on the tab itself: H and M keep switching, the
  * arrows too, Tab goes into the tab's controls and Esc back to the canvas.
  * Without a selection, Pieza shows its hint.
@@ -280,7 +280,7 @@ function onKeyDown(e: KeyboardEvent) {
   const global: Record<string, () => void> = {
     a: arrangeAll,
     o: openFiles,
-    h: () => focusPropsTab('sheet'),
+    h: () => focusPropsTab('project'),
     m: () => {
       if (onPiece) adopt(target);
       focusPropsTab('piece');

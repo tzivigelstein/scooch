@@ -136,8 +136,12 @@ export class App {
 
   // ---------- Panels and fields ----------
 
-  /** Opens the properties panel (on narrow screens) and one of its tabs. */
-  async showTab(tab: 'piece' | 'sheet') {
+  /**
+   * Opens the properties panel (on narrow screens) and one of its tabs.
+   * 'sheet' is the Proyecto tab's old name, still used by pinch-zoom.spec.ts.
+   */
+  async showTab(name: 'piece' | 'project' | 'sheet') {
+    const tab = name === 'sheet' ? 'project' : name;
     const panel = this.page.locator('#props-panel');
     const toggle = this.page.locator('#props-toggle');
     if (!(await panel.isVisible()) && (await toggle.isVisible())) await toggle.click();
@@ -152,11 +156,11 @@ export class App {
     await expect(this.page.locator('#pos-x')).toBeVisible();
   }
 
-  /** Shows a document setting (paper, gap, overlap, grid…): the Hoja tab, with its section open. */
+  /** Shows a document setting (paper, gap, overlap, grid…): the Proyecto tab, with its section open. */
   async openSetting(selector: string) {
     const field = this.page.locator(selector);
     if (await field.isVisible()) return;
-    await this.showTab('sheet');
+    await this.showTab('project');
     const section = await this.page.evaluate((sel) => document.querySelector(sel)?.closest('.section-body')?.id ?? null, selector);
     if (section) {
       const toggle = this.page.locator(`[aria-controls="${section}"]`);
@@ -165,7 +169,7 @@ export class App {
     await expect(field).toBeVisible();
   }
 
-  /** The paper fields (the Hoja tab, «Hoja» section open). */
+  /** The paper fields (the Proyecto tab, «Papel» section open). */
   openSheet = () => this.openSetting('#paper');
 
   /** Types a value in one of the piece's measure fields and confirms it (change). */

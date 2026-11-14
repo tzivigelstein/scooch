@@ -88,7 +88,7 @@ describe('the shortcuts table', () => {
       'Mover la pieza a la hoja anterior o a la siguiente (si no hay lugar, a una hoja nueva)',
       'Quitar la pieza',
       'Ir a la pestaña Pieza de Propiedades',
-      'Ir a la pestaña Hojas de Propiedades',
+      'Ir a la pestaña Proyecto de Propiedades',
       'Ir a la lista de piezas',
       'Acomodar las piezas sin superponerlas',
       'Agregar imágenes o PDF',
