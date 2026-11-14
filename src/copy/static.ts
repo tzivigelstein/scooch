@@ -8,7 +8,7 @@
 // - `{{bootCopy}}`: the JSON the head's script reads to show the page in the
 //   chosen language before the first paint: the languages, each one's title,
 //   description and heading, and, in a build, the file of each one's texts
-//   and fonts to preload;
+//   and fonts to preload, and the @font-face of those fonts;
 // - `{{matchLanguage}}`: the source of core/language.js matchLanguage, so the
 //   head's script picks the browser's language exactly as the app does.
 
@@ -18,10 +18,11 @@ import { textsFor } from './index.ts';
 
 const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/** What a build knows of each language's files: its texts' chunk and the fonts it needs, as URLs. */
+/** What a build knows of each language's files: its texts' chunk and the fonts it needs (URLs), and their @font-face (CSS). */
 export interface LanguageFiles {
   chunks?: Partial<Record<Language, string>>;
   fonts?: Partial<Record<Language, readonly string[]>>;
+  styles?: Partial<Record<Language, string>>;
 }
 
 /** The data of `{{bootCopy}}`. */
@@ -32,7 +33,7 @@ export function bootCopy(files: LanguageFiles = {}) {
       return [language, { title: t('app.title'), description: t('app.description'), heading: t('app.heading') }];
     })
   );
-  return { languages: LANGUAGES, texts, chunks: files.chunks ?? {}, fonts: files.fonts ?? {} };
+  return { languages: LANGUAGES, texts, chunks: files.chunks ?? {}, fonts: files.fonts ?? {}, styles: files.styles ?? {} };
 }
 
 // Inside <script type="application/json">: nothing in it may close the element.

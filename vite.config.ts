@@ -10,7 +10,7 @@ const packageOf = (id: string | null | undefined) => id?.match(/node_modules[\\/
 /** The language whose texts the module is (src/copy/<language>.ts), or undefined. */
 const catalogueOf = (id: string | null | undefined) => LANGUAGES.find((language) => id?.replace(/\\/g, '/').endsWith(`/src/copy/${language}.ts`));
 
-type Output = { type: 'chunk' | 'asset'; fileName: string; facadeModuleId?: string | null; originalFileNames?: readonly string[] };
+type Output = { type: 'chunk' | 'asset'; fileName: string; facadeModuleId?: string | null; originalFileNames?: readonly string[]; source?: string | Uint8Array };
 
 /**
  * Where a build put each language's texts (src/copy/<language>.ts, a chunk of
@@ -26,7 +26,13 @@ function languageFiles(bundle: Record<string, Output>): LanguageFiles {
     })
   );
   const devanagari = outputs.filter((o) => o.type === 'asset' && o.originalFileNames?.some((name) => name.endsWith('noto-sans-devanagari-devanagari-wght-normal.woff2')));
-  return { chunks, fonts: { hi: devanagari.map((o) => `/${o.fileName}`) } };
+  // Its @font-face as built, for the loading screen, before Hindi's own stylesheet arrives.
+  const face = outputs.find((o) => o.type === 'asset' && /^assets\/devanagari-[\w-]+\.css$/.test(o.fileName));
+  return {
+    chunks,
+    fonts: { hi: devanagari.map((o) => `/${o.fileName}`) },
+    styles: face?.source ? { hi: String(face.source).trim() } : {},
+  };
 }
 
 export default defineConfig({

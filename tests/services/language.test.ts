@@ -18,9 +18,11 @@ import { useLanguage } from '../../src/state/language.ts';
 import { getPrefs, setLanguage } from '../../src/state/prefs.ts';
 import { resetState } from '../support/state.ts';
 
-// As Vite builds it, with a file for each language's texts.
+// As Vite builds it, with a file for each language's texts, and Hindi's font with its @font-face.
 const CHUNKS = Object.fromEntries(LANGUAGES.map((language) => [language, `/assets/copy-${language}-x.js`]));
-const PAGE = fillStaticCopy(readFileSync(join(import.meta.dirname, '../../index.html'), 'utf8'), { chunks: CHUNKS });
+const FONT = '/assets/noto-sans-devanagari-x.woff2';
+const FACE = `@font-face{font-family:Noto Sans Devanagari Variable;src:url(${FONT})}`;
+const PAGE = fillStaticCopy(readFileSync(join(import.meta.dirname, '../../index.html'), 'utf8'), { chunks: CHUNKS, fonts: { hi: [FONT] }, styles: { hi: FACE } });
 const HEAD = PAGE.match(/<head>([\s\S]*)<\/head>/)![1];
 const BODY = PAGE.match(/<body[^>]*>([\s\S]*)<\/body>/)![1];
 const scripts = (html: string) => [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
@@ -65,7 +67,7 @@ afterEach(() => {
 });
 
 describe('before the first paint', () => {
-  test('the head’s script says the stored language, or the browser’s, as the app reads them, and preloads its texts', () => {
+  test('the head’s script says the stored language, or the browser’s, as the app reads them, and preloads its texts (and Hindi’s font)', () => {
     const [head] = scripts(HEAD);
     expect(scripts(HEAD), 'one classic script in the head').toHaveLength(1);
     expect(storedVersions.length).toBeGreaterThan(0);
@@ -86,6 +88,9 @@ describe('before the first paint', () => {
         const label = `${raw} with ${browser.join(', ')}`;
         expect(shown(), label).toEqual(expected(language));
         expect([...document.querySelectorAll<HTMLLinkElement>('link[rel="modulepreload"]')].map((link) => link.getAttribute('href')), label).toEqual([CHUNKS[language]]);
+        const hindi = language === 'hi';
+        expect([...document.querySelectorAll<HTMLLinkElement>('link[rel="preload"][as="font"]')].map((link) => link.getAttribute('href')).filter((href) => href === FONT), `${label}: Hindi's font, only in Hindi`).toEqual(hindi ? [FONT] : []);
+        expect([...document.querySelectorAll('style')].some((style) => style.textContent === FACE), `${label}: its @font-face, only in Hindi`).toBe(hindi);
       }
   });
 

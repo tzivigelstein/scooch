@@ -28,8 +28,9 @@
       // (read like parseLanguagePref in src/core/storedprefs.js) or the
       // browser's best match (matchLanguage, inlined from src/core/language.js).
       // It says the page's language, title and description in it, and starts
-      // downloading its texts (and Hindi's font). Afterwards
-      // src/services/language.ts applies it the same way (applyTexts).
+      // downloading its texts (and Hindi's font, declared at once so the
+      // loading screen can use it). Afterwards src/services/language.ts
+      // applies it the same way (applyTexts).
       (() => {
         const boot = JSON.parse(document.getElementById("boot-copy").textContent);
         let language;
@@ -45,11 +46,12 @@
           const link = document.createElement("link");
           link.rel = font ? "preload" : "modulepreload";
           link.href = href;
-          if (font) Object.assign(link, { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
+          if (font) for (const [name, value] of [["as", "font"], ["type", "font/woff2"], ["crossorigin", ""]]) link.setAttribute(name, value);
           document.head.append(link);
         };
         if (boot.chunks[language]) preload(boot.chunks[language], false);
         for (const font of boot.fonts[language] || []) preload(font, true);
+        if (boot.styles[language]) document.head.append(Object.assign(document.createElement("style"), { textContent: boot.styles[language] }));
       })();
     </script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='7' y='2.5' width='14' height='17' rx='2.5' fill='%230066ff' opacity='.3'/><rect x='3' y='5' width='14' height='17' rx='2.5' fill='%230066ff'/><rect x='6' y='8.5' width='4' height='5' rx='1' fill='white'/><rect x='11' y='8.5' width='3' height='3' rx='.8' fill='white'/><rect x='11' y='12.5' width='3' height='6' rx='.8' fill='white'/><rect x='6' y='14.5' width='4' height='4' rx='1' fill='white'/></svg>" />
@@ -138,6 +140,10 @@
       }
       :where([data-theme="dark"]) .boot-about {
         color: #a3aab7;
+      }
+      /* Hindi's font (declared by the script above) after Inter, as in src/styles/tokens.css. */
+      :where(:root:lang(hi)) body {
+        font-family: "Inter Variable", "Noto Sans Devanagari Variable", system-ui, sans-serif;
       }
       @media (prefers-reduced-motion: reduce) {
         .boot {
