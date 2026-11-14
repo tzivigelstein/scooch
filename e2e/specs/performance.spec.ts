@@ -7,8 +7,11 @@
 // measured on its own; frames are the gaps between animation frames, and long
 // tasks come from the browser's PerformanceObserver.
 // And tracing a large image's contour cut line, which must not block the page.
+// The titles give the budgets as they apply locally; CI scales every clock
+// budget, the long-task threshold too, by E2E_TIME_FACTOR (support/timing.ts).
 import { expect, test, tiles, type App } from '../support/test.ts';
 import { outsideMargin, overlapping } from '../support/geometry.ts';
+import { budget, TIME_FACTOR } from '../support/timing.ts';
 
 /** Adds 150 tiles (15 to an A4 sheet) and arranges them: 10 full sheets, no overlaps. */
 async function load150(app: App) {
@@ -21,12 +24,12 @@ async function load150(app: App) {
   expect(outsideMargin(g)).toEqual([]);
 }
 
-async function attach(info: import('@playwright/test').TestInfo, measures: unknown) {
-  await info.attach('measures', { body: JSON.stringify(measures, null, 2), contentType: 'application/json' });
+async function attach(info: import('@playwright/test').TestInfo, measures: object) {
+  await info.attach('measures', { body: JSON.stringify({ ...measures, timeFactor: TIME_FACTOR }, null, 2), contentType: 'application/json' });
 }
 
-/** Long tasks over 50 ms. */
-const long = (list: number[]) => list.filter((ms) => ms > 50);
+/** Long tasks: over 50 ms, times E2E_TIME_FACTOR. */
+const long = (list: number[]) => list.filter((ms) => ms > budget(50));
 
 test.describe('with 150 pieces on 10 sheets', () => {
   test.beforeEach(async ({ app }) => {
@@ -76,9 +79,9 @@ test.describe('with 150 pieces on 10 sheets', () => {
     await attach(info, drag);
     expect(drag.moved, 'the gesture really drags (the drag layer)').toBe(true);
     expect(drag.landed, 'the drop is rendered when pointerup returns').toBe(true);
-    expect(drag.p95).toBeLessThan(1);
-    expect(drag.frameP95).toBeLessThan(34);
-    expect(drag.up).toBeLessThan(50);
+    expect(drag.p95).toBeLessThan(budget(1));
+    expect(drag.frameP95).toBeLessThan(budget(34));
+    expect(drag.up).toBeLessThan(budget(50));
     expect(long(drag.longs)).toEqual([]);
   });
 
@@ -105,7 +108,7 @@ test.describe('with 150 pieces on 10 sheets', () => {
       return { median: gaps[45], p95: gaps[85], max: gaps.at(-1)!, longs, scrollTop: stage.scrollTop };
     });
     await attach(info, scroll);
-    expect(scroll.p95).toBeLessThan(34);
+    expect(scroll.p95).toBeLessThan(budget(34));
     expect(long(scroll.longs)).toEqual([]);
     await expect(page.locator('#sheets .page.is-current .page-label')).toHaveText(/^Hoja (9|10) de 10$/);
   });
@@ -136,7 +139,7 @@ test.describe('with 150 pieces on 10 sheets', () => {
     });
     await attach(info, sel);
     expect(sel.selected, 'the last one focused is the one selected').toEqual([sel.last]);
-    expect(sel.median).toBeLessThan(30);
+    expect(sel.median).toBeLessThan(budget(30));
   });
 
   test('zooming with Ctrl + wheel, a turn a frame in and out: frames p95 < 34 ms, no long tasks', async ({ page }, info) => {
@@ -169,7 +172,7 @@ test.describe('with 150 pieces on 10 sheets', () => {
     });
     await attach(info, { ...zoom, before });
     expect(zoom.levels, 'the wheel really zooms').toBeGreaterThan(5);
-    expect(zoom.p95).toBeLessThan(34);
+    expect(zoom.p95).toBeLessThan(budget(34));
     expect(long(zoom.longs)).toEqual([]);
   });
 
@@ -216,8 +219,8 @@ test.describe('with 150 pieces on 10 sheets', () => {
     });
     await attach(info, { ...pinch, before });
     expect(pinch.levels, 'the fingers really zoom').toBeGreaterThan(5);
-    expect(pinch.p95).toBeLessThan(1);
-    expect(pinch.frameP95).toBeLessThan(34);
+    expect(pinch.p95).toBeLessThan(budget(1));
+    expect(pinch.frameP95).toBeLessThan(budget(34));
     expect(long(pinch.longs)).toEqual([]);
   });
 
@@ -275,8 +278,8 @@ test.describe('with 150 pieces on 10 sheets', () => {
     });
     await attach(info, glide);
     expect(glide.glided, 'the sheets really glide on').toBeGreaterThan(300);
-    expect(glide.up).toBeLessThan(16);
-    expect(glide.frameP95).toBeLessThan(34);
+    expect(glide.up).toBeLessThan(budget(16));
+    expect(glide.frameP95).toBeLessThan(budget(34));
     expect(long(glide.longs)).toEqual([]);
   });
 
@@ -318,7 +321,7 @@ test.describe('with 150 pieces on 10 sheets', () => {
     });
     await attach(info, drag);
     expect(drag.outside, 'the drag ends outside the sheets, with the placeholders').toBe(true);
-    expect(drag.p95).toBeLessThan(1);
+    expect(drag.p95).toBeLessThan(budget(1));
     expect(long(drag.longs)).toEqual([]);
   });
 });
@@ -363,6 +366,6 @@ test('tracing the contour of a 4000 × 4000 px transparent image: drawn < 2 s af
   });
   await attach(info, traced);
   expect(traced.paths, 'the shape and the dot').toBe(2);
-  expect(traced.ms).toBeLessThan(2000);
+  expect(traced.ms).toBeLessThan(budget(2000));
   expect(long(traced.longs)).toEqual([]);
 });
