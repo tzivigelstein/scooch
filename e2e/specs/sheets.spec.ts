@@ -211,6 +211,64 @@ test.describe('dragging pieces out of the sheets onto a new sheet', () => {
     await expect.poll(() => app.sheets()).toEqual(after);
   });
 
+  test('released far past the window, beyond the placeholders, pieces land on a real sheet: below, inside a new last sheet; above, inside a new first one; beside, on their sheet with the center on it; a group inside the new sheet too', async ({ app, page }) => {
+    const [first9, last3] = await pieceIds(app);
+    const before = await app.sheets();
+    const stage = await stageBox(page);
+    const inPrintableArea = (p: { x: number; y: number; w: number; h: number }) => p.x >= 10 - 0.01 && p.y >= 10 - 0.01 && p.x + p.w <= 200.01 && p.y + p.h <= 287.01;
+    /** Undoes the drop and checks the document is as it was. */
+    const back = async () => {
+      await app.undo();
+      await expect.poll(() => app.sheets()).toEqual(before);
+    };
+
+    await test.step('below: held at the bottom edge to the end, then let go far past the window', async () => {
+      const from = await holdPiece(app, last3[0]);
+      await page.mouse.move(from.x, stage.y + stage.height - 4, { steps: 6 });
+      await scrollStops(page);
+      await page.mouse.move(from.x, 900 + 600, { steps: 4 });
+      await page.mouse.up();
+      await expect.poll(() => counts(app)).toEqual([9, 2, 1]);
+      expect(inPrintableArea((await app.sheets())[2].pieces[0])).toBe(true);
+      await back();
+    });
+
+    await test.step('above: let go far above the window', async () => {
+      await page.locator('#stage').evaluate((el) => el.scrollTo(0, 0));
+      const from = await holdPiece(app, first9[0]);
+      await page.mouse.move(from.x, -600, { steps: 6 });
+      await scrollStops(page);
+      await page.mouse.up();
+      await expect.poll(() => counts(app)).toEqual([1, 8, 3]);
+      expect(inPrintableArea((await app.sheets())[0].pieces[0])).toBe(true);
+      await back();
+    });
+
+    await test.step('beside: let go far left of the window', async () => {
+      const from = await holdPiece(app, first9[0]);
+      await page.mouse.move(-800, from.y, { steps: 6 });
+      await page.mouse.up();
+      await expect.poll(async () => (await app.sheets())[0].pieces.find((p) => Number(p.id) === first9[0])!.x).toBeLessThan(0);
+      const p = (await app.sheets())[0].pieces.find((q) => Number(q.id) === first9[0])!;
+      expect(await counts(app)).toEqual([9, 3]);
+      expect(p.x + p.w / 2, 'its center on the sheet’s left edge').toBeCloseTo(0, 0);
+      expect(p.y + p.h / 2).toBeGreaterThan(0);
+      await back();
+    });
+
+    await test.step('a group of the last sheet: below, far past the window', async () => {
+      await app.selectIds(last3);
+      await page.mouse.move(0, 0);
+      const from = await holdPiece(app, last3[0]);
+      await page.mouse.move(from.x, stage.y + stage.height - 4, { steps: 6 });
+      await scrollStops(page);
+      await page.mouse.move(from.x, 900 + 600, { steps: 4 });
+      await page.mouse.up();
+      await expect.poll(() => counts(app)).toEqual([9, 0, 3]);
+      expect((await app.sheets())[2].pieces.every(inPrintableArea)).toBe(true);
+    });
+  });
+
   test('between two sheets: a bar shows in the gap (the dashed sheet stays, not active) and the new sheet goes between them', async ({ app, page }) => {
     const [, last3] = await pieceIds(app);
     const before = await app.sheets();
