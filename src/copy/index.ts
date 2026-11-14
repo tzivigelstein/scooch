@@ -18,6 +18,7 @@
 // (fillStaticCopy, from vite.config.ts); the rest is rendered by React.
 
 import { APP_NAME } from '../config.ts';
+import { isApplePlatform } from '../core/platform.js';
 import es from './es.ts';
 
 type Messages = typeof es;
@@ -43,9 +44,7 @@ const numberFormat = new Intl.NumberFormat(messages.meta.numberLocale, { maximum
 /** A number for display: «41,6». */
 export const formatNumber = (value: number) => numberFormat.format(Math.round(value * 10) / 10 || 0);
 
-const isMac = () =>
-  typeof navigator !== 'undefined' &&
-  /Mac|iPhone|iPad/.test((navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ?? navigator.platform ?? '');
+const isMac = () => typeof navigator !== 'undefined' && isApplePlatform(navigator);
 
 type TextTree = string | { [key: string]: TextTree };
 
