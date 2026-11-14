@@ -1,7 +1,8 @@
 // Time budgets with 150 pieces on 10 sheets: dragging, scrolling, selecting,
-// zooming, pinching and dragging at 200 % out of the sheets. These run alone,
-// after the rest (the `performance` project: one worker), so other workers
-// don't eat into the numbers; each test attaches what it measured («measures»).
+// zooming, pinching, gliding after a two-finger pan and dragging at 200 % out
+// of the sheets. These run alone, after the rest (the `performance` project:
+// one worker), so other workers don't eat into the numbers; each test
+// attaches what it measured («measures»).
 // The gestures are dispatched inside the page, so each move's handler time is
 // measured on its own; frames are the gaps between animation frames, and long
 // tasks come from the browser's PerformanceObserver.
@@ -218,6 +219,65 @@ test.describe('with 150 pieces on 10 sheets', () => {
     expect(pinch.p95).toBeLessThan(1);
     expect(pinch.frameP95).toBeLessThan(34);
     expect(long(pinch.longs)).toEqual([]);
+  });
+
+  test('gliding on after two fingers pan and lift: lifting < 16 ms, frames p95 < 34 ms until it stops, no long tasks', async ({ page }, info) => {
+    await page.keyboard.press('Escape');
+    // The glide doesn't run with reduced motion.
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const glide = await page.evaluate(async () => {
+      const frame = () => new Promise((done) => requestAnimationFrame(done));
+      const stage = document.getElementById('stage')!;
+      stage.scrollTop = 0;
+      await frame();
+      const r = stage.getBoundingClientRect();
+      const longs: number[] = [];
+      const observer = new PerformanceObserver((l) => longs.push(...l.getEntries().map((e) => e.duration)));
+      observer.observe({ entryTypes: ['longtask'] });
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height * 0.8;
+      const opts = (id: number, x: number, y: number) => ({ bubbles: true, cancelable: true, pointerId: id, pointerType: 'touch', isPrimary: id === 31, clientX: x, clientY: y, button: 0, buttons: 1 });
+      const fingers = (type: string, dy: number) => {
+        for (const [id, x] of [[31, cx - 50], [32, cx + 50]]) stage.dispatchEvent(new PointerEvent(type, opts(id, x, cy + dy)));
+      };
+      fingers('pointerdown', 0);
+      // Up 30 px a frame, both fingers, then lifted as they move.
+      for (let i = 1; i <= 10; i++) {
+        await frame();
+        fingers('pointermove', -i * 30);
+      }
+      const t = performance.now();
+      fingers('pointerup', -300);
+      const up = performance.now() - t;
+      const released = stage.scrollTop;
+      const gaps: number[] = [];
+      let last = performance.now();
+      let still = 0;
+      let top = stage.scrollTop;
+      // Until the scroll has stayed put for 10 frames (those aren't counted).
+      while (still < 10 && gaps.length < 1000) {
+        await frame();
+        const now = performance.now();
+        gaps.push(now - last);
+        last = now;
+        still = stage.scrollTop === top ? still + 1 : 0;
+        top = stage.scrollTop;
+      }
+      gaps.splice(-10);
+      // A long task is reported when it ends, before the next frames: after two,
+      // its entry is in the observer's buffer, and takeRecords() collects it.
+      await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+      longs.push(...observer.takeRecords().map((e) => e.duration));
+      observer.disconnect();
+      gaps.sort((a, b) => a - b);
+      const at = (q: number) => gaps[Math.min(gaps.length - 1, Math.floor(gaps.length * q))];
+      return { up, glided: stage.scrollTop - released, frames: gaps.length, frameMedian: at(0.5), frameP95: at(0.95), frameMax: gaps.at(-1)!, longs };
+    });
+    await attach(info, glide);
+    expect(glide.glided, 'the sheets really glide on').toBeGreaterThan(300);
+    expect(glide.up).toBeLessThan(16);
+    expect(glide.frameP95).toBeLessThan(34);
+    expect(long(glide.longs)).toEqual([]);
   });
 
   test('dragging at 200 % and out of the sheets (where the new-sheet placeholders show): each move < 1 ms (p95), no long tasks', async ({ page }, info) => {
