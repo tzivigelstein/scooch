@@ -180,11 +180,6 @@
     height: 2.5rem;
   }
 
-  /* The margin as tall as the orientation beside it (whose options are touch-sized). */
-  .panel .paper-props input[type="text"] {
-    height: 2.875rem;
-  }
-
   .page-head {
     height: 2.75rem;
   }
@@ -197,18 +192,6 @@
   .tool-row .icon-btn {
     width: 2.5rem;
     height: 2.5rem;
-  }
-
-  .segmented.chips.small > .seg > span {
-    height: 2.5rem;
-  }
-
-  .seg > span {
-    height: 2.5rem;
-  }
-
-  .segmented.icons .seg > span {
-    width: 2.75rem;
   }
 
   .piece-row {

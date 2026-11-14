@@ -9,7 +9,7 @@ import { getPrefs, setUnit } from '../../src/state/prefs.ts';
 import { resetState } from '../support/state.ts';
 
 const plain = (s: string | null | undefined) => String(s ?? '').replace(/ /g, ' ');
-const chips = () => [...document.querySelectorAll('#grid-chips span')].map((el) => plain(el.textContent));
+const chips = () => [...document.querySelectorAll('#grid-chips .seg > span')].map((el) => plain(el.textContent));
 const checkedChip = () => (document.querySelector('#grid-chips input:checked') as HTMLInputElement | null)?.value ?? null;
 const size = () => document.getElementById('grid-size') as HTMLInputElement;
 const confirm = (text: string) => {

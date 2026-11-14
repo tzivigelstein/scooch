@@ -117,11 +117,6 @@ fieldset.field > legend {
   align-self: end;
 }
 
-/* Orientation fills its column, as tall as the margin field beside it. */
-.paper-props .segmented.icons .seg > span {
-  width: auto;
-}
-
 select,
 input[type="number"],
 input[type="text"] {
@@ -399,12 +394,6 @@ input[type="range"] {
   gap: 0.25rem;
 }
 
-.segmented.chips.small > .seg > span {
-  height: 1.5rem;
-  padding: 0 0.5rem;
-  font-size: 0.75rem;
-}
-
 /* Duplicate ×N and «Seleccionar iguales» */
 .copy-row {
   display: flex;
@@ -597,23 +586,6 @@ input[type="range"] {
 }
 
 /* Cut lines */
-/* Icon over the name: four choices fit any panel width and language. */
-.segmented.cut-modes > .seg > span {
-  flex-direction: column;
-  height: 3rem;
-  gap: 0.125rem;
-  padding: 0 0.25rem;
-  font-size: 0.75rem;
-  line-height: 1.2;
-  white-space: normal;
-  text-align: center;
-}
-
-.cut-modes .icon {
-  width: 1.125rem;
-  height: 1.125rem;
-}
-
 .cut-details > summary {
   min-height: 2.25rem;
 }

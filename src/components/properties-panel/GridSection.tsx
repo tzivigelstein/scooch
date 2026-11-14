@@ -39,6 +39,7 @@ export function GridSection() {
         <div className="grid-size">
           <Segmented
             id="grid-chips"
+            fit
             name="grid-size"
             value={chosen ? String(chosen.mm) : null}
             onChange={(value) => setGrid({ size: Number(value) })}

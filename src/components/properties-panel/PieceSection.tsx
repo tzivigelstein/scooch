@@ -439,7 +439,6 @@ export function PieceSection() {
             </span>
             <Segmented
               id="align-to"
-              className="segmented chips small"
               name="align-to"
               value={alignTo}
               onChange={(value) => setView({ alignTo: value })}
@@ -471,7 +470,6 @@ export function PieceSection() {
             </span>
             <Segmented
               id="distribute-mode"
-              className="segmented chips small"
               name="distribute-mode"
               value={distribute}
               onChange={(value) => setView({ distribute: value })}

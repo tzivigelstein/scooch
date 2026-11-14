@@ -26,27 +26,14 @@
   font-weight: 600;
 }
 
-.segmented.units {
-  max-width: 17.5rem;
-}
-
-.segmented.units .seg > span {
-  height: 2.125rem;
-  font-size: 0.84375rem;
-}
-
-.segmented.themes {
+/* Units and theme: three short choices, not stretched across the dialog. */
+.pref-section > .segmented {
   max-width: 17.5rem;
 }
 
 /* The legal links wrap between them, never inside one (each name stays whole). */
 #prefs-legal a {
   white-space: nowrap;
-}
-
-.segmented.themes .seg > span {
-  height: 2.125rem;
-  font-size: 0.84375rem;
 }
 
 /* A list on its own (Idioma): its label beside it, like the switches' rows. */

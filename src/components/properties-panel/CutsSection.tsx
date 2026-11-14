@@ -93,7 +93,7 @@ export function CutsSection() {
     <Section name="cuts" title={t('cuts.title')} preview="cuts">
       <Segmented
         id="cut-mode"
-        className="segmented chips cut-modes"
+        className="segmented stacked"
         name="cut-mode"
         label={t('cuts.title')}
         value={cuts.mode}
@@ -169,7 +169,6 @@ export function CutsSection() {
             </span>
             <Segmented
               id="cut-weight"
-              className="segmented chips small"
               name="cut-weight"
               labelledBy="cut-weight-label"
               value={cuts.weight}
@@ -187,7 +186,6 @@ export function CutsSection() {
             </span>
             <Segmented
               id="cut-colors"
-              className="segmented chips small"
               name="cut-color"
               labelledBy="cut-color-label"
               value={choice}
@@ -224,7 +222,6 @@ export function CutsSection() {
             </span>
             <Segmented
               id="cut-dash"
-              className="segmented chips small"
               name="cut-dash"
               labelledBy="cut-dash-label"
               value={cuts.dash}

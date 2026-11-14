@@ -56,7 +56,6 @@ export default function PrefsDialog() {
             {t('prefs.units')}
           </h3>
           <Segmented<Unit>
-            className="segmented chips units"
             name="unit"
             value={unit}
             onChange={chooseUnit}
@@ -84,7 +83,6 @@ export default function PrefsDialog() {
             {t('prefs.theme')}
           </h3>
           <Segmented<ThemeChoice>
-            className="segmented chips themes"
             name="theme"
             value={theme}
             onChange={setTheme}

@@ -107,7 +107,6 @@ export function SheetSection() {
             {t('props.orientation')}
           </span>
           <Segmented
-            className="segmented icons"
             name="orientation"
             labelledBy="orientation-label"
             value={landscape ? 'landscape' : 'portrait'}

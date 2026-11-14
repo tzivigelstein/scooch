@@ -63,6 +63,10 @@
   --rail-w: 3.25rem;
   /* Height of the panel's fields (taller on narrow screens, for touch). */
   --control-h: 2.125rem;
+  /* Segmented controls: as tall as the fields beside them. */
+  --seg-h: var(--control-h);
+  --seg-track: #eff1f4;
+  --seg-thumb: #ffffff;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --fast: 140ms;
 }
@@ -93,6 +97,9 @@
   --line-strong: #737a88;
   --hover: #252930;
   --pressed: #2e333b;
+  /* Raised over the track: lighter, as surfaces closer to the eye are in the dark. */
+  --seg-track: #22262d;
+  --seg-thumb: #353b45;
 
   --accent: #5c9dff;
   --accent-strong: #8ab8ff;
