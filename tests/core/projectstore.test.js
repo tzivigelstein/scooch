@@ -18,7 +18,7 @@ import {
   memoryStorage,
 } from '../../src/core/projectstore.js';
 import { ProjectError, fileKeys } from '../../src/core/projectdoc.js';
-import { relativeTime, formatBytes } from '../../src/core/humanize.js';
+import { relativeTime, formatBytes, storageShare } from '../../src/core/humanize.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -331,6 +331,18 @@ describe('humanize', () => {
     assert.match(relativeTime(Date.UTC(2026, 9, 1, 12), now), /^1 oct\.?$/);
     assert.match(relativeTime(Date.UTC(2025, 9, 1, 12), now), /1 oct\.? 2025/);
     assert.equal(relativeTime(now + 5000, now), 'ahora', 'un reloj adelantado no da fechas futuras');
+  });
+
+  test('storageShare: the percent to say, a visible minimum fill and the warning from 80 %', () => {
+    assert.deepEqual(storageShare(2_300_000, 10_700_000_000), { share: 2_300_000 / 10_700_000_000, percent: null, fill: 0.02, warning: false }, 'less than 1 %: no «0 %», and the bar still shows');
+    assert.deepEqual(storageShare(0, 1000), { share: 0, percent: 0, fill: 0, warning: false });
+    assert.equal(storageShare(250, 1000).percent, 25);
+    assert.equal(storageShare(250, 1000).fill, 0.25);
+    assert.equal(storageShare(799, 1000).warning, false);
+    assert.equal(storageShare(800, 1000).warning, true);
+    assert.equal(storageShare(5000, 1000).share, 1, 'never past full');
+    assert.equal(storageShare(5, 0), null, 'without a quota there is no bar');
+    assert.equal(storageShare(NaN, 1000), null);
   });
 
   test('formatBytes', () => {

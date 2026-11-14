@@ -1,8 +1,8 @@
 // «Proyectos»: new project, open, duplicate, rename, delete and the space used.
 
-import { Copy, HardDrive, Pencil, Plus, Trash2, TriangleAlert, X, type LucideIcon } from 'lucide-react';
+import { Copy, Pencil, Plus, Trash2, TriangleAlert, X, type LucideIcon } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
-import { relativeTime } from '../../core/humanize.js';
+import { formatBytes, relativeTime, storageShare } from '../../core/humanize.js';
 import { sizeOf } from '../../core/papers.js';
 import type { ListedProject } from '../../core/types.ts';
 import { numberLocale, t, type CopyKey } from '../../copy/index.ts';
@@ -136,6 +136,43 @@ function Card({ record, current, thumb, renaming, onRename }: { record: ListedPr
         {tool('delete', Trash2, 'projects.deleteLabel', 'projects.delete')}
       </div>
     </li>
+  );
+}
+
+/**
+ * The space used, like a phone's storage settings: a thin bar and «2,3 MB de
+ * 10,7 GB usados» with the percent (warning above 80 %). Nothing when the
+ * browser doesn't say.
+ */
+function StorageUsage({ usage }: { usage: { usage: number; quota: number } | null }) {
+  const share = usage && storageShare(usage.usage, usage.quota);
+  if (!usage || !share) return null;
+  const text = t('projects.usage', { used: formatBytes(usage.usage, { locale: numberLocale }), quota: formatBytes(usage.quota, { locale: numberLocale }) });
+  const percent = share.percent === null ? t('projects.usageLess') : t('projects.usagePercent', { n: share.percent });
+  return (
+    <div id="storage-usage" className="storage-usage" data-level={share.warning ? 'warning' : undefined}>
+      {share.warning && (
+        <p id="storage-low" className="storage-low">
+          <Icon icon={TriangleAlert} />
+          <span>{t('projects.usageLow')}</span>
+        </p>
+      )}
+      <div
+        className="storage-meter"
+        role="meter"
+        aria-label={t('projects.usageName')}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(share.share * 100)}
+        aria-valuetext={t('projects.usageValue', { usage: text, percent })}
+      >
+        <span className="storage-fill" style={{ width: `${share.fill * 100}%` }} />
+      </div>
+      <p className="storage-text">
+        <span id="projects-usage">{text}</span>
+        <span className="storage-percent">{percent}</span>
+      </p>
+    </div>
   );
 }
 
@@ -274,16 +311,15 @@ export default function ProjectsDialog() {
             />
           ))}
         </ul>
-        <p id="projects-empty" className="projects-empty" hidden={!available || records.some((record) => record.id !== currentId)}>
+        <p id="projects-empty" className="projects-empty" hidden={!available || records.length > 0}>
           {t('projects.empty')}
         </p>
       </div>
-      <div className="dialog-foot">
-        <p className="projects-usage">
-          <Icon icon={HardDrive} />
-          <span id="projects-usage">{usage}</span>
-        </p>
-      </div>
+      {usage && (
+        <div className="dialog-foot">
+          <StorageUsage usage={usage} />
+        </div>
+      )}
     </>
   );
 }

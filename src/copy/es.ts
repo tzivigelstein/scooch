@@ -725,8 +725,8 @@ const es = {
     retry: 'Reintentar',
     takeOver: 'Editar aquí',
     new: 'Nuevo proyecto',
-    newNote: 'El proyecto abierto queda guardado',
-    empty: 'Todavía no hay otros proyectos. Si creas uno nuevo, el que tienes abierto queda guardado.',
+    newNote: 'El proyecto abierto se guarda solo',
+    empty: 'Todavía no hay proyectos',
     unavailable: 'Este navegador no permite guardar proyectos (por ejemplo, en una ventana privada). Lo que hagas se pierde al cerrar la pestaña.',
     current: 'Abierto',
     damaged: 'Dañado',
@@ -747,9 +747,13 @@ const es = {
     deleteTitle: '¿Eliminar «{name}»?',
     deleteBody: 'Se borra de este navegador con todos sus archivos. No se puede deshacer.',
     deleteConfirm: 'Eliminar proyecto',
-    usage: 'Usas {used} de {quota} en este navegador',
-    usageOnly: 'Usas {used} en este navegador',
-    local: 'Los proyectos se guardan solo en este navegador',
+    // The space this browser keeps for the app: a bar with what is used
+    usageName: 'Espacio usado en este navegador',
+    usage: '{used} de {quota} usados',
+    usagePercent: '{n} %',
+    usageLess: 'menos de 1 %',
+    usageValue: '{usage} ({percent})',
+    usageLow: 'Queda poco espacio. Elimina proyectos que no uses.',
   },
 
   // Short confirmations

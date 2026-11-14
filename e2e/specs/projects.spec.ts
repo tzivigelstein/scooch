@@ -248,9 +248,10 @@ test.describe('the projects dialog', () => {
       await openProjects(page);
       await expect(page.locator('#project-new')).toBeFocused();
       await expect.poll(() => cards(page)).toEqual([expect.objectContaining({ name: 'Proyecto A', current: true, thumb: true, meta: 'ahora · 1 hoja · 2 piezas' })]);
-      await expect(page.locator('#projects-empty')).toBeVisible();
-      await expect(page.locator('#projects-empty')).toContainText('queda guardado');
-      expect(norm(await page.locator('#projects-usage').textContent())).toMatch(/^Usas .+ en este navegador$/);
+      await expect(page.locator('#projects-empty')).toBeHidden();
+      await expect(page.locator('#projects .projects-note')).toHaveText('El proyecto abierto se guarda solo');
+      expect(norm(await page.locator('#projects-usage').textContent())).toMatch(/^\S+ \S+ de \S+ \S+ usados$/);
+      await expect(page.getByRole('meter', { name: 'Espacio usado en este navegador' })).toBeVisible();
     });
 
     await test.step('«Nuevo proyecto»: blank, «Sin título», announced, the focus on the sheet', async () => {
@@ -272,7 +273,6 @@ test.describe('the projects dialog', () => {
     await test.step('two projects, newest first; ↓, Home and End move between cards', async () => {
       await page.locator('#projects-open').click();
       await expect.poll(async () => (await cards(page)).map((c) => `${c.name}${c.current ? '*' : ''}`)).toEqual(['Proyecto B*', 'Proyecto A']);
-      await expect(page.locator('#projects-empty')).toBeHidden();
       await page.locator('#projects .project-card .project-open').first().focus();
       await page.keyboard.press('ArrowDown');
       expect(await focusedCard(page)).toBe('Proyecto A');

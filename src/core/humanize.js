@@ -31,6 +31,28 @@ export function relativeTime(then, now = Date.now(), { locale = 'es' } = {}) {
   return dtf.format(then);
 }
 
+/** From this share of the space on, using it is a warning. */
+export const STORAGE_WARN = 0.8;
+
+/**
+ * How much of the browser's space is used, for a bar: `share` (0–1), the
+ * whole percent to say (null when it rounds to 0 but something is used: «less
+ * than 1 %»), the bar's visible `fill` (at least 2 % when anything is used,
+ * so it never looks empty) and whether it is a `warning`. Null without a
+ * quota (the browser doesn't say).
+ */
+export function storageShare(usage, quota) {
+  if (!(quota > 0) || !Number.isFinite(usage)) return null;
+  const share = Math.min(1, Math.max(0, usage / quota));
+  const percent = Math.round(share * 100);
+  return {
+    share,
+    percent: percent === 0 && usage > 0 ? null : percent,
+    fill: usage > 0 ? Math.max(0.02, share) : 0,
+    warning: share >= STORAGE_WARN,
+  };
+}
+
 const UNITS = ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte'];
 
 /** Bytes para mostrar: «820 B», «3,2 MB», «1,5 GB» (base 1000, como los sistemas). */

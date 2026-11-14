@@ -148,24 +148,60 @@ input.project-title-input {
 
 .projects-empty {
   margin: 0;
-  padding: 0.875rem 1rem;
-  border: 1px dashed var(--line-strong);
-  border-radius: 0.75rem;
+  padding: 2rem 1rem;
   color: var(--muted);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   text-align: center;
-  text-wrap: balance;
 }
 
-.projects-usage {
+/* The space used: a thin bar and its numbers, like a phone's storage settings. */
+.storage-usage {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.storage-meter {
+  height: 0.375rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.storage-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.storage-text {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-variant-numeric: tabular-nums;
 }
 
-.projects-usage .icon {
+.storage-usage[data-level="warning"] .storage-fill {
+  background: var(--warn-line);
+}
+
+.storage-low {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--radius-sm);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  font-weight: 500;
+}
+
+.storage-low .icon {
+  flex: none;
   width: 1rem;
   height: 1rem;
+  margin-top: 0.0625rem;
 }
 
 /* On narrow screens, two columns of shorter cards. */
