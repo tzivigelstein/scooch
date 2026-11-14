@@ -1,0 +1,6 @@
+{
+  "about": "scooch:palette-recents version 1: the last three commands run from the palette, the newest first",
+  "key": "scooch:palette-recents",
+  "value": { "v": 1, "ids": ["rotateRight", "paper", "undo"] },
+  "reads": { "ids": ["rotateRight", "paper", "undo"] }
+}

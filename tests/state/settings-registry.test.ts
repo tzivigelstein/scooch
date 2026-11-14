@@ -18,6 +18,7 @@ import { recordSavings } from '../../src/state/savings.ts';
 import { rememberView, setView, useView } from '../../src/state/view.ts';
 import { setPaperSide, choosePaper } from '../../src/state/actions/sheets.ts';
 import { neverAskDonation } from '../../src/components/dialogs/donate.ts';
+import { rememberCommand } from '../../src/components/palette/recents.ts';
 import { fakeImageMm, piece, resetState } from '../support/state.ts';
 
 const STORES = { document: useDocument, prefs: usePrefs, view: useView } as const;
@@ -51,6 +52,7 @@ const CHANGES: Record<string, () => void> = {
   'null.customPaper': () => (choosePaper('custom'), setPaperSide('w', 120, { final: true })),
   'null.donateDismissed': () => neverAskDonation(),
   'null.savings': () => recordSavings(3, 'a-pdf', 'print'),
+  'null.paletteRecents': () => rememberCommand('undo'),
   'view.sheet': () => setView({ sheet: 7 }),
   'view.pinned': () => setView({ pinned: true }),
   'view.drawer': () => setView({ drawer: 'props' }),

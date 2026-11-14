@@ -13,6 +13,7 @@ import {
   GRID_STORAGE,
   JOURNAL_PREFIX,
   LAST_PROJECT_STORAGE,
+  PALETTE_STORAGE,
   PRINT_STORAGE,
   SAVINGS_STORAGE,
   SECTIONS_STORAGE,
@@ -73,6 +74,7 @@ export const SETTINGS: readonly Setting[] = [
   device(null, 'savings', SAVINGS_STORAGE),
   device(null, 'lastProject', LAST_PROJECT_STORAGE),
   device(null, 'journal', JOURNAL_PREFIX),
+  device(null, 'paletteRecents', PALETTE_STORAGE),
 
   // The tab
   { store: 'view', key: 'sheet', lives: 'session' },

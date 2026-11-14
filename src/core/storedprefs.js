@@ -112,3 +112,22 @@ export function parseSavings(raw) {
 }
 
 export const serializeSavings = ({ sheets, turn, counted, pending, milestone }) => ({ v: 3, sheets, turn, counted: counted.slice(-COUNTED_MAX), pending, milestone });
+
+// ---------- Command palette (scooch:palette-recents) ----------
+//
+// Version 1: {v: 1, ids: string[]}: the commands last run from the palette,
+// the newest first, at most RECENT_MAX (ids of state/commands.ts; one the app
+// no longer has is left out when the palette shows them).
+
+export const RECENT_MAX = 5;
+
+export function parseRecents(raw) {
+  const saved = isRecord(raw) ? raw : {};
+  const ids = Array.isArray(saved.ids) ? saved.ids.filter(isKey) : [];
+  return { ids: [...new Set(ids)].slice(0, RECENT_MAX) };
+}
+
+export const serializeRecents = ({ ids }) => ({ v: 1, ids: ids.slice(0, RECENT_MAX) });
+
+/** The recent ids with `id` first (once), at most RECENT_MAX. */
+export const withRecent = (ids, id) => [id, ...ids.filter((other) => other !== id)].slice(0, RECENT_MAX);

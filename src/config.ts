@@ -72,6 +72,8 @@ export const DONATE_STORAGE = stored('donate-dismissed');
 export const PRINT_STORAGE = stored('print-preferences');
 /** The sheets saved on this device and whose turn the next equivalent is ({v: 1, sheets, turn}); never sent anywhere. */
 export const SAVINGS_STORAGE = stored('savings');
+/** The commands last run from the command palette, the newest first ({v: 1, ids}). */
+export const PALETTE_STORAGE = stored('palette-recents');
 
 /**
  * Where those lived before the app was renamed (database «pliego», keys

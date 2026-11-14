@@ -61,3 +61,12 @@ export interface Savings {
 export const COUNTED_MAX: number;
 export function parseSavings(raw: unknown): Savings;
 export function serializeSavings(savings: Savings): Savings & { v: 3 };
+
+export interface Recents {
+  /** Ids of the commands last run from the palette, the newest first. */
+  ids: string[];
+}
+export const RECENT_MAX: number;
+export function parseRecents(raw: unknown): Recents;
+export function serializeRecents(recents: Recents): Recents & { v: 1 };
+export function withRecent(ids: readonly string[], id: string): string[];

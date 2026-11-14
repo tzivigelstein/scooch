@@ -7,18 +7,22 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   COUNTED_MAX,
+  RECENT_MAX,
   VIEW_DEFAULTS,
   parsePrintPrefs,
+  parseRecents,
   parseSavings,
   parseSections,
   parseThemePref,
   parseViewPrefs,
   resolveTheme,
   serializePrintPrefs,
+  serializeRecents,
   serializeSavings,
   serializeSections,
   serializeThemePref,
   serializeViewPrefs,
+  withRecent,
 } from '../../src/core/storedprefs.js';
 
 const DIR = join(import.meta.dirname, '../fixtures/storage');
@@ -34,6 +38,7 @@ const SHAPES = {
   'scooch:print-preferences': { parse: parsePrintPrefs, serialize: serializePrintPrefs },
   'scooch:savings': { parse: parseSavings, serialize: serializeSavings },
   'scooch:theme-preference': { parse: parseThemePref, serialize: serializeThemePref },
+  'scooch:palette-recents': { parse: parseRecents, serialize: serializeRecents },
 };
 
 describe('stored preferences of every version', () => {
@@ -122,5 +127,20 @@ describe('panel sections', () => {
 
   test('closed «Más opciones» isn’t written, only the sections that were toggled', () => {
     expect(serializeSections({ sections: { grid: true }, cutOptions: false })).toEqual({ v: 2, grid: true });
+  });
+});
+
+describe('the palette’s recent commands', () => {
+  test('nothing saved, or something that can’t be read: none; ids only, each once, the newest first, at most 5', () => {
+    for (const raw of [null, 'undo', [], { ids: 'undo' }, { ids: [7, null, ''] }]) expect(parseRecents(raw), JSON.stringify(raw)).toEqual({ ids: [] });
+    expect(parseRecents({ v: 1, ids: ['undo', 3, 'redo', 'undo', 'print'] })).toEqual({ ids: ['undo', 'redo', 'print'] });
+    expect(RECENT_MAX).toBe(5);
+    expect(parseRecents({ v: 1, ids: ['a', 'b', 'c', 'd', 'e', 'f', 'g'] }).ids).toEqual(['a', 'b', 'c', 'd', 'e']);
+  });
+
+  test('a command run goes first, once, and the oldest falls off past 5', () => {
+    expect(withRecent([], 'undo')).toEqual(['undo']);
+    expect(withRecent(['redo', 'undo', 'print'], 'undo')).toEqual(['undo', 'redo', 'print']);
+    expect(withRecent(['a', 'b', 'c', 'd', 'e'], 'f')).toEqual(['f', 'a', 'b', 'c', 'd']);
   });
 });
