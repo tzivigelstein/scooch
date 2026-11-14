@@ -145,6 +145,7 @@ export function measureBuild(dir) {
   const pages = all.filter((p) => p.endsWith('.html') && p !== 'index.html');
   const editor = readFileSync(join(dir, 'index.html'), 'utf8');
   return [
+    { id: 'editorHtml', label: 'editor: index.html', files: [file('index.html')] },
     { id: 'initialJs', label: 'editor: JS loaded at start', files: local(eagerScripts(editor)) },
     ...Object.entries(languageChunks(editor)).map(([language, url]) => ({ id: `language:${language}`, label: `editor: texts, ${language} (one loads at start)`, files: local([url]) })),
     { id: 'totalJs', label: 'JS, every file', files: all.filter((p) => /\.m?js$/.test(p)).map(file) },

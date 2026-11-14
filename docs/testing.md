@@ -106,9 +106,10 @@ E2E_TIME_FACTOR=2 node_modules/.bin/playwright test e2e/specs/performance.spec.t
 `yarn size` (after `yarn build`; part of `yarn verify` and CI) measures the
 gzip size (level 9) of what the build serves and fails when one is over its
 budget in `scripts/size-budgets.json`, with a table of every size, its budget
-and the difference. It checks the JavaScript the editor's `index.html` loads
-at start (read from the built HTML), each language's texts (a chunk of its
-own: only the one shown loads at start), every JavaScript file, the CSS, each
+and the difference. It checks the editor's `index.html` itself (its inline CSS
+and script and the skeleton), the JavaScript it loads at start (read from the
+built HTML), each language's texts (a chunk of its own: only the one shown
+loads at start), every JavaScript file, the CSS, each
 static page (its HTML with the inline CSS) and the static pages' scripts (the
 calculator). Each budget says what it covers and the size measured when it
 was set; it is that size plus about 5 %, rounded up.

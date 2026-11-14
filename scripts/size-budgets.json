@@ -5,6 +5,11 @@
     "«measured» is the size when the budget was set; the budget is that plus about 5 %, rounded up (to 0.1 kB under 100 kB, to 1 kB above).",
     "Raising a budget needs a reason in the commit message: see docs/testing.md."
   ],
+  "editorHtml": {
+    "kB": 6.8,
+    "measured": 6.4,
+    "what": "The editor's index.html: its share tags and structured data, the inline critical CSS, the scripts that pick the theme and the language before the first paint with each language's loading texts, and the skeleton of the editor it shows until the app mounts (about 1.5 kB). The first thing a visit downloads, before the stylesheet and the scripts."
+  },
   "initialJs": {
     "kB": 187,
     "measured": 177.6,
