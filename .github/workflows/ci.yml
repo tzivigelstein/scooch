@@ -1,0 +1,129 @@
+# What `yarn verify` runs locally, in jobs that run side by side so a failure
+# says which kind of check broke. docs/testing.md («Continuous integration»)
+# explains each job and how to reproduce a failure locally.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch or pull request makes a running check moot.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Typecheck, unit tests and ledger
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn typecheck
+      - run: yarn test
+      - run: yarn ledger
+
+  build:
+    name: Build and size budgets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      # Built like a local `yarn build`: VERCEL_ENV isn't set, so a missing
+      # SITE_URL or a legal placeholder only warns (docs/site.md).
+      - run: yarn build
+      - run: yarn size
+
+  e2e:
+    name: Browser tests (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # The clock budgets of performance.spec.ts were set on faster machines
+      # than a shared runner (e2e/support/timing.ts).
+      E2E_TIME_FACTOR: '2'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - name: Read the Playwright version
+        id: playwright
+        run: echo "version=$(node -p 'require("@playwright/test/package.json").version')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+      # With the browser cached, this still installs its system libraries.
+      - run: npx playwright install --with-deps chromium
+      - run: yarn e2e
+      - name: Upload the report and traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-chromium
+          path: |
+            e2e/out/report
+            e2e/out/results
+          retention-days: 14
+
+  webkit:
+    name: Browser tests (WebKit, allowed to fail)
+    # Nobody has seen the suite pass on WebKit yet: this job reports, but its
+    # failure doesn't fail the run (docs/testing.md).
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      E2E_WEBKIT: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - name: Read the Playwright version
+        id: playwright
+        run: echo "version=$(node -p 'require("@playwright/test/package.json").version')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-webkit
+      - run: npx playwright install --with-deps webkit
+      # Ends the run after 30 minutes, so that even one where most tests fail
+      # slowly writes its report before the job's own time limit.
+      - run: yarn e2e --project=webkit --global-timeout=1800000
+      - name: Upload the report and traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-webkit
+          path: |
+            e2e/out/report
+            e2e/out/results
+          retention-days: 14
