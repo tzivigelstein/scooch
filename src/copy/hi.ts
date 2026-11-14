@@ -111,6 +111,7 @@ const hi: Catalogue = {
 
   sheet: {
     numbered: 'शीट {i}/{total}',
+    count: { one: '{n} शीट', other: '{n} शीटों' },
     changePaper: 'कागज़ बदलें',
     changePaperLabel: '{label}: कागज़ बदलें',
     changePaperHint: 'गुण के प्रोजेक्ट टैब में कागज़ पर ले जाता है',
@@ -244,8 +245,8 @@ const hi: Catalogue = {
     duplicateMax: { one: 'हर आइटम की ज़्यादा से ज़्यादा {n} कॉपी (कुल {max} आइटम तक)', other: 'हर आइटम की ज़्यादा से ज़्यादा {n} कॉपियां (कुल {max} आइटम तक)' },
     selectSame: 'एक जैसे चुनें',
     selectSameTip: 'एक ही फ़ाइल के आइटम चुनें',
-    groupOnSheet: 'शीट {i} पर',
-    groupOnSheets: '{n} शीटों पर। माप शीट {i} के हैं।',
+    groupName: { one: 'शीट {i} पर {n} आइटम', other: 'शीट {i} पर {n} आइटम' },
+    groupNameSheets: { one: '{sheets} पर {n} आइटम', other: '{sheets} पर {n} आइटम' },
     mixed: 'अलग-अलग',
     align: 'संरेखित करें',
     alignTo: 'किसके साथ संरेखित करें',

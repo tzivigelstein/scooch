@@ -111,6 +111,7 @@ const fr: Catalogue = {
 
   sheet: {
     numbered: 'Feuille {i} sur {total}',
+    count: { one: '{n} feuille', other: '{n} feuilles' },
     changePaper: 'Changer de papier',
     changePaperLabel: '{label} : changer de papier',
     changePaperHint: 'Mène à Papier, dans l’onglet Projet des Propriétés',
@@ -244,8 +245,8 @@ const fr: Catalogue = {
     duplicateMax: { one: '{n} copie de chaque élément au plus (maximum de {max} éléments)', other: '{n} copies de chaque élément au plus (maximum de {max} éléments)' },
     selectSame: 'Sélectionner les identiques',
     selectSameTip: 'Sélectionner les éléments du même fichier',
-    groupOnSheet: 'Sur la feuille {i}',
-    groupOnSheets: 'Sur {n} feuilles. Mesures de la feuille {i}.',
+    groupName: { one: '{n} élément sur la feuille {i}', other: '{n} éléments sur la feuille {i}' },
+    groupNameSheets: { one: '{n} élément sur {sheets}', other: '{n} éléments sur {sheets}' },
     mixed: 'Mixte',
     align: 'Aligner',
     alignTo: 'Aligner sur',

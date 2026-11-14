@@ -111,6 +111,7 @@ const zhHans: Catalogue = {
 
   sheet: {
     numbered: '第{i}张，共{total}张',
+    count: { other: '{n}张纸' },
     changePaper: '更改纸张',
     changePaperLabel: '{label}：更改纸张',
     changePaperHint: '前往“属性”中“项目”标签页的“纸张”',
@@ -244,8 +245,8 @@ const zhHans: Catalogue = {
     duplicateMax: { other: '每个素材最多{n}个副本（素材上限为{max}个）' },
     selectSame: '选择相同素材',
     selectSameTip: '选择来自同一文件的素材',
-    groupOnSheet: '在第{i}张纸上',
-    groupOnSheets: '在{n}张纸上。显示第{i}张纸上的尺寸。',
+    groupName: { other: '第{i}张纸上的{n}个素材' },
+    groupNameSheets: { other: '{sheets}上的{n}个素材' },
     mixed: '混合',
     align: '对齐',
     alignTo: '对齐到',

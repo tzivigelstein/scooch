@@ -110,6 +110,7 @@ const en: Catalogue = {
 
   sheet: {
     numbered: 'Sheet {i} of {total}',
+    count: { one: '{n} sheet', other: '{n} sheets' },
     changePaper: 'Change paper',
     changePaperLabel: '{label}: change paper',
     changePaperHint: 'Goes to Paper, in the Project tab of Properties',
@@ -243,8 +244,8 @@ const en: Catalogue = {
     duplicateMax: { one: 'At most {n} copy of each item (up to {max} items)', other: 'At most {n} copies of each item (up to {max} items)' },
     selectSame: 'Select matching',
     selectSameTip: 'Select the items from the same file',
-    groupOnSheet: 'On sheet {i}',
-    groupOnSheets: 'On {n} sheets. Sizes from sheet {i}.',
+    groupName: { one: '{n} item on sheet {i}', other: '{n} items on sheet {i}' },
+    groupNameSheets: { one: '{n} item on {sheets}', other: '{n} items on {sheets}' },
     mixed: 'Mixed',
     align: 'Align',
     alignTo: 'Align to',
