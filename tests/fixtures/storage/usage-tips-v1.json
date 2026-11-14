@@ -1,0 +1,6 @@
+{
+  "about": "scooch:usage-tips version 1: tips on, one topic never to show again, two whose shortcut was used, and the undo button counted 5 times so far",
+  "key": "scooch:usage-tips",
+  "value": { "v": 1, "on": true, "dismissed": ["duplicateMany"], "known": ["redoKey", "zoom"], "counts": { "undoKey": 5 } },
+  "reads": { "on": true, "dismissed": ["duplicateMany"], "known": ["redoKey", "zoom"], "counts": { "undoKey": 5 } }
+}

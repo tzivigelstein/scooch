@@ -74,6 +74,8 @@ export const PRINT_STORAGE = stored('print-preferences');
 export const SAVINGS_STORAGE = stored('savings');
 /** The commands last run from the command palette, the newest first ({v: 1, ids}). */
 export const PALETTE_STORAGE = stored('palette-recents');
+/** Usage tips: whether they show, the ones never to show again, what is known and the counts kept across sessions ({v: 1, on, dismissed, known, counts}). */
+export const TIPS_STORAGE = stored('usage-tips');
 
 /**
  * Where those lived before the app was renamed (database «pliego», keys

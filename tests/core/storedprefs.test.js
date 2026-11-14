@@ -8,12 +8,14 @@ import { join } from 'node:path';
 import {
   COUNTED_MAX,
   RECENT_MAX,
+  TIPS_MAX,
   VIEW_DEFAULTS,
   parsePrintPrefs,
   parseRecents,
   parseSavings,
   parseSections,
   parseThemePref,
+  parseTipPrefs,
   parseViewPrefs,
   resolveTheme,
   serializePrintPrefs,
@@ -21,6 +23,7 @@ import {
   serializeSavings,
   serializeSections,
   serializeThemePref,
+  serializeTipPrefs,
   serializeViewPrefs,
   withRecent,
 } from '../../src/core/storedprefs.js';
@@ -39,6 +42,7 @@ const SHAPES = {
   'scooch:savings': { parse: parseSavings, serialize: serializeSavings },
   'scooch:theme-preference': { parse: parseThemePref, serialize: serializeThemePref },
   'scooch:palette-recents': { parse: parseRecents, serialize: serializeRecents },
+  'scooch:usage-tips': { parse: parseTipPrefs, serialize: serializeTipPrefs },
 };
 
 describe('stored preferences of every version', () => {
@@ -142,5 +146,28 @@ describe('the palette’s recent commands', () => {
     expect(withRecent([], 'undo')).toEqual(['undo']);
     expect(withRecent(['redo', 'undo', 'print'], 'undo')).toEqual(['undo', 'redo', 'print']);
     expect(withRecent(['a', 'b', 'c', 'd', 'e'], 'f')).toEqual(['f', 'a', 'b', 'c', 'd']);
+  });
+});
+
+describe('usage tips', () => {
+  test('nothing saved, or something that can’t be read: tips on, nothing dismissed, known or counted', () => {
+    const fresh = { on: true, dismissed: [], known: [], counts: {} };
+    for (const raw of [null, 'off', [], { on: 'no', dismissed: 'undoKey', known: 7, counts: [] }]) expect(parseTipPrefs(raw), JSON.stringify(raw)).toEqual(fresh);
+    expect(parseTipPrefs({ v: 1, on: false }).on).toBe(false);
+  });
+
+  test('topics are names, each once; counts are whole numbers above 0', () => {
+    const read = parseTipPrefs({ v: 1, dismissed: ['zoom', 3, '', 'zoom', 'palette'], known: [null, 'undoKey'], counts: { undoKey: 4, redoKey: 0, zoomWheel: -1, removeKey: 2.5, rotateKey: '3', '': 9 } });
+    expect(read).toEqual({ on: true, dismissed: ['zoom', 'palette'], known: ['undoKey'], counts: { undoKey: 4 } });
+  });
+
+  test('each list and the counts keep at most 50 entries, also when written', () => {
+    const many = Array.from({ length: 60 }, (_, i) => `tip${i}`);
+    const counts = Object.fromEntries(many.map((id) => [id, 1]));
+    const read = parseTipPrefs({ v: 1, dismissed: many, known: many, counts });
+    expect(TIPS_MAX).toBe(50);
+    expect([read.dismissed.length, read.known.length, Object.keys(read.counts).length]).toEqual([50, 50, 50]);
+    const written = serializeTipPrefs({ on: true, dismissed: many, known: many, counts });
+    expect([written.dismissed.length, written.known.length, Object.keys(written.counts).length]).toEqual([50, 50, 50]);
   });
 });

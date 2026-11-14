@@ -70,3 +70,17 @@ export const RECENT_MAX: number;
 export function parseRecents(raw: unknown): Recents;
 export function serializeRecents(recents: Recents): Recents & { v: 1 };
 export function withRecent(ids: readonly string[], id: string): string[];
+
+export interface TipPrefs {
+  /** Usage tips show («Mostrar consejos»). */
+  on: boolean;
+  /** Topics with «No volver a mostrar». */
+  dismissed: string[];
+  /** Topics whose fast way was already used. */
+  known: string[];
+  /** Counts kept across sessions, by tip id. */
+  counts: Record<string, number>;
+}
+export const TIPS_MAX: number;
+export function parseTipPrefs(raw: unknown): TipPrefs;
+export function serializeTipPrefs(prefs: { on: boolean; dismissed: readonly string[]; known: readonly string[]; counts: Readonly<Record<string, number>> }): TipPrefs & { v: 1 };

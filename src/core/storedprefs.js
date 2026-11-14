@@ -131,3 +131,34 @@ export const serializeRecents = ({ ids }) => ({ v: 1, ids: ids.slice(0, RECENT_M
 
 /** The recent ids with `id` first (once), at most RECENT_MAX. */
 export const withRecent = (ids, id) => [id, ...ids.filter((other) => other !== id)].slice(0, RECENT_MAX);
+
+// ---------- Usage tips (scooch:usage-tips) ----------
+//
+// Version 1: {v: 1, on: boolean, dismissed: string[], known: string[],
+// counts: {[tip id]: number}}: whether tips show (on by default), the topics
+// with «No volver a mostrar», the topics whose fast way was already used, and
+// the counts kept across sessions (core/tips.js). Each list or map has at most
+// TIPS_MAX entries.
+
+export const TIPS_MAX = 50;
+
+export function parseTipPrefs(raw) {
+  const saved = isRecord(raw) ? raw : {};
+  const topics = (list) => (Array.isArray(list) ? [...new Set(list.filter(isKey))].slice(0, TIPS_MAX) : []);
+  const counts = isRecord(saved.counts)
+    ? Object.fromEntries(
+        Object.entries(saved.counts)
+          .filter(([key, n]) => key !== '' && Number.isInteger(n) && n > 0)
+          .slice(0, TIPS_MAX)
+      )
+    : {};
+  return { on: saved.on !== false, dismissed: topics(saved.dismissed), known: topics(saved.known), counts };
+}
+
+export const serializeTipPrefs = ({ on, dismissed, known, counts }) => ({
+  v: 1,
+  on,
+  dismissed: dismissed.slice(0, TIPS_MAX),
+  known: known.slice(0, TIPS_MAX),
+  counts: Object.fromEntries(Object.entries(counts).slice(0, TIPS_MAX)),
+});
