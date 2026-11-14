@@ -1,11 +1,15 @@
 // Editing with the pointer, where only a real browser tells: dragging a piece
 // onto the grid («Imán»), dropping it on another piece, the resize handle, the
-// scale slider, G and the grid layer, files dropped on the canvas, and the
-// overlap and grid preferences after a reload. What the actions compute is in
-// tests/state (overlap-and-snap, placing-and-arranging).
+// scale slider, G and the grid layer, files dropped on the canvas, the
+// overlap and grid preferences after a reload, and a drag the page loses the
+// pointer of. What the actions compute is in tests/state (overlap-and-snap,
+// placing-and-arranging).
+import type { Page } from '@playwright/test';
+import { frames } from '../support/canvas.ts';
 import { closerThan, near, onGrid, overlapping } from '../support/geometry.ts';
 import { dragPieceTo, dropFile, pieceOf, saved, setGrid } from '../support/editing.ts';
-import { expect, test } from '../support/test.ts';
+import { counts, holdPiece, pieceIds, placeholders, scrollOf, scrollStops, stageBox } from '../support/sheets.ts';
+import { expect, test, type App } from '../support/test.ts';
 
 test.describe('dragging a piece lands where the pointer leaves it, on the grid with «Imán»', () => {
   const CASES = [
@@ -219,4 +223,84 @@ test('«Permitir superposición» and the grid settings are still there after a 
   await expect(page.locator('#grid-size')).toHaveValue(/^2,5/);
   await expect(page.locator('#sheets .grid-layer').first()).toBeVisible();
   expect(overlapping((await app.geometry()).pieces)).toHaveLength(1);
+});
+
+test.describe('a drag never outlives its button: when the page loses the pointer it is cancelled, not dropped where the pointer was', () => {
+  type Lose = (page: Page, pointer: { id: number; x: number; y: number }) => Promise<unknown>;
+  const LOSSES: [string, Lose][] = [
+    ['the window loses the focus (another window or a screenshot tool takes it)', (page) => page.evaluate(() => window.dispatchEvent(new FocusEvent('blur')))],
+    [
+      'the page is hidden',
+      (page) =>
+        page.evaluate(() => {
+          Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+          document.dispatchEvent(new Event('visibilitychange'));
+          delete (document as { visibilityState?: unknown }).visibilityState;
+        }),
+    ],
+    [
+      'the browser cancels the pointer',
+      (page, { id }) => page.evaluate((id) => document.getElementById('sheets')!.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerId: id, pointerType: 'mouse', isPrimary: true })), id),
+    ],
+    [
+      'a move of it comes with its button up',
+      (page, { id, x, y }) =>
+        page.evaluate(
+          ([id, x, y]) => document.body.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: id, pointerType: 'mouse', isPrimary: true, buttons: 0, clientX: x, clientY: y })),
+          [id, x, y]
+        ),
+    ],
+    [
+      'the button is let go where the page can’t hear it (the browser drops the capture, then moves come with no button)',
+      async (page, { x, y }) => {
+        const cdp = await page.context().newCDPSession(page);
+        for (let i = 1; i <= 3; i++) await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: x - i * 10, y: y - i * 5, button: 'none', buttons: 0 });
+      },
+    ],
+  ];
+
+  /** The first card of the only sheet dragged below it, held at the stage's bottom edge until it scrolls and the new sheet's placeholder shows. */
+  async function holdBelow(app: App) {
+    const page = app.page;
+    const [[id]] = await pieceIds(app);
+    const pressed = page.evaluate(() => new Promise<number>((resolve) => addEventListener('pointerdown', (e) => resolve(e.pointerId), { once: true, capture: true })));
+    const from = await holdPiece(app, id);
+    const stage = await stageBox(page);
+    const at = { x: from.x, y: stage.y + stage.height - 4 };
+    await page.mouse.move(at.x, at.y, { steps: 8 });
+    await expect.poll(async () => (await placeholders(page)).endActive).toBe(true);
+    await expect.poll(async () => (await scrollOf(page)).top, 'it scrolls by itself').toBeGreaterThan(0);
+    return { id: await pressed, ...at };
+  }
+
+  for (const [name, lose] of LOSSES) {
+    test(`${name}: the piece goes back, the placeholder goes, the scroll stops, moving on does nothing and there is no undo step`, async ({ app, page }) => {
+      await app.addFiles(['card00.png', 'card01.png']);
+      const before = await app.sheets();
+      const extent = (await scrollOf(page)).height;
+      const pointer = await holdBelow(app);
+      await lose(page, pointer);
+
+      await expect(page.locator('#canvas')).not.toHaveClass(/\bis-dragging\b/);
+      expect(await placeholders(page)).toMatchObject({ end: false, bar: false });
+      expect((await scrollStops(page)).height, 'the scroll stops, the extent the one it had').toBe(extent);
+      expect(await app.sheets(), 'the piece where it was').toEqual(before);
+      // Whatever the pointer does next doesn't take the piece again, nor drop it.
+      await page.mouse.move(pointer.x - 80, pointer.y - 200, { steps: 4 });
+      await page.mouse.up();
+      await frames(page);
+      expect(await app.sheets()).toEqual(before);
+      await expect(page.locator('#canvas')).not.toHaveClass(/\bis-dragging\b/);
+      // The last step is still adding the cards: the drag left none.
+      await page.keyboard.press('Control+z');
+      await expect(app.pieces()).toHaveCount(0);
+    });
+  }
+
+  test('let go normally there, the piece goes to a new sheet', async ({ app, page }) => {
+    await app.addFiles(['card00.png', 'card01.png']);
+    await holdBelow(app);
+    await page.mouse.up();
+    await expect.poll(() => counts(app)).toEqual([1, 1]);
+  });
 });

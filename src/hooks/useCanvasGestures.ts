@@ -4,7 +4,8 @@
 // On a handle: scales the piece or the group. On an empty spot: a marquee to
 // select (a click without dragging clears the selection). Two fingers zoom
 // and pan the view, and take back whatever the first one started; lifted
-// while panning, the view glides on.
+// while panning, the view glides on. A gesture never outlives its button:
+// when the page loses the pointer it is cancelled, as with Esc (abandon).
 //
 // Performance: nothing re-renders while the pointer moves. The dragged pieces
 // travel in the drag layer (no clipping, so they can cross sheets) and are
@@ -18,6 +19,7 @@ import { maxGrowth, overlapsAny } from '../core/collide.js';
 import { edgeScroll } from '../core/dragscroll.js';
 import { planDrag, planDrop, planScale, scaleBounds, touchedBy, type Drag } from '../core/group.js';
 import { GLIDE_WINDOW, releaseVelocity, type GlideSample } from '../core/glide.js';
+import { heldPointer, letGo, type HeldPointer } from '../core/heldpointer.js';
 import { keepCenterInside, placeOnNewSheet } from '../core/sheets.js';
 import type { Box, Point, Rect } from '../core/types.ts';
 import { pinchSpan, wheelFactor, type PinchPair } from '../core/zoom.js';
@@ -82,6 +84,7 @@ import { isTyping } from './dom.ts';
 
 interface Pointer {
   pointerId: number;
+  held: HeldPointer;
   startX: number;
   startY: number;
   lastX: number;
@@ -218,6 +221,7 @@ function capture(e: PointerEvent) {
 
 const pointer = (e: PointerEvent): Pointer => ({
   pointerId: e.pointerId,
+  held: heldPointer(e),
   startX: e.clientX,
   startY: e.clientY,
   lastX: e.clientX,
@@ -630,6 +634,39 @@ export function cancelGesture() {
   return true;
 }
 
+/**
+ * The page lost the pointer (the window lost the focus, the page was hidden,
+ * the browser took the capture back, or its button was let go where the page
+ * couldn't hear it): whatever it was doing is cancelled as with Esc, nothing
+ * is dropped where the pointer happened to be. A pinch ends without gliding,
+ * and Space no longer counts as held.
+ */
+function abandon() {
+  cancelLongPress();
+  if (gesture) finish(null);
+  if (pan) endPan();
+  if (pinch) dropPinch();
+  touches.clear();
+  if (space.held) releaseSpace();
+  stopGlide();
+}
+
+/** Any press or move in the page (before anything else hears it): has the held pointer been let go unseen? */
+function onAnyPointer(e: PointerEvent) {
+  const held = gesture?.held ?? pan?.held;
+  if (held && letGo(held, e)) abandon();
+}
+
+// Only the captures set here count: a finger's own capture, which the browser
+// moves to #sheets when a gesture starts, is lost on the element it landed on.
+function onLostCapture(e: PointerEvent) {
+  if ((e.target === el('sheets') && e.pointerId === gesture?.pointerId) || (e.target === el('stage') && e.pointerId === pan?.pointerId)) abandon();
+}
+
+function onVisibility() {
+  if (document.visibilityState === 'hidden') abandon();
+}
+
 /** Ends the gesture: `e` is the pointerup that drops it, or null to cancel. */
 function finish(e: PointerEvent | null) {
   const g = gesture!;
@@ -830,7 +867,7 @@ function onScroll() {
 // ---------- Zoom and pan ----------
 
 /** The stage scrolls by hand: Space + drag, the middle button. */
-let pan: { pointerId: number; x: number; y: number; left: number; top: number } | null = null;
+let pan: { pointerId: number; held: HeldPointer; x: number; y: number; left: number; top: number } | null = null;
 let pointerOnCanvas = false;
 const space = { held: false, used: false };
 
@@ -861,7 +898,7 @@ export function releaseSpace() {
 function startPan(e: PointerEvent) {
   e.preventDefault();
   const stage = el('stage');
-  pan = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, left: stage.scrollLeft, top: stage.scrollTop };
+  pan = { pointerId: e.pointerId, held: heldPointer(e), x: e.clientX, y: e.clientY, left: stage.scrollLeft, top: stage.scrollTop };
   space.used ||= space.held;
   try {
     stage.setPointerCapture(e.pointerId);
@@ -930,7 +967,10 @@ let touchSelection: { selection: readonly number[]; pinned: boolean; sheet: numb
 /** A finger landed on the stage. Returns whether it belongs to a pinch (nothing else to do with it). */
 function touchDown(e: PointerEvent) {
   // The first finger of a new touch: any still listed was lifted where the stage didn't hear it.
-  if (e.isPrimary) touches.clear();
+  if (e.isPrimary) {
+    touches.clear();
+    if (pinch) dropPinch();
+  }
   touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pinch) return true;
   if (touches.size === 1) {
@@ -1005,6 +1045,13 @@ function touchUp(e: PointerEvent) {
     }
   }
   return true;
+}
+
+/** The pinch ends where it is, without gliding (its fingers are gone). */
+function dropPinch() {
+  cancelAnimationFrame(pinchFrame);
+  pinchFrame = 0;
+  pinch = null;
 }
 
 function stepPinch() {
@@ -1097,6 +1144,10 @@ export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
     node.addEventListener('pointermove', onPointerMove);
     node.addEventListener('pointerup', onPointerUp);
     node.addEventListener('pointercancel', onPointerUp);
+    node.addEventListener('lostpointercapture', onLostCapture);
+    for (const type of ['pointerdown', 'pointermove'] as const) window.addEventListener(type, onAnyPointer, true);
+    window.addEventListener('blur', abandon);
+    document.addEventListener('visibilitychange', onVisibility);
     node.addEventListener('touchstart', onTouch, { passive: false });
     node.addEventListener('touchmove', onTouch, { passive: false });
     node.addEventListener('scroll', onScroll, { passive: true });
@@ -1116,6 +1167,10 @@ export function useCanvasGestures(stage: RefObject<HTMLDivElement | null>) {
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);
       node.removeEventListener('pointercancel', onPointerUp);
+      node.removeEventListener('lostpointercapture', onLostCapture);
+      for (const type of ['pointerdown', 'pointermove'] as const) window.removeEventListener(type, onAnyPointer, true);
+      window.removeEventListener('blur', abandon);
+      document.removeEventListener('visibilitychange', onVisibility);
       node.removeEventListener('touchstart', onTouch);
       node.removeEventListener('touchmove', onTouch);
       node.removeEventListener('scroll', onScroll);

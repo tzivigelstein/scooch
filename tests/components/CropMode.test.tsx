@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 // Crop mode for assistive technology and the keyboard: the frame's name, role
-// description and instructions, what it announces, and how it ends.
+// description and instructions, what it announces, and how it ends; and a drag
+// of the image when the page loses the pointer.
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import CropMode from '../../src/components/canvas/crop/CropMode.tsx';
+import CropMode, { cropSession } from '../../src/components/canvas/crop/CropMode.tsx';
 import { getDocument } from '../../src/state/document.ts';
 import { historyDepth, resetHistory } from '../../src/state/history.ts';
 import { getView, setView } from '../../src/state/view.ts';
@@ -115,5 +116,53 @@ describe('crop mode', () => {
     expect(getDocument().items[0].crop).not.toBeNull();
     expect(historyDepth().undo).toBe(1);
     expect(heard()).toMatch(/^Se recortó foto\.png: \d/);
+  });
+});
+
+describe('dragging the image when the page loses the pointer', () => {
+  const MOUSE = { pointerId: 1, pointerType: 'mouse', isPrimary: true };
+
+  /** Zoomed in (so the image can move), then the image dragged by the mouse; returns the crop before the drag. */
+  function dragImage() {
+    start();
+    press('+');
+    const before = cropSession()!.frames;
+    const image = document.querySelector('.crop-window')!;
+    fireEvent.pointerDown(image, { ...MOUSE, button: 0, buttons: 1, clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(image, { ...MOUSE, buttons: 1, clientX: 130, clientY: 115 });
+    expect(cropSession()!.frames, 'the drag moved it').not.toEqual(before);
+    return before;
+  }
+
+  const LOSSES: [string, () => void][] = [
+    ['the window loses the focus', () => fireEvent(window, new FocusEvent('blur'))],
+    [
+      'the page is hidden',
+      () => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+        fireEvent(document, new Event('visibilitychange'));
+        delete (document as { visibilityState?: unknown }).visibilityState;
+      },
+    ],
+    ['the browser takes the capture back', () => fireEvent(document.querySelector('.crop')!, new PointerEvent('lostpointercapture', { ...MOUSE, bubbles: true }))],
+    ['the mouse moves with its button up', () => fireEvent.pointerMove(document.body, { ...MOUSE, buttons: 0, clientX: 160, clientY: 130 })],
+  ];
+
+  test.each(LOSSES)('%s: the image goes back to where the drag found it and stops following, still in crop mode with nothing to undo', (_, lose) => {
+    const before = dragImage();
+    act(lose);
+    expect(cropSession()!.frames).toEqual(before);
+    fireEvent.pointerMove(document.querySelector('.crop-window')!, { ...MOUSE, buttons: 1, clientX: 200, clientY: 160 });
+    expect(cropSession()!.frames, 'no longer dragged').toEqual(before);
+    expect(getView().cropping).toBe(1);
+    expect(historyDepth().undo).toBe(0);
+  });
+
+  test('let go normally, the image stays where it was dragged', () => {
+    const before = dragImage();
+    const moved = cropSession()!.frames;
+    fireEvent.pointerUp(document.querySelector('.crop-window')!, { ...MOUSE, button: 0, buttons: 0, clientX: 130, clientY: 115 });
+    expect(cropSession()!.frames).toEqual(moved);
+    expect(moved).not.toEqual(before);
   });
 });

@@ -202,6 +202,44 @@ test.describe('panning', () => {
     expect(await app.snapshot(), 'nothing moved').toBe(shown);
   });
 
+  test('a pan ends when the page loses the pointer: the window losing the focus ends a Space pan and Space no longer counts as held; the middle button let go unseen ends its pan', async ({ app, page }) => {
+    await app.addFiles(cards(0, 2));
+    await setZoom(page, 200);
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    const s = await stageBox(page);
+    const mid = { x: s.x + s.width / 2, y: s.y + s.height / 2 };
+    const scroll = async () => {
+      const st = await stageState(page);
+      return [st.scrollLeft, st.scrollTop];
+    };
+
+    await page.mouse.move(mid.x, mid.y);
+    await page.keyboard.down(' ');
+    await page.mouse.down();
+    await page.mouse.move(mid.x - 60, mid.y - 40, { steps: 4 });
+    await expect(page.locator('#canvas')).toHaveClass(/\bis-panning\b/);
+    await page.evaluate(() => window.dispatchEvent(new FocusEvent('blur')));
+    await expect(page.locator('#canvas')).not.toHaveClass(/\bis-(panning|pan-ready)\b/);
+    let left = await scroll();
+    await page.mouse.move(mid.x - 160, mid.y - 120, { steps: 4 });
+    expect(await scroll(), 'moving on doesn’t pan').toEqual(left);
+    await page.mouse.up();
+    await page.keyboard.up(' ');
+
+    await page.mouse.move(mid.x, mid.y);
+    await page.mouse.down({ button: 'middle' });
+    await page.mouse.move(mid.x + 40, mid.y + 30, { steps: 4 });
+    await expect(page.locator('#canvas')).toHaveClass(/\bis-panning\b/);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: mid.x + 50, y: mid.y + 35, button: 'none', buttons: 0 });
+    await expect(page.locator('#canvas')).not.toHaveClass(/\bis-panning\b/);
+    left = await scroll();
+    await page.mouse.move(mid.x + 140, mid.y + 100, { steps: 4 });
+    expect(await scroll(), 'moving on doesn’t pan').toEqual(left);
+    await page.mouse.up({ button: 'middle' });
+  });
+
   test('Space on a piece without dragging still goes to its toolbar', async ({ app, page }) => {
     await app.addFiles(cards(0, 2));
     const [id] = await app.ids();

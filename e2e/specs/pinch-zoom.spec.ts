@@ -352,6 +352,17 @@ test.describe('the glide after two fingers pan', () => {
     expect(after.scrollLeft).toBe(zoomed.scrollLeft);
   });
 
+  test('the window losing the focus mid-pan ends it there: moving the fingers on doesn’t pan and lifting them doesn’t glide', async ({ app, page }) => {
+    await fiveSheets(app);
+    const at = await emptySpot(page);
+    const fingers = await panTogether(page, at, { x: 0, y: -24 });
+    await page.evaluate(() => window.dispatchEvent(new FocusEvent('blur')));
+    const held = await stageState(page);
+    for (let i = 1; i <= 4; i++) await fingers.move({ 1: { x: at.x - 50, y: at.y - 192 - i * 24 }, 2: { x: at.x + 50, y: at.y - 192 - i * 24 } });
+    expect((await stageState(page)).scrollTop, 'no pan after it').toBe(held.scrollTop);
+    expect(tops(await liftAndSettle(page, fingers)), 'no glide').toEqual(new Set([held.scrollTop]));
+  });
+
   test('with reduced motion the sheets stop as the fingers lift', async ({ app, page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await fiveSheets(app);

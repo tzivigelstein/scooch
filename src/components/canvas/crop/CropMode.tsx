@@ -4,7 +4,8 @@
 // when the piece has a standard photo size). Enter, a click outside or the
 // focus leaving applies it, in one undo step; Esc cancels. Two fingers zoom
 // and pan the view, as anywhere on the canvas: they never change, apply or
-// cancel the crop, and a second finger puts back what the first was dragging.
+// cancel the crop, and a second finger puts back what the first was dragging,
+// as does the page losing the pointer (dropDrag).
 //
 // Like the other gestures, the live values never re-render React: the session
 // lives here, the overlay is painted directly and the properties panel reads
@@ -25,6 +26,7 @@ import {
   type CropFrame,
   type FrameHandle,
 } from '../../../core/crop.js';
+import { heldPointer, letGo, type HeldPointer } from '../../../core/heldpointer.js';
 import type { Size } from '../../../core/types.ts';
 import { stepFor } from '../../../core/units.js';
 import { t } from '../../../copy/index.ts';
@@ -63,6 +65,7 @@ interface Session {
 interface Drag {
   kind: 'pan' | FrameHandle;
   pointerId: number;
+  held: HeldPointer;
   x: number;
   y: number;
   /** The crop before the drag, to put it back. */
@@ -173,7 +176,7 @@ function onPointerDown(e: PointerEvent) {
   e.preventDefault();
   e.stopPropagation();
   const handle = target.closest<HTMLElement>('.crop-handle')?.dataset.handle as FrameHandle | undefined;
-  drag = { kind: handle ?? 'pan', pointerId: e.pointerId, x: e.clientX, y: e.clientY, frames: s.frames, resized: s.resized };
+  drag = { kind: handle ?? 'pan', pointerId: e.pointerId, held: heldPointer(e), x: e.clientX, y: e.clientY, frames: s.frames, resized: s.resized };
   measureBoxes();
   els.frame?.focus({ preventScroll: true });
   try {
@@ -202,7 +205,11 @@ function onPointerUp(e: PointerEvent) {
   if (session) say(d.kind === 'pan' ? 'moved' : 'resized', d.frames);
 }
 
-/** A second finger landed (a pinch): what the first one was dragging goes back to how it was before it. */
+/**
+ * A second finger landed (a pinch), or the page lost the pointer (the window
+ * lost the focus, the page was hidden, the capture was taken back, its button
+ * was let go unseen): what it was dragging goes back to how it was before it.
+ */
 function dropDrag() {
   const d = drag;
   pending = null;
@@ -211,6 +218,20 @@ function dropDrag() {
   els.root?.classList.remove('is-resizing', 'is-panning');
   session.resized = d.resized;
   update(d.frames);
+}
+
+/** Any press or move in the page (before anything else hears it): has the dragging pointer been let go unseen? */
+function onAnyPointer(e: PointerEvent) {
+  if (drag && letGo(drag.held, e)) dropDrag();
+}
+
+// Only the capture set here counts (a finger's own, lost when it moves to the root, doesn't).
+function onLostCapture(e: PointerEvent) {
+  if (e.target === els.root && e.pointerId === drag?.pointerId) dropDrag();
+}
+
+function onVisibility() {
+  if (document.visibilityState === 'hidden') dropDrag();
 }
 
 function onWheel(e: WheelEvent) {
@@ -357,6 +378,10 @@ export default function CropMode() {
     node.addEventListener('pointermove', onPointerMove);
     node.addEventListener('pointerup', onPointerUp);
     node.addEventListener('pointercancel', onPointerUp);
+    node.addEventListener('lostpointercapture', onLostCapture);
+    for (const type of ['pointerdown', 'pointermove'] as const) window.addEventListener(type, onAnyPointer, true);
+    window.addEventListener('blur', dropDrag);
+    document.addEventListener('visibilitychange', onVisibility);
     node.addEventListener('wheel', onWheel, { passive: false });
     document.addEventListener('pointerdown', onOutsidePointerDown, true);
     document.addEventListener('pointerup', onOutsidePointerEnd, true);
@@ -386,6 +411,10 @@ export default function CropMode() {
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);
       node.removeEventListener('pointercancel', onPointerUp);
+      node.removeEventListener('lostpointercapture', onLostCapture);
+      for (const type of ['pointerdown', 'pointermove'] as const) window.removeEventListener(type, onAnyPointer, true);
+      window.removeEventListener('blur', dropDrag);
+      document.removeEventListener('visibilitychange', onVisibility);
       node.removeEventListener('wheel', onWheel);
       document.removeEventListener('pointerdown', onOutsidePointerDown, true);
       document.removeEventListener('pointerup', onOutsidePointerEnd, true);
