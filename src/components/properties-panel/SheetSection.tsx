@@ -15,6 +15,7 @@ import { choosePaper, setOrientation, setPaperSide, setSheetLength } from '../..
 import { Icon } from '../ui/Icon.tsx';
 import { LengthField } from '../ui/LengthField.tsx';
 import { Section } from '../ui/Section.tsx';
+import { Segmented } from '../ui/Segmented.tsx';
 
 const busyOff = (busy: boolean, id: string) => busy && document.activeElement?.id !== id;
 
@@ -105,32 +106,23 @@ export function SheetSection() {
           <span id="orientation-label" className="field-label">
             {t('props.orientation')}
           </span>
-          <div className="segmented icons" role="radiogroup" aria-labelledby="orientation-label">
-            <label className="seg">
-              <input type="radio" name="orientation" id="portrait" value="portrait" data-tip={t('props.portrait')} checked={!landscape} disabled={busyOff(busy, 'portrait')} onChange={(e) => e.target.checked && setOrientation(false)} />
-              <span>
-                <Icon icon={RectangleVertical} />
-                <span className="sr-only">{t('props.portrait')}</span>
-              </span>
-            </label>
-            <label className="seg">
-              <input
-                type="radio"
-                name="orientation"
-                id="landscape"
-                value="landscape"
-                data-tip={t('props.landscape')}
-                {...landscapeKeys}
-                checked={landscape}
-                disabled={busyOff(busy, 'landscape')}
-                onChange={(e) => e.target.checked && setOrientation(true)}
-              />
-              <span>
-                <Icon icon={RectangleHorizontal} />
-                <span className="sr-only">{t('props.landscape')}</span>
-              </span>
-            </label>
-          </div>
+          <Segmented
+            className="segmented icons"
+            name="orientation"
+            labelledBy="orientation-label"
+            value={landscape ? 'landscape' : 'portrait'}
+            onChange={(value) => setOrientation(value === 'landscape')}
+            options={(['portrait', 'landscape'] as const).map((value) => ({
+              value,
+              input: { id: value, 'data-tip': t(`props.${value}`), ...(value === 'landscape' && landscapeKeys), disabled: busyOff(busy, value) },
+              label: (
+                <span>
+                  <Icon icon={value === 'landscape' ? RectangleHorizontal : RectangleVertical} />
+                  <span className="sr-only">{t(`props.${value}`)}</span>
+                </span>
+              ),
+            }))}
+          />
         </div>
       </div>
     </Section>
