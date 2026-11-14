@@ -1,7 +1,7 @@
 // The app: top bar, pieces panel, sheets and properties, with the dialogs
 // loaded when first needed.
 
-import { Suspense, useEffect, useRef, type DragEvent } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useRef, type DragEvent } from 'react';
 import { LEFT_DRAWER_QUERY, NARROW_QUERY } from './config.ts';
 import { t } from './copy/index.ts';
 import { Dock, Rail } from './components/canvas/Dock.tsx';
@@ -106,8 +106,11 @@ export function App() {
   useGlobalShortcuts();
   useClipboard();
 
-  useEffect(() => {
+  // index.html's skeleton stands in for the app until the last project is
+  // open; they change places before the frame that shows the project is painted.
+  useLayoutEffect(() => {
     document.body.classList.toggle('is-loading', loading);
+    if (!loading) document.querySelector('.boot')?.remove();
   }, [loading]);
   useEffect(() => {
     document.body.classList.toggle('single-keys-off', !singleKeys);

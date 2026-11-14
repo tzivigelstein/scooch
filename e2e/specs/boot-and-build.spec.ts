@@ -1,18 +1,30 @@
-// What only the production build in a real browser shows: the first paint
-// before the app mounts (light and dark), the page without JavaScript, the
-// texts index.html carries, the font and the lazy chunks of pdf.js and pdf-lib.
+// What only the production build in a real browser shows: the skeleton of
+// the editor before the app mounts (light and dark, desktop and phone) and how
+// the app takes its place, the page without JavaScript, the texts index.html
+// carries, the font and the lazy chunks of pdf.js and pdf-lib. That the
+// skeleton copies the stylesheet's values is in tests/site/boot-skeleton.test.ts.
 import { readFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
-import { expect, test } from '../support/test.ts';
+import { DESKTOP, PHONE, sizeTitle } from '../support/accessibility.ts';
+import { holdApp, skeletonShown } from '../support/boot.ts';
+import { App, expect, test } from '../support/test.ts';
+
+declare global {
+  interface Window {
+    /** The page when the skeleton left it (see watchHandOff). */
+    handOff?: { loading: boolean; sheets: number; pieces: number };
+  }
+}
 
 const THEMES = {
-  light: { bg: [255, 255, 255], text: 'rgb(14, 16, 20)' },
-  dark: { bg: [21, 23, 28], text: 'rgb(238, 240, 243)' },
+  light: { bg: [255, 255, 255], canvas: [238, 240, 243], surface: [255, 255, 255], text: 'rgb(14, 16, 20)' },
+  dark: { bg: [21, 23, 28], canvas: [11, 12, 15], surface: [23, 25, 30], text: 'rgb(238, 240, 243)' },
 } as const;
+const WHITE = [255, 255, 255];
 
-/** The color of the page's top-left corner, from a tiny screenshot decoded in the page. */
-async function cornerColor(page: Page) {
-  const png = await page.screenshot({ clip: { x: 2, y: 2, width: 4, height: 4 } });
+/** The color of the page at (x, y), from a tiny screenshot decoded in the page. */
+async function colorAt(page: Page, x = 2, y = 2) {
+  const png = await page.screenshot({ clip: { x, y, width: 4, height: 4 } });
   return page.evaluate(async (b64) => {
     const img = new Image();
     img.src = `data:image/png;base64,${b64}`;
@@ -32,16 +44,74 @@ const bootState = () => {
   const h1 = document.querySelector('h1');
   const r = h1?.getBoundingClientRect();
   const boot = document.querySelector('.boot');
-  const bootStyle = boot && getComputedStyle(boot);
-  const name = document.querySelector('.boot-name');
   return {
-    bg: getComputedStyle(document.body).backgroundColor,
     color: getComputedStyle(document.body).color,
     h1: r && h1 ? { w: r.width, h: r.height, clip: getComputedStyle(h1).clipPath } : null,
-    boot: boot && bootStyle ? { opacity: Number(bootStyle.opacity), display: bootStyle.display, name: name?.textContent ?? null, nameFont: name ? getComputedStyle(name).fontFamily : null } : null,
-    mounted: !!document.querySelector('#paper'),
+    boot: boot ? { display: getComputedStyle(boot).display } : null,
   };
 };
+
+type Box = { x: number; y: number; width: number; height: number } | null;
+
+/** The boxes of the skeleton and of the app that takes its place, by part: the first of its elements that shows (null: none). */
+const readBoxes = (parts: Record<string, string>) => {
+  const box = (selector: string): Box => {
+    for (const el of document.querySelectorAll(selector)) {
+      const r = el.getBoundingClientRect();
+      if (getComputedStyle(el).display !== 'none' && r.width > 1 && r.height > 1) return { x: r.x, y: r.y, width: r.width, height: r.height };
+    }
+    return null;
+  };
+  return Object.fromEntries(Object.entries(parts).map(([part, selector]) => [part, box(selector)]));
+};
+const SKELETON = { bar: '.boot-bar', left: '.boot-left', right: '.boot-right', canvas: '.boot-stage', sheet: '.boot-sheet', mark: '.boot svg', name: '.boot-name', piecesButton: '.boot-dock', propsButton: '.boot-dock + .boot-dock' };
+// The pieces panel: a column on desktop, its rail on medium screens.
+const MOUNTED = { bar: '.topbar', left: '.rail, #pieces-panel', right: '#props-panel', canvas: '#canvas', sheet: '#sheets .sheet', mark: '.brand-mark', name: '.brand-name', piecesButton: '#pieces-dock', propsButton: '#props-toggle' };
+
+/**
+ * Each part of the app against where the skeleton drew it, to a pixel: the
+ * same boxes, and the same parts shown. The panel buttons' widths follow
+ * their texts: only their outer edges and height count.
+ */
+function expectSameBoxes(drawn: Record<string, Box>, shown: Record<string, Box>) {
+  const near = (a: number, b: number) => Math.abs(a - b) <= 1;
+  for (const [part, d] of Object.entries(drawn)) {
+    const s = shown[part];
+    expect(s === null, `${part} shown in both or neither`).toBe(d === null);
+    if (!d || !s) continue;
+    const edges = part === 'piecesButton' ? ['x', 'y', 'height'] : part === 'propsButton' ? ['right', 'y', 'height'] : ['x', 'y', 'width', 'height'];
+    const value = (b: NonNullable<Box>, edge: string) => (edge === 'right' ? b.x + b.width : b[edge as keyof typeof b]);
+    for (const edge of edges) expect(near(value(s, edge), value(d, edge)), `${part} ${edge}: ${value(d, edge)} drawn, ${value(s, edge)} shown`).toBe(true);
+  }
+}
+
+/** Runs before the page: records what the page has at the moment the skeleton leaves it. */
+const watchHandOff = () => {
+  let seen = false;
+  new MutationObserver((_, observer) => {
+    if (document.querySelector('.boot')) {
+      seen = true;
+      return;
+    }
+    if (!seen) return;
+    observer.disconnect();
+    window.handOff = { loading: document.body.classList.contains('is-loading'), sheets: document.querySelectorAll('#sheets .sheet').length, pieces: document.querySelectorAll('#sheets .piece').length };
+  }).observe(document, { childList: true, subtree: true });
+};
+
+/** How much the page has moved since it started loading (the sum of its layout shifts), two frames from now. */
+const layoutShift = () =>
+  new Promise<number>((done) =>
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const observer = new PerformanceObserver(() => {});
+        observer.observe({ type: 'layout-shift', buffered: true });
+        const entries = observer.takeRecords() as (PerformanceEntry & { value: number; hadRecentInput: boolean })[];
+        observer.disconnect();
+        done(entries.filter((e) => !e.hadRecentInput).reduce((sum, e) => sum + e.value, 0));
+      })
+    )
+  );
 
 test.describe('before the app mounts', () => {
   test.use({ viewport: { width: 1024, height: 768 } });
@@ -56,7 +126,7 @@ test.describe('before the app mounts', () => {
       test('the app’s background and text, a hidden fallback heading, the message in the app’s font and no boot screen', async ({ page }) => {
         await page.goto('./');
         const st = await page.evaluate(bootState);
-        expect(closeTo(await cornerColor(page), theme.bg), 'background').toBe(true);
+        expect(closeTo(await colorAt(page), theme.bg), 'background').toBe(true);
         expect(st.color).toBe(theme.text);
         expect(st.h1!.w).toBeLessThanOrEqual(1);
         expect(st.h1!.h).toBeLessThanOrEqual(1);
@@ -72,41 +142,133 @@ test.describe('before the app mounts', () => {
         expect(st.boot?.display).toBe('none');
       });
     });
-
-    test.describe(`${scheme} theme, slow load`, () => {
-      // The boot screen's fade, as most people see it (reduced motion shortens it to 1 ms).
-      test.use({ colorScheme: scheme, contextOptions: { reducedMotion: 'no-preference' } });
-
-      test('the first paint has the app’s background, the boot screen fades in later and the app replaces it', async ({ page }) => {
-        let release!: () => void;
-        const held = new Promise<void>((done) => (release = done));
-        await page.route(/\/(assets\/index-[\w-]+\.js|src\/main\.tsx)(\?.*)?$/, async (route) => {
-          await held;
-          await route.continue();
-        });
-        await page.goto('./', { waitUntil: 'commit' });
-        await page.locator('.boot').waitFor({ state: 'attached' });
-        const first = await page.evaluate(bootState);
-        expect(closeTo(await cornerColor(page), theme.bg), 'first paint background').toBe(true);
-        expect(first.color).toBe(theme.text);
-        // Nothing else shows at first: no flash on fast loads.
-        expect(first.boot!.opacity).toBeLessThan(0.5);
-        // Later, the brand with the app's name fades in.
-        await expect.poll(async () => (await page.evaluate(bootState)).boot?.opacity).toBe(1);
-        const later = await page.evaluate(bootState);
-        expect(later.boot!.name).toBe('Scooch');
-        expect(later.boot!.nameFont).toMatch(/Inter|system-ui/);
-        expect(later.h1!.w).toBeLessThanOrEqual(1);
-        expect(later.h1!.h).toBeLessThanOrEqual(1);
-        release();
-        await expect(page.locator('.boot')).toHaveCount(0);
-        await expect(page.locator('#paper')).toBeAttached();
-        const mounted = await page.evaluate(bootState);
-        expect(closeTo(await cornerColor(page), theme.bg), 'mounted background').toBe(true);
-        expect(mounted.bg).toBe(`rgb(${theme.bg.join(', ')})`);
-      });
-    });
   }
+});
+
+test.describe('the skeleton of the editor, before the app mounts', () => {
+  for (const size of [DESKTOP, PHONE])
+    for (const scheme of ['light', 'dark'] as const) {
+      const theme = THEMES[scheme];
+      const narrow = size.width < 800;
+
+      test.describe(`${sizeTitle(size)}, ${scheme} theme`, () => {
+        test.use({ viewport: size, colorScheme: scheme });
+
+        test('shows at once the top bar with the brand, the panels or the panel buttons, and a white sheet saying what the tool does, in the theme’s colors', async ({ page }) => {
+          const release = await holdApp(page);
+          await page.goto('./', { waitUntil: 'commit' });
+          await skeletonShown(page);
+          const drawn = await page.evaluate(readBoxes, SKELETON);
+          expect(drawn.bar).toMatchObject({ x: 0, y: 0, width: size.width });
+          expect(drawn.mark).not.toBeNull();
+          expect(drawn.sheet).not.toBeNull();
+          const panels = [drawn.left, drawn.right, drawn.name].map((b) => b !== null);
+          expect(panels, 'the pieces panel, the properties panel and the app’s name').toEqual(narrow ? [false, false, false] : [true, true, true]);
+          expect([drawn.piecesButton, drawn.propsButton].map((b) => b !== null), 'the panel buttons').toEqual(narrow ? [true, true] : [false, false]);
+          await expect(page.locator('.boot-name')).toHaveText('Scooch');
+          expect(await page.locator('.boot-name').evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/^"Inter Variable", system-ui/);
+
+          // What the tool does, in the middle of the sheet.
+          const about = await page.evaluate(() => {
+            const range = document.createRange();
+            range.selectNodeContents(document.querySelector('.boot-about')!);
+            const r = range.getBoundingClientRect();
+            return { text: range.toString(), x: r.x + r.width / 2, y: r.y + r.height / 2 };
+          });
+          const sheet = drawn.sheet!;
+          expect(about.text).toMatch(/^Acomoda imágenes y páginas de PDF/);
+          expect(Math.abs(about.x - (sheet.x + sheet.width / 2)), 'centered across the sheet').toBeLessThanOrEqual(1);
+          expect(Math.abs(about.y - (sheet.y + sheet.height / 2)), 'centered down the sheet').toBeLessThanOrEqual(1);
+
+          // The theme from the first paint; the sheet white in both.
+          expect(closeTo(await colorAt(page), theme.bg), 'top bar').toBe(true);
+          expect(closeTo(await colorAt(page, drawn.canvas!.x + 4, drawn.canvas!.y + 4), theme.canvas), 'canvas').toBe(true);
+          expect(closeTo(await colorAt(page, sheet.x + 8, sheet.y + 8), WHITE), 'sheet').toBe(true);
+          if (drawn.left) expect(closeTo(await colorAt(page, drawn.left.x + 8, drawn.left.y + drawn.left.height - 12), theme.surface), 'pieces panel').toBe(true);
+          expect((await page.evaluate(bootState)).color).toBe(theme.text);
+          // Reduced motion (as every test runs): nothing moves.
+          expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+          release();
+        });
+
+        test('reads as a busy main region named «Cargando…» with the hidden heading and what the tool does, the drawing hidden, and nothing to focus', async ({ page }) => {
+          const release = await holdApp(page);
+          await page.goto('./', { waitUntil: 'commit' });
+          await skeletonShown(page);
+          await expect(page.locator('body')).toMatchAriaSnapshot(`
+            - /children: equal
+            - main "Cargando…":
+              - /children: equal
+              - heading /acomoda imágenes y PDF en una hoja/ [level=1]
+              - paragraph: /^Acomoda imágenes y páginas de PDF/
+          `);
+          await expect(page.getByRole('main')).toHaveAttribute('aria-busy', 'true');
+          expect(await page.locator('.boot > :not(h1, .boot-about, [aria-hidden="true"])').count(), 'all but the heading and what the tool does is hidden from assistive technology').toBe(0);
+          const h1 = (await page.evaluate(bootState)).h1!;
+          expect(h1.w <= 1 && h1.h <= 1 && h1.clip !== 'none', 'the heading takes no visible room').toBe(true);
+          await page.keyboard.press('Tab');
+          expect(await page.evaluate(() => document.activeElement === document.body), 'Tab finds nothing to focus').toBe(true);
+          expect(await page.locator('.boot :is(a[href], button, input, select, textarea, [tabindex], [contenteditable])').count()).toBe(0);
+          release();
+        });
+
+        test('when the app mounts, its top bar, panels, canvas and sheet are where the skeleton drew them, and nothing moved while loading', async ({ page }, testInfo) => {
+          await page.addInitScript(watchHandOff);
+          const release = await holdApp(page);
+          await page.goto('./', { waitUntil: 'commit' });
+          await skeletonShown(page);
+          const drawn = await page.evaluate(readBoxes, SKELETON);
+          release();
+          await new App(page, testInfo).ready();
+          await expect(page.locator('.boot')).toHaveCount(0);
+          // The skeleton left in the same frame the project's sheet arrived.
+          expect(await page.evaluate(() => window.handOff)).toEqual({ loading: false, sheets: 1, pieces: 0 });
+          expectSameBoxes(drawn, await page.evaluate(readBoxes, MOUNTED));
+          expect(await page.evaluate(layoutShift), 'layout shift while loading').toBe(0);
+          expect(closeTo(await colorAt(page), theme.bg), 'the app’s top bar').toBe(true);
+        });
+      });
+    }
+
+  test('with a saved project, the skeleton stays until the project is open, then its sheet shows where the skeleton drew it, and nothing moved', async ({ app, page }) => {
+    await app.addFiles(['small.jpg']);
+    await expect(page.locator('#project')).toHaveAttribute('data-status', 'saved', { timeout: 15_000 });
+    await page.addInitScript(watchHandOff);
+    const release = await holdApp(page);
+    await page.reload({ waitUntil: 'commit' });
+    await skeletonShown(page);
+    const drawn = await page.evaluate(readBoxes, SKELETON);
+    release();
+    await app.ready();
+    expect(await page.evaluate(() => window.handOff)).toEqual({ loading: false, sheets: 1, pieces: 1 });
+    expectSameBoxes(drawn, await page.evaluate(readBoxes, MOUNTED));
+    expect(await page.evaluate(layoutShift), 'layout shift while loading').toBe(0);
+  });
+
+  test.describe(() => {
+    test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+    test('without reduced motion, only the placeholders breathe, from a second into the load', async ({ page }) => {
+      const release = await holdApp(page);
+      await page.goto('./', { waitUntil: 'commit' });
+      await skeletonShown(page);
+      const animations = await page.evaluate(() =>
+        document.getAnimations().map((a) => {
+          const target = (a.effect as KeyframeEffect).target as Element;
+          return {
+            name: (a as CSSAnimation).animationName,
+            delay: a.effect!.getTiming().delay,
+            // A group of placeholders: no surface of its own, and not the sheet.
+            surface: getComputedStyle(target).backgroundColor !== 'rgba(0, 0, 0, 0)',
+            sheet: target.contains(document.querySelector('.boot-sheet')),
+          };
+        })
+      );
+      expect(animations.length).toBeGreaterThan(0);
+      for (const a of animations) expect(a).toEqual({ name: 'boot-pulse', delay: 1000, surface: false, sheet: false });
+      release();
+    });
+  });
 });
 
 const collectTexts = () => {

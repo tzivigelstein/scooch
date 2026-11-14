@@ -136,10 +136,15 @@ input.project-name-input {
   white-space: nowrap;
 }
 
-/* While the project is restored when the app opens, the canvas and the list
-   are hidden (no flash of the empty sheet). */
-.is-loading #sheets,
-.is-loading #piece-list,
-.is-loading #list-empty {
+/* While the last project is restored when the app opens, the skeleton in
+   index.html stands in for the app (no flash of an empty editor): nothing of
+   it shows, takes the focus or is read meanwhile, but what the live regions
+   announce. */
+.is-loading #root {
   visibility: hidden;
+}
+
+.is-loading #live-polite,
+.is-loading #live-assertive {
+  visibility: visible;
 }

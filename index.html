@@ -82,32 +82,243 @@
         white-space: nowrap;
         border: 0;
       }
-      /* Until React mounts: nothing for fast loads, a calm brand mark for slow ones. */
+      /* Until the app shows: a skeleton of the editor (top bar, pieces panel,
+         canvas with a sheet, properties panel), drawn at once with the
+         stylesheet's own metrics so that nothing moves when the app takes its
+         place. src/App.tsx removes it once the last project is open.
+         tests/site/boot-skeleton.test.ts checks the values copied here. */
       .boot {
+        /* From src/styles/tokens.css. */
+        --bg: #ffffff;
+        --canvas: #eef0f3;
+        --surface: #ffffff;
+        --text: #0e1014;
+        --line: #e1e4e8;
+        --line-strong: #858b97;
+        --accent: #0066ff;
+        --sheet-shadow: 0 1px 0.125rem rgb(16 18 24 / 0.1), 0 0.375rem 1.125rem rgb(16 18 24 / 0.08), 0 1.5rem 3rem rgb(16 18 24 / 0.08);
+        --topbar-h: 3.5rem;
+        --left-w: clamp(14.25rem, 15vw, 20rem);
+        --right-w: clamp(18rem, 19vw, 24rem);
+        --rail-w: 3.25rem;
+        /* Placeholders: a tint of the text over whatever is below. */
+        --ph: rgb(16 18 24 / 0.08);
         position: fixed;
         inset: 0;
         display: grid;
-        place-content: center;
-        justify-items: center;
-        gap: 0.625rem;
-        color: #0066ff;
-        opacity: 0;
-        animation: boot-in 240ms ease-out 200ms forwards;
+        grid: "bar bar bar" var(--topbar-h) "left canvas right" minmax(0, 1fr) / var(--left-w) minmax(0, 1fr) var(--right-w);
+        background: var(--canvas);
+        color: var(--accent);
+      }
+      /* The brand, where .brand puts it. */
+      .boot svg,
+      .boot-name {
+        position: absolute;
+        z-index: 1;
+        top: 0.90625rem;
+        left: 1rem;
+      }
+      .boot svg {
+        width: 1.625rem;
+        height: 1.625rem;
       }
       .boot-name {
+        top: 0.8125rem;
+        left: 3.125rem;
         margin: 0;
-        color: #0e1014;
+        color: var(--text);
         font-size: 1.25rem;
         font-weight: 800;
         letter-spacing: -0.03em;
       }
-      /* What the tool does, in the page itself: shown on slow loads, and read by crawlers that don't run JavaScript. */
+      /* The canvas as .stage lays it out (canvas.css), its padding grown by
+         the sheet's title above (.page-head) and «Agregar hoja» below (the
+         .sheets gap, the .sheets-foot margin and the .add-sheet height): what
+         is left is the room fitZoom (canvas/viewport.ts) fits the sheet in,
+         with the sheet in its middle. */
+      .boot-about,
+      .boot-stage {
+        grid-area: canvas;
+        display: grid;
+        place-content: center;
+        padding: calc(1.25rem + 2.25rem) 2.25rem calc(4rem + 1.25rem - 0.375rem + 2rem);
+        overflow: hidden;
+        scrollbar-gutter: stable;
+      }
+      /* What the tool does, on the sheet: read at once on slow loads, and by
+         crawlers that don't run JavaScript. */
       .boot-about {
-        max-width: 22rem;
+        z-index: 1;
+        grid-template-columns: min(18rem, 100%);
         margin: 0;
-        padding: 0 1rem;
-        color: #5a6170;
+        color: #555c69;
         text-align: center;
+        text-wrap: balance;
+      }
+      .boot-bar {
+        grid-area: bar;
+        display: flex;
+        align-items: center;
+        gap: 1.125rem;
+        padding: 0 0.625rem 0 1rem;
+        border-bottom: 1px solid var(--line);
+        background: var(--bg);
+      }
+      .boot-bar > span {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      /* A placeholder is a button's icon unless it says otherwise. */
+      :where(.boot) i {
+        display: block;
+        flex: none;
+        box-sizing: border-box;
+        width: 1.25rem;
+        height: 1.25rem;
+        margin: 0 0.5rem;
+        border-radius: 0.375rem;
+        background: var(--ph);
+      }
+      /* Room for the brand drawn above. */
+      .boot-brand {
+        width: 7rem;
+        margin-left: -0.25rem;
+        visibility: hidden;
+      }
+      .boot-txt,
+      .boot-btn {
+        width: 4rem;
+        height: 0.75rem;
+      }
+      .boot-btn {
+        width: 5rem;
+        margin: 0 0.875rem;
+      }
+      .boot-wide {
+        width: 6.125rem;
+      }
+      .boot-end {
+        margin-left: auto;
+      }
+      /* The panels take the free cells beside the canvas. */
+      .boot-left,
+      .boot-right {
+        border: solid var(--line);
+        border-width: 0 1px 0 0;
+        background: var(--surface);
+      }
+      .boot-right {
+        border-width: 0 0 0 1px;
+      }
+      .boot-pane {
+        display: grid;
+      }
+      /* A title, in the middle of a 2.75rem head like .panel-head. */
+      .boot-pane > .boot-txt {
+        width: 2.75rem;
+        margin: 1.125rem 1rem 0.875rem;
+      }
+      .boot-drop,
+      .boot-row,
+      .boot-field {
+        position: relative;
+        width: auto;
+        background: none;
+      }
+      .boot-pane > .boot-drop {
+        height: 4.5rem;
+        margin: 0.125rem 0.75rem 0.625rem;
+        border: 1.5px dashed var(--line-strong);
+        border-radius: 0.625rem;
+      }
+      .boot-pane > .boot-row {
+        height: 3rem;
+        margin: 0 0.5rem;
+      }
+      .boot-pane > .boot-field {
+        height: 2.125rem;
+        margin: 1.5rem 1rem 0;
+        border: 1px solid var(--line);
+        border-radius: 0.5rem;
+      }
+      .boot-row::before,
+      .boot-row::after,
+      .boot-field::before,
+      .boot-dock::after {
+        content: "";
+        position: absolute;
+        top: 0.375rem;
+        left: 0.625rem;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.3125rem;
+        background: var(--ph);
+      }
+      .boot-row::after {
+        top: 1.1875rem;
+        left: 3.5rem;
+        width: 50%;
+        height: 0.625rem;
+      }
+      .boot-field::before {
+        top: -1.3125rem;
+        left: 0;
+        width: 3.5rem;
+        height: 0.625rem;
+      }
+      /* .props-tabs: two tabs of 2.5rem under 0.375rem, over a line. */
+      .boot-tabs {
+        display: grid;
+        grid: 2.5rem / auto-flow 1fr;
+        place-items: center;
+        padding: 0.375rem 0.75rem 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .boot-tabs i {
+        width: 3rem;
+        height: 0.625rem;
+      }
+      .boot-stage {
+        position: relative;
+        container-type: size;
+      }
+      /* An A4 sheet (the default paper) at the zoom that fits it. */
+      .boot-sheet {
+        width: min(100cqw, 100cqh * 210 / 297);
+        height: min(100cqh, 100cqw * 297 / 210);
+        margin: 0;
+        border-radius: 0.125rem;
+        background: #fff;
+        box-shadow: var(--sheet-shadow);
+      }
+      /* The panel buttons of narrow screens, as .dock places them. */
+      .boot-dock {
+        display: none;
+        position: absolute;
+        bottom: calc(0.75rem + env(safe-area-inset-bottom));
+        left: 0.75rem;
+        width: 6.5625rem;
+        height: 2.75rem;
+        margin: 0;
+        border: 1px solid var(--line);
+        border-radius: 1.375rem;
+        background: var(--surface);
+      }
+      .boot-dock + .boot-dock {
+        left: auto;
+        right: 0.75rem;
+        width: 9.1875rem;
+      }
+      .boot-dock::after {
+        inset: 1rem;
+        width: auto;
+        height: auto;
+      }
+      /* Still loading after a while: the placeholders breathe. */
+      .boot-bar > span,
+      .boot-pane {
+        animation: boot-pulse 0.9s ease-in-out 1s infinite alternate;
       }
       .noscript {
         position: fixed;
@@ -121,9 +332,87 @@
       .noscript p {
         margin: 0;
       }
-      @keyframes boot-in {
+      @keyframes boot-pulse {
         to {
-          opacity: 1;
+          opacity: 0.45;
+        }
+      }
+      /* Medium screens (LEFT_DRAWER_QUERY, medium-screens.css): a rail for the pieces panel, the brand without its name. */
+      @media (max-width: 1099.98px) {
+        .boot {
+          grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--right-w);
+        }
+        .boot-about,
+        .boot-stage {
+          padding: calc(1.75rem + 2.25rem) 1.75rem calc(4rem + 1.25rem - 0.375rem + 2rem);
+        }
+        .boot-bar {
+          gap: 0.75rem;
+        }
+        .boot-brand {
+          width: 2.125rem;
+        }
+        .boot-name,
+        .boot-left .boot-pane {
+          display: none;
+        }
+        .boot-pal,
+        .boot-left::before {
+          width: 1.25rem;
+          height: 1.25rem;
+          margin: 0 0.5rem;
+        }
+        .boot-left::before {
+          content: "";
+          display: block;
+          margin: 1.25rem auto 0;
+          border-radius: 0.375rem;
+          background: var(--ph);
+        }
+      }
+      /* Narrow screens (NARROW_QUERY, narrow-screens.css): no panels, the top bar on two rows, the dock. */
+      @media (max-width: 799.98px) {
+        .boot {
+          grid: "bar" auto "canvas" minmax(0, 1fr) / minmax(0, 1fr);
+        }
+        .boot-about,
+        .boot-stage {
+          padding: calc(4.25rem + 2.75rem) 1rem calc(8.25rem + 1.25rem - 0.375rem + 2.5rem);
+        }
+        .boot svg {
+          top: 0.625rem;
+          left: 0.75rem;
+        }
+        .boot-left,
+        .boot-right {
+          display: none;
+        }
+        .boot-bar {
+          display: grid;
+          grid: 2.875rem 3rem / auto minmax(0, 1fr) auto;
+          gap: 0.5rem;
+          padding: 0 0.375rem 0 0.75rem;
+        }
+        .boot-brand {
+          width: 2.5rem;
+        }
+        .boot-bar > span {
+          gap: 0;
+        }
+        .boot-bar > span:first-of-type {
+          grid-column: 2 / -1;
+          justify-content: space-between;
+        }
+        .boot-bar > span:nth-of-type(2) {
+          grid-area: 2 / 1 / 3 / 3;
+        }
+        .boot-bar span i:not(.boot-txt) {
+          width: 1.25rem;
+          height: 1.25rem;
+          margin: 0 0.625rem;
+        }
+        .boot-dock {
+          display: block;
         }
       }
       /* The dark theme the script above chose. :where() keeps these as weak as
@@ -133,21 +422,23 @@
         color: #eef0f3;
       }
       :where([data-theme="dark"]) .boot {
-        color: #5c9dff;
-      }
-      :where([data-theme="dark"]) .boot-name {
-        color: #eef0f3;
-      }
-      :where([data-theme="dark"]) .boot-about {
-        color: #a3aab7;
+        --bg: #15171c;
+        --canvas: #0b0c0f;
+        --surface: #17191e;
+        --text: #eef0f3;
+        --line: #2c3038;
+        --line-strong: #737a88;
+        --accent: #5c9dff;
+        --sheet-shadow: 0 0.125rem 0.25rem rgb(0 0 0 / 0.5), 0 1rem 3rem rgb(0 0 0 / 0.55);
+        --ph: rgb(255 255 255 / 0.08);
       }
       /* Hindi's font (declared by the script above) after Inter, as in src/styles/tokens.css. */
       :where(:root:lang(hi)) body {
         font-family: "Inter Variable", "Noto Sans Devanagari Variable", system-ui, sans-serif;
       }
       @media (prefers-reduced-motion: reduce) {
-        .boot {
-          animation-duration: 1ms;
+        .boot * {
+          animation: none;
         }
       }
     </style>
@@ -168,8 +459,8 @@
     <script type="module" src="/src/main.tsx"></script>
   </head>
   <body class="is-loading">
-    <div id="root">
-      <div class="boot" aria-busy="true">
+    <div id="root"></div>
+      <div class="boot" role="main" aria-busy="true" aria-label="{{busy.loading}}">
         <h1 class="sr-only">{{app.heading}}</h1>
         <svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true" focusable="false">
           <rect x="7" y="2.5" width="14" height="17" rx="2.5" fill="currentColor" opacity=".28" />
@@ -181,6 +472,21 @@
         </svg>
         <p class="boot-name" aria-hidden="true">{{app.name}}</p>
         <p class="boot-about">{{app.description}}</p>
+        <div class="boot-bar" aria-hidden="true">
+          <i class="boot-brand"></i>
+          <span><i class="boot-txt"></i><i></i></span>
+          <span><i class="boot-btn"></i><i class="boot-btn boot-wide"></i><i></i><i></i></span>
+          <span class="boot-end"><i class="boot-btn boot-pal"></i><i></i><i></i><i></i><i class="boot-btn"></i></span>
+        </div>
+        <div class="boot-left" aria-hidden="true">
+          <div class="boot-pane"><i class="boot-txt"></i><i class="boot-drop"></i><i class="boot-row"></i><i class="boot-row"></i><i class="boot-row"></i></div>
+        </div>
+        <div class="boot-stage" aria-hidden="true">
+          <i class="boot-sheet"></i><i class="boot-dock"></i><i class="boot-dock"></i>
+        </div>
+        <div class="boot-right" aria-hidden="true">
+          <div class="boot-pane"><div class="boot-tabs"><i></i><i></i></div><i class="boot-txt"></i><i class="boot-field"></i><i class="boot-field"></i><i class="boot-txt"></i><i class="boot-field"></i><i class="boot-field"></i></div>
+        </div>
       </div>
       <script>
         // The loading screen in the language the head's script chose.
@@ -191,7 +497,6 @@
           document.querySelector(".boot-about").textContent = texts.description;
         })();
       </script>
-    </div>
     <noscript><div class="noscript">{{noscript}}</div></noscript>
   </body>
 </html>

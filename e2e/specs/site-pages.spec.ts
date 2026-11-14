@@ -154,6 +154,6 @@ test.describe('in the browser', () => {
     expect(index).toMatch(/<p class="boot-about">Acomoda imágenes y páginas de PDF/);
     const { shift } = await load(page, './');
     await expect(page.locator('.boot')).toHaveCount(0);
-    expect(shift).toBeLessThan(0.01);
+    expect(shift).toBe(0);
   });
 });
