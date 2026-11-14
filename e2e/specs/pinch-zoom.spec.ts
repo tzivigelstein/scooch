@@ -213,7 +213,7 @@ test.describe('a pinch and the pieces', () => {
 test('the page zoom stays off the canvas and keeps working over a panel', async ({ app, page }) => {
   await app.addFiles(cards(0, 2));
   expect(await page.locator('#stage').evaluate((el) => getComputedStyle(el).touchAction), 'the canvas: scrolling only').toBe('pan-x pan-y');
-  await app.showTab('sheet');
+  await app.showTab('project');
   const panel = (await page.locator('#props-panel').boundingBox())!;
   const at = { x: panel.x + panel.width / 2, y: panel.y + Math.min(panel.height / 2, 160) };
   const { inPanel, chain } = await page.evaluate(({ x, y }) => {

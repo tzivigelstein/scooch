@@ -136,12 +136,8 @@ export class App {
 
   // ---------- Panels and fields ----------
 
-  /**
-   * Opens the properties panel (on narrow screens) and one of its tabs.
-   * 'sheet' is the Proyecto tab's old name, still used by pinch-zoom.spec.ts.
-   */
-  async showTab(name: 'piece' | 'project' | 'sheet') {
-    const tab = name === 'sheet' ? 'project' : name;
+  /** Opens the properties panel (on narrow screens) and one of its tabs. */
+  async showTab(tab: 'piece' | 'project') {
     const panel = this.page.locator('#props-panel');
     const toggle = this.page.locator('#props-toggle');
     if (!(await panel.isVisible()) && (await toggle.isVisible())) await toggle.click();
