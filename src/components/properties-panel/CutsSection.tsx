@@ -90,7 +90,7 @@ export function CutsSection() {
   const needed = gapForCuts();
   const tight = cuts.mode === 'corners' && gap < needed - 1e-9;
   return (
-    <Section name="cuts" title={t('cuts.title')}>
+    <Section name="cuts" title={t('cuts.title')} preview="cuts">
       <Segmented
         id="cut-mode"
         className="segmented chips cut-modes"

@@ -6,6 +6,7 @@ import { gridPresets } from '../../core/units.js';
 import { clamp } from '../../core/util.ts';
 import { keyLabel, numberLocale, t } from '../../copy/index.ts';
 import { SHORTCUTS, useShortcut } from '../../hooks/shortcuts.ts';
+import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';
 import { unitName, unitSymbol } from '../../services/measure.ts';
 import { getPrefs, setGrid, usePrefs } from '../../state/prefs.ts';
 import { setGridVisible } from '../../state/actions/sheets.ts';
@@ -33,7 +34,7 @@ export function GridSection() {
         data-kbd={keyLabel(SHORTCUTS.grid.aria)}
         data-single=""
       />
-      <fieldset className="field">
+      <fieldset className="field" {...previewAttrs('grid')}>
         <legend className="field-label">{t('props.gridSize')}</legend>
         <div className="grid-size">
           <Segmented

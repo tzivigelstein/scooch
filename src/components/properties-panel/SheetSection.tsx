@@ -6,6 +6,7 @@ import { CUSTOM_MAX, CUSTOM_MIN, PAPER_GROUPS, PAPERS, matchPreset } from '../..
 import type { PaperId } from '../../core/types.ts';
 import { t } from '../../copy/index.ts';
 import { useShortcut } from '../../hooks/shortcuts.ts';
+import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';
 import { sizeText, unitName, unitSymbol } from '../../services/measure.ts';
 import { getDocument, useDocument } from '../../state/document.ts';
 import { usePrefs } from '../../state/prefs.ts';
@@ -142,7 +143,7 @@ export function SheetLength({ name, stacked = false }: { name: 'margin' | 'gap';
   useDocument((s) => s[name]);
   usePrefs((s) => s.unit);
   return (
-    <label className={stacked ? 'field' : 'field inline'}>
+    <label className={stacked ? 'field' : 'field inline'} {...previewAttrs(name)}>
       <span className="field-label">{t(name === 'margin' ? 'props.margin' : 'props.gap')}</span>
       <span className="num-field">
         <LengthField

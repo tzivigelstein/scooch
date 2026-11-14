@@ -33,6 +33,7 @@ import { clamp, num } from '../../core/util.ts';
 import { t, type CopyKey } from '../../copy/index.ts';
 import { MAX_ITEMS } from '../../config.ts';
 import { useNativeEvents } from '../../hooks/useNativeEvents.ts';
+import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';
 import type { ShortcutName } from '../../hooks/shortcuts.ts';
 import { lengthText, sizeText, unitName, unitSymbol } from '../../services/measure.ts';
 import { getAsset } from '../../state/assets.ts';
@@ -107,9 +108,22 @@ const ALIGN_BUTTONS: readonly { mode: AlignMode; key: CopyKey; icon: LucideIcon;
   { mode: 'bottom', key: 'props.alignBottom', icon: AlignEndHorizontal, shortcut: 'alignBottom' },
 ];
 
-function NumField({ prefix, unit, children, className = prefix === undefined ? 'num-field' : 'num-field prefixed' }: { prefix?: ReactNode; unit?: ReactNode; children: ReactNode; className?: string }) {
+function NumField({
+  prefix,
+  unit,
+  children,
+  className = prefix === undefined ? 'num-field' : 'num-field prefixed',
+  preview,
+}: {
+  prefix?: ReactNode;
+  unit?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  /** What the canvas shows while the field is hovered or focused. */
+  preview?: LengthFieldName;
+}) {
   return (
-    <label className={className}>
+    <label className={className} {...(preview && previewAttrs(preview))}>
       {prefix !== undefined && (
         <span className="num-prefix" aria-hidden="true">
           {prefix}
@@ -265,7 +279,7 @@ export function PieceSection() {
         </p>
         <div className="prop-grid">
           {FIELDS.map(({ field, id, prefix, label, tip }) => (
-            <NumField key={id} prefix={prefix} unit={unit}>
+            <NumField key={id} prefix={prefix} unit={unit} preview={field}>
               <LengthField
                 ref={(handle) => {
                   fields.current[field] = handle;
