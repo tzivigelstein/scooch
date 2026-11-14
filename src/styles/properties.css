@@ -587,7 +587,7 @@ input[type="range"] {
 }
 
 /* Cut lines */
-/* Icon over the name: three choices fit any panel width and language. */
+/* Icon over the name: four choices fit any panel width and language. */
 .segmented.cut-modes > .seg > span {
   flex-direction: column;
   height: 3rem;

@@ -10,7 +10,7 @@ import { getPrefs, usePrefs } from '../../src/state/prefs.ts';
 import { resetState } from '../support/state.ts';
 
 const cuts = () => getDocument().cuts;
-const setMode = (mode: 'none' | 'corners' | 'outline') => act(() => setDocument({ cuts: { ...cuts(), mode } }));
+const setMode = (mode: 'none' | 'corners' | 'outline' | 'contour') => act(() => setDocument({ cuts: { ...cuts(), mode } }));
 const byId = (id: string) => document.getElementById(id);
 const field = (name: string) => screen.getByRole('textbox', { name }) as HTMLInputElement;
 const nbsp = (s: string | null | undefined) => String(s ?? '').replace(/ /g, ' ');
@@ -54,12 +54,24 @@ describe('cut line modes', () => {
       ['none', undefined],
       ['corners', undefined],
       ['outline', undefined],
+      ['contour', undefined],
     ]);
     expect((within(group).getByRole('radio', { name: 'Ninguna' }) as HTMLInputElement).checked).toBe(true);
     expect(byId('cut-options')!.hidden).toBe(true);
     fireEvent.click(within(group).getByRole('radio', { name: 'Esquinas' }));
     expect(cuts().mode).toBe('corners');
     expect(byId('cut-options')!.hidden).toBe(false);
+  });
+
+  test('«Silueta» chooses the contour: the cut margin and the stroke stay, the marks’ length and distance hide', () => {
+    setMode('corners');
+    fireEvent.click(screen.getByRole('radio', { name: 'Silueta' }));
+    expect(cuts().mode).toBe('contour');
+    expect(historyDepth().undo).toBe(1);
+    expect(byId('cut-options')!.hidden).toBe(false);
+    expect(screen.queryByRole('textbox', { name: 'Largo de las marcas, en milímetros' })).toBeNull();
+    expect(field('Margen de corte, en milímetros').id).toBe('cut-margin');
+    expect(screen.getByRole('radiogroup', { name: 'Grosor' })).toBeTruthy();
   });
 
   test('outline: the marks’ length and distance hide; the cut margin stays', () => {

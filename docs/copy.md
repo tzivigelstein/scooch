@@ -196,6 +196,7 @@ mantiene gracias a personas como tú», no «Lo mantengo…»).
 | recorte / líneas de corte | la parte de la imagen que se ve / las marcas para cortar las piezas impresas | crop, guías |
 | margen de corte | lo que se deja alrededor de cada imagen para cortarla (negativo: el corte entra en la imagen) | sangrado, bleed |
 | marcas | las líneas en L de las esquinas, con «Esquinas» («Largo de las marcas», «Distancia a la esquina») | guías, crop marks |
+| silueta | las líneas de corte que siguen la forma de una imagen con transparencia, no su rectángulo | contorno (es el rectángulo), troquel |
 | atajos de teclado | combinaciones de teclas | accesos rápidos, teclas rápidas |
 | barra de acciones | la barra flotante de la pieza | menú, toolbar |
 | aviso | la píldora de mensajes (ver «Avisos: visibles o solo anunciados») | notificación, toast |

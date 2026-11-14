@@ -1,9 +1,10 @@
-// «Líneas de corte» (Hojas tab): none, corner marks or the outline, and in
+// «Líneas de corte» (Hojas tab): none, corner marks, the outline or the
+// contour of an image's shape («Silueta»), and in
 // «Más opciones» the marks' length and distance and the stroke (weight,
 // color, dash). Document settings: in the undo history and saved with it;
 // whether «Más opciones» is open is remembered in this browser.
 
-import { Ban, Scan, Square, type LucideIcon } from 'lucide-react';
+import { Ban, Scan, Shapes, Square, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CUT_COLORS, CUT_WEIGHTS, isHexColor } from '../../core/cutmarks.js';
 import { CUT_LIMITS } from '../../core/projectdoc.js';
@@ -23,6 +24,7 @@ const MODES: readonly { value: CutMode; icon: LucideIcon }[] = [
   { value: 'none', icon: Ban },
   { value: 'corners', icon: Scan },
   { value: 'outline', icon: Square },
+  { value: 'contour', icon: Shapes },
 ];
 
 type ColorChoice = 'black' | 'gray' | 'custom';

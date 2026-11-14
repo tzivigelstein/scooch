@@ -74,6 +74,7 @@ The [README](README.md) explains how the parts fit together.
   | acomodar | pack |
   | recorte | crop |
   | líneas de corte / margen de corte | cut lines (`cuts`) / cut margin |
+  | contorno / silueta (modos de las líneas de corte) | `'outline'` / `'contour'` |
   | grilla / imán | grid / snap |
   | proyecto | project |
 
