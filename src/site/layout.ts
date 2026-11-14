@@ -4,7 +4,7 @@
 import { APP_NAME } from '../config.ts';
 import { esc, scriptJson } from './html.ts';
 import { alternates, breadcrumbLd, faqLd, shareTags } from './seo.ts';
-import { SITE_CSS } from './styles.ts';
+import { SITE_CSS, STACKED_CSS } from './styles.ts';
 import type { SiteContext, SitePage } from './types.ts';
 
 /** The texts of the frame, in the page's language. */
@@ -63,7 +63,7 @@ export function renderPage(page: SitePage, ctx: SiteContext, chrome: Chrome) {
     ...(addressed ? shareTags(ctx.url, { title: page.title, description: page.description, path: page.path, imageAlt: chrome.imageAlt }) : []).map(([attr, name, content]) => meta(attr, name, content)),
     addressed ? ldScript(breadcrumbLd(ctx.url, crumbs)) : '',
     page.faq?.length ? ldScript(faqLd(page.faq)) : '',
-    `<style>${SITE_CSS.trim()}</style>`,
+    `<style>${SITE_CSS.trim()}${page.body.includes('table-stack') ? STACKED_CSS.trimEnd() : ''}</style>`,
   ].filter(Boolean);
 
   const guides = ctx.pages.filter((p) => p.lang === page.lang && p.kind === 'guide');

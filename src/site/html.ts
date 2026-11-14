@@ -17,11 +17,10 @@ export interface TableColumn {
 }
 
 /**
- * The widths (rem) under which tables show one block per row: a table with
- * `columns` columns fits a narrower screen the fewer columns it has.
+ * Tables with this many columns or more don't fit a phone: narrower than a
+ * tablet (STACKED_CSS), they show one block per row. Fewer fit from 360 px.
  */
-export const STACK_WIDTHS = [24, 40, 48] as const;
-export const stackWidth = (columns: number) => STACK_WIDTHS[Math.min(Math.max(columns - 4, 0), STACK_WIDTHS.length - 1)];
+export const STACK_COLUMNS = 5;
 
 /** Text outside the tags may break after each «/» (long addresses in a narrow column). */
 const breakAfterSlashes = (html: string) => html.replace(/(^|>)([^<]+)/g, (_, tag: string, text: string) => tag + text.replace(/\//g, '/<wbr>'));
@@ -29,22 +28,24 @@ const breakAfterSlashes = (html: string) => html.replace(/(^|>)([^<]+)/g, (_, ta
 /**
  * A table: a header row, then rows of HTML cells (with `rowHeads`, the first
  * cell of each row is its header). Its box scrolls sideways if it can't fit,
- * also with the keyboard (focusable). Under stackWidth, the CSS shows each
- * row as a block: its first cell, then each value after its column's name
- * (`data-label`). The roles keep it a table for screen readers then: some
- * browsers drop a table's semantics when its display changes.
+ * also with the keyboard (focusable). With STACK_COLUMNS or more, it can show
+ * each row as a block: its first cell, then each value after its column's
+ * name (`data-label`); the roles keep it a table for screen readers then, as
+ * some browsers drop a table's semantics when its display changes.
  */
 export function tableHtml(columns: readonly TableColumn[], rows: readonly (readonly string[])[], { caption = '', rowHeads = false } = {}) {
+  const stack = columns.length >= STACK_COLUMNS;
+  const role = (name: string) => (stack ? ` role="${name}"` : '');
   const num = (i: number) => (columns[i]?.num ? ' class="num"' : '');
-  const head = columns.map((c, i) => `<th scope="col" role="columnheader"${num(i)}>${c.head}</th>`).join('');
+  const head = columns.map((c, i) => `<th scope="col"${role('columnheader')}${num(i)}>${c.head}</th>`).join('');
   const cell = (html: string, i: number) => {
     const content = breakAfterSlashes(html);
-    if (i === 0) return rowHeads ? `<th scope="row" role="rowheader">${content}</th>` : `<td role="cell">${content}</td>`;
-    return `<td role="cell" data-label="${esc(plainText(columns[i].head))}"${num(i)}><span>${content}</span></td>`;
+    if (i === 0) return rowHeads ? `<th scope="row"${role('rowheader')}>${content}</th>` : `<td${role('cell')}>${content}</td>`;
+    return stack ? `<td role="cell" data-label="${esc(plainText(columns[i].head))}"${num(i)}><span>${content}</span></td>` : `<td${num(i)}>${content}</td>`;
   };
-  const body = rows.map((row) => `<tr role="row">${row.map(cell).join('')}</tr>`).join('');
+  const body = rows.map((row) => `<tr${role('row')}>${row.map(cell).join('')}</tr>`).join('');
   const captioned = caption ? `<caption>${esc(caption)}</caption>` : '';
-  return `<div class="table-wrap stack-${stackWidth(columns.length)}" tabindex="0"><table role="table">${captioned}<thead role="rowgroup"><tr role="row">${head}</tr></thead><tbody role="rowgroup">${body}</tbody></table></div>`;
+  return `<div class="table-wrap${stack ? ' table-stack' : ''}" tabindex="0"><table${role('table')}>${captioned}<thead${role('rowgroup')}><tr${role('row')}>${head}</tr></thead><tbody${role('rowgroup')}>${body}</tbody></table></div>`;
 }
 
 /** The text of some HTML: tags removed and the few entities this site writes decoded. */

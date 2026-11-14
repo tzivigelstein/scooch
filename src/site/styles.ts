@@ -1,31 +1,30 @@
 // The content pages' stylesheet, inlined in each page (one request per page,
 // nothing to wait for). Plain CSS that follows the system's color scheme;
 // the colors are the app's (src/styles/tokens.css). System fonts: no font
-// file to download, so no swap and no layout shift.
-
-import { STACK_WIDTHS } from './html.ts';
+// file to download, so no swap and no layout shift. A table too wide for its
+// box scrolls inside it, with a shadow on each side that has more to see
+// (covers that move with the content hide the shadow at its ends).
 
 /**
- * Narrower than `rem`, the tables marked for it (html.ts tableHtml) show one
- * block per row: the first cell as its title, then each value after its
- * column's name. The header row stays for screen readers only, and the names
- * drawn from data-label are left out of what they read (the «/ ""»).
+ * Only on pages with a table too wide for a phone (html.ts tableHtml, which
+ * marks it .table-stack): narrower than a tablet, it shows one block per row,
+ * the first cell as its title, then each value after its column's name. The
+ * header row stays for screen readers only, and they don't read the names
+ * drawn from data-label (the «/ ""»).
  */
-function stacked(rem: number) {
-  const s = `.stack-${rem}`;
-  return `@media (max-width: ${rem - 0.01}rem) {
-  ${s} table, ${s} tbody, ${s} tr, ${s} th, ${s} td { display: block; }
-  ${s} table { display: flex; flex-direction: column; }
-  ${s} caption { order: 1; }
-  ${s} thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  ${s} tr { padding: 0.625rem 0; border-bottom: 1px solid var(--line); }
-  ${s} th, ${s} td { padding: 0.125rem 0; border: 0; text-align: left; white-space: normal; }
-  ${s} tr > :first-child { padding-bottom: 0.25rem; font-weight: 600; }
-  ${s} td[data-label] { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 1rem; }
-  ${s} td.num { grid-template-columns: minmax(0, 1fr) auto; text-align: right; }
-  ${s} td[data-label]::before { content: attr(data-label); content: attr(data-label) / ""; color: var(--muted); text-align: left; }
-}`;
+export const STACKED_CSS = `
+@media (max-width: 47.99rem) {
+  .table-stack :is(tbody, tr, th, td) { display: block; padding: 0.125rem 0; border: 0; text-align: left; white-space: normal; }
+  .table-stack table { display: flex; flex-direction: column; }
+  .table-stack caption { order: 1; }
+  .table-stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .table-stack tr { padding: 0.625rem 0; border-bottom: 1px solid var(--line); }
+  .table-stack tr > :first-child { padding-bottom: 0.25rem; font-weight: 600; }
+  .table-stack td[data-label] { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 1rem; }
+  .table-stack td.num { grid-template-columns: minmax(0, 1fr) auto; text-align: right; }
+  .table-stack td[data-label]::before { content: attr(data-label); content: attr(data-label) / ""; color: var(--muted); text-align: left; }
 }
+`;
 
 export const SITE_CSS = `
 :root {
@@ -115,7 +114,6 @@ li { margin-bottom: 0.375rem; }
 .sheet-svg .margin { fill: none; stroke: #8a93a0; }
 .sheet-svg .photo { fill: #d6e4ff; stroke: #0052cc; }
 figcaption { margin-top: 0.5rem; color: var(--muted); font-size: 0.9375rem; text-align: center; }
-/* A table too wide scrolls inside its box; a shadow shows on each side with more to see (the covers, which move with the content, hide it at the ends). */
 .table-wrap {
   margin: 0 0 1.5rem;
   overflow-x: auto;
@@ -132,7 +130,6 @@ thead th { border-bottom-color: var(--line-strong); font-weight: 600; }
 tbody th { font-weight: 500; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 td.num { white-space: nowrap; }
-${STACK_WIDTHS.map(stacked).join('\n')}
 code { padding: 0.1em 0.3em; border-radius: 0.25rem; background: var(--surface); font-family: var(--mono); font-size: 0.875em; }
 pre { margin: 0 0 1.25rem; padding: 1rem; overflow-x: auto; border-radius: 0.5rem; background: var(--surface); font-size: 0.8125rem; line-height: 1.5; }
 pre code { padding: 0; background: none; font-size: inherit; }
@@ -163,5 +160,6 @@ blockquote { margin: 0 0 1rem; padding: 0.25rem 1rem; border-left: 0.25rem solid
   .calc { padding: 1rem; }
   .calc-form { grid-template-columns: 1fr; }
   .ctas .btn { width: 100%; }
+  th, td { padding-inline: 0.375rem; }
 }
 `;
