@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { MENU_LEVELS, PX_PER_MM_AT_100, ZOOM_LEVELS, ZOOM_MAX, ZOOM_MIN, canStep, clampPercent, fromPercent, stepPercent, toPercent, wheelFactor } from '../../src/core/zoom.js';
+import { MENU_LEVELS, PX_PER_MM_AT_100, ZOOM_LEVELS, ZOOM_MAX, ZOOM_MIN, canStep, clampPercent, fromPercent, pinchSpan, pinchView, stepPercent, toPercent, wheelFactor } from '../../src/core/zoom.js';
 
 describe('zoom percent', () => {
   test('100 % is 96 CSS px per inch', () => {
@@ -72,5 +72,59 @@ describe('wheelFactor', () => {
   test('lines and pages are turned into pixels', () => {
     assert.equal(wheelFactor(1, 1), wheelFactor(20));
     assert.equal(wheelFactor(1, 2), wheelFactor(60));
+  });
+});
+
+describe('pinchView', () => {
+  const at100 = fromPercent(100);
+  const pair = (x0, y0, x1, y1) => [{ x: x0, y: y0 }, { x: x1, y: y1 }];
+  const near = (a, b, what) => assert.ok(Math.abs(a - b) < 1e-9, `${what}: ${a} vs ${b}`);
+
+  test('the midpoint and the distance of two pointers', () => {
+    assert.deepEqual(pinchSpan(pair(10, 20, 40, 60)), { x: 25, y: 40, d: 50 });
+  });
+
+  test('fingers spreading to twice their distance around a still midpoint double the zoom and keep what was under it', () => {
+    const next = pinchView(pair(150, 300, 250, 300), pair(100, 300, 300, 300), { zoom: at100, scroll: { x: 0, y: 400 } });
+    near(toPercent(next.zoom), 200, 'zoom');
+    // Under (200, 300): content 200 px across and 700 px down at 100 %, so 400 and 1400 at 200 %.
+    near(next.scroll.x, 200, 'scroll across');
+    near(next.scroll.y, 1100, 'scroll down');
+  });
+
+  test('fingers closing to half their distance halve the zoom', () => {
+    const next = pinchView(pair(100, 300, 300, 300), pair(150, 300, 250, 300), { zoom: at100, scroll: { x: 200, y: 1100 } });
+    near(toPercent(next.zoom), 50, 'zoom');
+    near(next.scroll.x, 0, 'scroll across');
+    near(next.scroll.y, 400, 'scroll down');
+  });
+
+  test('fingers moving together keep the zoom exactly and scroll the other way', () => {
+    const zoom = fromPercent(116.3);
+    const next = pinchView(pair(100, 200, 180, 260), pair(70, 150, 150, 210), { zoom, scroll: { x: 40, y: 900 } });
+    assert.equal(next.zoom, zoom);
+    near(next.scroll.x, 70, 'scroll across');
+    near(next.scroll.y, 950, 'scroll down');
+  });
+
+  test('the zoom stops at the ends of the range, and what was under the midpoint stays under it', () => {
+    const wide = pinchView(pair(190, 300, 210, 300), pair(0, 300, 400, 300), { zoom: fromPercent(400), scroll: { x: 100, y: 100 } });
+    near(toPercent(wide.zoom), ZOOM_MAX, 'zoom in');
+    near(wide.scroll.x, (100 + 200) * 2 - 200, 'scroll across');
+    const narrow = pinchView(pair(0, 300, 400, 300), pair(190, 300, 210, 300), { zoom: fromPercent(20), scroll: { x: 0, y: 0 } });
+    near(toPercent(narrow.zoom), ZOOM_MIN, 'zoom out');
+    near(narrow.scroll.y, 300 / 2 - 300, 'scroll down');
+  });
+
+  test('from a fitted zoom below the range, closing leaves it and spreading grows it', () => {
+    const fitted = fromPercent(6);
+    assert.equal(pinchView(pair(0, 0, 100, 0), pair(0, 0, 50, 0), { zoom: fitted, scroll: { x: 0, y: 0 } }).zoom, fitted);
+    near(toPercent(pinchView(pair(0, 0, 100, 0), pair(0, 0, 110, 0), { zoom: fitted, scroll: { x: 0, y: 0 } }).zoom), 6.6, 'zoom in');
+  });
+
+  test('fingers on one spot leave the zoom as it is', () => {
+    const zoom = fromPercent(80);
+    assert.equal(pinchView(pair(50, 50, 50, 50), pair(10, 50, 90, 50), { zoom, scroll: { x: 0, y: 0 } }).zoom, zoom);
+    assert.equal(pinchView(pair(10, 50, 90, 50), pair(50, 50, 50, 50), { zoom, scroll: { x: 0, y: 0 } }).zoom, zoom);
   });
 });

@@ -53,3 +53,31 @@ export function wheelFactor(deltaY, deltaMode = 0) {
   const px = deltaMode === 1 ? deltaY * 20 : deltaMode === 2 ? deltaY * 400 : deltaY;
   return Math.exp(-Math.max(-60, Math.min(60, px)) * 0.006);
 }
+
+/** The midpoint of two pointers and the distance between them (px). */
+export function pinchSpan([a, b]) {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(b.x - a.x, b.y - a.y) };
+}
+
+/**
+ * One step of a two-finger pinch over a view drawn at `zoom` px per mm and
+ * scrolled by `scroll` px, so that the content under point p lies
+ * (scroll + p) / zoom mm from the content's origin: the fingers went from
+ * `before` to `after` (two points each, in the same px as p). The zoom grows
+ * or shrinks as the distance between them, kept in the range like any zoom
+ * the person picks (clampPercent from the current one); the scroll keeps the
+ * content that was under their midpoint under their midpoint now. Fingers on
+ * one spot leave the zoom as it is.
+ */
+export function pinchView(before, after, { zoom, scroll }) {
+  const from = pinchSpan(before);
+  const to = pinchSpan(after);
+  const pct = toPercent(zoom);
+  const ratio = from.d > 0 && to.d > 0 ? to.d / from.d : 1;
+  // A distance that changed only by rounding is no zoom: an unchanged zoom stays
+  // bit for bit what it was (moving both fingers together is a pan, not a zoom of the person's).
+  const nextPct = Math.abs(ratio - 1) < 1e-9 ? pct : clampPercent(pct * ratio, pct);
+  const next = nextPct === pct ? zoom : fromPercent(nextPct);
+  const k = next / zoom;
+  return { zoom: next, scroll: { x: (scroll.x + from.x) * k - to.x, y: (scroll.y + from.y) * k - to.y } };
+}
