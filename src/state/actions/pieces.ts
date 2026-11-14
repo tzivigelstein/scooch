@@ -49,6 +49,7 @@ import { flushUi } from '../flush.ts';
 import { lengthText, sizeText } from '../../services/measure.ts';
 import { getDocument, patchItems, setDocument, type Piece } from '../document.ts';
 import { cancelEdit, commit, endEdit, joined } from '../history.ts';
+import { typedPosition } from '../tips.ts';
 import {
   area,
   boxes,
@@ -473,6 +474,7 @@ export function setLengthField(field: LengthField, mm: number, { final = false }
     patchItems(new Map([[item.id, changes]]));
   }
   if (final) endEdit();
+  if (final && item && (field === 'x' || field === 'y')) typedPosition(field, mm, item.id);
 }
 
 /**

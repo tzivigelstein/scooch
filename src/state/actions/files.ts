@@ -11,6 +11,7 @@ import { selectedItem, sheetIndex } from '../selectors.ts';
 import { flushUi } from '../flush.ts';
 import { revealPieces } from '../../components/canvas/viewport.ts';
 import { setView } from '../view.ts';
+import { addedAgain } from '../tips.ts';
 import { say } from './notify.ts';
 import { placeNew } from './layout.ts';
 
@@ -34,6 +35,9 @@ export async function loadFiles(files: readonly File[]) {
   const errors: string[] = [];
   const keys: string[] = [];
   let skipped = 0; // the ones over the piece limit
+  // The files already in the project (by their content), and how many come again.
+  const present = new Set(getDocument().items.map((item) => getAsset(item.asset).hashes?.src));
+  let again = 0;
   setBusy(true, t('busy.loading'));
   for (const [i, file] of files.entries()) {
     if (getDocument().items.length + keys.length >= MAX_ITEMS) {
@@ -42,7 +46,9 @@ export async function loadFiles(files: readonly File[]) {
     }
     setView({ busyText: files.length > 1 ? t('busy.loadingCount', { i: i + 1, n: files.length }) : t('busy.loadingFile', { name: file.name }) });
     try {
-      keys.push(addAsset(await readFile(file)));
+      const asset = await readFile(file);
+      if (asset.hashes && present.has(asset.hashes.src)) again++;
+      keys.push(addAsset(asset));
     } catch (err) {
       console.warn(file.name, err);
       // An unexpected failure (a chunk that didn't load, the browser's canvas) isn't explained in its own words.
@@ -60,6 +66,7 @@ export async function loadFiles(files: readonly File[]) {
   if (skipped) errors.push(t('errors.maxReached', { max: MAX_ITEMS, n: skipped }));
   if (errors.length) say(t('errors.load', { n: failed, list: errors.join(t('errors.loadSeparator')) }), { warn: true });
   if (keys.length) showAdded(getDocument().items.filter((item) => !before.has(item.id)), { quiet: errors.length > 0 });
+  addedAgain(again);
 }
 
 /**

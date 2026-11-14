@@ -52,6 +52,7 @@ import { flushUi } from '../state/flush.ts';
 import { gestureStore } from '../state/gesture.ts';
 import { commit } from '../state/history.ts';
 import { getPrefs } from '../state/prefs.ts';
+import { draggedPiece, used } from '../state/tips.ts';
 import {
   boxes,
   boxOf,
@@ -692,6 +693,7 @@ function endPieceGesture(g: MoveGesture | ResizeGesture, done: boolean, hadFocus
       sheetChanged = sheet !== g.item.sheet;
       patchItems(new Map([[g.item.id, { x, y, scale: g.draft.scale, sheet }]]));
       if (sheetChanged) setView({ sheet });
+      if (g.kind === 'move') draggedPiece(g.item.id, sheet);
     }
   }
   gestureDone(result, sheetChanged, g.item.id, false);
@@ -900,7 +902,10 @@ function onWheel(e: WheelEvent) {
     zoomFrame = 0;
     const next = pendingZoom;
     pendingZoom = null;
-    if (next && !gesture) zoomBy(next.factor, next.at);
+    if (next && !gesture) {
+      zoomBy(next.factor, next.at);
+      used('zoomGesture', 'gesture');
+    }
   });
 }
 
@@ -1012,7 +1017,9 @@ function stepPinch() {
   const p = pinch!;
   const before = p.last;
   let after = p.now;
+  const wasZooming = p.zooming;
   p.zooming ||= Math.abs(pinchSpan(after).d - p.start) > PINCH_THRESHOLD;
+  if (p.zooming && !wasZooming) used('zoomGesture', 'gesture');
   if (!p.zooming) {
     // Only how far their midpoint moved counts: the zoom (and a fitted mode) stays.
     const from = pinchSpan(before);

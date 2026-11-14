@@ -75,6 +75,7 @@ import { getDocument } from './document.ts';
 import { getPrefs, setTheme } from './prefs.ts';
 import { useProject } from './project.ts';
 import { currentSheet, selectedItems } from './selectors.ts';
+import { used, type Route } from './tips.ts';
 import { copySelection, cutSelection, hasClip, pastePieces } from './actions/clipboard.ts';
 import { openPrefs, openProjects, openShortcuts } from './actions/dialogs.ts';
 import { arrangeAll, redoLast, undoLast } from './actions/edit.ts';
@@ -419,6 +420,17 @@ export function command(id: CommandId): Command {
 
 /** Every command, as they are now. */
 export const commands = () => COMMAND_IDS.map(command);
+
+/**
+ * Runs command `id` reached by `route` (a menu, the palette), or `run` (a
+ * value of it the palette chose), and reports it to the usage tips with
+ * whether a shortcut for it shows next to it.
+ */
+export function runCommand(id: CommandId, route: Route, run?: () => void) {
+  const d: Definition = DEFINITIONS[id];
+  (run ?? d.run)?.();
+  used(id, route, { keyed: !!shownShortcut({ keys: d.keys ?? [] }, getPrefs().singleKeys) });
+}
 
 /**
  * The keys shown next to a command and its aria-keyshortcuts: its first

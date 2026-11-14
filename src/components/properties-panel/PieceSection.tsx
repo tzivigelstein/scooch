@@ -69,6 +69,7 @@ import {
   type LengthField as LengthFieldName,
 } from '../../state/actions/pieces.ts';
 import { selectSame } from '../../state/actions/selection.ts';
+import { control, controlRoute, used, type UsageId } from '../../state/tips.ts';
 import { Button, IconButton } from '../ui/Button.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { LengthField, type LengthFieldHandle } from '../ui/LengthField.tsx';
@@ -98,6 +99,8 @@ function resolution(item: Piece) {
 }
 
 const PHOTO_GROUPS = ['print', 'id', 'instant'] as const;
+
+const ALIGN_COMMANDS = { left: 'alignLeft', centerX: 'alignCenterX', right: 'alignRight', top: 'alignTop', centerY: 'alignCenterY', bottom: 'alignBottom' } as const satisfies Record<AlignMode, UsageId>;
 
 const ALIGN_BUTTONS: readonly { mode: AlignMode; key: CopyKey; icon: LucideIcon; shortcut: ShortcutName }[] = [
   { mode: 'left', key: 'props.alignLeft', icon: AlignStartVertical, shortcut: 'alignLeft' },
@@ -438,7 +441,7 @@ export function PieceSection() {
                 note={toSheet ? t('props.alignSheetTip') : t('props.alignSelectionTip')}
                 shortcut={shortcut}
                 disabled={busyOff(busy, `[data-align="${mode}"]`)}
-                onClick={() => !getDocument().busy && alignSelection(mode)}
+                onClick={control(ALIGN_COMMANDS[mode], () => !getDocument().busy && alignSelection(mode))}
               />
             ))}
           </div>
@@ -493,7 +496,12 @@ export function PieceSection() {
               tip={t('props.duplicateTip', { n: dupN })}
               note={t('props.duplicateMax', { n: maxCopies(), max: MAX_ITEMS })}
               disabled={busyOff(busy, '#dup-many')}
-              onClick={() => !getDocument().busy && getDocument().selection.length && duplicate(Math.min(copies.current, Math.max(1, maxCopies())))}
+              onClick={(e) => {
+                if (getDocument().busy || !getDocument().selection.length) return;
+                const times = Math.min(copies.current, Math.max(1, maxCopies()));
+                duplicate(times);
+                used(times > 1 ? 'duplicateMany' : 'duplicate', controlRoute(e));
+              }}
             >
               <span id="dup-many-text">{dupN > 1 ? t('props.duplicateTimes', { n: dupN }) : t('props.duplicate')}</span>
             </Button>
@@ -553,12 +561,12 @@ export function PieceSection() {
               <Icon icon={TriangleAlert} />
               <span id="fill-warning">{summary?.warning ?? t('props.fillWarning')}</span>
             </p>
-            <button type="button" id="fill" className="btn primary block" disabled={busy || !summary?.ok} onClick={() => fillWithCopies()} {...previewAttrs('fill')}>
+            <button type="button" id="fill" className="btn primary block" disabled={busy || !summary?.ok} onClick={control('fill', () => fillWithCopies())} {...previewAttrs('fill')}>
               {t('props.fill')}
             </button>
           </div>
         </details>
-        <Button id="piece-remove" className="text-btn danger remove-btn" icon={Trash2} onClick={(e) => remove({ focus: e.detail === 0 })}>
+        <Button id="piece-remove" className="text-btn danger remove-btn" icon={Trash2} onClick={(e) => (remove({ focus: e.detail === 0 }), used('remove', controlRoute(e)))}>
           <span>{group ? t('props.removeMany', { n }) : t('props.remove')}</span>
         </Button>
       </div>

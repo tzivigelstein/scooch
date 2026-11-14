@@ -8,7 +8,7 @@ import { ListChecks } from 'lucide-react';
 import { t, type CopyKey } from '../../copy/index.ts';
 import { SHORTCUTS } from '../../hooks/shortcuts.ts';
 import { usePrefs } from '../../state/prefs.ts';
-import { command, shownShortcut, type CommandId } from '../../state/commands.ts';
+import { command, runCommand, shownShortcut, type CommandId } from '../../state/commands.ts';
 import { itemsOn, selectedItems, sheetIndex } from '../../state/selectors.ts';
 import { setSelection } from '../../state/actions/selection.ts';
 import { announce } from '../feedback/announcer.ts';
@@ -23,7 +23,7 @@ export default function ContextMenu() {
   const entry = (id: string, name: CommandId, { label, separator }: { label?: CopyKey; separator?: boolean } = {}): MenuEntry => {
     const c = command(name);
     const keys = shownShortcut(c, singleKeys);
-    return { id, label: label ? t(label) : c.label, icon: c.icon, separator, keys: keys?.kbd, aria: keys?.aria, disabled: c.disabled, run: c.run! };
+    return { id, label: label ? t(label) : c.label, icon: c.icon, separator, keys: keys?.kbd, aria: keys?.aria, disabled: c.disabled, run: () => runCommand(name, 'menu') };
   };
   let label: string;
   let entries: MenuEntry[];

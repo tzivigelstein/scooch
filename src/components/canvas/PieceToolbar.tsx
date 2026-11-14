@@ -8,11 +8,13 @@ import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';
 import { getAsset } from '../../state/assets.ts';
 import { useDocument } from '../../state/document.ts';
 import { duplicate, remove, rotate } from '../../state/actions/pieces.ts';
+import { controlRoute, used, type UsageId } from '../../state/tips.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { startCrop } from './cropMode.ts';
 
 const ACTIONS = ['rotate-left', 'rotate-right', 'crop', 'duplicate', 'remove'] as const;
 type Action = (typeof ACTIONS)[number];
+const COMMANDS: Record<Action, UsageId> = { 'rotate-left': 'rotateLeft', 'rotate-right': 'rotateRight', crop: 'crop', duplicate: 'duplicate', remove: 'remove' };
 // Cropping works on one piece: with several, the toolbar doesn't offer it.
 const GROUP_ACTIONS = ACTIONS.filter((action) => action !== 'crop');
 
@@ -26,13 +28,16 @@ export function PieceToolbar() {
   const primary = items.find((item) => item.id === selection.at(-1));
   const label = n > 1 ? t('piecebar.labelGroup', { n }) : primary ? t('piecebar.labelFor', { name: getAsset(primary.asset).name }) : t('piecebar.label');
 
-  const run = (action: Action, e: MouseEvent) => {
-    const viaKeyboard = e.detail === 0;
+  const act = (action: Action, viaKeyboard: boolean) => {
     if (action === 'remove') return remove({ focus: viaKeyboard });
     if (action === 'rotate-left') return rotate(-1);
     if (action === 'rotate-right') return rotate(1);
     if (action === 'crop') return startCrop();
     duplicate(1);
+  };
+  const run = (action: Action, e: MouseEvent) => {
+    act(action, e.detail === 0);
+    used(COMMANDS[action], controlRoute(e));
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {

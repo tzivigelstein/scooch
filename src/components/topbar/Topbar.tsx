@@ -10,6 +10,7 @@ import { openPalette, openPrefs, openShortcuts } from '../../state/actions/dialo
 import { arrangeAll, redoLast, undoLast } from '../../state/actions/edit.ts';
 import { loadFiles, openFiles } from '../../state/actions/files.ts';
 import { exportPdf, printPdf } from '../../state/actions/output.ts';
+import { control } from '../../state/tips.ts';
 import { Button, IconButton } from '../ui/Button.tsx';
 import { ProjectBar } from './ProjectBar.tsx';
 
@@ -55,17 +56,17 @@ export function Topbar() {
         <Button id="add" className="btn ghost" icon={ImagePlus} tip={t('bar.addTip')} shortcut="add" onClick={openFiles}>
           <span className="btn-label">{t('bar.add')}</span>
         </Button>
-        <Button id="arrange" className="btn accent" icon={LayoutDashboard} tip={t('bar.arrangeTip')} shortcut="arrange" disabled={off('arrange', busy || empty)} onClick={arrangeAll}>
+        <Button id="arrange" className="btn accent" icon={LayoutDashboard} tip={t('bar.arrangeTip')} shortcut="arrange" disabled={off('arrange', busy || empty)} onClick={control('arrange', arrangeAll)}>
           <span className="btn-label">{t('bar.arrange')}</span>
         </Button>
         <span className="tool-sep" aria-hidden="true" />
-        <IconButton id="undo" className="tool" icon={Undo2} label={t('bar.undo')} tip={t('bar.undo')} shortcut="undo" disabled={off('undo', busy || !canUndo)} onClick={undoLast} />
-        <IconButton id="redo" className="tool" icon={Redo2} label={t('bar.redo')} tip={t('bar.redo')} shortcut="redo" disabled={off('redo', busy || !canRedo)} onClick={redoLast} />
+        <IconButton id="undo" className="tool" icon={Undo2} label={t('bar.undo')} tip={t('bar.undo')} shortcut="undo" disabled={off('undo', busy || !canUndo)} onClick={control('undo', undoLast)} />
+        <IconButton id="redo" className="tool" icon={Redo2} label={t('bar.redo')} tip={t('bar.redo')} shortcut="redo" disabled={off('redo', busy || !canRedo)} onClick={control('redo', redoLast)} />
       </div>
 
       <div className="bar-group end">
         {/* The way to the palette: its keys show (not only in the tooltip) so it can be found. */}
-        <Button id="palette-open" className="tool palette-open" aria-haspopup="dialog" icon={Search} tip={t('palette.title')} shortcut="palette" onClick={openPalette}>
+        <Button id="palette-open" className="tool palette-open" aria-haspopup="dialog" icon={Search} tip={t('palette.title')} shortcut="palette" onClick={control('palette', openPalette)}>
           <span className="sr-only">{t('palette.title')}</span>
           <kbd className="palette-open-keys" aria-hidden="true">
             {keyLabel(SHORTCUTS.palette.kbd)}

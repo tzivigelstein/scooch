@@ -12,7 +12,7 @@ import { prepare, type FuzzyRanges, type FuzzyTarget } from '../../core/fuzzy.js
 import { keyLabel, t } from '../../copy/index.ts';
 import { flushUi } from '../../state/flush.ts';
 import { usePrefs } from '../../state/prefs.ts';
-import { commands, isCommandId, type Choice, type Command } from '../../state/commands.ts';
+import { commands, isCommandId, runCommand, type Choice, type Command } from '../../state/commands.ts';
 import { closeDialog } from '../dialogs/dialogs.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { Icon } from '../ui/Icon.tsx';
@@ -101,11 +101,12 @@ export default function CommandPalette() {
     }
     const run = c?.run ?? option.choice?.run;
     if (!run) return;
-    rememberCommand(step?.command.id ?? c!.id);
+    const id = step?.command.id ?? c!.id;
+    rememberCommand(id);
     // Closed first, so the focus is back where it was before the command moves it (or opens something).
     closeDialog('palette');
     flushUi();
-    run();
+    runCommand(id, 'palette', run);
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {

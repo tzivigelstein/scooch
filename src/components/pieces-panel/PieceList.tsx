@@ -23,6 +23,7 @@ import { printResolution } from '../../state/actions/layout.ts';
 import { remove } from '../../state/actions/pieces.ts';
 import { focusPiece, select, selectRange, toggleInSelection } from '../../state/actions/selection.ts';
 import { flushUi } from '../../state/flush.ts';
+import { used } from '../../state/tips.ts';
 import { revealPiece, revealPieces } from '../canvas/viewport.ts';
 import { thumbView } from '../canvas/pieceView.ts';
 import { Icon } from '../ui/Icon.tsx';
@@ -222,7 +223,10 @@ export function PieceList() {
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault();
       e.stopPropagation();
-      if (!e.repeat) remove({ focus: true, inList: true });
+      if (!e.repeat) {
+        remove({ focus: true, inList: true });
+        used('remove', 'shortcut');
+      }
     }
   };
 

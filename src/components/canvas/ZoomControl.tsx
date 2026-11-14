@@ -6,6 +6,7 @@ import { ZoomIn, ZoomOut } from 'lucide-react';
 import { Suspense } from 'react';
 import { canStep } from '../../core/zoom.js';
 import { t } from '../../copy/index.ts';
+import { control } from '../../state/tips.ts';
 import { useView } from '../../state/view.ts';
 import { whenLoaded } from '../lazy.ts';
 import { IconButton } from '../ui/Button.tsx';
@@ -19,7 +20,7 @@ export function ZoomControl() {
   const shown = Math.round(pct);
   return (
     <div className="zoom-control" role="group" aria-label={t('zoom.control')}>
-      <IconButton id="zoom-out" icon={ZoomOut} label={t('zoom.zoomOut')} tip={t('zoom.zoomOut')} shortcut="zoomOut" aria-disabled={!canStep(pct, -1) || undefined} onClick={() => stepZoom(-1)} />
+      <IconButton id="zoom-out" icon={ZoomOut} label={t('zoom.zoomOut')} tip={t('zoom.zoomOut')} shortcut="zoomOut" aria-disabled={!canStep(pct, -1) || undefined} onClick={control('zoomOut', () => stepZoom(-1))} />
       <button
         type="button"
         id="zoom-level"
@@ -40,7 +41,7 @@ export function ZoomControl() {
       >
         {t('zoom.level', { pct: shown })}
       </button>
-      <IconButton id="zoom-in" icon={ZoomIn} label={t('zoom.zoomIn')} tip={t('zoom.zoomIn')} shortcut="zoomIn" aria-disabled={!canStep(pct, 1) || undefined} onClick={() => stepZoom(1)} />
+      <IconButton id="zoom-in" icon={ZoomIn} label={t('zoom.zoomIn')} tip={t('zoom.zoomIn')} shortcut="zoomIn" aria-disabled={!canStep(pct, 1) || undefined} onClick={control('zoomIn', () => stepZoom(1))} />
       {open && (
         <Suspense fallback={null}>
           <ZoomMenuContent />

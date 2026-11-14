@@ -40,12 +40,15 @@ import {
 } from '../state/actions/pieces.ts';
 import { select, selectAll, selectSame, toggleInSelection } from '../state/actions/selection.ts';
 import { gotoSheet, sendToSheet, setGridVisible, setOrientation } from '../state/actions/sheets.ts';
+import { used, type UsageId } from '../state/tips.ts';
 import { isTyping } from './dom.ts';
 
 const NUDGES: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 // Alt+Shift + key (by position, so it works with any layout and on a Mac).
 const ALIGNS: Record<string, AlignMode> = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'top', ArrowDown: 'bottom', KeyH: 'centerX', KeyV: 'centerY' };
 const DISTRIBUTES: Record<string, 'x' | 'y'> = { KeyX: 'x', KeyY: 'y' };
+// The commands of those aligns (reported to the usage tips).
+const ALIGN_COMMANDS: Record<AlignMode, UsageId> = { left: 'alignLeft', right: 'alignRight', top: 'alignTop', bottom: 'alignBottom', centerX: 'alignCenterX', centerY: 'alignCenterY' };
 // Single keys that act on the selection (see the piece keys below).
 const PIECE_KEYS = new Set(['r', 'd', 'f', 'c', ']', 'i', 'k']);
 const GROWS = new Set(['+', '=', '*']);
@@ -157,7 +160,10 @@ function onKeyDown(e: KeyboardEvent) {
       void openProjects();
     } else if (lower === 'k' && !e.shiftKey) {
       // The command palette, and nothing else.
-      if (!e.repeat) openPalette();
+      if (!e.repeat) {
+        openPalette();
+        used('palette', 'shortcut');
+      }
     } else if (lower === 'e' || (lower === 's' && e.shiftKey)) {
       void exportPdf();
     } else if (lower === 's') {
@@ -170,16 +176,22 @@ function onKeyDown(e: KeyboardEvent) {
       e.preventDefault();
       if (e.shiftKey) redoLast();
       else undoLast();
+      used(e.shiftKey ? 'redo' : 'undo', 'shortcut');
     } else if (!typing && lower === 'y') {
       e.preventDefault();
       redoLast();
+      used('redo', 'shortcut');
     } else if (ZOOM_KEYS[key] && (isPointerOnCanvas() || !!target.closest('#canvas')) && !typing) {
       // With the pointer or the focus on the canvas, Ctrl/⌘ + / − zoom the sheets, not the page.
       e.preventDefault();
       stepZoom(ZOOM_KEYS[key]);
+      used(ZOOM_KEYS[key] > 0 ? 'zoomIn' : 'zoomOut', 'shortcut');
     } else if (!typing && lower === 'd' && !e.shiftKey) {
       if (target.classList.contains('piece')) adopt(target);
-      if (hasSelection() && !e.repeat) duplicate(1, { focus: true });
+      if (hasSelection() && !e.repeat) {
+        duplicate(1, { focus: true });
+        used('duplicate', 'shortcut');
+      }
     } else if (!typing && lower === 'a' && !e.shiftKey) {
       // Every piece of the current sheet; again, every piece of every sheet.
       e.preventDefault();
@@ -208,8 +220,10 @@ function onKeyDown(e: KeyboardEvent) {
     e.preventDefault();
     if (e.repeat) return;
     if (onPiece) adopt(target);
-    if (ALIGNS[e.code]) alignSelection(ALIGNS[e.code]);
-    else distributeSelection(DISTRIBUTES[e.code]);
+    if (ALIGNS[e.code]) {
+      alignSelection(ALIGNS[e.code]);
+      used(ALIGN_COMMANDS[ALIGNS[e.code]], 'shortcut');
+    } else distributeSelection(DISTRIBUTES[e.code]);
     return;
   }
 
@@ -238,7 +252,10 @@ function onKeyDown(e: KeyboardEvent) {
   if (onPiece && (key === 'Delete' || key === 'Backspace')) {
     e.preventDefault();
     adopt(target);
-    if (!e.repeat) remove({ focus: true });
+    if (!e.repeat) {
+      remove({ focus: true });
+      used('remove', 'shortcut');
+    }
     return;
   }
   // Space held with the pointer over the canvas: dragging pans the sheets. On
@@ -282,7 +299,10 @@ function onKeyDown(e: KeyboardEvent) {
     return;
   }
   const global: Record<string, () => void> = {
-    a: arrangeAll,
+    a: () => {
+      arrangeAll();
+      used('arrange', 'shortcut');
+    },
     o: openFiles,
     h: () => focusPropsTab('project'),
     m: () => {
@@ -308,8 +328,14 @@ function onKeyDown(e: KeyboardEvent) {
     return;
   }
   const pieceKeys: Record<string, () => void> = {
-    r: () => rotate(e.shiftKey ? -1 : 1, { focus: true }),
-    d: () => duplicate(1, { focus: true }),
+    r: () => {
+      rotate(e.shiftKey ? -1 : 1, { focus: true });
+      used(e.shiftKey ? 'rotateLeft' : 'rotateRight', 'shortcut');
+    },
+    d: () => {
+      duplicate(1, { focus: true });
+      used('duplicate', 'shortcut');
+    },
     i: selectSame,
     f: () => fit({ focus: true }),
     c: () => center({ focus: true }),
