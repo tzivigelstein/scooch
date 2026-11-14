@@ -221,6 +221,9 @@ const es = {
     y: 'Y',
     yLabel: 'Y: distancia desde el borde superior, en {unit}',
     yTip: 'Y: distancia desde el borde superior',
+    // Inside the compact fields, before the value (like X and Y): «An» and «Al»
+    widthPrefix: 'An',
+    heightPrefix: 'Al',
     widthLabel: 'Ancho, en {unit}',
     widthTip: 'Ancho',
     heightLabel: 'Alto, en {unit}',

@@ -85,3 +85,13 @@ describe('quick actions', () => {
     expect($<HTMLButtonElement>('fill').disabled).toBe(false);
   });
 });
+
+describe('the compact fields', () => {
+  test('one rule for their marks: X, Y, An and Al as letters, and the scale only with its %', () => {
+    show([piece(1, photo, 30, 30)]);
+    const prefix = (id: string) => $(id).closest('label')!.querySelector('.num-prefix')?.textContent ?? null;
+    expect(['pos-x', 'pos-y', 'width', 'height', 'scale'].map(prefix)).toEqual(['X', 'Y', 'An', 'Al', null]);
+    expect($('scale').closest('label')!.querySelector('.num-unit')!.textContent).toBe('%');
+    expect(document.querySelectorAll('#piece-props .num-prefix svg')).toHaveLength(0);
+  });
+});

@@ -20,10 +20,7 @@ import {
   Images,
   Info,
   Maximize2,
-  MoveHorizontal,
-  MoveVertical,
   RotateCw,
-  Scaling,
   Trash2,
   TriangleAlert,
   type LucideIcon,
@@ -110,12 +107,14 @@ const ALIGN_BUTTONS: readonly { mode: AlignMode; key: CopyKey; icon: LucideIcon;
   { mode: 'bottom', key: 'props.alignBottom', icon: AlignEndHorizontal, shortcut: 'alignBottom' },
 ];
 
-function NumField({ prefix, unit, children, className = 'num-field prefixed' }: { prefix: ReactNode; unit?: ReactNode; children: ReactNode; className?: string }) {
+function NumField({ prefix, unit, children, className = prefix === undefined ? 'num-field' : 'num-field prefixed' }: { prefix?: ReactNode; unit?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <label className={className}>
-      <span className="num-prefix" aria-hidden="true">
-        {prefix}
-      </span>
+      {prefix !== undefined && (
+        <span className="num-prefix" aria-hidden="true">
+          {prefix}
+        </span>
+      )}
       {children}
       {unit !== undefined && (
         <span className="num-unit" aria-hidden="true">
@@ -129,8 +128,8 @@ function NumField({ prefix, unit, children, className = 'num-field prefixed' }: 
 const FIELDS: readonly { field: LengthFieldName; id: string; prefix: ReactNode; label: CopyKey; tip: CopyKey }[] = [
   { field: 'x', id: 'pos-x', prefix: t('props.x'), label: 'props.xLabel', tip: 'props.xTip' },
   { field: 'y', id: 'pos-y', prefix: t('props.y'), label: 'props.yLabel', tip: 'props.yTip' },
-  { field: 'width', id: 'width', prefix: <Icon icon={MoveHorizontal} />, label: 'props.widthLabel', tip: 'props.widthTip' },
-  { field: 'height', id: 'height', prefix: <Icon icon={MoveVertical} />, label: 'props.heightLabel', tip: 'props.heightTip' },
+  { field: 'width', id: 'width', prefix: t('props.widthPrefix'), label: 'props.widthLabel', tip: 'props.widthTip' },
+  { field: 'height', id: 'height', prefix: t('props.heightPrefix'), label: 'props.heightLabel', tip: 'props.heightTip' },
 ];
 
 /** The displayed values of a selection (or of a gesture's live copies). */
@@ -286,7 +285,7 @@ export function PieceSection() {
           ))}
         </div>
         <div className="scale-row">
-          <NumField prefix={<Icon icon={Scaling} />} unit={t('units.percent')}>
+          <NumField unit={t('units.percent')}>
             <NumberField
               inputRef={scaleInput}
               id="scale"

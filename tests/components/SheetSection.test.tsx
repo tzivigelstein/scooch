@@ -106,6 +106,8 @@ describe('the custom paper fields', () => {
     choose('custom');
     expect(screen.getByRole('textbox', { name: 'Ancho de la hoja, en milímetros' }).id).toBe('paper-w');
     expect(screen.getByRole('textbox', { name: 'Alto de la hoja, en milímetros' }).id).toBe('paper-h');
+    // Marked with letters, like the piece's width and height.
+    expect([byId('paper-w'), byId('paper-h')].map((f) => f!.closest('label')!.querySelector('.num-prefix')!.textContent)).toEqual(['An', 'Al']);
   });
 
   test('a valid size matching no preset: no note', () => {
