@@ -75,7 +75,7 @@ const Row = memo(function Row({ item, selected, tabStop, cut, pastMargin, overla
           return (
             <span key={badge.key} className="row-badge" data-kind={badge.key} data-tip={text}>
               <Icon icon={badge.icon} />
-              <span className="sr-only">{`, ${text.toLowerCase()}`}</span>
+              <span className="sr-only">{t('pieces.badgeSpoken', { text })}</span>
             </span>
           );
         })}

@@ -12,9 +12,9 @@ import { dims } from '../../state/selectors.ts';
 /** Accessible name: file, size, position and rotation. */
 export function pieceLabel(item: Piece, asset: AppAsset) {
   const [w, h] = dims(item);
-  const page = asset.kind === 'pdf' && asset.pages > 1 ? t('piece.a11yPage', { page: asset.page }) : '';
-  const turned = item.r ? t('piece.a11yTurned', { deg: item.r }) : '';
-  return t('piece.a11y', { name: asset.name, page, size: sizeText(w, h), x: lengthText(item.x), y: lengthText(item.y), turned });
+  const where = { name: asset.name, size: sizeText(w, h), x: lengthText(item.x), y: lengthText(item.y) };
+  const label = asset.kind === 'pdf' && asset.pages > 1 ? t('piece.a11yPage', { ...where, page: asset.page }) : t('piece.a11y', where);
+  return item.r ? t('piece.a11yTurned', { label, deg: item.r }) : label;
 }
 
 export interface PieceView {
@@ -33,7 +33,7 @@ export function pieceView(item: Piece, asset: AppAsset, zoom: number, marked: bo
   return {
     box: { left: `${(offset?.left ?? 0) + p.left}px`, top: `${(offset?.top ?? 0) + p.top}px`, width: `${p.width}px`, height: `${p.height}px` },
     img: { width: `${p.img.width}px`, height: `${p.img.height}px`, transform: p.img.transform },
-    label: pieceLabel(item, asset) + (marked ? t('piece.a11ySelected') : ''),
+    label: marked ? t('piece.a11ySelected', { label: pieceLabel(item, asset) }) : pieceLabel(item, asset),
   };
 }
 

@@ -54,7 +54,8 @@ describe('choosing the unit in Preferences', () => {
     render(<PrefsDialog />);
     const radios = screen.getAllByRole('radio') as HTMLInputElement[];
     expect(radios.map((r) => r.value)).toEqual(['mm', 'cm', 'in']);
-    expect(radios.map((r) => plain(r.closest('label')!.textContent))).toEqual(['mm, milímetros', 'cm, centímetros', 'in, pulgadas']);
+    expect(radios.map((r) => r.getAttribute('aria-label'))).toEqual(['mm, milímetros', 'cm, centímetros', 'in, pulgadas']);
+    expect(radios.map((r) => plain(r.closest('label')!.textContent))).toEqual(['mm', 'cm', 'in']);
     expect(radios.some((r) => r.hasAttribute('aria-describedby'))).toBe(false);
     expect(radios.find((r) => r.checked)!.value).toBe('mm');
   });

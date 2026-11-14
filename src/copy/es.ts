@@ -37,8 +37,6 @@ const es = {
     scale: '{n} %',
     // Leaving a length field with something that can't be read
     invalid: '«{text}» no es una medida válida. Se mantiene {value}.',
-    // The same when it can be read but isn't valid ({text} already ends with a period)
-    invalidValue: '{text} Se mantiene {value}.',
     // While typing something that can't become a length
     unreadable: 'Escribe una medida con números, por ejemplo 2,5 o 1/2 in',
     // Next to a field while what is typed is out of its range ({value} already formatted)
@@ -105,6 +103,8 @@ const es = {
     pastedName: 'Imagen pegada',
     rowSize: '{size}',
     rowSizePage: '{size} · pág. {page}',
+    // A row's badges: their tooltips, and after the row's text for screen readers ({text}: the badge's)
+    badgeSpoken: '. {text}',
     badges: {
       cut: 'Se sale de la hoja',
       pastMargin: 'Pasa el margen',
@@ -171,14 +171,15 @@ const es = {
     },
   },
 
-  // Accessible name of each piece on the sheet
+  // Accessible name of each piece on the sheet («rotada», «seleccionada»: of the piece, feminine)
   piece: {
     roleDescription: 'pieza',
-    a11y: '{name}{page}, {size}, a {x} del borde izquierdo y {y} del superior{turned}',
-    a11yPage: ' (página {page})',
-    a11yTurned: ', rotada {deg}°',
-    // With several selected (or a pinned selection), at the end of each selected one's name
-    a11ySelected: ', seleccionada',
+    a11y: '{name}, {size}, a {x} del borde izquierdo y {y} del superior',
+    a11yPage: '{name} (página {page}), {size}, a {x} del borde izquierdo y {y} del superior',
+    // {label}: the name above
+    a11yTurned: '{label}, rotada {deg}°',
+    // With several selected (or a pinned selection), each selected one's name
+    a11ySelected: '{label}, seleccionada',
   },
 
   // Floating toolbar of the selected piece
@@ -298,10 +299,10 @@ const es = {
     portrait: 'Vertical',
     landscape: 'Horizontal',
     margin: 'Margen',
-    marginUnit: ', en {unit}',
+    marginLabel: 'Margen, en {unit}',
     arrange: 'Distribución',
     gap: 'Separación',
-    gapUnit: ' entre piezas, en {unit}',
+    gapLabel: 'Separación entre piezas, en {unit}',
     rotate: 'Rotación automática',
     overlap: 'Permitir superposición',
     grid: 'Grilla',
@@ -339,8 +340,9 @@ const es = {
     // Crop mode
     frameRole: 'recorte',
     frameLabel: 'Recorte de {name}: {size}',
-    help: 'Arrastra la imagen o usa las flechas para moverla (Shift: más rápido). Rueda, más y menos: acercar o alejar. Arrastra los bordes o usa Alt+flechas para cambiar el tamaño del recorte{locked}. Enter: aplicar. Esc: cancelar.',
-    helpLocked: ', que mantiene la proporción de {name}',
+    help: 'Arrastra la imagen o usa las flechas para moverla (Shift: más rápido). Rueda, más y menos: acercar o alejar. Arrastra los bordes o usa Alt+flechas para cambiar el tamaño del recorte. Enter: aplicar. Esc: cancelar.',
+    // With a standard photo size ({name}: crop.names)
+    helpLocked: 'Arrastra la imagen o usa las flechas para moverla (Shift: más rápido). Rueda, más y menos: acercar o alejar. Arrastra los bordes o usa Alt+flechas para cambiar el tamaño del recorte, que mantiene la proporción de {name}. Enter: aplicar. Esc: cancelar.',
     bar: 'Recorte',
     zoomIn: 'Acercar la imagen',
     zoomOut: 'Alejar la imagen',
@@ -443,8 +445,9 @@ const es = {
       other: '{n} piezas pasan el margen y puede que la impresora no imprima esos bordes',
     },
     overlap: 'Hay piezas superpuestas',
-    // With several sheets: «Hoja 2: hay piezas superpuestas», «Hojas 1 y 3: 2 piezas se salen…»
-    overlapIn: 'hay piezas superpuestas',
+    // With several sheets ({list}: «1 y 3»)
+    overlapIn: { one: 'Hoja {list}: hay piezas superpuestas', other: 'Hojas {list}: hay piezas superpuestas' },
+    // The sheets a problem is on, before it ({text}: notices.cut or notices.pastMargin): «Hojas 1 y 3: 2 piezas se salen…»
     inSheets: { one: 'Hoja {list}: {text}', other: 'Hojas {list}: {text}' },
     arranged: { one: 'Se acomodó 1 pieza', other: 'Se acomodaron {n} piezas' },
     arrangedSheets: { one: 'Se acomodó 1 pieza en {sheets} hojas', other: 'Se acomodaron {n} piezas en {sheets} hojas' },
@@ -458,24 +461,23 @@ const es = {
       one: 'Se acomodó 1 pieza, reducida al {pct} %',
       other: 'Se acomodaron {n} piezas, reducidas al {pct} %',
     },
-    noFit: {
-      one: 'La pieza no entra con su tamaño actual',
-      other: 'Las piezas no entran con su tamaño actual',
-    },
-    shrinkAction: 'Reducir al {pct} % y acomodar',
     filled: { one: 'Se rellenó la hoja con 1 copia', other: 'Se rellenó la hoja con {n} copias' },
     filledSheet: { one: 'Se rellenó la hoja {i} con 1 copia', other: 'Se rellenó la hoja {i} con {n} copias' },
     duplicatedTimesSheets: { one: 'Se agregó 1 copia en {sheets} hojas', other: 'Se agregaron {n} copias en {sheets} hojas' },
-    // A group operation that wasn't applied ({action}: groupActions)
-    wouldOverlap: 'No se puede {action}: las piezas se superpondrían',
-    wouldLeave: 'No se puede {action}: alguna pieza quedaría fuera de la hoja',
-    groupActions: {
-      align: 'alinear',
-      distribute: 'distribuir',
-      rotate: 'rotar',
-      scale: 'cambiar el tamaño',
-      move: 'mover',
-      size: 'aplicar ese tamaño',
+    // A group operation that wasn't applied, by operation
+    wouldOverlap: {
+      align: 'No se puede alinear: las piezas se superpondrían',
+      distribute: 'No se puede distribuir: las piezas se superpondrían',
+      rotate: 'No se puede rotar: las piezas se superpondrían',
+      scale: 'No se puede cambiar el tamaño: las piezas se superpondrían',
+      move: 'No se puede mover: las piezas se superpondrían',
+    },
+    wouldLeave: {
+      align: 'No se puede alinear: alguna pieza quedaría fuera de la hoja',
+      distribute: 'No se puede distribuir: alguna pieza quedaría fuera de la hoja',
+      rotate: 'No se puede rotar: alguna pieza quedaría fuera de la hoja',
+      scale: 'No se puede cambiar el tamaño: alguna pieza quedaría fuera de la hoja',
+      move: 'No se puede mover: alguna pieza quedaría fuera de la hoja',
     },
     scaleLimit: 'No se puede cambiar el tamaño: la escala de cada pieza va de 1 % a 1000 %',
     // Standard photo sizes ({name}: crop.names; {size} already formatted)
@@ -558,7 +560,6 @@ const es = {
     page: 'No se pudo cargar la página {page}. Inténtalo de nuevo.',
     pdf: 'No se pudo crear el PDF. Inténtalo de nuevo.',
     marginTooBig: 'El margen no deja espacio para las piezas. Reduce el margen.',
-    neverFits: 'Las piezas no entran ni reduciéndolas. Quita algunas o elige una hoja más grande.',
     shrinkFailed: 'No se pudieron acomodar las piezas ni reduciéndolas. Quita algunas e inténtalo de nuevo.',
     // Per file (they follow «name: »)
     file: {
@@ -636,9 +637,8 @@ const es = {
     selectedAll: { one: 'Se seleccionó la única pieza', other: 'Se seleccionaron las {n} piezas de todas las hojas' },
     noPieces: 'No hay piezas para seleccionar',
     singleOnly: 'Disponible con una sola pieza seleccionada',
-    groupRotated: { one: 'Se rotó 1 pieza 90° {dir}', other: 'Se rotaron {n} piezas 90° {dir}' },
-    toRight: 'a la derecha',
-    toLeft: 'a la izquierda',
+    groupRotatedRight: { one: 'Se rotó 1 pieza 90° a la derecha', other: 'Se rotaron {n} piezas 90° a la derecha' },
+    groupRotatedLeft: { one: 'Se rotó 1 pieza 90° a la izquierda', other: 'Se rotaron {n} piezas 90° a la izquierda' },
     groupScaled: { one: 'Se cambió el tamaño de 1 pieza: {size}', other: 'Se cambió el tamaño de {n} piezas: {size}' },
     noRoomGroup: 'No hay más espacio para agrandarlas',
     noSmallerGroup: 'No se pueden reducir más',
@@ -648,21 +648,34 @@ const es = {
       other: 'Se agregaron {n} copias. Hay {total} piezas.',
     },
     duplicatedTimes: { one: 'Se agregó 1 copia en la hoja {i}', other: 'Se agregaron {n} copias en la hoja {i}' },
-    alignHow: {
-      left: 'a la izquierda',
-      centerX: 'al centro en horizontal',
-      right: 'a la derecha',
-      top: 'arriba',
-      centerY: 'al centro en vertical',
-      bottom: 'abajo',
+    // Against the selection's box, by mode
+    aligned: {
+      left: { one: 'Se alineó 1 pieza a la izquierda', other: 'Se alinearon {n} piezas a la izquierda' },
+      centerX: { one: 'Se alineó 1 pieza al centro en horizontal', other: 'Se alinearon {n} piezas al centro en horizontal' },
+      right: { one: 'Se alineó 1 pieza a la derecha', other: 'Se alinearon {n} piezas a la derecha' },
+      top: { one: 'Se alineó 1 pieza arriba', other: 'Se alinearon {n} piezas arriba' },
+      centerY: { one: 'Se alineó 1 pieza al centro en vertical', other: 'Se alinearon {n} piezas al centro en vertical' },
+      bottom: { one: 'Se alineó 1 pieza abajo', other: 'Se alinearon {n} piezas abajo' },
     },
-    aligned: { one: 'Se alineó 1 pieza {how}', other: 'Se alinearon {n} piezas {how}' },
-    alignedSheet: { one: 'Se alineó 1 pieza {how} del área útil', other: 'Se alinearon {n} piezas {how} del área útil' },
+    // Against the printable area, by mode
+    alignedSheet: {
+      left: { one: 'Se alineó 1 pieza a la izquierda del área útil', other: 'Se alinearon {n} piezas a la izquierda del área útil' },
+      centerX: { one: 'Se alineó 1 pieza al centro en horizontal del área útil', other: 'Se alinearon {n} piezas al centro en horizontal del área útil' },
+      right: { one: 'Se alineó 1 pieza a la derecha del área útil', other: 'Se alinearon {n} piezas a la derecha del área útil' },
+      top: { one: 'Se alineó 1 pieza arriba del área útil', other: 'Se alinearon {n} piezas arriba del área útil' },
+      centerY: { one: 'Se alineó 1 pieza al centro en vertical del área útil', other: 'Se alinearon {n} piezas al centro en vertical del área útil' },
+      bottom: { one: 'Se alineó 1 pieza abajo del área útil', other: 'Se alinearon {n} piezas abajo del área útil' },
+    },
     alignedAlready: { one: 'La pieza ya estaba alineada', other: 'Las piezas ya estaban alineadas' },
-    horizontally: 'en horizontal',
-    vertically: 'en vertical',
-    distributedGap: { one: 'Se distribuyó 1 pieza {dir}, a {gap}', other: 'Se distribuyeron {n} piezas {dir}, a {gap} una de otra' },
-    distributedEven: { one: 'Se repartió 1 pieza parejo {dir}', other: 'Se repartieron {n} piezas parejo {dir}' },
+    // By axis ({gap} already formatted)
+    distributedGap: {
+      x: { one: 'Se distribuyó 1 pieza en horizontal, a {gap}', other: 'Se distribuyeron {n} piezas en horizontal, a {gap} una de otra' },
+      y: { one: 'Se distribuyó 1 pieza en vertical, a {gap}', other: 'Se distribuyeron {n} piezas en vertical, a {gap} una de otra' },
+    },
+    distributedEven: {
+      x: { one: 'Se repartió 1 pieza parejo en horizontal', other: 'Se repartieron {n} piezas parejo en horizontal' },
+      y: { one: 'Se repartió 1 pieza parejo en vertical', other: 'Se repartieron {n} piezas parejo en vertical' },
+    },
     distributedAlready: 'Las piezas ya estaban distribuidas',
     selectedSame: { one: 'Se seleccionó 1 pieza: no hay otras del mismo archivo', other: 'Se seleccionaron {n} piezas del mismo archivo' },
     selectedSameSheets: { one: 'Se seleccionó 1 pieza del mismo archivo', other: 'Se seleccionaron {n} piezas del mismo archivo, en {sheets} hojas' },
@@ -786,8 +799,8 @@ const es = {
     printTip: 'Consejo antes de imprimir',
     printSummary: 'Resumen después de imprimir',
     units: 'Unidades',
-    // After the visible symbol («mm»), for screen readers
-    unitNames: { mm: ', milímetros', cm: ', centímetros', in: ', pulgadas' },
+    // Each unit's accessible name: its visible symbol, then its name (units.names)
+    unitLabel: '{symbol}, {name}',
     unitChanged: 'Medidas en {unit}',
     keyboard: 'Teclado',
     singleKeys: 'Atajos de 1 tecla',
@@ -803,7 +816,6 @@ const es = {
     caption: 'Atajos de teclado',
     key: 'Tecla',
     action: 'Acción',
-    or: ' o ',
     off: 'Desactivado',
     rows: {
       tab: 'Recorrer la barra, los paneles y las piezas; en la hoja, enfocar una pieza la selecciona',

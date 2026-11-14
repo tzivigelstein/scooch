@@ -57,7 +57,7 @@ function problemNotice(doc: DocumentData): Notice | null {
   if (cut.count) return { text: inSheets(t('notices.cut', { n: cut.count }), cut.sheets, many), warn: true };
   if (pastMargin.count) return { text: inSheets(t('notices.pastMargin', { n: pastMargin.count }), pastMargin.sheets, many), warn: true };
   if (overlap.count && !doc.allowOverlap) {
-    const text = many ? inSheets(t('notices.overlapIn'), overlap.sheets, many) : t('notices.overlap');
+    const text = many ? t('notices.overlapIn', { n: overlap.sheets.length, list: formatList(overlap.sheets.map((i) => i + 1)) }) : t('notices.overlap');
     return { text, info: true, action: { label: t('bar.arrange'), run: arrangeAll } };
   }
   return null;

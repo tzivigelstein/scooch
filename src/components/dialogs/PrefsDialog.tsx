@@ -42,12 +42,8 @@ export default function PrefsDialog() {
             }}
             options={UNITS.map((value) => ({
               value,
-              label: (
-                <span>
-                  <span>{t(`units.${value}`)}</span>
-                  <span className="sr-only">{t(`prefs.unitNames.${value}`)}</span>
-                </span>
-              ),
+              input: { 'aria-label': t('prefs.unitLabel', { symbol: t(`units.${value}`), name: t(`units.names.${value}`) }) },
+              label: <span>{t(`units.${value}`)}</span>,
             }))}
           />
         </div>

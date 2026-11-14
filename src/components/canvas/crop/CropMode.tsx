@@ -317,7 +317,7 @@ export default function CropMode() {
     paint();
     publish();
     if (els.frame) els.frame.setAttribute('aria-label', frameLabel(s));
-    if (help.current) help.current.textContent = t('crop.help', { locked: s.lockName ? t('crop.helpLocked', { name: s.lockName }) : '' });
+    if (help.current) help.current.textContent = s.lockName ? t('crop.helpLocked', { name: s.lockName }) : t('crop.help');
     els.frame?.focus({ preventScroll: true });
     node.addEventListener('pointerdown', onPointerDown);
     node.addEventListener('pointermove', onPointerMove);

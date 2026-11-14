@@ -36,7 +36,7 @@ describe('low-resolution badge in the list', () => {
     expect(badges(3)).toEqual(['lowRes']);
     // Its text is in the badge's tip and, for screen readers, in the row's name.
     expect(lowRes(3)!.dataset.tip).toBe('Puede verse pixelada');
-    expect(lowRes(3)!.querySelector('.sr-only')!.textContent).toBe(', puede verse pixelada');
+    expect(lowRes(3)!.querySelector('.sr-only')!.textContent).toBe('. Puede verse pixelada');
   });
 
   test('it goes when the piece is made smaller again', () => {

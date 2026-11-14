@@ -78,6 +78,11 @@ const listFormat = new Intl.ListFormat(messages.meta.lang, { style: 'long', type
 /** A list for a sentence: «1, 2 y 3», «foto.jpg y plano.pdf». */
 export const formatList = (items: readonly (string | number)[]) => listFormat.format(items.map(String));
 
+const choiceFormat = new Intl.ListFormat(messages.meta.lang, { style: 'long', type: 'disjunction' });
+
+/** Alternatives («R o Shift+R») as parts, in the language's order: each item and the words between them. */
+export const choiceParts = (items: readonly string[]) => choiceFormat.formatToParts(items);
+
 /** The text with the language's final period (meta.period), unless it already ends like a sentence. */
 export const asSentence = (text: string) => (/[.!?…:。]$/.test(text.trim()) ? text.trim() : `${text.trim()}${messages.meta.period}`);
 

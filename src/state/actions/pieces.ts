@@ -100,7 +100,7 @@ function apply(rects: ReadonlyMap<number, IdRect>, patch: ((item: Piece) => Part
   patchItems(patches);
 }
 
-type GroupAction = 'align' | 'distribute' | 'rotate' | 'scale' | 'move' | 'size';
+type GroupAction = 'align' | 'distribute' | 'rotate' | 'scale' | 'move';
 
 /**
  * Nothing applied: the notice says why and, for overlaps, offers to allow them
@@ -108,9 +108,8 @@ type GroupAction = 'align' | 'distribute' | 'rotate' | 'scale' | 'move' | 'size'
  */
 function refuse(plan: Pick<Plan, 'reason'>, action: GroupAction, retry: () => void) {
   if (plan.reason === 'limit') return say(t('notices.scaleLimit'), { warn: true });
-  const what = t(`notices.groupActions.${action}`);
   if (plan.reason === 'overlap') {
-    return say(t('notices.wouldOverlap', { action: what }), {
+    return say(t(`notices.wouldOverlap.${action}`), {
       warn: true,
       action: {
         label: t('props.overlap'),
@@ -123,7 +122,7 @@ function refuse(plan: Pick<Plan, 'reason'>, action: GroupAction, retry: () => vo
       },
     });
   }
-  say(t('notices.wouldLeave', { action: what }), { warn: true });
+  say(t(`notices.wouldLeave.${action}`), { warn: true });
 }
 
 // Continuous edit of a field: what is valid applies (one undo step for the
@@ -177,7 +176,7 @@ function rotateSelection(dir: 1 | -1) {
   const item = selectedItem();
   if (item) return announce(t('announce.rotated', { deg: item.r, size: pieceSizeText(item) }));
   animateNext();
-  announce(t('announce.groupRotated', { n: plan.rects.size, dir: t(dir > 0 ? 'announce.toRight' : 'announce.toLeft') }));
+  announce(t(dir > 0 ? 'announce.groupRotatedRight' : 'announce.groupRotatedLeft', { n: plan.rects.size }));
 }
 
 // ---------- Duplicate ----------
@@ -542,7 +541,7 @@ export function alignSelection(mode: AlignMode) {
   if (!plan.changed) return announce(t('announce.alignedAlready', { n }));
   apply(plan.rects);
   animateNext();
-  announce(t(toSheet ? 'announce.alignedSheet' : 'announce.aligned', { n, how: t(`announce.alignHow.${mode}`) }));
+  announce(t(toSheet ? `announce.alignedSheet.${mode}` : `announce.aligned.${mode}`, { n }));
 }
 
 /** How many are needed (on one sheet) to distribute with the current mode. */
@@ -568,6 +567,5 @@ export function distributeSelection(axis: Axis) {
   if (!plan.changed) return announce(t('announce.distributedAlready'));
   apply(plan.rects);
   animateNext();
-  const dir = t(axis === 'x' ? 'announce.horizontally' : 'announce.vertically');
-  announce(mode === 'even' ? t('announce.distributedEven', { n, dir }) : t('announce.distributedGap', { n, dir, gap: lengthText(gap) }));
+  announce(mode === 'even' ? t(`announce.distributedEven.${axis}`, { n }) : t(`announce.distributedGap.${axis}`, { n, gap: lengthText(gap) }));
 }

@@ -4,7 +4,7 @@
 
 import { X } from 'lucide-react';
 import { Fragment } from 'react';
-import { keyLabel, splitLink, t } from '../../copy/index.ts';
+import { choiceParts, keyLabel, splitLink, t } from '../../copy/index.ts';
 import { SHORTCUT_ROWS } from '../../hooks/shortcuts.ts';
 import { stepTexts } from '../../services/measure.ts';
 import { usePrefs } from '../../state/prefs.ts';
@@ -59,12 +59,15 @@ export default function ShortcutsDialog() {
             {SHORTCUT_ROWS.map(([keys, action, single]) => (
               <tr key={action} data-single={single ? '' : undefined}>
                 <td>
-                  {keys.map((key, i) => (
-                    <Fragment key={key}>
-                      {i > 0 && (keys.length > 2 ? ' ' : t('shortcuts.or'))}
-                      <kbd>{keyLabel(key)}</kbd>
-                    </Fragment>
-                  ))}
+                  {/* Two keys are alternatives («R o Shift+R»); more go side by side (the arrows). */}
+                  {keys.length > 2
+                    ? keys.map((key, i) => (
+                        <Fragment key={key}>
+                          {i > 0 && ' '}
+                          <kbd>{keyLabel(key)}</kbd>
+                        </Fragment>
+                      ))
+                    : choiceParts(keys.map(keyLabel)).map((part, i) => (part.type === 'element' ? <kbd key={i}>{part.value}</kbd> : <Fragment key={i}>{part.value}</Fragment>))}
                 </td>
                 <td>
                   {t(action, steps)}

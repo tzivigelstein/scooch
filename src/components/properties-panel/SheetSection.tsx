@@ -143,15 +143,11 @@ export function SheetLength({ name, stacked = false }: { name: 'margin' | 'gap';
   usePrefs((s) => s.unit);
   return (
     <label className={stacked ? 'field' : 'field inline'}>
-      <span className="field-label">
-        <span>{t(name === 'margin' ? 'props.margin' : 'props.gap')}</span>
-        <span id={`${name}-unit`} className="sr-only">
-          {t(name === 'margin' ? 'props.marginUnit' : 'props.gapUnit', { unit: unitName() })}
-        </span>
-      </span>
+      <span className="field-label">{t(name === 'margin' ? 'props.margin' : 'props.gap')}</span>
       <span className="num-field">
         <LengthField
           id={name}
+          aria-label={t(name === 'margin' ? 'props.marginLabel' : 'props.gapLabel', { unit: unitName() })}
           disabled={busyOff(busy, name)}
           value={() => getDocument()[name]}
           range={() => ({ min: 0, max: 50 })}

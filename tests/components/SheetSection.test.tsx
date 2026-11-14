@@ -256,11 +256,11 @@ describe('the custom paper in cm', () => {
 });
 
 describe('margin and gap', () => {
-  test('their unit for screen readers follows the unit: «, en milímetros» → «, en centímetros»', () => {
-    expect(byId('margin-unit')!.textContent).toBe(', en milímetros');
+  test('their names for screen readers start with the label and say the unit: «Margen, en milímetros» → «, en centímetros»', () => {
+    expect(field('margin').getAttribute('aria-label')).toBe('Margen, en milímetros');
     act(() => setUnit('cm'));
-    expect(byId('margin-unit')!.textContent).toBe(', en centímetros');
-    expect(byId('gap-unit')!.textContent).toBe(' entre piezas, en centímetros');
+    expect(field('margin').getAttribute('aria-label')).toBe('Margen, en centímetros');
+    expect(field('gap').getAttribute('aria-label')).toBe('Separación entre piezas, en centímetros');
   });
 
   test('in cm: margin 1, gap 0,5; typing «1,5» makes the margin 15 mm and «3 mm» the gap 0,3 cm', () => {

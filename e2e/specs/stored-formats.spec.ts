@@ -201,7 +201,7 @@ for (const listable of [true, false]) {
 
       await test.step('the preferences apply: centimeters, a 5 mm grid, overlapping allowed, «Acomodar» folded, single keys off', async () => {
         const prefs = await page.evaluate(() => ({
-          unit: document.getElementById('margin-unit')?.textContent ?? '',
+          unit: document.getElementById('margin')?.getAttribute('aria-label') ?? '',
           grid: (document.getElementById('grid-show') as HTMLInputElement).checked && document.querySelector<HTMLInputElement>('#grid-chips input:checked')?.value,
           overlap: (document.getElementById('allow-overlap') as HTMLInputElement).checked,
           arrange: document.querySelector('button[aria-controls="section-arrange"]')?.getAttribute('aria-expanded'),
