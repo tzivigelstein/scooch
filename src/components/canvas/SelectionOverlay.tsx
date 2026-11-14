@@ -30,6 +30,8 @@ export function SelectionOverlay({ layout }: { layout: number }) {
       : [];
 
   useLayoutEffect(() => {
+    // During a gesture its live values are painted (below); a notice that comes or goes meanwhile waits for its end.
+    if (gestureStore.getState().drafts) return;
     paintCommittedSelection();
   }, [items, selection, sheets, zoom, drawer, layout, unit, cuts, flash, summary]);
 
