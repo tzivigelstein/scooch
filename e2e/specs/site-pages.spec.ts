@@ -2,7 +2,8 @@
 // (what each page says is checked in tests/site/pages.test.ts): every page is
 // a file of its own with what search engines read and nothing of the editor;
 // the sitemap lists exactly the indexable ones; axe finds nothing in light or
-// dark; nothing moves while loading; few, small, same-origin requests; the
+// dark; nothing moves while loading; few, small, same-origin requests; no page
+// or table scrolls sideways at phone, tablet and desktop widths; the
 // calculator answers; the editor's page carries its metadata.
 import AxeBuilder from '@axe-core/playwright';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -78,8 +79,10 @@ async function load(page: Page, path: string) {
   return { shift, requests };
 }
 
+const SHOWN = ['es/imprimir-varias-fotos-en-una-hoja.html', 'es/cuantas-fotos-caben-en-una-hoja.html', 'es/fotos-10x15-en-hoja-a4.html', 'es/foto-carnet-para-imprimir.html', 'es/imprimir-misma-foto-varias-veces.html', 'es/imprimir-imagen-tamano-real.html', 'es/preguntas-frecuentes.html', 'es/terminos.html', 'es/privacidad.html', 'es/licencias-de-terceros.html', 'es/licencia.html'];
+
 test.describe('in the browser', () => {
-  for (const file of ['es/imprimir-varias-fotos-en-una-hoja.html', 'es/cuantas-fotos-caben-en-una-hoja.html', 'es/fotos-10x15-en-hoja-a4.html', 'es/foto-carnet-para-imprimir.html', 'es/imprimir-misma-foto-varias-veces.html', 'es/imprimir-imagen-tamano-real.html', 'es/preguntas-frecuentes.html', 'es/terminos.html', 'es/privacidad.html', 'es/licencias-de-terceros.html', 'es/licencia.html']) {
+  for (const file of SHOWN) {
     test(`${pathOf(file)}: axe finds nothing in light and dark, nothing moves while loading, and every request stays on the site`, async ({ page, baseURL }) => {
       const { shift, requests } = await load(page, `.${pathOf(file)}`);
       expect(shift).toBe(0);
@@ -93,6 +96,35 @@ test.describe('in the browser', () => {
       }
     });
   }
+
+  test('at 390, 768 and 1440 px no page scrolls sideways, and every table fits without scrolling (on a phone, one block per row where needed)', async ({ page }) => {
+    for (const width of [390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const file of SHOWN) {
+        await page.goto(`.${pathOf(file)}`);
+        const { sideways, tables } = await page.evaluate(() => ({
+          sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          tables: [...document.querySelectorAll('.table-wrap')].map((box) => box.scrollWidth - box.clientWidth),
+        }));
+        expect(sideways, `${pathOf(file)} at ${width} px`).toBeLessThanOrEqual(0);
+        expect(tables.filter((extra) => extra > 0), `${pathOf(file)} at ${width} px`).toEqual([]);
+      }
+    }
+  });
+
+  test('on a phone, a five-column table shows one block per row, is still a table with its column headers, and axe finds nothing in light and dark', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('./es/fotos-10x15-en-hoja-a4');
+    const table = page.getByRole('table');
+    expect(await table.locator('tbody tr').first().evaluate((row) => getComputedStyle(row).display)).toBe('block');
+    await expect(table.getByRole('columnheader')).toHaveCount(5);
+    await expect(table.getByRole('rowheader')).toHaveCount(4);
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      const { violations } = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(violations.map((v) => `${scheme}: ${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+    }
+  });
 
   test('the calculator answers for another paper, photo and margin, and its link opens the editor set up like that', async ({ page }) => {
     await page.goto('./es/cuantas-fotos-caben-en-una-hoja');

@@ -12,7 +12,7 @@ import { getPaper, sizeOf } from '../core/papers.js';
 import type { PaperId } from '../core/types.ts';
 import { formatNumber, t, type CopyKey } from '../copy/index.ts';
 import { sheetSvg } from './drawing.ts';
-import { esc } from './html.ts';
+import { esc, tableHtml } from './html.ts';
 
 export { APP_NAME as app, MAX_ITEMS };
 
@@ -96,13 +96,9 @@ export interface Column {
   num?: boolean;
 }
 
-/** A table with a header row; cells are HTML. The caption says what the numbers assume. */
+/** A table with a header row and each row's name first (see tableHtml); cells are HTML. The caption says what the numbers assume. */
 export function table(columns: readonly Column[], rows: readonly (readonly string[])[], caption: string) {
-  const th = columns.map((c) => `<th scope="col"${c.num ? ' class="num"' : ''}>${esc(c.head)}</th>`).join('');
-  const body = rows
-    .map((row) => `<tr>${row.map((cell, i) => (i === 0 ? `<th scope="row">${cell}</th>` : `<td${columns[i].num ? ' class="num"' : ''}>${cell}</td>`)).join('')}</tr>`)
-    .join('');
-  return `<div class="table-wrap" tabindex="0"><table><caption>${esc(caption)}</caption><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>`;
+  return tableHtml(columns.map((c) => ({ ...c, head: esc(c.head) })), rows, { caption, rowHeads: true });
 }
 
 /** Steps, numbered. */

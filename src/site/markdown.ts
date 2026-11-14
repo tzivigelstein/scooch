@@ -4,7 +4,7 @@
 // inline code, links, autolinks, bold and «_italics_». Anything else is text:
 // HTML in the source shows as text, except comments, which are dropped.
 
-import { esc, plainText } from './html.ts';
+import { esc, plainText, tableHtml } from './html.ts';
 
 export interface MarkdownOptions {
   /** Where a link goes (a relative link to another document becomes its page). */
@@ -110,10 +110,12 @@ export function renderMarkdown(md: string, { link = (href) => href, shift = 0 }:
       const head = cells(line);
       const rows: string[][] = [];
       for (i += 2; i < lines.length && lines[i].startsWith('|'); i++) rows.push(cells(lines[i]));
-      const th = head.map((cell) => `<th scope="col">${inline(cell, link)}</th>`).join('');
-      const body = rows.map((row) => `<tr>${row.map((cell) => `<td>${inline(cell, link)}</td>`).join('')}</tr>`).join('');
-      // Focusable: on a narrow screen the table scrolls sideways, also with the keyboard.
-      out.push(`<div class="table-wrap" tabindex="0"><table><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>`);
+      out.push(
+        tableHtml(
+          head.map((cell) => ({ head: inline(cell, link) })),
+          rows.map((row) => row.map((cell) => inline(cell, link)))
+        )
+      );
       continue;
     }
     const bullet = BULLET.exec(line);

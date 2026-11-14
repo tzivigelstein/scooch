@@ -3,6 +3,30 @@
 // the colors are the app's (src/styles/tokens.css). System fonts: no font
 // file to download, so no swap and no layout shift.
 
+import { STACK_WIDTHS } from './html.ts';
+
+/**
+ * Narrower than `rem`, the tables marked for it (html.ts tableHtml) show one
+ * block per row: the first cell as its title, then each value after its
+ * column's name. The header row stays for screen readers only, and the names
+ * drawn from data-label are left out of what they read (the «/ ""»).
+ */
+function stacked(rem: number) {
+  const s = `.stack-${rem}`;
+  return `@media (max-width: ${rem - 0.01}rem) {
+  ${s} table, ${s} tbody, ${s} tr, ${s} th, ${s} td { display: block; }
+  ${s} table { display: flex; flex-direction: column; }
+  ${s} caption { order: 1; }
+  ${s} thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  ${s} tr { padding: 0.625rem 0; border-bottom: 1px solid var(--line); }
+  ${s} th, ${s} td { padding: 0.125rem 0; border: 0; text-align: left; white-space: normal; }
+  ${s} tr > :first-child { padding-bottom: 0.25rem; font-weight: 600; }
+  ${s} td[data-label] { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 1rem; }
+  ${s} td.num { grid-template-columns: minmax(0, 1fr) auto; text-align: right; }
+  ${s} td[data-label]::before { content: attr(data-label); content: attr(data-label) / ""; color: var(--muted); text-align: left; }
+}`;
+}
+
 export const SITE_CSS = `
 :root {
   color-scheme: light dark;
@@ -22,6 +46,7 @@ export const SITE_CSS = `
   --note-bg: #fff3df;
   --note-text: #6b3800;
   --note-line: #c98a1e;
+  --scroll-shadow: rgba(14, 16, 20, 0.3);
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
@@ -43,6 +68,7 @@ export const SITE_CSS = `
     --note-bg: #36260d;
     --note-text: #ffd699;
     --note-line: #a8711a;
+    --scroll-shadow: rgba(238, 240, 243, 0.25);
   }
 }
 *, *::before, *::after { box-sizing: border-box; }
@@ -89,13 +115,24 @@ li { margin-bottom: 0.375rem; }
 .sheet-svg .margin { fill: none; stroke: #8a93a0; }
 .sheet-svg .photo { fill: #d6e4ff; stroke: #0052cc; }
 figcaption { margin-top: 0.5rem; color: var(--muted); font-size: 0.9375rem; text-align: center; }
-.table-wrap { margin: 0 0 1.5rem; overflow-x: auto; }
+/* A table too wide scrolls inside its box; a shadow shows on each side with more to see (the covers, which move with the content, hide it at the ends). */
+.table-wrap {
+  margin: 0 0 1.5rem;
+  overflow-x: auto;
+  background:
+    linear-gradient(to right, var(--bg) 30%, transparent) left / 2.5rem 100% no-repeat local,
+    linear-gradient(to left, var(--bg) 30%, transparent) right / 2.5rem 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, var(--scroll-shadow), transparent) left / 0.875rem 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, var(--scroll-shadow), transparent) right / 0.875rem 100% no-repeat scroll;
+}
 table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
 caption { padding-top: 0.5rem; caption-side: bottom; color: var(--muted); font-size: 0.875rem; text-align: left; }
 th, td { padding: 0.5rem 0.625rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 thead th { border-bottom-color: var(--line-strong); font-weight: 600; }
 tbody th { font-weight: 500; }
-.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.num { white-space: nowrap; }
+${STACK_WIDTHS.map(stacked).join('\n')}
 code { padding: 0.1em 0.3em; border-radius: 0.25rem; background: var(--surface); font-family: var(--mono); font-size: 0.875em; }
 pre { margin: 0 0 1.25rem; padding: 1rem; overflow-x: auto; border-radius: 0.5rem; background: var(--surface); font-size: 0.8125rem; line-height: 1.5; }
 pre code { padding: 0; background: none; font-size: inherit; }

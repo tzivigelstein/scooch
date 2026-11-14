@@ -24,10 +24,17 @@ describe('blocks', () => {
     expect(md('> **PENDIENTE: completar.** Hoy no hay.\n> Sigue.')).toBe('<blockquote><p><strong>PENDIENTE: completar.</strong> Hoy no hay. Sigue.</p></blockquote>');
   });
 
-  test('tables have a header row and scroll on their own', () => {
+  test('tables have a header row, scroll on their own, and name each value’s column for phones', () => {
     expect(md('| Package | License |\n| --- | --- |\n| react | MIT |')).toBe(
-      '<div class="table-wrap" tabindex="0"><table><thead><tr><th scope="col">Package</th><th scope="col">License</th></tr></thead><tbody><tr><td>react</td><td>MIT</td></tr></tbody></table></div>'
+      '<div class="table-wrap stack-24" tabindex="0"><table role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Package</th><th scope="col" role="columnheader">License</th></tr></thead>' +
+        '<tbody role="rowgroup"><tr role="row"><td role="cell">react</td><td role="cell" data-label="License"><span>MIT</span></td></tr></tbody></table></div>'
     );
+  });
+
+  test('in a table, an address can break after each «/», and the link and the column name stay whole', () => {
+    const html = md('| Package | `Ships` in |\n| --- | --- |\n| zustand | [github.com/pmndrs/zustand](https://github.com/pmndrs/zustand) |');
+    expect(html).toContain('<a href="https://github.com/pmndrs/zustand">github.com/<wbr>pmndrs/<wbr>zustand</a>');
+    expect(html).toContain('data-label="Ships in"');
   });
 
   test('fenced code is shown as it is, escaped', () => {
