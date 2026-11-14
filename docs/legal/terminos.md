@@ -103,12 +103,12 @@ El código fuente de Scooch se publica bajo la licencia PolyForm Noncommercial
 1.0.0. Puedes usarlo, estudiarlo y modificarlo con fines no comerciales. Esa
 licencia no permite usos comerciales: por ejemplo, vender la app, ofrecerla
 como servicio pago o publicar copias con anuncios. El texto completo está en el
-archivo LICENSE del repositorio y, ante cualquier diferencia, vale ese texto.
+archivo [LICENSE](../../LICENSE) del repositorio y, ante cualquier diferencia, vale ese texto.
 Si tienes dudas sobre un uso, escríbenos.
 
 El nombre y el logo de Scooch no forman parte de esa licencia. Las bibliotecas
 de terceros que incluye la app tienen sus propias licencias, que se detallan
-en el archivo THIRD_PARTY_NOTICES.md del repositorio.
+en el archivo [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) del repositorio.
 
 ## 9. Enlaces a otros sitios
 

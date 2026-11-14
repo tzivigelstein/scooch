@@ -25,10 +25,22 @@ tag and not show up), so replace them together with their backticks.
 | `<FECHA DE VIGENCIA>` | Date this version takes effect | both |
 
 The privacy policy's Analítica section is a placeholder too: there are no
-analytics today. Rewrite it before any analytics are turned on.
+analytics today. Rewrite it before any analytics are turned on. While it only
+holds the PENDIENTE note, the published page leaves the section out («Lo que
+no hacemos» already says there are no analytics).
 
-Before publishing, also remove the draft note and the HTML comment, and turn
-the mentions of `LICENSE` and `THIRD_PARTY_NOTICES.md` into links.
+Before publishing, also remove the draft note. `LICENSE`'s
+`<COPYRIGHT HOLDER>` is a placeholder too.
+
+## Publishing
+
+The site publishes both texts as pages (`/es/terminos` and `/es/privacidad`),
+with `LICENSE` and `THIRD_PARTY_NOTICES.md` (`/es/licencia` and
+`/es/licencias-de-terceros`); [docs/site.md](../site.md) explains how. The
+HTML comment is left out of the pages, and links between the documents point
+to their pages. While a placeholder or the draft note is there, the page is
+kept out of search engines, and a production deployment stops (unless
+`SCOOCH_ALLOW_DRAFT=1`).
 
 ## Keep them true
 

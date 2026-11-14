@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 import { fillStaticCopy } from './src/copy/index.ts';
+import { sitePages } from './src/site/plugin.ts';
 
 // The node_modules package a module belongs to («pdf-lib», «@scope/x»).
 const packageOf = (id: string | null | undefined) => id?.match(/node_modules[\\/]((?:@[^\\/]+[\\/])?[^\\/]+)[\\/]/)?.[1].replace('\\', '/');
@@ -14,6 +15,8 @@ export default defineConfig({
       name: 'static-copy',
       transformIndexHtml: (html: string) => fillStaticCopy(html),
     },
+    // The content pages, legal pages, sitemap, robots.txt and llms.txt (docs/site.md).
+    sitePages(),
   ],
   test: {
     // Some suites fuzz thousands of layouts; node:test had no per-test limit.
@@ -22,7 +25,7 @@ export default defineConfig({
     // of test broke. `yarn test` runs them all.
     projects: [
       // Pure functions of src/core and pure helpers: exact results, tables of cases.
-      { extends: true, test: { name: 'unit', include: ['tests/core/**/*.test.{js,ts}'], environment: 'node', sequence: { groupOrder: 0 } } },
+      { extends: true, test: { name: 'unit', include: ['tests/core/**/*.test.{js,ts}', 'tests/site/**/*.test.{js,ts}'], environment: 'node', sequence: { groupOrder: 0 } } },
       // Properties checked over many generated cases (fuzz).
       { extends: true, test: { name: 'properties', include: ['tests/properties/**/*.test.{js,ts}'], environment: 'node', sequence: { groupOrder: 0 } } },
       // Actions on the real stores, history, selectors and services (PDF, projects,

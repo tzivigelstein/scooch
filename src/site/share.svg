@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Source of share.png (the image shown when a page is shared): rendered at
+       1200 × 630 with the Inter font installed; see docs/site.md. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9cc8ff"/>
+      <stop offset="1" stop-color="#e3f0ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#101218" flood-opacity="0.16"/>
+    </filter>
+    <symbol id="photo-l" viewBox="0 0 152.4 101.6">
+      <rect width="152.4" height="101.6" fill="url(#sky)"/>
+      <circle cx="112" cy="30" r="11" fill="#ffd166"/>
+      <path d="M0 72 Q38 50 76 66 T152.4 60 V101.6 H0 Z" fill="#78c08a"/>
+      <path d="M0 84 Q46 66 94 80 T152.4 78 V101.6 H0 Z" fill="#4c9e66"/>
+    </symbol>
+    <symbol id="photo-p" viewBox="0 0 101.6 152.4">
+      <rect width="101.6" height="152.4" fill="url(#sky)"/>
+      <circle cx="70" cy="44" r="11" fill="#ffd166"/>
+      <path d="M0 108 Q25 84 50 100 T101.6 94 V152.4 H0 Z" fill="#78c08a"/>
+      <path d="M0 126 Q30 106 62 120 T101.6 118 V152.4 H0 Z" fill="#4c9e66"/>
+    </symbol>
+  </defs>
+  <rect width="1200" height="630" fill="#f4f6fa"/>
+  <g transform="translate(80 150)">
+    <g transform="scale(3)">
+      <rect x="7" y="2.5" width="14" height="17" rx="2.5" fill="#0066ff" opacity=".28"/>
+      <rect x="3" y="5" width="14" height="17" rx="2.5" fill="#0066ff"/>
+      <rect x="6" y="8.5" width="4" height="5" rx="1" fill="#fff"/>
+      <rect x="11" y="8.5" width="3" height="3" rx=".8" fill="#fff"/>
+      <rect x="11" y="12.5" width="3" height="6" rx=".8" fill="#fff"/>
+      <rect x="6" y="14.5" width="4" height="4" rx="1" fill="#fff"/>
+    </g>
+    <text x="92" y="58" font-family="Inter Variable, Inter, system-ui, sans-serif" font-size="76" font-weight="800" letter-spacing="-2.3" fill="#0e1014">Scooch</text>
+    <text font-family="Inter Variable, Inter, system-ui, sans-serif" font-size="46" font-weight="700" letter-spacing="-1" fill="#0e1014">
+      <tspan x="0" y="170">Acomoda imágenes y PDF</tspan>
+      <tspan x="0" y="226">en una hoja a tamaño real</tspan>
+    </text>
+    <text x="0" y="300" font-family="Inter Variable, Inter, system-ui, sans-serif" font-size="28" font-weight="500" fill="#5a6170">Gratis, sin cuenta y sin subir tus archivos</text>
+  </g>
+  <!-- An A4 sheet (210 × 297 mm at 1,6 px/mm) with 3 photos 10 × 15 and 3 mm margins. -->
+  <g transform="translate(788 77.4) scale(1.6)" filter="url(#shadow)">
+    <rect width="210" height="297" fill="#ffffff"/>
+    <g transform="translate(3 3)">
+      <use href="#photo-l" x="0" y="0" width="152.4" height="101.6"/>
+      <use href="#photo-p" x="0" y="101.6" width="101.6" height="152.4"/>
+      <use href="#photo-p" x="101.6" y="101.6" width="101.6" height="152.4"/>
+      <g fill="none" stroke="#ffffff" stroke-width="0.8">
+        <rect x="0" y="0" width="152.4" height="101.6"/>
+        <rect x="0" y="101.6" width="101.6" height="152.4"/>
+        <rect x="101.6" y="101.6" width="101.6" height="152.4"/>
+      </g>
+    </g>
+  </g>
+</svg>
