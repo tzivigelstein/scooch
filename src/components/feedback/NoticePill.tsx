@@ -6,6 +6,7 @@
 import { CircleCheck, Info, LoaderCircle, TriangleAlert, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { formatList, joinSentences, t } from '../../copy/index.ts';
+import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';
 import { useDocument, type DocumentData } from '../../state/document.ts';
 import { sheetProblems } from '../../state/selectors.ts';
 import { getView, setView, useView, type Flash, type NoticeAction } from '../../state/view.ts';
@@ -24,6 +25,8 @@ interface Notice {
   action?: NoticeAction | null;
   busy?: boolean;
   flash?: boolean;
+  /** The current problem it is about (its pieces are outlined while the notice is hovered or focused). */
+  problem?: 'cut' | 'pastMargin' | 'overlap';
 }
 
 // With several sheets, the notice says on which: «Hoja 2: …», «Hojas 1 y 3: …».
@@ -54,18 +57,18 @@ function problemNotice(doc: DocumentData): Notice | null {
   if (!doc.items.length) return null;
   const { cut, pastMargin, overlap } = sheetProblems(doc);
   const many = doc.sheets.length > 1;
-  if (cut.count) return { text: inSheets(t('notices.cut', { n: cut.count }), cut.sheets, many), warn: true };
-  if (pastMargin.count) return { text: inSheets(t('notices.pastMargin', { n: pastMargin.count }), pastMargin.sheets, many), warn: true };
+  if (cut.count) return { text: inSheets(t('notices.cut', { n: cut.count }), cut.sheets, many), warn: true, problem: 'cut' };
+  if (pastMargin.count) return { text: inSheets(t('notices.pastMargin', { n: pastMargin.count }), pastMargin.sheets, many), warn: true, problem: 'pastMargin' };
   if (overlap.count && !doc.allowOverlap) {
     const text = many ? t('notices.overlapIn', { n: overlap.sheets.length, list: formatList(overlap.sheets.map((i) => i + 1)) }) : t('notices.overlap');
-    return { text, info: true, action: { label: t('bar.arrange'), run: arrangeAll } };
+    return { text, info: true, action: { label: t('bar.arrange'), run: arrangeAll }, problem: 'overlap' };
   }
   return null;
 }
 
 export function NoticePill() {
   const notice = useCurrentNotice();
-  const { text = '', warn = false, info = false, action = null, busy = false, flash = false } = notice ?? {};
+  const { text = '', warn = false, info = false, action = null, busy = false, flash = false, problem } = notice ?? {};
   const signature = notice ? [text, warn, info, action?.label, busy, flash].join('|') : '';
   // The check mark only for an action that went well; what is wrong warns.
   const tone = warn ? 'warning' : busy ? 'busy' : info || !flash ? 'info' : 'success';
@@ -149,6 +152,7 @@ export function NoticePill() {
       className="pill"
       hidden={!notice}
       data-tone={notice ? tone : undefined}
+      {...(problem && previewAttrs('problems', problem))}
       onPointerEnter={() => ((timer.current.hovering = true), pause())}
       onPointerLeave={() => ((timer.current.hovering = false), resume())}
       onFocus={() => ((timer.current.focusInside = true), pause())}
