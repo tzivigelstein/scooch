@@ -42,10 +42,11 @@ export function Topbar() {
 
   return (
     <header className="topbar">
-      <a className="brand" href="./">
+      {/* Not a link: here it would only reload the editor, losing the selection and a crop in progress. */}
+      <div className="brand">
         <BrandMark />
         <span className="brand-name">{t('app.name')}</span>
-      </a>
+      </div>
 
       <ProjectBar />
 

@@ -68,6 +68,15 @@ describe('every page', () => {
     }
   });
 
+  test('the brand in every page’s header is a link to the editor, named after the app', () => {
+    for (const page of pages) {
+      const brand = doc(page).querySelector('header .brand')!;
+      expect(brand.tagName, page.path).toBe('A');
+      expect(brand.getAttribute('href'), page.path).toBe('/');
+      expect(brand.textContent, page.path).toBe('Scooch');
+    }
+  });
+
   test('pages that aren’t indexed say so, and only they', () => {
     for (const page of pages) expect(doc(page).querySelector('meta[name="robots"]')?.getAttribute('content') ?? 'index').toBe(page.indexable ? 'index' : 'noindex');
   });
