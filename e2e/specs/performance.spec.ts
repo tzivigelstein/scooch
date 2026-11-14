@@ -322,7 +322,7 @@ test.describe('with 150 pieces on 10 sheets', () => {
     expect(hover.buttons).toBe(6);
     expect(hover.mostGhosts, 'the hovers really show ghosts').toBeGreaterThan(5);
     expect(hover.left, 'gone once the pointer is elsewhere').toBe(0);
-    expect(hover.frameP95).toBeLessThan(34);
+    expect(hover.frameP95).toBeLessThan(budget(34));
     expect(long(hover.longs)).toEqual([]);
   });
 
