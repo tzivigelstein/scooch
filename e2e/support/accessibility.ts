@@ -81,7 +81,7 @@ export const readLayout = (): Layout => {
   // 1. Clipped: a box that hides its overflow and whose content is wider, without «…».
   //    Containers that scroll or clip on purpose (the canvas, panels, lists,
   //    dialogs, images) are left out, as are form fields (their text scrolls).
-  const CONTAINERS = 'svg, img, input, select, textarea, .sheet, .piece, .stage, .canvas, .panel, .piece-list, dialog, .dialog-body, .grid-layer, .thumb, body, .workspace';
+  const CONTAINERS = 'svg, img, input, select, textarea, .sheet, .piece, .stage, .stage-area, .canvas, .panel, .piece-list, dialog, .dialog-body, .grid-layer, .thumb, body, .workspace';
   for (const el of document.querySelectorAll('body *')) {
     if (el.closest('svg') || el.matches(CONTAINERS)) continue;
     // Text: a box with no text (an image's window) clips nothing readable.
