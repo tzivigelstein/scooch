@@ -116,7 +116,8 @@ frase entera, con sus parámetros: nada se arma pegando pedazos en el código.
   rotar, duplicar o pegar en una hoja, un tamaño de foto.
 - El aviso (la píldora) es para lo que no se ve ahí: un problema, un error,
   piezas que quedaron repartidas en otras hojas («Se agregaron 7 archivos en
-  las hojas 1 y 2»), o un cambio difícil de rehacer a mano.
+  las hojas 1 y 2»), un cambio difícil de rehacer a mano, o algo que no
+  cambia nada a la vista (copiar: «Se copiaron 3 piezas»).
 - Lo que reemplaza o quita varias cosas a la vez (quitar varias piezas, una
   hoja con piezas, rellenar con copias, «Quitar todas») ofrece «Deshacer» en
   el aviso. Con «Deshacer» a mano no hace falta preguntar antes.

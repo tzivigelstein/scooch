@@ -62,7 +62,8 @@ export function copySelection({ quiet = false } = {}) {
   const n = takeSelection();
   if (!n) return 0;
   void forgetCut();
-  if (!quiet) announce(t('announce.copied', { n }));
+  // Nothing on the sheets changes, so the notice is the only sign that it worked.
+  if (!quiet) say(t('announce.copied', { n }));
   return n;
 }
 

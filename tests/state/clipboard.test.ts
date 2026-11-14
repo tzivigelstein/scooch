@@ -29,6 +29,19 @@ beforeEach(() => {
 });
 
 describe('clipboard', () => {
+  test('copying says how many pieces were copied in a visible notice; a quiet copy says nothing', () => {
+    setDocument({ items: [piece(1, key, 10, 10), piece(2, key, 100, 10)], selection: [1] });
+    copySelection();
+    expect(getView().flash).toMatchObject({ text: 'Se copió 1 pieza' });
+    setView({ flash: null });
+    setDocument({ selection: [1, 2] });
+    copySelection();
+    expect(getView().flash).toMatchObject({ text: 'Se copiaron 2 piezas' });
+    setView({ flash: null });
+    copySelection({ quiet: true });
+    expect(getView().flash).toBeNull();
+  });
+
   test('copy + paste: copies with the same size, rotation and crop, selected, in free spots, one undo step', () => {
     const crop = { x: 0.1, y: 0.2, w: 0.5, h: 0.5 };
     const items = [piece(1, key, 10, 10, { r: 90, crop }), piece(2, key, 100, 10, { scale: 50 })];

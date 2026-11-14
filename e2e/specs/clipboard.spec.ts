@@ -17,7 +17,7 @@ test.describe('pieces', () => {
     await app.selectIds([first]);
     const before = await app.snapshot();
     await page.keyboard.press('Control+c');
-    await app.heard(/Se copió 1 pieza/);
+    await expect.poll(async () => (await app.notice()).text).toBe('Se copió 1 pieza');
     expect(await app.snapshot()).toBe(before);
     await page.keyboard.press('Control+v');
     await expect(app.pieces()).toHaveCount(3);
