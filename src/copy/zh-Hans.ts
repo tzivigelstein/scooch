@@ -246,7 +246,7 @@ const zhHans: Catalogue = {
     selectSameTip: '选择来自同一文件的素材',
     groupOnSheet: '在第{i}张纸上',
     groupOnSheets: '在{n}张纸上。显示第{i}张纸上的尺寸。',
-    mixed: '不一',
+    mixed: '混合',
     align: '对齐',
     alignTo: '对齐到',
     alignToSelection: '选区',
@@ -300,7 +300,7 @@ const zhHans: Catalogue = {
     size: '照片尺寸',
     original: '原始',
     custom: '自由裁剪',
-    mixed: '不一',
+    mixed: '混合',
     option: '{name} · {size}',
     groups: { print: '冲印照片', id: '证件照', instant: '其他' },
     names: {
