@@ -35,6 +35,20 @@ describe('Preferences', () => {
     expect(groups.map((g) => g.querySelector('h3')?.id)).toEqual(groups.map((g) => g.getAttribute('aria-labelledby')));
   });
 
+  test('every switch is in a group named by its section’s title, so its label doesn’t repeat it', () => {
+    render(<PrefsDialog />);
+    const named = (screen.getAllByRole('switch') as HTMLInputElement[]).map((toggle) => [
+      referenced(toggle.closest('[role="group"]')!, 'aria-labelledby'),
+      plain(toggle.labels?.[0]?.textContent),
+    ]);
+    expect(named).toEqual([
+      ['Teclado', 'Atajos de 1 tecla, como D o R'],
+      ['Impresión', 'Consejo'],
+      ['Impresión', 'Resumen'],
+      ['Consejos de uso', 'Mostrar'],
+    ]);
+  });
+
   test('the Unidades group holds the three units, with no hint under them', () => {
     render(<PrefsDialog />);
     const [units] = screen.getAllByRole('group');
@@ -88,8 +102,9 @@ describe('Preferences', () => {
 
   test('Impresión: the advice before printing and the summary after, each a switch saved in this browser', () => {
     render(<PrefsDialog />);
-    const tip = screen.getByRole('switch', { name: 'Consejo antes de imprimir' }) as HTMLInputElement;
-    const summary = screen.getByRole('switch', { name: 'Resumen después de imprimir' }) as HTMLInputElement;
+    const printing = screen.getByRole('group', { name: 'Impresión' });
+    const tip = within(printing).getByRole('switch', { name: 'Consejo' }) as HTMLInputElement;
+    const summary = within(printing).getByRole('switch', { name: 'Resumen' }) as HTMLInputElement;
     expect([tip.checked, summary.checked]).toEqual([true, true]);
     fireEvent.click(summary);
     expect(getPrefs().printing).toEqual({ tip: true, summary: false });
@@ -123,11 +138,11 @@ describe('Preferences', () => {
     expect((screen.getByRole('radio', { name: 'Claro' }) as HTMLInputElement).checked).toBe(true);
   });
 
-  test('Consejos de uso: «Mostrar consejos», on by default, turns them off in this browser; no hint', () => {
+  test('Consejos de uso: its switch «Mostrar», on by default, turns them off in this browser; no hint', () => {
     resetTips();
     render(<PrefsDialog />);
-    const group = screen.getAllByRole('group')[4];
-    const toggle = within(group).getByRole('switch', { name: 'Mostrar consejos' }) as HTMLInputElement;
+    const group = screen.getByRole('group', { name: 'Consejos de uso' });
+    const toggle = within(group).getByRole('switch', { name: 'Mostrar' }) as HTMLInputElement;
     expect(toggle.checked).toBe(true);
     expect(group.querySelector('.switch-hint')).toBeNull();
     fireEvent.click(toggle);
@@ -138,17 +153,17 @@ describe('Preferences', () => {
   test('Consejos de uso holds only the switch: no button to bring the dismissed ones back', () => {
     resetTips();
     render(<PrefsDialog />);
-    const group = screen.getAllByRole('group')[4];
+    const group = screen.getByRole('group', { name: 'Consejos de uso' });
     expect(within(group).getAllByRole('switch')).toHaveLength(1);
     expect(within(group).queryAllByRole('button')).toEqual([]);
     expect(screen.queryByRole('button', { name: /mostrar/i })).toBeNull();
   });
 
-  test('turning «Mostrar consejos» off and on again brings back the dismissed ones', () => {
+  test('turning the switch of Consejos de uso off and on again brings back the dismissed ones', () => {
     resetTips();
     act(() => neverShow('undoKey'));
     render(<PrefsDialog />);
-    const toggle = screen.getByRole('switch', { name: 'Mostrar consejos' });
+    const toggle = within(screen.getByRole('group', { name: 'Consejos de uso' })).getByRole('switch', { name: 'Mostrar' });
     fireEvent.click(toggle);
     expect(useTips.getState()).toMatchObject({ on: false, dismissed: ['undoKey'] });
     fireEvent.click(toggle);

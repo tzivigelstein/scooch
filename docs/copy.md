@@ -284,5 +284,11 @@ Esc. Las letras y los signos se muestran tal cual.
   es de «Ajustar a la hoja», que cambia el tamaño de una pieza.
 - **Medidas en la unidad elegida**: los textos con medidas reciben el número
   ya formateado («{w} × {h} {unit}»), nunca «mm» fijo.
+- **Una etiqueta no repite el título de su sección** (2026-11): en
+  Preferencias, Impresión tiene «Consejo» y «Resumen» (antes «Consejo antes
+  de imprimir» y «Resumen después de imprimir») y Consejos de uso, «Mostrar»
+  (antes «Mostrar consejos»). Cada sección es un grupo con el nombre de su
+  título, así un lector de pantalla dice «Impresión, Consejo». Donde no hay
+  sección, como en Buscar acciones, el nombre va completo.
 - **Coma decimal**, como en la mayor parte de Sudamérica (es-419 de Google usa
   punto). Si se cambia, es solo `meta.numberLocale` en `es.ts`.

@@ -58,7 +58,7 @@ export interface TipCounts {
 }
 
 export interface TipState {
-  /** «Mostrar consejos» in Preferencias. */
+  /** The switch of «Consejos de uso» in Preferencias. */
   on: boolean;
   /** Topics with «No volver a mostrar». */
   dismissed: readonly string[];

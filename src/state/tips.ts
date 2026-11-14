@@ -3,8 +3,8 @@
 // with «No volver a mostrar». Counting lives here: the buttons, menus, palette,
 // keys, gestures and fields report which action they ran and by which route
 // (`used` and the reports below); the table says what counts toward each tip,
-// and core/tips.js decides which one is due. «Mostrar consejos» in
-// Preferencias turns them off; on again, the dismissed ones come back.
+// and core/tips.js decides which one is due. The switch of «Consejos de uso»
+// in Preferencias turns them off; on again, the dismissed ones come back.
 
 import { create } from 'zustand';
 import { TIPS_STORAGE } from '../config.ts';
@@ -191,7 +191,7 @@ const TIDY_GAP_MS = 60_000;
 const SAME_MM = 0.05;
 
 export interface TipsState {
-  /** «Mostrar consejos». */
+  /** The switch of «Consejos de uso» in Preferencias. */
   on: boolean;
   /** The topics with «No volver a mostrar». */
   dismissed: readonly string[];
@@ -352,7 +352,7 @@ export function neverShow(topic: string) {
 }
 
 /**
- * «Mostrar consejos». Off, no tip shows and nothing counts. Turned on again,
+ * The switch of «Consejos de uso». Off, no tip shows and nothing counts. On again,
  * every tip is active again: the dismissed ones and the ones already shown
  * this session too. The known topics stay known (that tip isn't needed).
  */

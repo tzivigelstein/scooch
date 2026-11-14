@@ -72,7 +72,7 @@ export function serializeRecents(recents: Recents): Recents & { v: 1 };
 export function withRecent(ids: readonly string[], id: string): string[];
 
 export interface TipPrefs {
-  /** Usage tips show («Mostrar consejos»). */
+  /** Usage tips show (the switch of «Consejos de uso»). */
   on: boolean;
   /** Topics with «No volver a mostrar». */
   dismissed: string[];

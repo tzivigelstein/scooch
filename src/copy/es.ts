@@ -847,8 +847,9 @@ const es = {
     theme: 'Tema',
     themes: { auto: 'Automático', light: 'Claro', dark: 'Oscuro' },
     printing: 'Impresión',
-    printTip: 'Consejo antes de imprimir',
-    printSummary: 'Resumen después de imprimir',
+    // The switches under «Impresión», which names their group: the advice before printing and the summary after
+    printTip: 'Consejo',
+    printSummary: 'Resumen',
     units: 'Unidades',
     // Each unit's accessible name: its visible symbol, then its name (units.names)
     unitLabel: '{symbol}, {name}',
@@ -1003,9 +1004,9 @@ const es = {
     zoomPinch: 'También puedes acercar o alejar la vista pellizcando con dos dedos',
     alignButtons: 'Para alinear varias piezas, selecciónalas juntas y usa Alinear, en la pestaña Pieza',
     sameFile: 'Duplicar y Rellenar con copias repiten una pieza sin agregar el archivo otra vez',
-    // «Preferencias»
+    // «Preferencias»: the section and its switch (the section names its group)
     prefsTitle: 'Consejos de uso',
-    prefsSwitch: 'Mostrar consejos',
+    prefsSwitch: 'Mostrar',
   },
 };
 
