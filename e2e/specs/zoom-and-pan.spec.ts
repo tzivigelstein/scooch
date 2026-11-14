@@ -491,3 +491,22 @@ test.describe('pieces taken off the sheet', () => {
     });
   }
 });
+
+test('a zoom chosen by hand is kept after a reload, as a percentage, and the view starts at the top; a fit mode stays a fit mode', async ({ app, page }) => {
+  await app.addFiles(cards(0, 12));
+  await page.locator('#zoom-level').click();
+  await page.locator('#zoom-menu-level-200').click();
+  await expect(page.locator('#zoom-level')).toHaveText(/^200/);
+  await page.locator('#stage').evaluate((el) => (el.scrollTop = 600));
+  // Written once the zoom stops changing (or when leaving the page).
+  await page.reload();
+  await app.ready();
+  await expect(page.locator('#zoom-level')).toHaveText(/^200/);
+  expect(await page.locator('#stage').evaluate((el) => el.scrollTop)).toBe(0);
+  await page.locator('#zoom-level').click();
+  await page.locator('#zoom-menu-width').click();
+  const width = await page.locator('#zoom-level').textContent();
+  await page.reload();
+  await app.ready();
+  await expect(page.locator('#zoom-level')).toHaveText(width!);
+});
