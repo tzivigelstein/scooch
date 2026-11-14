@@ -11,6 +11,7 @@ import { LANGUAGES, resolveLanguage } from '../../src/core/language.js';
 import { parseLanguagePref } from '../../src/core/storedprefs.js';
 import { CATALOGUES } from '../../src/copy/all.ts';
 import { textsFor, textsLanguage } from '../../src/copy/index.ts';
+import { loadCatalogue } from '../../src/copy/load.ts';
 import { fillStaticCopy } from '../../src/copy/static.ts';
 import { followLanguage } from '../../src/services/language.ts';
 import { useLanguage } from '../../src/state/language.ts';
@@ -129,6 +130,38 @@ describe('the app', () => {
     localStorage.clear();
     window.dispatchEvent(new StorageEvent('storage', { key: null }));
     expect(getPrefs().language).toBe('auto');
+  });
+
+  test('another language shows as soon as its texts arrive; on «Automático» it follows the browser’s languages as they change', async () => {
+    browserSpeaks(['es-AR']);
+    const follow = followLanguage();
+    stop = follow.stop;
+    await follow.ready;
+    expect(shown()).toEqual(expected('es'));
+    setLanguage('en');
+    await vi.waitFor(() => expect(textsLanguage()).toBe('en'));
+    expect(shown()).toEqual(expected('en'));
+    expect(useLanguage.getState().language).toBe('en');
+    setLanguage('auto');
+    await vi.waitFor(() => expect(textsLanguage()).toBe('es'));
+    browserSpeaks(['en-GB', 'es']);
+    window.dispatchEvent(new Event('languagechange'));
+    await vi.waitFor(() => expect(textsLanguage()).toBe('en'));
+    expect(shown()).toEqual(expected('en'));
+  });
+
+  test('the last language chosen wins, even if an earlier one arrives later', async () => {
+    browserSpeaks(['es-AR']);
+    const follow = followLanguage();
+    stop = follow.stop;
+    await follow.ready;
+    for (const language of LANGUAGES) setLanguage(language);
+    setLanguage('es');
+    // Once every download is done (each one's own continuation comes right after it).
+    await Promise.all(LANGUAGES.map(loadCatalogue));
+    await Promise.resolve();
+    expect(textsLanguage()).toBe('es');
+    expect(shown()).toEqual(expected('es'));
   });
 
   test('choosing a language stores it', async () => {

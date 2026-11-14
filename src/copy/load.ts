@@ -8,6 +8,7 @@ type Module = { default: Catalogue };
 
 const CATALOGUES: Readonly<Record<Language, () => Promise<Module>>> = {
   es: () => import('./es.ts'),
+  en: () => import('./en.ts'),
 };
 
 const loaded = new Map<Language, Promise<Catalogue>>();

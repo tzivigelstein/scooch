@@ -4,6 +4,7 @@
 
 import type { Language } from '../core/language.js';
 import es from './es.ts';
+import en from './en.ts';
 import type { Catalogue } from './index.ts';
 
-export const CATALOGUES: Readonly<Record<Language, Catalogue>> = { es };
+export const CATALOGUES: Readonly<Record<Language, Catalogue>> = { es, en };

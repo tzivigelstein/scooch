@@ -37,6 +37,20 @@ const integerCategories = (lang: string) => {
 
 const SPANISH = leaves(es as unknown as Tree);
 
+/** Words a text may keep from Spanish in another language: key names, a paper's name, technical terms. */
+const SHARED_WORDS = new Set(['ctrl', 'control', 'shift', 'alt', 'tab', 'enter', 'esc', 'pdf', 'jpg', 'png', 'webp', 'folio', 'general', 'original', 'zoom', 'color', 'patreon']);
+
+/** What no text of a language may have (its typography: docs/copy/<language>.md). */
+const TYPOGRAPHY: Record<string, readonly { rule: string; bad: RegExp }[]> = {
+  en: [
+    { rule: 'curly quotes and apostrophes (“ ” ’), not straight ones or guillemets', bad: /["'«»]/ },
+    { rule: 'no space before %', bad: /\d %|\} %/ },
+  ],
+};
+
+/** A number and its unit, and a measurement, never break: a no-break space in every language. */
+const UNBREAKABLE = ['units.length', 'units.size', 'props.gridChip', 'cuts.weightTip'];
+
 describe.each(LANGUAGES.map((language) => [language, CATALOGUES[language]] as const))('%s', (language, catalogue: Catalogue) => {
   const own = leaves(catalogue as unknown as Tree, es as unknown as Tree);
 
@@ -52,6 +66,10 @@ describe.each(LANGUAGES.map((language) => [language, CATALOGUES[language]] as co
       expect(typeof value === 'string', `${key}: a plural where Spanish has one, and only there`).toBe(typeof spanish === 'string');
       expect(params(value), `${key}: parameters`).toEqual(params(spanish));
       if (typeof value === 'string') expect(links(value), `${key}: <link>…</link>`).toEqual(links(spanish));
+      // Every form of a plural keeps what every Spanish form says («{max}»), whatever it says of the count.
+      const always = params(spanish).filter((name) => forms(spanish).every((text) => text.includes(`{${name}}`)));
+      for (const [form, text] of Object.entries(typeof value === 'string' ? { text: value } : value))
+        expect(always.filter((name) => !text.includes(`{${name}}`)), `${key}.${form}: parameters every form has`).toEqual([]);
     }
   });
 
@@ -61,6 +79,20 @@ describe.each(LANGUAGES.map((language) => [language, CATALOGUES[language]] as co
       if (typeof value === 'string') continue;
       expect(Object.keys(value).filter((form) => form !== 'zero').sort(), `${key}: forms for ${categories.join(', ')}`).toEqual(categories);
     }
+  });
+
+  test('nothing is left in Spanish: a text the same as Spanish’s has only words every language shares', () => {
+    if (language === 'es') return;
+    const left = [...own].filter(([key, value]) => {
+      const spanish = SPANISH.get(key);
+      return JSON.stringify(value) === JSON.stringify(spanish) && forms(value).some((text) => (text.replace(/\{\w+\}/g, '').match(/\p{L}{3,}/gu) ?? []).some((word) => !SHARED_WORDS.has(word.toLowerCase())));
+    });
+    expect(left.map(([key, value]) => `${key}: ${JSON.stringify(value)}`)).toEqual([]);
+  });
+
+  test('follows its typography; numbers and units never break apart', () => {
+    for (const [key, value] of own) for (const text of forms(value)) for (const { rule, bad } of TYPOGRAPHY[language] ?? []) expect(bad.test(text), `${key}: ${rule}: «${text}»`).toBe(false);
+    for (const key of UNBREAKABLE) expect(own.get(key), key).not.toMatch(/\} \{| \{unit\}| pt$/);
   });
 
   test('says its language and number locale, and its texts are in normalized form (NFC)', () => {

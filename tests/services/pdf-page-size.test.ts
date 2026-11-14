@@ -1,13 +1,19 @@
 // The size of the PDF's pages (makePdf, built with pdf-lib in Node): exactly
 // the paper's, in points, for every preset in both orientations (landscape:
-// wider than tall) and for custom papers; and the PDF's title.
+// wider than tall) and for custom papers; and the PDF's title and file name,
+// the same in every interface language.
 import { PDFDocument } from 'pdf-lib';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { LANGUAGES } from '../../src/core/language.js';
 import { PAPERS } from '../../src/core/papers.js';
 import type { Paper } from '../../src/core/types.ts';
-import { makePdf } from '../../src/services/export.ts';
+import { CATALOGUES } from '../../src/copy/all.ts';
+import es from '../../src/copy/es.ts';
+import { setTexts } from '../../src/copy/index.ts';
+import { makePdf, pdfFileName } from '../../src/services/export.ts';
 import { addAsset } from '../../src/state/assets.ts';
 import { setDocument } from '../../src/state/document.ts';
+import { setUnit } from '../../src/state/prefs.ts';
 import { piece, resetState } from '../support/state.ts';
 
 const PT_PER_MM = 72 / 25.4;
@@ -92,4 +98,26 @@ test('every sheet with pieces is a page of the same size (two sheets, landscape)
     expect(page.width).toBeCloseTo(210 * PT_PER_MM, 6);
     expect(page.height).toBeCloseTo(148 * PT_PER_MM, 6);
   }
+});
+
+describe('the PDF and its file are the same in every language', () => {
+  afterEach(() => {
+    setTexts(es);
+    setUnit('mm');
+  });
+
+  test.each(LANGUAGES.map((language) => [language]))('in %s: the title and file name Spanish gives them, with its decimal comma', async (language) => {
+    setTexts(CATALOGUES[language]);
+    const cases: [Paper, boolean, string, string][] = [
+      ['letter', true, 'Scooch Carta horizontal', 'scooch-carta.pdf'],
+      ['photo-10x15', false, 'Scooch Foto 10 × 15', 'scooch-foto-10-15.pdf'],
+      [{ custom: true, w: 123.4, h: 170 }, false, 'Scooch 123,4 × 170 mm', 'scooch-123x170mm.pdf'],
+    ];
+    for (const [paper, landscape, title, file] of cases) {
+      expect((await pdfOf(paper, landscape)).title?.replace(/ /g, ' '), language).toBe(title);
+      expect(pdfFileName(), language).toBe(file);
+    }
+    setUnit('cm');
+    expect(pdfFileName(), 'a custom size in cm').toBe('scooch-12,34x17cm.pdf');
+  });
 });
