@@ -1,0 +1,6 @@
+{
+  "about": "scooch:theme-preference version 1: the dark theme, whatever the system's",
+  "key": "scooch:theme-preference",
+  "value": { "v": 1, "theme": "dark" },
+  "reads": { "theme": "dark" }
+}

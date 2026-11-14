@@ -17,6 +17,7 @@ import {
   SAVINGS_STORAGE,
   SECTIONS_STORAGE,
   SINGLE_KEYS_STORAGE,
+  THEME_STORAGE,
   UNIT_STORAGE,
   VIEW_STORAGE,
 } from '../config.ts';
@@ -62,6 +63,7 @@ export const SETTINGS: readonly Setting[] = [
   device('prefs', 'sections', SECTIONS_STORAGE),
   device('prefs', 'cutOptions', SECTIONS_STORAGE),
   device('prefs', 'printing', PRINT_STORAGE),
+  device('prefs', 'theme', THEME_STORAGE),
   device('view', 'zoomMode', VIEW_STORAGE),
   device('view', 'zoom', VIEW_STORAGE),
   device('view', 'alignTo', VIEW_STORAGE),

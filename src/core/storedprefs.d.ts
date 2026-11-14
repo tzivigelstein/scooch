@@ -21,6 +21,18 @@ export interface PrintPrefs {
 export function parsePrintPrefs(raw: unknown): PrintPrefs;
 export function serializePrintPrefs(prefs: PrintPrefs): PrintPrefs & { v: 1 };
 
+/** The option of «Tema»: 'auto' follows the system's. */
+export type ThemeChoice = 'auto' | 'light' | 'dark';
+export type Theme = 'light' | 'dark';
+export const THEMES: readonly ThemeChoice[];
+
+export interface ThemePrefs {
+  theme: ThemeChoice;
+}
+export function parseThemePref(raw: unknown): ThemePrefs;
+export function serializeThemePref(prefs: ThemePrefs): ThemePrefs & { v: 1 };
+export function resolveTheme(theme: ThemeChoice, systemDark: boolean): Theme;
+
 export type SectionName = 'sheet' | 'arrange' | 'cuts' | 'grid';
 export const SECTION_NAMES: readonly SectionName[];
 

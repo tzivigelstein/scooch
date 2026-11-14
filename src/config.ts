@@ -52,6 +52,8 @@ export const GRID_MAX = 50;
 export const PIECES_STORAGE = stored('piece-preferences');
 /** Unit of the lengths ('mm' | 'cm' | 'in'), chosen in «Preferencias». */
 export const UNIT_STORAGE = stored('unit-preference');
+/** The theme chosen in «Preferencias» ({v: 1, theme: 'auto' | 'light' | 'dark'}); index.html reads it before the first paint. */
+export const THEME_STORAGE = stored('theme-preference');
 /**
  * Last-moment journal of an open project (if the tab closed before saving
  * finished): one key per project, «scooch:journal:<id>», so two tabs closing

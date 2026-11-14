@@ -11,9 +11,10 @@ import {
   PRINT_STORAGE,
   SECTIONS_STORAGE,
   SINGLE_KEYS_STORAGE,
+  THEME_STORAGE,
   UNIT_STORAGE,
 } from '../config.ts';
-import { parsePrintPrefs, parseSections, serializePrintPrefs, serializeSections, type PrintPrefs, type SectionName } from '../core/storedprefs.js';
+import { parsePrintPrefs, parseSections, parseThemePref, serializePrintPrefs, serializeSections, serializeThemePref, type PrintPrefs, type SectionName, type ThemeChoice } from '../core/storedprefs.js';
 import { isUnit, type Unit } from '../core/units.js';
 import { clamp } from '../core/util.ts';
 import { storageGet, storageJson, storageSet } from '../services/storage/local.ts';
@@ -38,6 +39,8 @@ export interface PrefsState {
   cutOptions: boolean;
   /** The advice before printing or downloading, and the summary after, show. */
   printing: PrintPrefs;
+  /** «Tema»: 'auto' follows the system's (services/theme.ts shows it). */
+  theme: ThemeChoice;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -61,6 +64,7 @@ function loadPrefs(): PrefsState {
     grid: loadGrid(),
     ...parseSections(storageJson(SECTIONS_STORAGE)),
     printing: parsePrintPrefs(storageJson(PRINT_STORAGE)),
+    ...parseThemePref(storageJson(THEME_STORAGE)),
   };
 }
 
@@ -108,6 +112,14 @@ export function setPrinting(changes: Partial<PrintPrefs>) {
   usePrefs.setState({ printing });
   storageSet(PRINT_STORAGE, JSON.stringify(serializePrintPrefs(printing)));
 }
+
+export function setTheme(theme: ThemeChoice) {
+  usePrefs.setState({ theme });
+  storageSet(THEME_STORAGE, JSON.stringify(serializeThemePref({ theme })));
+}
+
+/** Another tab of this browser stored a theme: this one takes it too, without writing it again. */
+export const readStoredTheme = () => usePrefs.setState(parseThemePref(storageJson(THEME_STORAGE)));
 
 /** «Más opciones» of the cut lines opened or closed. */
 export function setCutOptionsOpen(open: boolean) {

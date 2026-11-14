@@ -44,6 +44,23 @@ export function parsePrintPrefs(raw) {
 
 export const serializePrintPrefs = ({ tip, summary }) => ({ v: 1, tip, summary });
 
+// ---------- Theme (scooch:theme-preference) ----------
+//
+// Version 1: {v: 1, theme: 'auto' | 'light' | 'dark'}; 'auto' follows the
+// system's. The script in index.html reads it too, before the first paint.
+
+export const THEMES = Object.freeze(['auto', 'light', 'dark']);
+
+export function parseThemePref(raw) {
+  const saved = isRecord(raw) ? raw : {};
+  return { theme: oneOf(saved.theme, THEMES, 'auto') };
+}
+
+export const serializeThemePref = ({ theme }) => ({ v: 1, theme });
+
+/** The theme the page shows: the chosen one, or the system's on 'auto'. */
+export const resolveTheme = (theme, systemDark) => (theme === 'auto' ? (systemDark ? 'dark' : 'light') : theme);
+
 // ---------- Panel sections (scooch:panel-sections) ----------
 //
 // Version 1 (no `v`): {sheet?, arrange?, cuts?, grid?: boolean}, false when

@@ -13,7 +13,7 @@ import { SETTINGS, type Setting } from '../../src/state/settings.ts';
 import { allAssets } from '../../src/state/assets.ts';
 import { getDocument, setDocument, useDocument } from '../../src/state/document.ts';
 import { commit, undo } from '../../src/state/history.ts';
-import { setCutOptionsOpen, setGrid, setPrinting, setSectionOpen, setSingleKeys, setUnit, usePrefs } from '../../src/state/prefs.ts';
+import { setCutOptionsOpen, setGrid, setPrinting, setSectionOpen, setSingleKeys, setTheme, setUnit, usePrefs } from '../../src/state/prefs.ts';
 import { recordSavings } from '../../src/state/savings.ts';
 import { rememberView, setView, useView } from '../../src/state/view.ts';
 import { setPaperSide, choosePaper } from '../../src/state/actions/sheets.ts';
@@ -43,6 +43,7 @@ const CHANGES: Record<string, () => void> = {
   'prefs.sections': () => setSectionOpen('grid', false),
   'prefs.cutOptions': () => setCutOptionsOpen(true),
   'prefs.printing': () => setPrinting({ summary: false }),
+  'prefs.theme': () => setTheme('dark'),
   'view.zoomMode': () => (setView({ zoomMode: 'width' }), rememberView()),
   'view.zoom': () => (setView({ zoomMode: 'manual', zoom: fromPercent(250) }), rememberView()),
   'view.alignTo': () => (setView({ alignTo: 'sheet' }), rememberView()),

@@ -11,10 +11,13 @@ import {
   parsePrintPrefs,
   parseSavings,
   parseSections,
+  parseThemePref,
   parseViewPrefs,
+  resolveTheme,
   serializePrintPrefs,
   serializeSavings,
   serializeSections,
+  serializeThemePref,
   serializeViewPrefs,
 } from '../../src/core/storedprefs.js';
 
@@ -30,6 +33,7 @@ const SHAPES = {
   'scooch:view-preferences': { parse: parseViewPrefs, serialize: serializeViewPrefs },
   'scooch:print-preferences': { parse: parsePrintPrefs, serialize: serializePrintPrefs },
   'scooch:savings': { parse: parseSavings, serialize: serializeSavings },
+  'scooch:theme-preference': { parse: parseThemePref, serialize: serializeThemePref },
 };
 
 describe('stored preferences of every version', () => {
@@ -78,6 +82,23 @@ describe('printing preferences and savings', () => {
     const many = Array.from({ length: COUNTED_MAX + 5 }, (_, i) => `k${i}`);
     expect(parseSavings({ v: 2, sheets: 3, turn: 0, counted: many }).counted).toEqual(many.slice(5));
     expect(serializeSavings({ sheets: 3, turn: 0, counted: many }).counted).toEqual(many.slice(5));
+  });
+});
+
+describe('theme', () => {
+  test('nothing saved, or something that can’t be read: automatic', () => {
+    for (const raw of [null, 'dark', [], { theme: 'sepia' }, { theme: true }]) expect(parseThemePref(raw), JSON.stringify(raw)).toEqual({ theme: 'auto' });
+  });
+
+  test.each([
+    ['auto', false, 'light'],
+    ['auto', true, 'dark'],
+    ['light', false, 'light'],
+    ['light', true, 'light'],
+    ['dark', false, 'dark'],
+    ['dark', true, 'dark'],
+  ])('%s with a dark system %s shows the %s theme', (theme, systemDark, shown) => {
+    expect(resolveTheme(theme, systemDark)).toBe(shown);
   });
 });
 
