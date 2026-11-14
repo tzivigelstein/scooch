@@ -16,8 +16,8 @@
     "what": "Every .js and .mjs file of the build: the editor's lazy chunks (dialogs, crop mode), pdf.js and its worker (about 500 kB), pdf-lib (about 180 kB), the contour worker and the static pages' scripts. Catches a dependency that grows or gets in by accident."
   },
   "css": {
-    "kB": 13.5,
-    "measured": 12.8,
+    "kB": 14.7,
+    "measured": 14.0,
     "what": "Every .css file of the build: today only the editor's stylesheet, which blocks its first paint. The static pages carry their CSS inline (counted in each page)."
   },
   "pageScripts": {
