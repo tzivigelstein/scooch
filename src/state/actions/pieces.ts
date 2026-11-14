@@ -377,6 +377,15 @@ function scaleSelectionBy(delta: number) {
 
 export type LengthField = 'x' | 'y' | 'width' | 'height';
 
+/** Are the selected pieces (or `list`) on more than one sheet? */
+export const spansSheets = (list: readonly Piece[] = selectedItems()) => new Set(list.map((item) => item.sheet)).size > 1;
+
+/**
+ * Why the measure fields are off, or null. On several sheets there is no one
+ * box to show or type: each sheet's part has its own.
+ */
+export const lengthFieldsOff = () => (spansSheets() ? t('menu.reasons.oneSheet') : null);
+
 // The selection's box on the primary piece's sheet (or of `list`, during a gesture).
 export function primaryBox(list: readonly Piece[] = selectedItems()) {
   const primaryId = getDocument().selection.at(-1);
@@ -392,10 +401,11 @@ export function primaryBox(list: readonly Piece[] = selectedItems()) {
   return { x: x0, y: y0, w: Math.max(...rects.map((r) => r.x + r.w)) - x0, h: Math.max(...rects.map((r) => r.y + r.h)) - y0 };
 }
 
-/** The value a length field shows, in mm (the piece's, or the group box's), or null without a selection. */
+/** The value a length field shows, in mm (the piece's, or the group box's), or null without a selection or while the fields are off. */
 export function lengthFieldValue(field: LengthField): number | null {
   const doc = getDocument();
   if (doc.selection.length > 1) {
+    if (spansSheets()) return null;
     const box = primaryBox();
     return { x: box.x, y: box.y, width: box.w, height: box.h }[field];
   }
@@ -413,7 +423,7 @@ export function lengthFieldValue(field: LengthField): number | null {
 export function lengthFieldRange(field: LengthField): { min: number; max: number } | null {
   const [W, H] = sheetSize();
   const list = selectedItems();
-  if (!list.length) return null;
+  if (!list.length || spansSheets(list)) return null;
   if (field === 'x' || field === 'y') {
     const total = field === 'x' ? W : H;
     const box = primaryBox(list);
@@ -463,6 +473,10 @@ function singleLengthPatch(item: Piece, field: LengthField, mm: number): Partial
 /** Applies a length typed or stepped in a field (`final`: confirmed). */
 export function setLengthField(field: LengthField, mm: number, { final = false } = {}) {
   if (isGroup()) {
+    if (spansSheets()) {
+      if (final) endEdit();
+      return;
+    }
     if (field === 'x' || field === 'y') moveGroupTo(field, mm, { final });
     else resizeGroupTo(field === 'width' ? 'w' : 'h', mm, { final });
     return;
@@ -478,9 +492,9 @@ export function setLengthField(field: LengthField, mm: number, { final = false }
 }
 
 /**
- * X and Y fields with several pieces: the group box on the primary's sheet
- * moves to (x, y); the other parts move the same. With `final`, if it isn't
- * valid, it goes back to before the edit and explains why.
+ * X and Y fields with several pieces on one sheet: the group box moves to
+ * (x, y). With `final`, if it isn't valid, it goes back to before the edit and
+ * explains why.
  */
 function moveGroupTo(axis: Axis, mm: number, { final = false } = {}) {
   const key = `group-${axis}`;
@@ -495,9 +509,8 @@ function moveGroupTo(axis: Axis, mm: number, { final = false } = {}) {
 }
 
 /**
- * Width and height fields with several pieces: the group box (on the
- * primary's sheet) takes `mm`, in proportion, from its top left corner; the
- * other parts change the same.
+ * Width and height fields with several pieces on one sheet: the group box
+ * takes `mm`, in proportion, from its top left corner.
  */
 function resizeGroupTo(axis: 'w' | 'h', mm: number, { final = false } = {}) {
   const key = `group-${axis}`;

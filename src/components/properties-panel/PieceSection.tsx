@@ -1,6 +1,6 @@
 // The «Pieza» section: only with a selection; with several, how many and
-// where, the group's box, the shared scale and align and distribute. Lengths
-// show and read in the chosen unit.
+// where, the group's box (none when they are on several sheets), the shared
+// scale and align and distribute. Lengths show and read in the chosen unit.
 
 import {
   AlignCenterHorizontal,
@@ -61,6 +61,7 @@ import {
   fit,
   lengthFieldKey,
   lengthFieldRange,
+  lengthFieldsOff,
   lengthFieldValue,
   maxCopies,
   overlapsOthers,
@@ -69,6 +70,7 @@ import {
   scaleFieldKey,
   setLengthField,
   setScaleField,
+  spansSheets,
   type LengthField as LengthFieldName,
 } from '../../state/actions/pieces.ts';
 import { selectSame } from '../../state/actions/selection.ts';
@@ -157,14 +159,15 @@ const FIELDS: readonly { field: LengthFieldName; id: string; prefix: () => React
 /** The displayed values of a selection (or of a gesture's live copies). */
 function shown(list: readonly Piece[]) {
   if (list.length > 1) {
-    const box = primaryBox(list);
+    // On several sheets there is no one box: the measures stay empty.
+    const box = spansSheets(list) ? null : primaryBox(list);
     const scale = common(
       list.map((item) => item.scale),
       0.05
     );
     const primaryId = getDocument().selection.at(-1);
     const primary = list.find((item) => item.id === primaryId) ?? list.at(-1)!;
-    return { x: box.x, y: box.y, width: box.w, height: box.h, scale, slider: clamp(scale ?? primary.scale, 1, 200) };
+    return { x: box?.x ?? null, y: box?.y ?? null, width: box?.w ?? null, height: box?.h ?? null, scale, slider: clamp(scale ?? primary.scale, 1, 200) };
   }
   const item = list[0];
   const [w, h] = dims(item);
@@ -261,6 +264,7 @@ export function PieceSection() {
   // Several: how many and where, as one name («6 piezas en 4 hojas»).
   const groupName =
     !primary || !group ? '' : sheetCount > 1 ? t('props.groupNameSheets', { n, sheets: t('sheet.count', { n: sheetCount }) }) : t('props.groupName', { n, i: sheetIndex(primary.sheet) + 1 });
+  const fieldsOff = group ? lengthFieldsOff() : null;
   const paged = asset?.kind === 'pdf' && asset.pages > 1;
   const name = !asset || group ? '' : paged && asset.kind === 'pdf' ? t('props.pieceNamePage', { name: asset.name, page: asset.page }) : asset.name;
   const res = single ? resolution(single) : null;
@@ -289,25 +293,34 @@ export function PieceSection() {
         </p>
         <div className="prop-grid">
           {FIELDS.map(({ field, id, prefix, label, tip }) => (
-            <NumField key={id} prefix={prefix()} unit={unit} preview={field}>
+            // Off (on several sheets): empty, in place, saying why; nothing to show on the canvas.
+            <NumField key={id} prefix={prefix()} unit={unit} preview={fieldsOff ? undefined : field}>
               <LengthField
                 ref={(handle) => {
                   fields.current[field] = handle;
                 }}
                 id={id}
                 data-tip={t(tip)}
+                data-tip-note={fieldsOff ?? undefined}
                 aria-label={t(label, { unit: unitName() })}
-                aria-describedby={(field === 'width' || field === 'height') && single ? (single.r ? 'resolution-note rotation-note' : 'resolution-note') : undefined}
+                aria-describedby={fieldsOff ? 'length-fields-off' : (field === 'width' || field === 'height') && single ? (single.r ? 'resolution-note rotation-note' : 'resolution-note') : undefined}
+                aria-disabled={fieldsOff ? true : undefined}
+                readOnly={!!fieldsOff}
                 disabled={busyOff(busy, `#${id}`)}
                 value={() => lengthFieldValue(field)}
                 range={() => lengthFieldRange(field)}
                 editKey={() => lengthFieldKey(field)}
-                busy={() => getDocument().busy || !getDocument().selection.length}
+                busy={() => getDocument().busy || !getDocument().selection.length || spansSheets()}
                 apply={(mm, { final }) => setLengthField(field, mm, { final })}
               />
             </NumField>
           ))}
         </div>
+        {fieldsOff && (
+          <span id="length-fields-off" hidden>
+            {fieldsOff}
+          </span>
+        )}
         <div className="scale-row">
           <NumField prefix={<Icon icon={Scaling} />} unit={t('units.percent')}>
             <NumberField

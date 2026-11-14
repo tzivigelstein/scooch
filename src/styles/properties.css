@@ -138,7 +138,7 @@ input[type="text"] {
 
 select:hover:not(:disabled),
 input[type="number"]:hover:not(:disabled),
-input[type="text"]:hover:not(:disabled) {
+input[type="text"]:hover:not(:disabled):not([aria-disabled="true"]) {
   border-color: var(--text);
 }
 
@@ -163,7 +163,8 @@ input[type="text"]:focus-visible {
 }
 
 select:disabled,
-input:disabled {
+input:disabled,
+input[aria-disabled="true"] {
   opacity: 0.5;
   cursor: not-allowed;
 }
