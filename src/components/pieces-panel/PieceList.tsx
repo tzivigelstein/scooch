@@ -7,7 +7,7 @@
 // go from one group to the next. The list's selection and the sheet's are the
 // same.
 
-import { Layers, Scissors, SquareDashed, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { Layers, SquareArrowOutDownRight, SquareDashed, TriangleAlert, type LucideIcon } from 'lucide-react';
 import { memo, useLayoutEffect, useMemo, useRef, type FocusEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import { rangeBetween } from '../../core/group.js';
 import { t } from '../../copy/index.ts';
@@ -29,9 +29,9 @@ import { Icon } from '../ui/Icon.tsx';
 /** The side of a row's thumbnail, in rem (the box is 2.25rem with a border). */
 const THUMB_REM = 1.875;
 
-// Each row's badges (their text is in pieces.badges.<key>).
+// Each row's badges (their text is in pieces.badges.<key>). Scissors are «Cortar»: sticking out has its own icon.
 const BADGES: readonly { key: 'cut' | 'pastMargin' | 'overlap' | 'lowRes'; icon: LucideIcon }[] = [
-  { key: 'cut', icon: Scissors },
+  { key: 'cut', icon: SquareArrowOutDownRight },
   { key: 'pastMargin', icon: SquareDashed },
   { key: 'overlap', icon: Layers },
   { key: 'lowRes', icon: TriangleAlert },

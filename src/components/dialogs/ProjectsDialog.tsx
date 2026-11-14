@@ -1,6 +1,6 @@
 // «Proyectos»: new project, open, duplicate, rename, delete and the space used.
 
-import { Copy, Pencil, Plus, Trash2, TriangleAlert, X, type LucideIcon } from 'lucide-react';
+import { CopyPlus, Pencil, Plus, Trash2, TriangleAlert, X, type LucideIcon } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { formatBytes, relativeTime, storageShare } from '../../core/humanize.js';
 import { sizeOf } from '../../core/papers.js';
@@ -131,7 +131,7 @@ function Card({ record, current, thumb, renaming, onRename }: { record: ListedPr
         )}
       </span>
       <div className="project-actions">
-        {tool('duplicate', Copy, 'projects.duplicateLabel', 'projects.duplicate', closed)}
+        {tool('duplicate', CopyPlus, 'projects.duplicateLabel', 'projects.duplicate', closed)}
         {tool('rename', Pencil, 'projects.renameLabel', 'projects.rename', closed)}
         {tool('delete', Trash2, 'projects.deleteLabel', 'projects.delete')}
       </div>
