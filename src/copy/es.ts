@@ -275,13 +275,11 @@ const es = {
     alignBottom: 'Alinear abajo',
     distribute: 'Distribuir',
     distributeBy: 'Distribuir con',
-    distributeGap: 'Separación',
+    // The gap of «Distribución», already formatted: «Separación (5 mm)»
+    distributeGap: 'Separación ({gap})',
     distributeEven: 'Repartir parejo',
     distributeX: 'Distribuir en horizontal',
     distributeY: 'Distribuir en vertical',
-    distributeGapTip: '{gap} entre piezas, la separación de Distribución',
-    distributeEvenTip: 'El mismo espacio entre piezas, de la primera a la última',
-    distributeGapNote: 'A {gap}',
     distributeNeedTwo: 'Selecciona 2 piezas o más de una misma hoja para distribuir',
     distributeNeedThree: 'Selecciona 3 piezas o más de una misma hoja para repartir parejo',
     resolution: {
@@ -314,9 +312,7 @@ const es = {
 
   // Crop and standard photo sizes (ids in src/core/crop.js)
   crop: {
-    size: 'Tamaño',
-    sizeLabel: 'Tamaño de la pieza',
-    sizeTip: 'Recorta la pieza a un tamaño de foto estándar, sin deformarla',
+    size: 'Tamaño de foto',
     original: 'Original',
     custom: 'Recorte libre',
     mixed: 'Mixto',
@@ -365,12 +361,10 @@ const es = {
     more: 'Más opciones',
     margin: 'Margen de corte',
     marginLabel: 'Margen de corte, en {unit}',
-    length: 'Largo',
+    length: 'Largo de las marcas',
     lengthLabel: 'Largo de las marcas, en {unit}',
-    lengthTip: 'Largo de las marcas',
-    offset: 'Distancia',
-    offsetLabel: 'Distancia de las marcas a la esquina, en {unit}',
-    offsetTip: 'Distancia de las marcas a la esquina',
+    offset: 'Distancia a la esquina',
+    offsetLabel: 'Distancia a la esquina, en {unit}',
     weight: 'Grosor',
     weights: { thin: 'Fina', medium: 'Media', thick: 'Gruesa' },
     weightTip: '{n} pt',

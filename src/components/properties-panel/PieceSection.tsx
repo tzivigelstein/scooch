@@ -339,8 +339,6 @@ export function PieceSection() {
             <span className="field-label">{t('crop.size')}</span>
             <select
               id="photo-size"
-              aria-label={t('crop.sizeLabel')}
-              data-tip={t('crop.sizeTip')}
               value={photoValue}
               disabled={busyOff(busy, '#photo-size')}
               onChange={(e) => applyPhotoSize(e.target.value)}
@@ -441,7 +439,7 @@ export function PieceSection() {
               value={distribute}
               onChange={(value) => setView({ distribute: value })}
               options={[
-                { value: 'gap', label: <span>{t('props.distributeGap')}</span> },
+                { value: 'gap', label: <span>{t('props.distributeGap', { gap: gapText })}</span> },
                 { value: 'even', label: <span>{t('props.distributeEven')}</span> },
               ]}
             />
@@ -456,7 +454,7 @@ export function PieceSection() {
                   icon={axis === 'x' ? AlignHorizontalSpaceBetween : AlignVerticalSpaceBetween}
                   label={label}
                   tip={label}
-                  note={enabled ? (distribute === 'gap' ? t('props.distributeGapTip', { gap: gapText }) : t('props.distributeEvenTip')) : why}
+                  note={enabled ? undefined : why}
                   shortcut={axis === 'x' ? 'distributeX' : 'distributeY'}
                   aria-disabled={!enabled}
                   disabled={busyOff(busy, `[data-distribute="${axis}"]`)}
@@ -468,9 +466,6 @@ export function PieceSection() {
                 />
               );
             })}
-            <p id="distribute-note" className="tools-note">
-              {distribute === 'gap' ? t('props.distributeGapNote', { gap: gapText }) : ''}
-            </p>
           </div>
         </div>
         <div className="copy-row">

@@ -65,10 +65,10 @@ describe('cut line modes', () => {
   test('outline: the marks’ length and distance hide; the cut margin stays', () => {
     setMode('corners');
     expect(field('Largo de las marcas, en milímetros').id).toBe('cut-length');
-    expect(field('Distancia de las marcas a la esquina, en milímetros').id).toBe('cut-offset');
+    expect(field('Distancia a la esquina, en milímetros').id).toBe('cut-offset');
     setMode('outline');
     expect(screen.queryByRole('textbox', { name: 'Largo de las marcas, en milímetros' })).toBeNull();
-    expect(screen.queryByRole('textbox', { name: 'Distancia de las marcas a la esquina, en milímetros' })).toBeNull();
+    expect(screen.queryByRole('textbox', { name: 'Distancia a la esquina, en milímetros' })).toBeNull();
     expect(field('Margen de corte, en milímetros').id).toBe('cut-margin');
   });
 });

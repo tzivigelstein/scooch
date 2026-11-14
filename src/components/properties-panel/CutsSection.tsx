@@ -148,7 +148,6 @@ export function CutsSection() {
                     <LengthField
                       id={`cut-${name}`}
                       aria-label={t(name === 'length' ? 'cuts.lengthLabel' : 'cuts.offsetLabel', { unit: unitName() })}
-                      data-tip={t(name === 'length' ? 'cuts.lengthTip' : 'cuts.offsetTip')}
                       disabled={busy}
                       value={() => getDocument().cuts[name]}
                       range={() => ({ min: CUT_LIMITS[name][0], max: CUT_LIMITS[name][1] })}

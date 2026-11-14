@@ -57,14 +57,16 @@ describe('align and distribute tools', () => {
     expect(heard()).toBe(`${NEED_THREE}.`);
   });
 
-  test('two pieces with «Separación»: distribute is enabled, with the gap in its note', () => {
+  test('two pieces with «Separación»: distribute is enabled with no note, and the option says the gap', () => {
     act(() => setSelection([1, 2]));
     fireEvent.click(document.querySelector('#distribute-mode input[value="even"]')!);
     fireEvent.click(document.querySelector('#distribute-mode input[value="gap"]')!);
     for (const button of distributeButtons()) {
       expect(button.getAttribute('aria-disabled')).toBe('false');
-      expect(button.dataset.tipNote?.replace(/ /g, ' ')).toBe('5 mm entre piezas, la separación de Distribución');
+      expect(button.dataset.tipNote).toBeUndefined();
     }
+    expect(document.querySelector('#distribute-mode input[value="gap"]')!.closest('label')!.textContent!.replace(/ /g, ' ')).toBe('Separación (5 mm)');
+    expect(document.getElementById('distribute-note')).toBeNull();
   });
 
   test('several pieces: the «Alinear a» selector shows, not the printable-area note', () => {

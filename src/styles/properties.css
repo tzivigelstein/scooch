@@ -389,11 +389,6 @@ input[type="range"] {
   gap: 0.25rem;
 }
 
-.tool-row .tools-note {
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
-}
-
 .segmented.chips.small > .seg > span {
   height: 1.5rem;
   padding: 0 0.5rem;
