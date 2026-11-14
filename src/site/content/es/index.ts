@@ -23,7 +23,7 @@ function notFound(): SitePage {
     lang: 'es',
     path: '/404',
     title: `Página no encontrada · ${app}`,
-    description: `Esta página de ${app} no existe.`,
+    description: `Esta dirección no lleva a ninguna página de ${app}. Abre el editor o mira las guías y las preguntas frecuentes.`,
     h1: 'No encontramos esta página',
     crumb: 'Página no encontrada',
     kind: 'error',

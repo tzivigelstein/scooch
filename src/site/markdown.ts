@@ -80,7 +80,8 @@ export function renderMarkdown(md: string, { link = (href) => href, shift = 0 }:
       const body: string[] = [];
       for (i++; i < lines.length && !/^```\s*$/.test(lines[i]); i++) body.push(lines[i]);
       i++;
-      out.push(`<pre><code>${esc(body.join('\n'))}</code></pre>`);
+      // Focusable: long lines scroll sideways, also with the keyboard.
+      out.push(`<pre tabindex="0"><code>${esc(body.join('\n'))}</code></pre>`);
       continue;
     }
     const heading = /^(#{1,6})\s+(.+?)\s*$/.exec(line);

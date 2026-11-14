@@ -31,7 +31,7 @@ describe('blocks', () => {
   });
 
   test('fenced code is shown as it is, escaped', () => {
-    expect(md('```text\nCopyright <c> 2024 & co\n\n  indented\n```')).toBe('<pre><code>Copyright &lt;c&gt; 2024 &amp; co\n\n  indented</code></pre>');
+    expect(md('```text\nCopyright <c> 2024 & co\n\n  indented\n```')).toBe('<pre tabindex="0"><code>Copyright &lt;c&gt; 2024 &amp; co\n\n  indented</code></pre>');
   });
 
   test('comments are dropped, other HTML shows as text', () => {
