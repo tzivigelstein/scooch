@@ -20,10 +20,10 @@ import { fakeImageMm, piece, resetState } from '../support/state.ts';
 const plain = (s: string | null | undefined) => String(s ?? '').replace(/[  ]/g, ' ').trim();
 const field = () => screen.getByRole('combobox');
 const options = () => screen.queryAllByRole('option');
-/** Each option's name (its label), as a screen reader hears it. */
-const names = () => options().map((o) => plain(document.getElementById(o.getAttribute('aria-labelledby')!)?.textContent));
+/** Each option's label (its name, without the reason it can't run). */
+const names = () => options().map((o) => plain(o.querySelector('.palette-label')?.textContent));
 const active = () => document.getElementById(field().getAttribute('aria-activedescendant') ?? '');
-const activeName = () => plain(document.getElementById(active()?.getAttribute('aria-labelledby') ?? '')?.textContent);
+const activeName = () => plain(active()?.querySelector('.palette-label')?.textContent);
 const press = (key: string, init: KeyboardEventInit = {}) => fireEvent.keyDown(field(), { key, ...init });
 const type = (text: string) => fireEvent.change(field(), { target: { value: text } });
 
@@ -170,7 +170,10 @@ describe('running a command', () => {
     type('acomodar');
     const arrange = options()[0];
     expect(arrange.getAttribute('aria-disabled')).toBe('true');
-    expect(plain(document.getElementById(arrange.getAttribute('aria-describedby')!)?.textContent)).toBe('Todavía no hay piezas');
+    const why = document.getElementById(arrange.getAttribute('aria-describedby')!)!;
+    expect(plain(why.textContent)).toBe('Todavía no hay piezas');
+    // Said as its description, not as part of its name.
+    expect(why.getAttribute('aria-hidden')).toBe('true');
     press('Enter');
     press('Enter');
     expect(useDialogs.getState().open.palette).toBeDefined();

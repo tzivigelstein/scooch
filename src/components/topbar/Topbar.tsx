@@ -65,7 +65,8 @@ export function Topbar() {
 
       <div className="bar-group end">
         {/* The way to the palette: its keys show (not only in the tooltip) so it can be found. */}
-        <Button id="palette-open" className="tool palette-open" aria-haspopup="dialog" aria-label={t('palette.title')} icon={Search} tip={t('palette.title')} shortcut="palette" onClick={openPalette}>
+        <Button id="palette-open" className="tool palette-open" aria-haspopup="dialog" icon={Search} tip={t('palette.title')} shortcut="palette" onClick={openPalette}>
+          <span className="sr-only">{t('palette.title')}</span>
           <kbd className="palette-open-keys" aria-hidden="true">
             {keyLabel(SHORTCUTS.palette.kbd)}
           </kbd>

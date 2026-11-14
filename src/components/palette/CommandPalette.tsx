@@ -143,14 +143,13 @@ export default function CommandPalette() {
         aria-selected={i === index ? 'true' : undefined}
         aria-disabled={o.disabled ? 'true' : undefined}
         aria-current={o.current ? 'true' : undefined}
-        aria-labelledby={`${id}-label`}
         aria-describedby={o.disabled ? `${id}-why` : undefined}
         aria-keyshortcuts={o.shortcut?.aria}
         onPointerMove={() => i !== index && setActive(i)}
         onClick={() => choose(o)}
       >
         <span className="palette-icon">{o.icon && <Icon icon={o.icon} />}</span>
-        <span id={`${id}-label`} className="palette-label">
+        <span className="palette-label">
           {marked(o.label, o.ranges)}
         </span>
         <span className="palette-end" aria-hidden="true">
@@ -159,7 +158,8 @@ export default function CommandPalette() {
           {o.more && <Icon icon={ChevronRight} />}
         </span>
         {o.disabled && (
-          <span id={`${id}-why`} className="palette-why">
+          // Its description, not part of its name.
+          <span id={`${id}-why`} className="palette-why" aria-hidden="true">
             {o.disabled}
           </span>
         )}
