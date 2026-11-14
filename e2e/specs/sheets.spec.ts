@@ -6,11 +6,10 @@
 // placeholders, by mouse, touch and zoomed in, and the context menu's
 // keyboard path), and how far something held at an edge scrolls the stage.
 // What these actions do exactly is in tests/state/sheets.test.ts.
-import type { Page } from '@playwright/test';
 import { expect, test, cards } from '../support/test.ts';
 import { frames, setZoom } from '../support/canvas.ts';
 import { outsideMargin, overlapping } from '../support/geometry.ts';
-import { counts, holdPiece, lastSheetBottom, pageAt, pieceIds, placeholders, sheetIds, stageBox, toBelowLastSheet } from '../support/sheets.ts';
+import { counts, holdPiece, lastSheetBottom, pageAt, pieceIds, placeholders, scrollOf, scrollStops, sheetIds, stageBox, toBelowLastSheet } from '../support/sheets.ts';
 
 test('«Acomodar» puts 20 equal cards back on 3 sheets, 9 + 9 + 2, and says so; each sheet is a group named after its visible label', async ({ app, page }) => {
   await app.addFiles(cards(0, 20));
@@ -355,29 +354,6 @@ test.describe('dragging pieces out of the sheets onto a new sheet', () => {
 });
 
 test.describe('something held at an edge of the stage scrolls it only as far as there is something to show', () => {
-  /** The stage's scroll and how far it reaches (px). */
-  const scrollOf = (p: Page) =>
-    p.evaluate(() => {
-      const s = document.getElementById('stage')!;
-      return { top: s.scrollTop, left: s.scrollLeft, height: s.scrollHeight, width: s.scrollWidth, maxTop: s.scrollHeight - s.clientHeight, maxLeft: s.scrollWidth - s.clientWidth };
-    });
-
-  /** Waits, frame by frame, until the stage scrolls no more by itself; returns where it stopped. */
-  async function scrollStops(p: Page) {
-    await expect
-      .poll(
-        async () => {
-          const a = await scrollOf(p);
-          await frames(p, 10);
-          const b = await scrollOf(p);
-          return a.top === b.top && a.left === b.left && a.height === b.height && a.width === b.width;
-        },
-        { intervals: [0], message: 'the stage stops scrolling' }
-      )
-      .toBe(true);
-    return scrollOf(p);
-  }
-
   test('a piece held below the bottom edge with one sheet: the stage scrolls until the new sheet’s placeholder shows whole and stops there for good, past the window too; with Esc the extent is the one it had, dropped it is the new document’s', async ({ app, page }) => {
     await app.addFiles(cards(0, 2));
     const [[id]] = await pieceIds(app);

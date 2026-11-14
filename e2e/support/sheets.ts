@@ -1,7 +1,8 @@
 // Helpers for the sheets specs: how many pieces each sheet has, the new-sheet
 // placeholders shown while dragging, and holding a piece with the pointer
-// while the stage scrolls by itself.
+// while the stage scrolls by itself (and waiting until it stops).
 import type { Page } from '@playwright/test';
+import { frames } from './canvas.ts';
 import { expect, type App } from './test.ts';
 
 /** Pieces per sheet, in order. */
@@ -80,6 +81,29 @@ export async function holdPiece(app: App, id: number) {
 
 /** The stage's box on screen. */
 export const stageBox = async (p: Page) => (await p.locator('#stage').boundingBox())!;
+
+/** The stage's scroll and how far it reaches (px). */
+export const scrollOf = (p: Page) =>
+  p.evaluate(() => {
+    const s = document.getElementById('stage')!;
+    return { top: s.scrollTop, left: s.scrollLeft, height: s.scrollHeight, width: s.scrollWidth, maxTop: s.scrollHeight - s.clientHeight, maxLeft: s.scrollWidth - s.clientWidth };
+  });
+
+/** Waits, frame by frame, until the stage scrolls no more by itself; returns where it stopped. */
+export async function scrollStops(p: Page) {
+  await expect
+    .poll(
+      async () => {
+        const a = await scrollOf(p);
+        await frames(p, 10);
+        const b = await scrollOf(p);
+        return a.top === b.top && a.left === b.left && a.height === b.height && a.width === b.width;
+      },
+      { intervals: [0], message: 'the stage stops scrolling' }
+    )
+    .toBe(true);
+  return scrollOf(p);
+}
 
 /** The bottom of the last sheet's box, on screen. */
 export const lastSheetBottom = (p: Page) => p.evaluate(() => [...document.querySelectorAll('#sheets .sheet-box')].at(-1)!.getBoundingClientRect().bottom);
