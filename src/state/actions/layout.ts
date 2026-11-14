@@ -21,6 +21,7 @@ import { revealPiece } from '../../components/canvas/viewport.ts';
 import { announce } from '../../components/feedback/announcer.ts';
 import { say, sayUndoable } from './notify.ts';
 import { setSelection } from './selection.ts';
+import { applyStartSize } from './deeplink.ts';
 
 const packOptions = () => ({ gap: getDocument().gap, rotate: getDocument().rotate });
 
@@ -274,6 +275,7 @@ export function placeNew(keys: readonly string[]) {
   const crowded = keys.length > 1 || getDocument().items.length > 0;
   const fresh = keys.map((key) => {
     const item = newItem(key, { sheet });
+    if (applyStartSize(item)) return item;
     const [w, h] = dims(item);
     const fit = aw > 0 && ah > 0 ? Math.min(aw / w, ah / h) : 1;
     item.scale = Math.min(1, crowded ? fit * CROWD_LIMIT : fit) * 100;

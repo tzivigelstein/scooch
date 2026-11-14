@@ -51,6 +51,9 @@ const SAVE_DELAY = 1000;
 
 export type ProjectNotice = 'unavailable' | 'saveFailed' | 'openFailed' | 'takenOver' | 'deletedElsewhere';
 
+/** Settings a project created on start takes instead of the current ones (a deep link, see initProjects). */
+export type StartSettings = Partial<Pick<ProjectDoc, 'paper' | 'landscape' | 'margin' | 'gap' | 'rotate' | 'cuts'>>;
+
 export interface ProjectHooks {
   /** The save status changed (`recovered`: it saved again after an error). */
   statusChanged?: (info: { recovered?: boolean }) => void;
@@ -153,8 +156,10 @@ function replaceDocument(doc: ProjectDoc, loaded: ReadonlyMap<string, AppAsset> 
 /**
  * Opens the storage and restores the last project (or creates an «Sin
  * título» one). Notices from opening come out once the document is in place.
+ * With `start` (a deep link), it creates a new project with those settings
+ * instead, and no saved project is opened or changed.
  */
-export async function initProjects(h: ProjectHooks) {
+export async function initProjects(h: ProjectHooks, { start = null }: { start?: StartSettings | null } = {}) {
   hooks = h;
   channel?.addEventListener('message', onMessage);
   useDocument.subscribe(documentChanged);
@@ -175,7 +180,7 @@ export async function initProjects(h: ProjectHooks) {
     session.storage = idb;
   } catch (err) {
     console.warn('This browser cannot save projects.', err);
-    return startUnsaved();
+    return startUnsaved(start);
   }
   // The projects saved before the app was renamed (once; a failure keeps them for the next start).
   await migrateLegacyProjects(session.storage).catch((err: unknown) => console.warn('The projects saved under the former name could not be moved.', err));
@@ -183,7 +188,7 @@ export async function initProjects(h: ProjectHooks) {
   const notify = hooks.notify;
   hooks.notify = (...args) => later.push(args);
   try {
-    await restoreLast();
+    await restoreLast(start);
   } finally {
     hooks.notify = notify;
     for (const args of later) notify(...args);
@@ -196,11 +201,14 @@ export async function initProjects(h: ProjectHooks) {
     .catch((err: unknown) => console.warn('The saved files could not be tidied.', err));
 }
 
-async function restoreLast() {
+async function restoreLast(start: StartSettings | null) {
   const storage = session.storage!;
   try {
     const list = await listProjects(storage);
     forgetJournalsOtherThan(list);
+    // Not even the last project opens (another tab may have it): its journal
+    // stays for when it does.
+    if (start) return await startNew({ settings: start });
     const lastId = storageGet(LAST_PROJECT_STORAGE);
     // The last one opened can't be opened: nothing breaks; it says so (and, if
     // it is damaged, offers to delete it; one saved by a newer version is left alone).
@@ -226,12 +234,13 @@ async function restoreLast() {
     // The database opened but can't be read or written: no saving.
     console.warn('The storage cannot be used.', err);
     session.storage = null;
-    startUnsaved();
+    startUnsaved(start);
   }
 }
 
 // Without storage: the project lives in the tab; it says so once.
-function startUnsaved() {
+function startUnsaved(start: StartSettings | null = null) {
+  if (start) replaceDocument(emptyDoc({ ...currentSettings(), ...start }));
   session.storage = null;
   session.record = placeholderRecord(tab);
   session.savedSig = docSignature();
@@ -250,8 +259,8 @@ const placeholderRecord = (id: string): ProjectRecord => ({
   thumb: null,
 });
 
-async function startNew({ remember = true } = {}) {
-  const doc = emptyDoc(currentSettings());
+async function startNew({ remember = true, settings = {} as StartSettings } = {}) {
+  const doc = emptyDoc({ ...currentSettings(), ...settings });
   replacing = true;
   try {
     replaceDocument(doc);

@@ -17,6 +17,7 @@ import { restoreCut } from './clipboard.ts';
 import { forgetSpill } from './layout.ts';
 import { say } from './notify.ts';
 import { openProjects } from './dialogs.ts';
+import { linkOpened, startSettings, takeDeepLink } from './deeplink.ts';
 
 type Failure = { code?: string; name?: string; inner?: { name?: string } } | null | undefined;
 
@@ -148,6 +149,7 @@ let started = false;
 export async function startProjects() {
   if (started) return;
   started = true;
+  const link = takeDeepLink();
   // If it takes long, the pill says so; meanwhile the canvas stays hidden (without the empty zone).
   const slow = setTimeout(() => setBusy(true, t('busy.openingProject')), 400);
   await initProjects({
@@ -158,9 +160,10 @@ export async function startProjects() {
     listChanged: projectListChanged,
     thumbImage: (item) => pieceNode(item.id)?.querySelector('img') ?? null,
     documentReplaced: scrollToStart,
-  });
+  }, { start: link && startSettings(link) });
   clearTimeout(slow);
   setDocument({ busy: false });
   setView({ busyText: '', loading: false });
+  if (link) linkOpened(link);
   void restoreCut();
 }

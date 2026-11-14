@@ -802,6 +802,14 @@ const es = {
     clearBodySheets: 'Queda 1 hoja vacía. Se puede deshacer.',
   },
 
+  // A link that opens the app with a new project set up (docs/deep-links.md); {paper}: «A4», «Carta horizontal»
+  deepLink: {
+    created: 'Se creó un proyecto nuevo con papel {paper}',
+    // {name}: crop.names; {size} already formatted
+    createdSized: 'Se creó un proyecto nuevo con papel {paper}. Las fotos que agregues se recortan a {name}: {size}.',
+    createdCustom: 'Se creó un proyecto nuevo con papel {paper}. Las fotos que agregues se recortan a {size}.',
+  },
+
   // «Preferencias» dialog (settings of this browser)
   prefs: {
     title: 'Preferencias',
