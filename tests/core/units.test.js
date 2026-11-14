@@ -149,6 +149,25 @@ describe('parseLength', () => {
       ['10\u00a0mm', 'cm', 10], // what formatLength returns
       ['\u200e-5', 'mm', -5], // a direction mark before the sign (ar-EG)
       ['99999999999999999999', 'mm', 1e20],
+      // Other keyboards: full-width signs and numbers (and «。») of a Chinese input method, Devanagari numerals.
+      ['１２．５', 'mm', 12.5],
+      ['１２，５', 'mm', 12.5],
+      ['2。5', 'cm', 25],
+      ['－３', 'mm', -3],
+      ['１／２', 'in', 12.7],
+      ['४.५', 'mm', 4.5],
+      ['१०', 'cm', 100],
+      // The units' names in the interface's languages.
+      ['10 毫米', 'in', 10],
+      ['2.5厘米', 'mm', 25],
+      ['2 公分', 'mm', 20],
+      ['4 英寸', 'mm', 101.6],
+      ['10 मिमी', 'in', 10],
+      ['2,5 सेमी', 'mm', 25],
+      ['4 इंच', 'mm', 101.6],
+      ['4 pouces', 'mm', 101.6],
+      ['1 pouce', 'mm', 25.4],
+      ['4 po', 'mm', 101.6],
     ];
     for (const [text, unit, expected] of cases) {
       const got = parseLength(text, unit);
@@ -191,6 +210,9 @@ describe('parseLength', () => {
       '/2 in',
       '1/ in',
       '½ in',
+      '10 pos',
+      '10 千米',
+      '１,０００.５',
     ];
     for (const text of cases) {
       assert.equal(parseLength(text, 'mm'), null, `«${text}»`);
@@ -235,7 +257,7 @@ describe('steps and grid', () => {
   });
 
   test('isPartialLength', () => {
-    for (const text of ['', '2', '2,', '2.', ',', '-', '+', '10 c', '10 cm', '4 pul', '4 pulg', '1/', '1 1/', '1-1/2', '1/2 i', '4"', '4”', ' 3 ']) {
+    for (const text of ['', '2', '2,', '2.', ',', '-', '+', '10 c', '10 cm', '4 pul', '4 pulg', '1/', '1 1/', '1-1/2', '1/2 i', '4"', '4”', ' 3 ', '4 pou', '4 इं', '4 英', '２，']) {
       assert.equal(isPartialLength(text, 'in'), true, JSON.stringify(text));
     }
     for (const text of ['abc', '1..2', '10 kg', '1e3', '1,000.5', 'mm 10', '10 min', '2,5,', null, 42]) {

@@ -77,6 +77,7 @@ export function formatLength(mm, unit, { locale = 'es', withUnit = true } = {}) 
 
 // Sufijos aceptados (en minúsculas). Para pulgadas también las comillas
 // tipográficas que pone el teclado del celular («4”»).
+// The units' names in each interface language (src/copy) too: people type them as they say them.
 const SUFFIXES = [
   ['mm', 'mm'],
   ['cm', 'cm'],
@@ -86,6 +87,16 @@ const SUFFIXES = [
   ['pulgadas', 'in'],
   ['pulgada', 'in'],
   ['pulg', 'in'],
+  ['pouces', 'in'],
+  ['pouce', 'in'],
+  ['po', 'in'],
+  ['毫米', 'mm'],
+  ['厘米', 'cm'],
+  ['公分', 'cm'],
+  ['英寸', 'in'],
+  ['मिमी', 'mm'],
+  ['सेमी', 'cm'],
+  ['इंच', 'in'],
   ["''", 'in'],
   ['"', 'in'],
   ['″', 'in'],
@@ -95,9 +106,31 @@ const SUFFIXES = [
 
 // Marcas invisibles de dirección de texto (algunos idiomas las ponen antes del signo).
 const BIDI_MARKS = /[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g;
+
+// What other keyboards type instead of ASCII numbers and signs: the full-width
+// ones of a Chinese input method (and «。» for the point) and the Devanagari
+// numerals of a Hindi keyboard.
+const WIDE = /[\uff0b\uff0c\uff0d\uff0e\uff0f\uff10-\uff19\u3002\u0966-\u096f]/g;
+const narrow = (c) => {
+  if (c === '\u3002') return '.';
+  const code = c.charCodeAt(0);
+  return code >= 0x0966 && code <= 0x096f ? String(code - 0x0966) : String.fromCharCode(code - 0xfee0);
+};
+
+/** What was typed, ready to read: no direction marks, lowercase, ASCII numbers and signs, single spaces. */
+const tidy = (text) =>
+  text
+    .replace(BIDI_MARKS, '')
+    .replace(WIDE, narrow)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/−/g, '-');
 const DECIMAL = /^(\d+(?:[.,]\d*)?|[.,]\d+)$/;
 const FRACTION = /^(?:(\d+)(?:\s+|-))?(\d+)\/(\d+)$/;
 
+// Whatever the interface language, both the comma and the point are decimal
+// separators, and full-width or Devanagari numerals read as ASCII ones.
 /**
  * Lee una medida tipeada y la devuelve en mm, o null si no se entiende.
  * Acepta coma o punto decimal («10,5», «10.5», «,5»), espacios alrededor,
@@ -111,12 +144,7 @@ export function parseLength(text, unit) {
   const scale = mmPer(unit);
   if (typeof text === 'number') return Number.isFinite(text) ? text * scale || 0 : null;
   if (typeof text !== 'string') return null;
-  let s = text
-    .replace(BIDI_MARKS, '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .replace(/−/g, '-');
+  let s = tidy(text);
 
   let target = unit;
   for (const [suffix, u] of SUFFIXES) {
@@ -159,9 +187,9 @@ const isSuffixStart = (tail) => !tail || SUFFIXES.some(([suffix]) => suffix.star
 export function isPartialLength(text, unit) {
   if (typeof text !== 'string') return false;
   if (parseLength(text, unit) !== null) return true;
-  const s = text.replace(BIDI_MARKS, '').trim().toLowerCase().replace(/\s+/g, ' ').replace(/−/g, '-');
+  const s = tidy(text);
   // Signo, número (con coma o punto), fracción a medio escribir y unidad a medio escribir.
-  const m = /^[+-]?\s?(\d*(?:[.,]\d*)?)(?:(?:\s+|-)\d*(?:\/\d*)?|\/\d*)?\s?([a-z'"″”“]*)$/.exec(s);
+  const m = /^[+-]?\s?(\d*(?:[.,]\d*)?)(?:(?:\s+|-)\d*(?:\/\d*)?|\/\d*)?\s?([\p{L}\p{M}'"″”“]*)$/u.exec(s);
   return !!m && isSuffixStart(m[2]);
 }
 
