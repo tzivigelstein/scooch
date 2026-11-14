@@ -1,7 +1,7 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
-import { ANY_PAGE, buildPath, compare, eagerAssets, formatTable, gzipSize, kB, parseAttributes, parseTags, scriptSources } from '../../scripts/check-size.mjs';
+import { ANY_PAGE, buildPath, compare, eagerScripts, formatTable, gzipSize, kB, parseAttributes, parseTags, scriptSources } from '../../scripts/check-size.mjs';
 
 // The pure parts of the bundle size check (`yarn size`): reading the built
 // HTML, comparing sizes with budgets and the table it prints.
@@ -43,11 +43,8 @@ describe('reading the built HTML', () => {
     ]);
   });
 
-  test('the editor loads at start its entry script and the modules it preloads, and its stylesheet; not the font, the icon or data', () => {
-    assert.deepEqual(eagerAssets(EDITOR), {
-      js: ['/assets/index-AbC123.js', '/assets/rolldown-runtime-x1.js', '/assets/shared-y2.js'],
-      css: ['/assets/index-Z9.css'],
-    });
+  test('the JavaScript the editor loads at start is its entry script and the modules it preloads; not the font, the stylesheet, the icon or data', () => {
+    assert.deepEqual(eagerScripts(EDITOR), ['/assets/index-AbC123.js', '/assets/rolldown-runtime-x1.js', '/assets/shared-y2.js']);
   });
 
   test("a static page's scripts are those with a src", () => {
@@ -97,11 +94,26 @@ describe('comparing sizes with their budgets', () => {
     );
   });
 
-  test('a group without a budget and a budget for a page the build no longer has are problems', () => {
-    const { rows, problems } = compare([{ id: 'totalJs', label: 'JS, every file', files: files(100) }], { pages: { 'es/gone.html': { kB: 1 } } });
-    assert.equal(rows[0].budget, null);
-    assert.equal(rows[0].over, false);
-    assert.deepEqual(problems, ['JS, every file: no budget in scripts/size-budgets.json', 'pages › es/gone.html: the build has no such page; remove its budget']);
+  test('a group without a budget (or without a positive kB) and a budget for a page the build no longer has are problems', () => {
+    const { rows, problems } = compare(
+      [
+        { id: 'totalJs', label: 'JS, every file', files: files(100) },
+        { id: 'css', label: 'CSS, every file', files: files(100) },
+      ],
+      { css: { KB: 3 }, pages: { 'es/gone.html': { kB: 1 } } }
+    );
+    assert.deepEqual(
+      rows.map(({ budget, over }) => ({ budget, over })),
+      [
+        { budget: null, over: false },
+        { budget: null, over: false },
+      ]
+    );
+    assert.deepEqual(problems, [
+      'JS, every file: no budget (a positive «kB») in scripts/size-budgets.json',
+      'CSS, every file: no budget (a positive «kB») in scripts/size-budgets.json',
+      'pages › es/gone.html: the build has no such page; remove its budget',
+    ]);
   });
 });
 

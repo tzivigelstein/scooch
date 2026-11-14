@@ -42,20 +42,13 @@ const rels = (attrs) => (attrs.get('rel') ?? '').toLowerCase().split(/\s+/);
 /** The scripts a page loads from a file (`src`), in order. */
 export const scriptSources = (html) => parseTags(html).flatMap(({ tag, attrs }) => (tag === 'script' && attrs.get('src') ? [attrs.get('src')] : []));
 
-/**
- * What the editor's index.html loads at once: its scripts and the modules it
- * preloads (`js`), and its stylesheets (`css`).
- */
-export function eagerAssets(html) {
-  const js = [];
-  const css = [];
-  for (const { tag, attrs } of parseTags(html)) {
-    if (tag === 'script' && attrs.get('src')) js.push(attrs.get('src'));
-    else if (tag === 'link' && attrs.get('href') && rels(attrs).includes('modulepreload')) js.push(attrs.get('href'));
-    else if (tag === 'link' && attrs.get('href') && rels(attrs).includes('stylesheet')) css.push(attrs.get('href'));
-  }
-  return { js, css };
-}
+/** The JavaScript the editor's index.html loads at once: its scripts and the modules it preloads, in order. */
+export const eagerScripts = (html) =>
+  parseTags(html).flatMap(({ tag, attrs }) => {
+    if (tag === 'script' && attrs.get('src')) return [attrs.get('src')];
+    if (tag === 'link' && attrs.get('href') && rels(attrs).includes('modulepreload')) return [attrs.get('href')];
+    return [];
+  });
 
 /** A URL of the site as a path inside the build folder, or null when it points elsewhere. */
 export function buildPath(url) {
@@ -75,8 +68,8 @@ export function compare(measures, budgets) {
     const page = id.startsWith('page:') ? id.slice('page:'.length) : null;
     const entry = page === null ? budgets[id] : (pages[page] ?? pages[ANY_PAGE]);
     const bytes = files.reduce((sum, f) => sum + f.bytes, 0);
-    if (!entry) {
-      problems.push(`${label}: no budget in scripts/size-budgets.json`);
+    if (!(entry?.kB > 0)) {
+      problems.push(`${label}: no budget (a positive «kB») in scripts/size-budgets.json`);
       return { id, label, files: files.length, bytes, budget: null, delta: null, over: false };
     }
     const budget = Math.round(entry.kB * 1000);
@@ -132,10 +125,9 @@ export function measureBuild(dir) {
   };
   const local = (urls) => [...new Set(urls.map(buildPath).filter((p) => p !== null))].map(file);
   const all = filesUnder(dir);
-  const editor = eagerAssets(readFileSync(join(dir, 'index.html'), 'utf8'));
   const pages = all.filter((p) => p.endsWith('.html') && p !== 'index.html');
   return [
-    { id: 'initialJs', label: 'editor: JS loaded at start', files: local(editor.js) },
+    { id: 'initialJs', label: 'editor: JS loaded at start', files: local(eagerScripts(readFileSync(join(dir, 'index.html'), 'utf8'))) },
     { id: 'totalJs', label: 'JS, every file', files: all.filter((p) => /\.m?js$/.test(p)).map(file) },
     { id: 'css', label: 'CSS, every file', files: all.filter((p) => p.endsWith('.css')).map(file) },
     { id: 'pageScripts', label: 'static pages: their scripts', files: local(pages.flatMap((p) => scriptSources(readFileSync(join(dir, p), 'utf8')))) },
@@ -144,10 +136,9 @@ export function measureBuild(dir) {
 }
 
 function main() {
-  const given = process.argv[2] ?? 'dist';
-  const dir = resolve(ROOT, given);
+  const dir = process.argv[2] ? resolve(process.argv[2]) : join(ROOT, 'dist');
   if (!existsSync(join(dir, 'index.html'))) {
-    console.error(`No build in ${given}: run \`yarn build\` first.`);
+    console.error(`No build in ${process.argv[2] ?? 'dist'}: run \`yarn build\` first.`);
     process.exit(1);
   }
   const { rows, problems } = compare(measureBuild(dir), JSON.parse(readFileSync(BUDGETS, 'utf8')));
