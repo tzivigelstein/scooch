@@ -611,6 +611,14 @@
   cursor: grabbing;
 }
 
+/* One finger drags the image or an edge instead of scrolling the canvas (the
+   browser would take the finger away mid-drag); two still zoom and pan it. */
+.crop-ghost,
+.crop-window,
+.crop-frame {
+  touch-action: none;
+}
+
 .crop-frame {
   position: absolute;
   pointer-events: auto;
