@@ -498,6 +498,8 @@ test.describe('when storage fails', () => {
     await page.addInitScript(() => Object.defineProperty(window, 'indexedDB', { value: undefined, configurable: true }));
     const app = new App(page, testInfo);
     await app.open();
+    // The loading screen gave way to the app, which says what failed.
+    await expect(page.locator('.boot')).toHaveCount(0);
     expect(await app.notice()).toEqual({
       text: 'Este navegador no permite guardar proyectos (por ejemplo, en una ventana privada). Lo que hagas se pierde al cerrar la pestaña.',
       action: '',

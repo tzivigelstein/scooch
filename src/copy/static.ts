@@ -7,7 +7,8 @@
 //   with its own `lang` (without scripts nothing can choose one);
 // - `{{bootCopy}}`: the JSON the head's script reads to show the page in the
 //   chosen language before the first paint: the languages, each one's title,
-//   description, heading and the loading screen's name, and, in a build, the
+//   description, heading, the loading screen's name and what replaces it if
+//   the editor can't open (services/bootFailure.ts), and, in a build, the
 //   file of each one's texts and fonts to preload, and the @font-face of
 //   those fonts;
 // - `{{matchLanguage}}`: the source of core/language.js matchLanguage, so the
@@ -31,7 +32,7 @@ export function bootCopy(files: LanguageFiles = {}) {
   const texts = Object.fromEntries(
     LANGUAGES.map((language) => {
       const { t } = textsFor(CATALOGUES[language]);
-      return [language, { title: t('app.title'), description: t('app.description'), heading: t('app.heading'), loading: t('busy.loading') }];
+      return [language, { title: t('app.title'), description: t('app.description'), heading: t('app.heading'), loading: t('busy.loading'), failed: t('app.bootFailed'), reload: t('notices.reload') }];
     })
   );
   return { languages: LANGUAGES, texts, chunks: files.chunks ?? {}, fonts: files.fonts ?? {}, styles: files.styles ?? {} };

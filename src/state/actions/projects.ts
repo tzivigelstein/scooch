@@ -172,18 +172,22 @@ export async function startProjects() {
   const link = takeDeepLink();
   // If it takes long, the pill says so; meanwhile the canvas stays hidden (without the empty zone).
   const slow = setTimeout(() => setBusy(true, t('busy.openingProject')), 400);
-  await initProjects({
-    statusChanged: ({ recovered }) => {
-      if (recovered) announce(t('announce.projectSaved'));
-    },
-    notify: projectNotice,
-    listChanged: projectListChanged,
-    thumbImage: (item) => pieceNode(item.id)?.querySelector('img') ?? null,
-    documentReplaced: scrollToStart,
-  }, { start: link && startSettings(link) });
-  clearTimeout(slow);
-  setDocument({ busy: false });
-  setView({ busyText: '', loading: false });
+  try {
+    await initProjects({
+      statusChanged: ({ recovered }) => {
+        if (recovered) announce(t('announce.projectSaved'));
+      },
+      notify: projectNotice,
+      listChanged: projectListChanged,
+      thumbImage: (item) => pieceNode(item.id)?.querySelector('img') ?? null,
+      documentReplaced: scrollToStart,
+    }, { start: link && startSettings(link) });
+  } finally {
+    // Even after a failure nothing else handles, the app shows (the loading screen goes away).
+    clearTimeout(slow);
+    setDocument({ busy: false });
+    setView({ busyText: '', loading: false });
+  }
   if (link) linkOpened(link);
   void restoreCut();
 }

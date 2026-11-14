@@ -10,6 +10,7 @@
   "app.skip": "Ir a la hoja",
   "app.printOnly": "Para imprimir a tamaño real, usa el botón Imprimir de {app}",
   "app.noscript": "Para usar {app}, activa JavaScript en el navegador",
+  "app.bootFailed": "No se pudo abrir {app}. Recarga la página para volver a intentarlo.",
   "app.close": "Cerrar",
   "units.mm": "mm",
   "units.cm": "cm",

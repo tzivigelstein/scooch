@@ -321,16 +321,22 @@
       .boot-pane {
         animation: boot-pulse 0.9s ease-in-out 1s infinite alternate;
       }
-      .noscript {
+      /* The message without JavaScript, and the one when the editor couldn't
+         open (src/services/bootFailure.ts), over its reload button. */
+      .noscript,
+      .boot-failed {
         position: fixed;
         inset: 0;
         display: grid;
         place-content: center;
+        justify-items: center;
         gap: 0.5rem;
         padding: 1rem;
         text-align: center;
       }
-      .noscript p {
+      .noscript p,
+      .boot-failed p {
+        max-width: 28rem;
         margin: 0;
       }
       @keyframes boot-pulse {

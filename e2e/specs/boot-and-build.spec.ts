@@ -4,8 +4,11 @@
 // carries, the font and the lazy chunks of pdf.js and pdf-lib. That the
 // skeleton copies the stylesheet's values is in tests/site/boot-skeleton.test.ts.
 import { readFileSync } from 'node:fs';
+import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
-import { DESKTOP, PHONE, sizeTitle } from '../support/accessibility.ts';
+import { CATALOGUES } from '../../src/copy/all.ts';
+import { textsFor } from '../../src/copy/index.ts';
+import { AXE_TAGS, DESKTOP, PHONE, axeSummary, sizeTitle } from '../support/accessibility.ts';
 import { holdApp, layoutShift, readAbout, skeletonShown, watchHandOff } from '../support/boot.ts';
 import { App, expect, test } from '../support/test.ts';
 
@@ -229,6 +232,52 @@ test.describe('the skeleton of the editor, before the app mounts', () => {
       expect(animations.length).toBeGreaterThan(0);
       for (const a of animations) expect(a).toEqual({ name: 'boot-pulse', delay: 1000, surface: false, sheet: false });
       release();
+    });
+  });
+});
+
+test.describe('when the editor can’t open', () => {
+  test.describe('its texts don’t download', () => {
+    const FRENCH = /\/assets\/copy-fr-[\w-]+\.js$/;
+    // The French texts' failed request (and the browser's line for it), and the app saying so in the console.
+    test.use({ locale: 'fr-FR', allowErrors: [/^requestfailed: .*\/assets\/copy-fr-[\w-]+\.js \(net::ERR_FAILED\)$|^Failed to load resource: net::ERR_FAILED$|^The texts could not be loaded\./] });
+
+    test('the skeleton gives way to a message in the page’s language with the focus on its reload button, which opens the editor once they do', async ({ page }, testInfo) => {
+      const { t } = textsFor(CATALOGUES.fr);
+      await page.route(FRENCH, (route) => route.abort('failed'));
+      await page.goto('./');
+      const failed = page.getByRole('alert');
+      await expect(failed.locator('p')).toHaveText(t('app.bootFailed'));
+      await expect(page.locator('.boot')).toHaveCount(0);
+      const reload = failed.getByRole('button', { name: t('notices.reload') });
+      await expect(reload).toBeFocused();
+      const { violations } = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(axeSummary(violations)).toEqual([]);
+      await page.unroute(FRENCH);
+      await page.keyboard.press('Enter');
+      await new App(page, testInfo).ready();
+      await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+      await expect(page.locator('#boot-failed')).toHaveCount(0);
+    });
+  });
+
+  test.describe('it fails while it renders', () => {
+    test.use({ allowErrors: [/^pageerror: .*the app failed on purpose/] });
+
+    test('the skeleton gives way to the message in the page’s language', async ({ page }) => {
+      // The rail asks for this media query while it renders: the first render fails.
+      await page.addInitScript(() => {
+        const matchMedia = window.matchMedia.bind(window);
+        window.matchMedia = (query: string) => {
+          if (query === '(max-width: 1099.98px)') throw new Error('the app failed on purpose');
+          return matchMedia(query);
+        };
+      });
+      await page.goto('./');
+      const { t } = textsFor(CATALOGUES.es);
+      await expect(page.getByRole('alert').locator('p')).toHaveText(t('app.bootFailed'));
+      await expect(page.getByRole('alert').getByRole('button', { name: t('notices.reload') })).toBeFocused();
+      await expect(page.locator('.boot')).toHaveCount(0);
     });
   });
 });

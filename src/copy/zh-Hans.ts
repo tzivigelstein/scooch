@@ -22,6 +22,7 @@ const zhHans: Catalogue = {
     skip: '跳到纸张',
     printOnly: '要按实际尺寸打印，请使用{app}的“打印”按钮',
     noscript: '要使用{app}，请在浏览器中启用JavaScript',
+    bootFailed: '无法打开{app}。请重新加载页面后重试。',
     close: '关闭',
   },
 

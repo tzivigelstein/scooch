@@ -22,6 +22,8 @@ const es = {
     printOnly: 'Para imprimir a tamaño real, usa el botón Imprimir de {app}',
     // Without JavaScript the page shows only this
     noscript: 'Para usar {app}, activa JavaScript en el navegador',
+    // In place of the loading screen when the editor couldn't open (its texts didn't download, or it failed to start), over «Recargar la página»
+    bootFailed: 'No se pudo abrir {app}. Recarga la página para volver a intentarlo.',
     close: 'Cerrar',
   },
 

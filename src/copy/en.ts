@@ -21,6 +21,7 @@ const en: Catalogue = {
     skip: 'Skip to the sheet',
     printOnly: 'To print at actual size, use the Print button in {app}',
     noscript: 'To use {app}, turn on JavaScript in your browser',
+    bootFailed: 'Couldn’t open {app}. Reload the page to try again.',
     close: 'Close',
   },
 

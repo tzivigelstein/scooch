@@ -22,6 +22,7 @@ const fr: Catalogue = {
     skip: 'Aller à la feuille',
     printOnly: 'Pour imprimer en taille réelle, utilisez le bouton Imprimer de {app}',
     noscript: 'Pour utiliser {app}, activez JavaScript dans votre navigateur',
+    bootFailed: 'Impossible d’ouvrir {app}. Rechargez la page pour réessayer.',
     close: 'Fermer',
   },
 
