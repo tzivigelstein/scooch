@@ -96,6 +96,8 @@ En localStorage, con nombres que empiezan con `scooch:`:
 - **Avisos al imprimir:** si se muestran el consejo antes de imprimir o
   descargar y el resumen después, o si elegiste No volver a mostrar.
 - **Papel personalizado:** la última medida de papel que escribiste.
+- **Acciones recientes:** las últimas 5 acciones que elegiste en Buscar
+  acciones.
 - **Hojas ahorradas:** el total de hojas que ahorraste en este dispositivo,
   que muestra el resumen después de imprimir; una cifra redonda que
   alcanzaste, si el resumen todavía no te la mostró, y a qué comparación le
