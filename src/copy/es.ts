@@ -124,6 +124,7 @@ const es = {
   // The sheet on screen
   sheet: {
     numbered: 'Hoja {i} de {total}',
+    count: { one: '{n} hoja', other: '{n} hojas' },
     // The title above each sheet is a button ({label}: «Hoja 2 de 3»)
     changePaper: 'Cambiar el papel',
     changePaperLabel: '{label}: cambiar el papel',
@@ -270,9 +271,10 @@ const es = {
     duplicateMax: { one: 'Como mucho, 1 copia de cada pieza (máximo de {max} piezas)', other: 'Como mucho, {n} copias de cada pieza (máximo de {max} piezas)' },
     selectSame: 'Seleccionar iguales',
     selectSameTip: 'Seleccionar las piezas del mismo archivo',
-    // With several selected
-    groupOnSheet: 'En la hoja {i}',
-    groupOnSheets: 'En {n} hojas. Medidas de la hoja {i}.',
+    // With several selected: the title, how many and where
+    groupName: { one: '{n} pieza en la hoja {i}', other: '{n} piezas en la hoja {i}' },
+    // {sheets}: sheet.count («4 hojas»)
+    groupNameSheets: { one: '{n} pieza en {sheets}', other: '{n} piezas en {sheets}' },
     mixed: 'Mixta',
     // Align and distribute
     align: 'Alinear',

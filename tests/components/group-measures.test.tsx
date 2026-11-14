@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// The «Pieza» panel (PieceSection) with several pieces selected: its heading,
-// where they are, and the scale field (a common scale, or «Mixta»).
+// The «Pieza» panel (PieceSection) with several pieces selected: its title
+// (how many and where) and the scale field (a common scale, or «Mixta»).
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { PieceSection } from '../../src/components/properties-panel/PieceSection.tsx';
@@ -23,17 +23,29 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-const text = (id: string) => (document.getElementById(id)!.textContent ?? '').replace(/ /g, ' ');
+const text = (id: string) => (document.getElementById(id)!.textContent ?? '').replace(/ /g, ' ');
 const scale = () => document.getElementById('scale') as HTMLInputElement;
 
 describe('group measures', () => {
-  test('the heading says how many and on which sheet; on two sheets, «En 2 hojas» and whose measures', () => {
+  test('the title names how many and on which sheet, as one name; the piece’s name line is hidden', () => {
     act(() => setSelection([1, 2, 3]));
     expect(document.getElementById('piece-title')!.hidden).toBe(false);
-    expect(text('piece-title')).toBe('3 piezas');
-    expect(text('piece-name')).toBe('En la hoja 1');
-    act(() => setSelection([1, 2, 4]));
-    expect(text('piece-name')).toBe('En 2 hojas. Medidas de la hoja 2.');
+    expect(text('piece-title')).toBe('3 piezas en la hoja 1');
+    expect(document.getElementById('piece-name')!.hidden).toBe(true);
+  });
+
+  test('on several sheets the title names how many pieces on how many sheets: «2 piezas en 2 hojas», «6 piezas en 4 hojas»', () => {
+    act(() => setSelection([1, 4]));
+    expect(text('piece-title')).toBe('2 piezas en 2 hojas');
+    const key = getDocument().items[0].asset;
+    act(() => {
+      resetState({
+        sheets: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+        items: [piece(1, key, 20, 20), piece(2, key, 90, 20), piece(3, key, 20, 20, { sheet: 2 }), piece(4, key, 90, 20, { sheet: 2 }), piece(5, key, 20, 20, { sheet: 3 }), piece(6, key, 20, 20, { sheet: 4 })],
+      });
+      setSelection([1, 2, 3, 4, 5, 6]);
+    });
+    expect(text('piece-title')).toBe('6 piezas en 4 hojas');
   });
 
   test('the scale field shows the common scale, or «Mixta» (empty) when the scales differ', () => {

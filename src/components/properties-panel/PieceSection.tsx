@@ -1,6 +1,6 @@
-// The «Pieza» section: only with a selection; with several, «N piezas», with
-// the group's box, the shared scale and align and distribute. Lengths show and
-// read in the chosen unit.
+// The «Pieza» section: only with a selection; with several, how many and
+// where, the group's box, the shared scale and align and distribute. Lengths
+// show and read in the chosen unit.
 
 import {
   AlignCenterHorizontal,
@@ -258,9 +258,11 @@ export function PieceSection() {
   const primary = list.find((item) => item.id === primaryId) ?? list.at(-1);
   const asset = primary ? getAsset(primary.asset) : null;
   const sheetCount = new Set(list.map((item) => item.sheet)).size;
-  const where = !primary ? '' : sheetCount > 1 ? t('props.groupOnSheets', { n: sheetCount, i: sheetIndex(primary.sheet) + 1 }) : t('props.groupOnSheet', { i: sheetIndex(primary.sheet) + 1 });
+  // Several: how many and where, as one name («6 piezas en 4 hojas»).
+  const groupName =
+    !primary || !group ? '' : sheetCount > 1 ? t('props.groupNameSheets', { n, sheets: t('sheet.count', { n: sheetCount }) }) : t('props.groupName', { n, i: sheetIndex(primary.sheet) + 1 });
   const paged = asset?.kind === 'pdf' && asset.pages > 1;
-  const name = !asset ? '' : group ? where : paged && asset.kind === 'pdf' ? t('props.pieceNamePage', { name: asset.name, page: asset.page }) : asset.name;
+  const name = !asset || group ? '' : paged && asset.kind === 'pdf' ? t('props.pieceNamePage', { name: asset.name, page: asset.page }) : asset.name;
   const res = single ? resolution(single) : null;
   const frontEnabled = single ? overlapsOthers(single) : false;
   const toSheet = alignsToSheet();
@@ -276,13 +278,13 @@ export function PieceSection() {
     <div className="prop-section" id="section-piece">
       {/* The tab already says «Pieza»: with one piece the heading is for screen readers only. */}
       <h2 id="piece-title" className={group ? 'section-title static' : 'sr-only'} hidden={!n}>
-        {group ? t('pieces.count', { n }) : t('props.piece')}
+        {group ? groupName : t('props.piece')}
       </h2>
       <p id="piece-empty" className="panel-empty" hidden={n > 0}>
         {t('props.empty')}
       </p>
       <div id="piece-props" className={group ? 'section-body is-group' : 'section-body'} hidden={!n}>
-        <p id="piece-name" className="piece-name" data-tip={group ? where : asset?.name}>
+        <p id="piece-name" className="piece-name" data-tip={asset?.name} hidden={group}>
           {name}
         </p>
         <div className="prop-grid">
