@@ -2,7 +2,7 @@
 // What follows the unit chosen in «Preferencias»: the choice itself (saved and
 // announced), the shortcuts table's arrow steps, a piece's arrows help and the
 // arrow keys on a piece, in inches.
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import PrefsDialog from '../../src/components/dialogs/PrefsDialog.tsx';
 import ShortcutsDialog from '../../src/components/dialogs/ShortcutsDialog.tsx';
@@ -52,7 +52,7 @@ describe('choosing the unit in Preferences', () => {
 
   test('the three units are named for screen readers, with no hint describing them', () => {
     render(<PrefsDialog />);
-    const radios = screen.getAllByRole('radio') as HTMLInputElement[];
+    const radios = within(screen.getByRole('group', { name: 'Unidades' })).getAllByRole('radio') as HTMLInputElement[];
     expect(radios.map((r) => r.value)).toEqual(['mm', 'cm', 'in']);
     expect(radios.map((r) => r.getAttribute('aria-label'))).toEqual(['mm, milímetros', 'cm, centímetros', 'in, pulgadas']);
     expect(radios.map((r) => plain(r.closest('label')!.textContent))).toEqual(['mm', 'cm', 'in']);
