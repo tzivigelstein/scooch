@@ -69,7 +69,7 @@ import { t, type CopyKey } from '../copy/index.ts';
 import { startCrop } from '../components/canvas/cropMode.ts';
 import { fitSheet, stepZoom, zoomToPercent } from '../components/canvas/viewport.ts';
 import { focusPieces, focusPropsTab } from '../hooks/useGlobalShortcuts.ts';
-import type { ShortcutName } from '../hooks/shortcuts.ts';
+import { SHORTCUTS, type ShortcutKeys, type ShortcutName } from '../hooks/shortcuts.ts';
 import { sizeText } from '../services/measure.ts';
 import { getDocument } from './document.ts';
 import { getPrefs, setTheme } from './prefs.ts';
@@ -302,8 +302,8 @@ const DEFINITIONS = {
   fit: { section: 'selection', label: 'props.fit', icon: Maximize2, aliases: 'commands.aliases.fit', keys: ['fit'], disabled: notSingle, run: () => fit({ focus: true }) },
   center: { section: 'selection', label: 'props.center', icon: Crosshair, aliases: 'commands.aliases.center', keys: ['center'], disabled: notSingle, run: () => center({ focus: true }) },
   actualSize: { section: 'selection', label: 'props.actualTip', icon: Scaling, aliases: 'commands.aliases.actualSize', disabled: noSelection, run: actualSize },
-  front: { section: 'selection', label: 'props.front', icon: BringToFront, aliases: 'commands.aliases.front', keys: ['front'], disabled: frontReason, run: () => bringToFront({ focus: true }) },
-  crop: { section: 'selection', label: 'crop.start', icon: Crop, aliases: 'commands.aliases.crop', keys: ['crop'], disabled: notSingle, run: () => startCrop() },
+  front: { section: 'selection', label: 'menu.front', icon: BringToFront, aliases: 'commands.aliases.front', keys: ['front'], disabled: frontReason, run: () => bringToFront({ focus: true }) },
+  crop: { section: 'selection', label: 'menu.crop', icon: Crop, aliases: 'commands.aliases.crop', keys: ['crop'], disabled: notSingle, run: () => startCrop() },
   selectSame: { section: 'selection', label: 'menu.selectSame', icon: Images, aliases: 'commands.aliases.selectSame', keys: ['selectSame'], disabled: noSelection, run: selectSame },
   selectAll: { section: 'selection', label: 'commands.selectAll', icon: ListChecks, aliases: 'commands.aliases.selectAll', keys: ['selectAll'], disabled: noPieces, run: selectAll },
   copy: { section: 'selection', label: 'menu.copy', icon: Copy, aliases: 'commands.aliases.clipboard', keys: ['copy'], disabled: noSelection, run: () => void copySelection() },
@@ -335,7 +335,7 @@ const DEFINITIONS = {
   },
 
   // Sheets
-  addSheet: { section: 'sheets', label: 'sheet.add', icon: FilePlus, aliases: 'commands.aliases.addSheet', run: () => addSheet() },
+  addSheet: { section: 'sheets', label: 'menu.addSheet', icon: FilePlus, aliases: 'commands.aliases.addSheet', run: () => addSheet() },
   removeSheet: {
     section: 'sheets',
     label: 'commands.removeSheet',
@@ -419,6 +419,18 @@ export function command(id: CommandId): Command {
 
 /** Every command, as they are now. */
 export const commands = () => COMMAND_IDS.map(command);
+
+/**
+ * The keys shown next to a command and its aria-keyshortcuts: its first
+ * shortcut that works now (a single-key one only while those are on), or null.
+ */
+export function shownShortcut(c: Pick<Command, 'keys'>, singleKeys: boolean): { kbd: string; aria?: string } | null {
+  for (const name of c.keys) {
+    const keys: ShortcutKeys = SHORTCUTS[name];
+    if (keys.kbd && (!keys.single || singleKeys)) return { kbd: keys.kbd, aria: keys.aria };
+  }
+  return null;
+}
 
 /** Is `id` one of the commands (e.g. a recent one saved by an older version)? */
 export const isCommandId = (id: string): id is CommandId => Object.hasOwn(DEFINITIONS, id);

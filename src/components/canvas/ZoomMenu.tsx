@@ -1,23 +1,26 @@
-// The zoom control's menu: fit the sheet, fit its width and a few levels.
+// The zoom control's menu: fit the sheet, fit its width (the commands of
+// state/commands.ts) and a few levels.
 
-import { Maximize, MoveHorizontal } from 'lucide-react';
 import { MENU_LEVELS } from '../../core/zoom.js';
 import { t } from '../../copy/index.ts';
-import { SHORTCUTS } from '../../hooks/shortcuts.ts';
 import { usePrefs } from '../../state/prefs.ts';
-import { currentSheet } from '../../state/selectors.ts';
+import { command, shownShortcut, type CommandId } from '../../state/commands.ts';
 import { Menu, type MenuEntry } from '../ui/Menu.tsx';
-import { fitSheet, zoomToPercent } from './viewport.ts';
+import { zoomToPercent } from './viewport.ts';
 import { closeZoomMenu, useZoomMenu } from './zoomMenu.ts';
 
 export default function ZoomMenu() {
   const at = useZoomMenu((s) => s.at);
   const singleKeys = usePrefs((s) => s.singleKeys);
   if (!at) return null;
-  const keys = (name: 'fitSheet' | 'fitWidth') => (singleKeys ? { keys: SHORTCUTS[name].kbd, aria: SHORTCUTS[name].aria } : {});
+  const entry = (id: string, name: CommandId): MenuEntry => {
+    const c = command(name);
+    const keys = shownShortcut(c, singleKeys);
+    return { id, label: c.label, icon: c.icon, keys: keys?.kbd, aria: keys?.aria, run: c.run! };
+  };
   const entries: MenuEntry[] = [
-    { id: 'fit', label: t('zoom.fit'), icon: Maximize, ...keys('fitSheet'), run: () => fitSheet('fit', currentSheet()) },
-    { id: 'width', label: t('zoom.width'), icon: MoveHorizontal, ...keys('fitWidth'), run: () => fitSheet('width', currentSheet()) },
+    entry('fit', 'zoomFit'),
+    entry('width', 'zoomWidth'),
     ...MENU_LEVELS.map((pct, i) => ({
       id: `level-${pct}`,
       label: t('zoom.preset', { pct }),

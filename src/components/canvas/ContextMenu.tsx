@@ -1,86 +1,59 @@
 // The context menus: the selected pieces' (rotate, duplicate, copy, cut,
 // paste, bring to front, crop, select same, move to a new sheet, remove) and
-// an empty sheet's (paste, select all on it, arrange, add a sheet).
+// an empty sheet's (paste, select all on it, arrange, add a sheet). Their
+// entries are the commands' (state/commands.ts): name, icon, keys, why one
+// can't run and what it does.
 
-import {
-  BringToFront,
-  ClipboardPaste,
-  Copy,
-  CopyPlus,
-  Crop,
-  FilePlus,
-  Images,
-  LayoutDashboard,
-  ListChecks,
-  RotateCcw,
-  RotateCw,
-  Scissors,
-  SquareArrowRight,
-  Trash2,
-} from 'lucide-react';
-import { t } from '../../copy/index.ts';
-import { SHORTCUTS, type ShortcutName } from '../../hooks/shortcuts.ts';
-import { getDocument } from '../../state/document.ts';
+import { ListChecks } from 'lucide-react';
+import { t, type CopyKey } from '../../copy/index.ts';
+import { SHORTCUTS } from '../../hooks/shortcuts.ts';
 import { usePrefs } from '../../state/prefs.ts';
+import { command, shownShortcut, type CommandId } from '../../state/commands.ts';
 import { itemsOn, selectedItems, sheetIndex } from '../../state/selectors.ts';
-import { copySelection, cutSelection, hasClip, pastePieces } from '../../state/actions/clipboard.ts';
-import { arrangeAll } from '../../state/actions/edit.ts';
-import { bringToFront, duplicate, overlapsOthers, remove, rotate } from '../../state/actions/pieces.ts';
-import { selectSame, setSelection } from '../../state/actions/selection.ts';
-import { addSheet, canMoveToNewSheet, moveToNewSheet } from '../../state/actions/sheets.ts';
+import { setSelection } from '../../state/actions/selection.ts';
 import { announce } from '../feedback/announcer.ts';
 import { Menu, type MenuEntry } from '../ui/Menu.tsx';
-import { startCrop } from './cropMode.ts';
 import { closeContextMenu, useContextMenu } from './contextMenu.ts';
 
 export default function ContextMenu() {
   const request = useContextMenu((s) => s.request);
   const singleKeys = usePrefs((s) => s.singleKeys);
   if (!request) return null;
-  // A shortcut's hint and aria-keyshortcuts (single-key ones only while they are on).
-  const keys = (name: ShortcutName) => {
-    const shortcut: { kbd?: string; aria?: string; single?: boolean } = SHORTCUTS[name];
-    return shortcut.single && !singleKeys ? {} : { keys: shortcut.kbd, aria: shortcut.aria };
+  /** A command as an entry; `label`: a shorter name where the menu gives the context. */
+  const entry = (id: string, name: CommandId, { label, separator }: { label?: CopyKey; separator?: boolean } = {}): MenuEntry => {
+    const c = command(name);
+    const keys = shownShortcut(c, singleKeys);
+    return { id, label: label ? t(label) : c.label, icon: c.icon, separator, keys: keys?.kbd, aria: keys?.aria, disabled: c.disabled, run: c.run! };
   };
-  const pasteReason = hasClip() ? null : t('menu.reasons.paste');
   let label: string;
   let entries: MenuEntry[];
   if (request.kind === 'piece') {
     const list = selectedItems();
-    const single = list.length === 1;
-    label = single ? t('menu.piece') : t('menu.pieces', { n: list.length });
+    label = list.length === 1 ? t('menu.piece') : t('menu.pieces', { n: list.length });
     entries = [
-      { id: 'rotate-left', label: t('menu.rotateLeft'), icon: RotateCcw, ...keys('rotateLeft'), run: () => rotate(-1, { focus: true }) },
-      { id: 'rotate-right', label: t('menu.rotateRight'), icon: RotateCw, ...keys('rotateRight'), run: () => rotate(1, { focus: true }) },
-      { id: 'duplicate', label: t('menu.duplicate'), icon: CopyPlus, separator: true, ...keys('duplicate'), run: () => duplicate(1, { focus: true }) },
-      { id: 'copy', label: t('menu.copy'), icon: Copy, ...keys('copy'), run: () => void copySelection() },
-      { id: 'cut', label: t('menu.cut'), icon: Scissors, ...keys('cut'), run: () => void cutSelection() },
-      { id: 'paste', label: t('menu.paste'), icon: ClipboardPaste, ...keys('paste'), disabled: pasteReason, run: () => void pastePieces() },
-      {
-        id: 'front',
-        label: t('menu.front'),
-        icon: BringToFront,
-        separator: true,
-        ...keys('front'),
-        disabled: !single ? t('menu.reasons.single') : !overlapsOthers(list[0]) ? t('menu.reasons.front') : null,
-        run: () => bringToFront({ focus: true }),
-      },
-      { id: 'crop', label: t('menu.crop'), icon: Crop, ...keys('crop'), disabled: single ? null : t('menu.reasons.single'), run: () => startCrop() },
-      { id: 'same', label: t('menu.selectSame'), icon: Images, ...keys('selectSame'), run: selectSame },
-      { id: 'new-sheet', label: t('menu.newSheet'), icon: SquareArrowRight, disabled: canMoveToNewSheet() ? null : t('menu.reasons.oneSheet'), run: moveToNewSheet },
-      { id: 'remove', label: t('menu.remove'), icon: Trash2, separator: true, ...keys('remove'), run: () => remove({ focus: true }) },
+      entry('rotate-left', 'rotateLeft'),
+      entry('rotate-right', 'rotateRight'),
+      entry('duplicate', 'duplicate', { separator: true }),
+      entry('copy', 'copy'),
+      entry('cut', 'cut'),
+      entry('paste', 'paste'),
+      entry('front', 'front', { separator: true }),
+      entry('crop', 'crop'),
+      entry('same', 'selectSame'),
+      entry('new-sheet', 'moveToNewSheet'),
+      entry('remove', 'remove', { label: 'menu.remove', separator: true }),
     ];
   } else {
     const onSheet = itemsOn(request.sheet);
     label = t('menu.sheet', { i: sheetIndex(request.sheet) + 1 });
     entries = [
-      { id: 'paste', label: t('menu.paste'), icon: ClipboardPaste, ...keys('paste'), disabled: pasteReason, run: () => void pastePieces() },
+      entry('paste', 'paste'),
       {
         id: 'select-sheet',
         label: t('menu.selectSheet'),
         icon: ListChecks,
-        keys: 'Mod+A',
-        aria: 'Control+A Meta+A',
+        keys: SHORTCUTS.selectAll.kbd,
+        aria: SHORTCUTS.selectAll.aria,
         disabled: onSheet.length ? null : t('menu.reasons.emptySheet'),
         run: () => {
           setSelection(
@@ -90,8 +63,8 @@ export default function ContextMenu() {
           announce(t('announce.selectedSheet', { n: onSheet.length, i: sheetIndex(request.sheet) + 1 }));
         },
       },
-      { id: 'arrange', label: t('menu.arrange'), icon: LayoutDashboard, ...keys('arrange'), disabled: getDocument().items.length ? null : t('menu.reasons.noPieces'), run: arrangeAll },
-      { id: 'add-sheet', label: t('menu.addSheet'), icon: FilePlus, run: () => addSheet() },
+      entry('arrange', 'arrange', { label: 'menu.arrange' }),
+      entry('add-sheet', 'addSheet'),
     ];
   }
   return <Menu id="context-menu" label={label} entries={entries} at={{ x: request.x, y: request.y }} onClose={() => closeContextMenu()} />;
