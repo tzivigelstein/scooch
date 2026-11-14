@@ -7,6 +7,7 @@ import { t } from '../../copy/index.ts';
 import { announce, cancelAnnounce } from '../../components/feedback/announcer.ts';
 import { getDocument, useDocument } from '../document.ts';
 import { flushUi } from '../flush.ts';
+import { getPrefs, setSectionOpen, type SectionName } from '../prefs.ts';
 import { getView, setView, type PropsTab } from '../view.ts';
 
 export const TAB_PANELS: Record<PropsTab, string> = { piece: 'props-piece', project: 'props-project' };
@@ -27,6 +28,27 @@ export function showPropsTab(tab: PropsTab, { focus = false } = {}) {
   if (!focus) return;
   flushUi();
   document.getElementById(`props-tab-${tab}`)?.focus();
+}
+
+/**
+ * Opens a section of the tab showing, scrolls the panel to it and focuses the
+ * control with id `focusId`.
+ */
+export function showSection(name: SectionName, focusId: string) {
+  if (getPrefs().sections[name] === false) setSectionOpen(name, true);
+  flushUi();
+  const panel = document.getElementById('props-panel');
+  const section = panel?.querySelector(`[data-section="${name}"]`);
+  const tabs = panel?.querySelector('.props-tabs');
+  if (panel && section && tabs) {
+    const box = section.getBoundingClientRect();
+    // The panel's top when the whole section shows from there (in the bottom
+    // sheet, with its title and close button); otherwise the section's header
+    // right under the tabs, which stick to the top.
+    const fitsAtTop = panel.scrollTop + box.bottom <= panel.getBoundingClientRect().bottom;
+    panel.scrollTop = fitsAtTop ? 0 : panel.scrollTop + box.top - tabs.getBoundingClientRect().bottom;
+  }
+  document.getElementById(focusId)?.focus({ preventScroll: true });
 }
 
 // Someone typing in a field of the tab that would hide keeps it: the field stays.

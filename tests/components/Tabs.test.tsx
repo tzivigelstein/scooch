@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // The «Propiedades» tabs (ui/Tabs.tsx inside PropertiesPanel): the tablist and
 // its two tabs wired to their panels, one tab stop, the arrows, Home and End,
-// the shortcut each tab shows, and what each panel shows. (Which tab follows
+// the shortcut each tab shows, what each panel shows and where a sheet's
+// title takes the focus. (Which tab follows
 // the selection is in tests/state/follow-selection.test.ts; M and H with the
 // real focus, and the drawer and the bottom sheet, in
 // e2e/specs/panels-and-tabs.spec.ts.)
@@ -9,9 +10,12 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { PropertiesPanel } from '../../src/components/properties-panel/PropertiesPanel.tsx';
+import { getDocument } from '../../src/state/document.ts';
 import { usePrefs } from '../../src/state/prefs.ts';
 import { getView } from '../../src/state/view.ts';
 import { showPropsTab } from '../../src/state/actions/panels.ts';
+import { setSelection } from '../../src/state/actions/selection.ts';
+import { showPaperSettings } from '../../src/state/actions/sheets.ts';
 import { fakeImage, piece, resetState } from '../support/state.ts';
 
 beforeAll(() => {
@@ -119,5 +123,23 @@ describe('what each tab shows', () => {
     fireEvent.click(tab('project'));
     expect(toggle().getAttribute('aria-expanded')).toBe('false');
     expect(document.getElementById('section-arrange')!.hidden).toBe(true);
+  });
+});
+
+describe('a sheet’s title («Cambiar el papel»)', () => {
+  test('shows Proyecto with nothing selected and Papel open (even if it was collapsed), with the focus on the paper size', () => {
+    const papel = () => document.querySelector('[aria-controls="section-sheet"]')!;
+    fireEvent.click(papel());
+    expect(papel().getAttribute('aria-expanded')).toBe('false');
+    act(() => {
+      setSelection([1]);
+      showPropsTab('piece');
+    });
+    act(() => showPaperSettings(1));
+    expect(getView().propsTab).toBe('project');
+    expect(getDocument().selection).toEqual([]);
+    expect(papel().getAttribute('aria-expanded')).toBe('true');
+    expect(usePrefs.getState().sections.sheet).toBe(true);
+    expect(document.activeElement).toBe(document.getElementById('paper'));
   });
 });

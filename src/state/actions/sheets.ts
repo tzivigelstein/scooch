@@ -18,7 +18,7 @@ import { area, boxOf, currentSheet, findItem, itemsOn, layoutPad, selectedItem, 
 import { animateNext, setView } from '../view.ts';
 import { revealPanel } from './drawers.ts';
 import { focusSheet, pieceNode, sheetNode } from './focus.ts';
-import { showPropsTab } from './panels.ts';
+import { showPropsTab, showSection } from './panels.ts';
 import { forgetSpill } from './layout.ts';
 import { arrangeAll, undoLast } from './edit.ts';
 import { say, sayUndoable, singleOnly } from './notify.ts';
@@ -68,16 +68,19 @@ export function removeSheet(id: number, { viaKeyboard = false } = {}) {
 }
 
 /**
- * A sheet's title: that sheet becomes the current one, nothing stays
- * selected and Propiedades shows Proyecto (opening it on narrow screens). The
- * focus stays where it is.
+ * A sheet's title («Cambiar el papel»): that sheet becomes the current one,
+ * nothing stays selected and Propiedades shows Proyecto (opening it on narrow
+ * screens) with Papel open and in view, and the focus on the paper size.
  */
-export function showSheetSettings(id: number) {
+export function showPaperSettings(id: number) {
   if (sheetIndex(id) < 0) return;
   setView({ sheet: id });
-  if (getDocument().selection.length) setSelection([]);
+  // The tab before the selection: clearing it then switches nothing, so
+  // nothing is announced (the focus moving into the tab says it).
   showPropsTab('project');
+  if (getDocument().selection.length) setSelection([]);
   revealPanel('props');
+  showSection('sheet', 'paper');
 }
 
 /** Page Up / Page Down: the focus goes to the previous or next sheet (to its first piece). */

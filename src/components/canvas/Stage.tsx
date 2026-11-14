@@ -19,7 +19,7 @@ import { currentSheet, sheetIndex, sheetSize } from '../../state/selectors.ts';
 import { getView, setView, useView } from '../../state/view.ts';
 import { openFiles } from '../../state/actions/files.ts';
 import { focusPiece } from '../../state/actions/selection.ts';
-import { addSheet, removeSheet, showSheetSettings } from '../../state/actions/sheets.ts';
+import { addSheet, removeSheet, showPaperSettings } from '../../state/actions/sheets.ts';
 import { Icon } from '../ui/Icon.tsx';
 import { CropContent } from './cropMode.ts';
 import { CutLayer } from './CutLayer.tsx';
@@ -90,7 +90,14 @@ const Page = memo(function Page({ id, index, total, items, W, H, zoom, margin, e
   return (
     <div className={current ? 'page is-current' : 'page'} data-sheet={id} style={{ width: `${W * zoom}px` }}>
       <div className="page-head">
-        <button type="button" className="page-label" data-tip={t('sheet.settingsTip')} aria-describedby="sheet-settings-hint" onClick={() => showSheetSettings(id)}>
+        <button
+          type="button"
+          className="page-label"
+          aria-label={t('sheet.changePaperLabel', { label })}
+          data-tip={t('sheet.changePaper')}
+          aria-describedby="change-paper-hint"
+          onClick={() => showPaperSettings(id)}
+        >
           {label}
         </button>
         <button
@@ -260,8 +267,8 @@ export function Stage() {
         <div id="new-sheet-gap" className="new-sheet-gap" hidden aria-hidden="true">
           <span>{t('sheet.dropNew')}</span>
         </div>
-        <p id="sheet-settings-hint" className="sr-only">
-          {t('sheet.settingsHint')}
+        <p id="change-paper-hint" className="sr-only">
+          {t('sheet.changePaperHint')}
         </p>
       </div>
     </div>

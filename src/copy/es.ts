@@ -116,9 +116,10 @@ const es = {
   // The sheet on screen
   sheet: {
     numbered: 'Hoja {i} de {total}',
-    // The title above each sheet is a button
-    settingsTip: 'Configurar hoja',
-    settingsHint: 'Muestra los ajustes de las hojas en Propiedades',
+    // The title above each sheet is a button ({label}: «Hoja 2 de 3»)
+    changePaper: 'Cambiar el papel',
+    changePaperLabel: '{label}: cambiar el papel',
+    changePaperHint: 'Lleva a Papel, en la pestaña Proyecto de Propiedades',
     // Each sheet's name for screen readers ({label}: «Hoja 2 de 3»)
     groupLabel: { one: '{label}, {n} pieza', other: '{label}, {n} piezas' },
     groupEmpty: '{label}, vacía',

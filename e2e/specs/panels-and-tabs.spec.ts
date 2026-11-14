@@ -151,20 +151,43 @@ test.describe('wide screens', () => {
 });
 
 test.describe('properties tabs', () => {
-  test('the sheet’s title: a click, and Enter or Space after Shift+Tab, show Proyecto with nothing selected and the focus on the title; Tab onto a piece shows Pieza', async ({ app, page }) => {
+  test('the sheet’s title, «Cambiar el papel»: a click, and Enter or Space after Shift+Tab, show Proyecto with nothing selected and Papel open and in view, with the focus on the paper size; Tab onto a piece shows Pieza', async ({ app, page }) => {
     await app.addFiles(['small.jpg', 'square.webp', 'tall.png']);
     const title = page.locator('.page-label');
-    // The lowest piece, so its toolbar isn't over the title.
+    const papel = page.locator('[aria-controls="section-sheet"]');
+    const panel = page.locator('#props-panel');
+    await expect(title).toHaveRole('button');
+    await expect(title).toHaveAccessibleName('Hoja 1 de 1: cambiar el papel');
+    await expect(title).toHaveAttribute('data-tip', 'Cambiar el papel');
+    await expect(title).toHaveAccessibleDescription('Lleva a Papel, en la pestaña Proyecto de Propiedades');
+    /** Papel's header is below the tabs (they stick to the top of the panel) and the paper size above the panel's end. */
+    const papelInView = () =>
+      page.evaluate(() => {
+        const bottom = document.getElementById('props-panel')!.getBoundingClientRect().bottom;
+        const tabsBottom = document.querySelector('.props-tabs')!.getBoundingClientRect().bottom;
+        return document.querySelector('[aria-controls="section-sheet"]')!.getBoundingClientRect().top >= tabsBottom - 0.5 && document.getElementById('paper')!.getBoundingClientRect().bottom <= bottom + 0.5;
+      });
+
+    // Papel collapsed: the title opens it.
+    await app.showTab('project');
+    await papel.click();
+    await expect(papel).toHaveAttribute('aria-expanded', 'false');
+    await title.click();
+    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'paper' });
+    await expect(papel).toHaveAttribute('aria-expanded', 'true');
+
+    // A piece selected (the lowest, so its toolbar isn't over the title) and
+    // Pieza scrolled to its end, in a window short enough for the panel to scroll.
+    await page.setViewportSize({ width: 1440, height: 560 });
     const lowest = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('#sheets .piece')].sort((a, b) => b.getBoundingClientRect().top - a.getBoundingClientRect().top)[0].dataset.id);
     await app.piece(Number(lowest)).click();
     await expect.poll(() => tabs(app)).toMatchObject({ selected: 'piece', activePiece: Number(lowest) });
+    await panel.evaluate((el) => (el.scrollTop = el.scrollHeight));
+    expect(await panel.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
     await title.click();
-    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'page-label' });
+    await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'paper' });
     expect(await app.selectedIds()).toEqual([]);
-    await expect(title).toHaveRole('button');
-    await expect(title).toHaveAccessibleName('Hoja 1 de 1');
-    await expect(title).toHaveAttribute('data-tip', 'Configurar hoja');
-    await expect(title).toHaveAccessibleDescription(/\S/);
+    expect(await papelInView()).toBe(true);
 
     for (const key of ['Enter', 'Space']) {
       await test.step(key, async () => {
@@ -173,12 +196,13 @@ test.describe('properties tabs', () => {
         for (let i = 0; i < 10 && !(await title.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press('Shift+Tab');
         await expect(title).toBeFocused();
         await page.keyboard.press(key);
-        await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'page-label' });
+        await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'paper' });
         expect(await app.selectedIds()).toEqual([]);
       });
     }
 
     // Tab from the title onto a piece: it gets selected and Pieza shows; the focus stays on the piece.
+    await title.focus();
     for (let i = 0; i < 5 && (await app.active()).piece === null; i++) await page.keyboard.press('Tab');
     const focused = (await app.active()).piece;
     expect(focused).not.toBeNull();
@@ -251,12 +275,15 @@ test.describe('properties tabs', () => {
         await expect.poll(() => tabs(app)).toMatchObject({ selected: 'piece' });
 
         if (narrow) {
-          await test.step('the sheet’s title opens the bottom sheet on Proyecto, the focus stays on the title', async () => {
+          await test.step('the sheet’s title opens the bottom sheet on Proyecto with the focus on the paper size; Esc closes it, back to the title', async () => {
             await page.keyboard.press('Escape');
             await first.focus();
             await page.locator('.page-label').first().click();
             await expect(props).toBeVisible();
-            await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'page-label' });
+            await expect.poll(() => tabs(app)).toMatchObject({ selected: 'project', active: 'paper' });
+            await page.keyboard.press('Escape');
+            await expect(props).toBeHidden();
+            await expect(page.locator('.page-label').first()).toBeFocused();
             await first.focus();
             if (!(await props.isVisible())) await page.locator('#props-toggle').click();
             await page.locator('#props-tab-piece').click();
