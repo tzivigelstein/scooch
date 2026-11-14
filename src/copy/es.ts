@@ -1007,8 +1007,6 @@ const es = {
     // «Preferencias»
     prefsTitle: 'Consejos de uso',
     prefsSwitch: 'Mostrar consejos',
-    restore: 'Volver a mostrar los consejos',
-    restored: 'Los consejos que ocultaste vuelven a mostrarse',
   },
 };
 

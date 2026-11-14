@@ -4,7 +4,7 @@
 // keys, gestures and fields report which action they ran and by which route
 // (`used` and the reports below); the table says what counts toward each tip,
 // and core/tips.js decides which one is due. «Mostrar consejos» in
-// Preferencias turns them off.
+// Preferencias turns them off; on again, the dismissed ones come back.
 
 import { create } from 'zustand';
 import { TIPS_STORAGE } from '../config.ts';
@@ -351,16 +351,17 @@ export function neverShow(topic: string) {
   save();
 }
 
-/** «Volver a mostrar los consejos»: the dismissed ones can show again. */
-export function restoreTips() {
-  if (!useTips.getState().dismissed.length) return;
-  useTips.setState({ dismissed: [] });
-  save();
-}
-
-/** «Mostrar consejos». */
+/**
+ * «Mostrar consejos». Off, no tip shows and nothing counts. Turned on again,
+ * every tip is active again: the dismissed ones and the ones already shown
+ * this session too. The known topics stay known (that tip isn't needed).
+ */
 export function setTipsOn(on: boolean) {
-  useTips.setState({ on });
+  if (on && !useTips.getState().on) {
+    session.shown = [];
+    session.lastShownAt = null;
+    useTips.setState({ on, dismissed: [] });
+  } else useTips.setState({ on });
   if (!on) closeTip();
   save();
 }

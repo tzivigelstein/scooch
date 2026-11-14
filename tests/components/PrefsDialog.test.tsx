@@ -4,11 +4,11 @@
 // unit (saved and announced) is in unit-preference.test.tsx; that the choice
 // survives a reload, in e2e/specs/keyboard-only.spec.ts.
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import PrefsDialog from '../../src/components/dialogs/PrefsDialog.tsx';
 import { getPrefs, readStoredTheme, setSingleKeys } from '../../src/state/prefs.ts';
 import { neverShow, resetTips, useTips } from '../../src/state/tips.ts';
-import { heard, listen, resetState } from '../support/state.ts';
+import { resetState } from '../support/state.ts';
 
 const plain = (s: string | null | undefined) => String(s ?? '').replace(/ /g, ' ').trim();
 /** The text of the elements an aria-describedby / aria-labelledby points to. */
@@ -122,24 +122,24 @@ describe('Preferences', () => {
     expect(JSON.parse(localStorage.getItem('scooch:usage-tips')!)).toMatchObject({ v: 1, on: false });
   });
 
-  test('«Volver a mostrar los consejos» brings back the dismissed ones and says so; with none, it does nothing', () => {
-    listen();
+  test('Consejos de uso holds only the switch: no button to bring the dismissed ones back', () => {
     resetTips();
     render(<PrefsDialog />);
-    const restore = screen.getByRole('button', { name: 'Volver a mostrar los consejos' });
-    expect(restore.getAttribute('aria-disabled')).toBe('true');
-    fireEvent.click(restore);
-    expect(heard()).toBe('');
+    const group = screen.getAllByRole('group')[4];
+    expect(within(group).getAllByRole('switch')).toHaveLength(1);
+    expect(within(group).queryAllByRole('button')).toEqual([]);
+    expect(screen.queryByRole('button', { name: /mostrar/i })).toBeNull();
+  });
+
+  test('turning «Mostrar consejos» off and on again brings back the dismissed ones', () => {
+    resetTips();
     act(() => neverShow('undoKey'));
-    expect(restore.hasAttribute('aria-disabled')).toBe(false);
-    restore.focus();
-    fireEvent.click(restore);
-    expect(useTips.getState().dismissed).toEqual([]);
-    expect(heard()).toBe('Los consejos que ocultaste vuelven a mostrarse.');
-    // It stays where it was, focused, now with nothing to bring back.
-    expect(document.activeElement).toBe(restore);
-    expect(restore.getAttribute('aria-disabled')).toBe('true');
-    vi.useRealTimers();
+    render(<PrefsDialog />);
+    const toggle = screen.getByRole('switch', { name: 'Mostrar consejos' });
+    fireEvent.click(toggle);
+    expect(useTips.getState()).toMatchObject({ on: false, dismissed: ['undoKey'] });
+    fireEvent.click(toggle);
+    expect(useTips.getState()).toMatchObject({ on: true, dismissed: [] });
   });
 });
 

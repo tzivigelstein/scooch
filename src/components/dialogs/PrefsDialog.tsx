@@ -8,8 +8,7 @@ import { UNITS, type Unit } from '../../core/units.js';
 import { t } from '../../copy/index.ts';
 import { setPrinting, setSingleKeys, setTheme, usePrefs } from '../../state/prefs.ts';
 import { chooseUnit } from '../../state/actions/prefs.ts';
-import { restoreTips, setTipsOn, useTips } from '../../state/tips.ts';
-import { announce } from '../feedback/announcer.ts';
+import { setTipsOn, useTips } from '../../state/tips.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
 import { Switch } from '../ui/Switch.tsx';
@@ -22,7 +21,6 @@ export default function PrefsDialog() {
   const printing = usePrefs((s) => s.printing);
   const theme = usePrefs((s) => s.theme);
   const tipsOn = useTips((s) => s.on);
-  const dismissed = useTips((s) => s.dismissed.length > 0);
   const close = () => closeDialog('prefs');
   return (
     <>
@@ -79,20 +77,6 @@ export default function PrefsDialog() {
             {t('tips.prefsTitle')}
           </h3>
           <Switch id="tips-pref" label={<span>{t('tips.prefsSwitch')}</span>} checked={tipsOn} onChange={setTipsOn} />
-          {/* Stays focusable when there is nothing to bring back: pressing it then does nothing. */}
-          <button
-            type="button"
-            id="tips-restore"
-            className="chip-btn pref-btn"
-            aria-disabled={!dismissed || undefined}
-            onClick={() => {
-              if (!dismissed) return;
-              restoreTips();
-              announce(t('tips.restored'));
-            }}
-          >
-            {t('tips.restore')}
-          </button>
         </div>
       </div>
       <LegalLinks />

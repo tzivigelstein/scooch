@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { TIPS_STORAGE } from '../../src/config.ts';
 import { TIP_LIMITS } from '../../src/core/tips.js';
 import { usePrefs } from '../../src/state/prefs.ts';
-import { addedAgain, closeTip, control, draggedPiece, neverShow, resetTips, restoreTips, setTipsOn, tipShown, typedPosition, used, useTips } from '../../src/state/tips.ts';
+import { addedAgain, closeTip, control, draggedPiece, neverShow, resetTips, setTipsOn, tipShown, typedPosition, used, useTips } from '../../src/state/tips.ts';
 import { duplicate } from '../../src/state/actions/pieces.ts';
 import { select } from '../../src/state/actions/selection.ts';
 import { fakeImageMm, piece, resetState } from '../support/state.ts';
@@ -222,7 +222,7 @@ describe('what this browser keeps', () => {
     expect(stored().counts).toEqual({});
   });
 
-  test('«No volver a mostrar» lasts after reloading; «Volver a mostrar los consejos» brings it back', () => {
+  test('«No volver a mostrar» lasts after reloading', () => {
     times(3, () => used('undo', 'pointer'));
     tipShown();
     neverShow('undoKey');
@@ -231,11 +231,6 @@ describe('what this browser keeps', () => {
     resetTips();
     times(3, () => used('undo', 'pointer'));
     expect(due()).toBe(null);
-    restoreTips();
-    expect(useTips.getState().dismissed).toEqual([]);
-    resetTips();
-    times(3, () => used('undo', 'pointer'));
-    expect(due()?.id).toBe('undoKey');
   });
 
   test('a shortcut used is remembered: its tip doesn’t come in the next session either', () => {
@@ -252,5 +247,62 @@ describe('what this browser keeps', () => {
     expect(due()).toBe(null);
     resetTips();
     expect(useTips.getState().on).toBe(false);
+  });
+});
+
+describe('the switch', () => {
+  test('off, no tip shows, a dismissed one or a new one alike', () => {
+    neverShow('undoKey');
+    setTipsOn(false);
+    times(3, () => used('undo', 'pointer'));
+    times(3, () => used('redo', 'pointer'));
+    expect(due()).toBe(null);
+    expect(useTips.getState().dismissed).toEqual(['undoKey']);
+  });
+
+  test('off and on again, the dismissed ones show again, also after reloading', () => {
+    times(3, () => used('undo', 'pointer'));
+    tipShown();
+    neverShow('undoKey');
+    neverShow('redoKey');
+    setTipsOn(false);
+    setTipsOn(true);
+    expect(useTips.getState().dismissed).toEqual([]);
+    expect(stored()).toMatchObject({ v: 1, on: true, dismissed: [] });
+    resetTips();
+    times(3, () => used('undo', 'pointer'));
+    expect(due()?.id).toBe('undoKey');
+  });
+
+  test('on again, the session starts over: a tip already shown, the cooldown and the limit no longer hold it back', () => {
+    for (const id of ['undo', 'redo'] as const) {
+      times(3, () => used(id, 'pointer'));
+      seen();
+      vi.advanceTimersByTime(TIP_LIMITS.cooldown);
+    }
+    setTipsOn(false);
+    setTipsOn(true);
+    times(3, () => used('undo', 'pointer'));
+    expect(due()?.id).toBe('undoKey');
+  });
+
+  test('switched on when it already was, nothing comes back', () => {
+    neverShow('undoKey');
+    setTipsOn(true);
+    expect(useTips.getState().dismissed).toEqual(['undoKey']);
+    times(3, () => used('undo', 'pointer'));
+    expect(due()).toBe(null);
+  });
+
+  test('off and on again, a topic done the fast way stays known: its tip still doesn’t come', () => {
+    used('undo', 'shortcut');
+    neverShow('redoKey');
+    setTipsOn(false);
+    setTipsOn(true);
+    expect(stored()).toMatchObject({ known: ['undoKey'], dismissed: [] });
+    times(9, () => used('undo', 'pointer'));
+    expect(due()).toBe(null);
+    times(3, () => used('redo', 'pointer'));
+    expect(due()?.id).toBe('redoKey');
   });
 });
