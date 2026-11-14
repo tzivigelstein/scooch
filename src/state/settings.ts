@@ -19,6 +19,7 @@ import {
   SECTIONS_STORAGE,
   SINGLE_KEYS_STORAGE,
   THEME_STORAGE,
+  TIPS_STORAGE,
   UNIT_STORAGE,
   VIEW_STORAGE,
 } from '../config.ts';
@@ -27,7 +28,7 @@ export type Lifetime = 'document' | 'device' | 'session' | 'ephemeral';
 
 export interface Setting {
   /** The store that holds it (null: no store, only its storage). */
-  store: 'document' | 'prefs' | 'view' | null;
+  store: 'document' | 'prefs' | 'view' | 'tips' | null;
   key: string;
   lives: Lifetime;
   /** Where a device setting is kept. */
@@ -75,6 +76,10 @@ export const SETTINGS: readonly Setting[] = [
   device(null, 'lastProject', LAST_PROJECT_STORAGE),
   device(null, 'journal', JOURNAL_PREFIX),
   device(null, 'paletteRecents', PALETTE_STORAGE),
+  // Usage tips (state/tips.ts): the switch, the dismissed ones, and their counts and known topics.
+  device('tips', 'on', TIPS_STORAGE),
+  device('tips', 'dismissed', TIPS_STORAGE),
+  device(null, 'tipCounts', TIPS_STORAGE),
 
   // The tab
   { store: 'view', key: 'sheet', lives: 'session' },
@@ -87,4 +92,5 @@ export const SETTINGS: readonly Setting[] = [
   { store: 'view', key: 'loading', lives: 'ephemeral' },
   { store: 'view', key: 'editing', lives: 'ephemeral' },
   { store: 'view', key: 'cropping', lives: 'ephemeral' },
+  { store: 'tips', key: 'tip', lives: 'ephemeral' },
 ];

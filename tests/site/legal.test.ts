@@ -11,6 +11,7 @@ import {
   SECTIONS_STORAGE,
   SINGLE_KEYS_STORAGE,
   THEME_STORAGE,
+  TIPS_STORAGE,
   UNIT_STORAGE,
   VIEW_STORAGE,
 } from '../../src/config.ts';
@@ -39,6 +40,7 @@ const POLICY_TERMS: Readonly<Record<string, string>> = {
   [PRINT_STORAGE]: 'Avisos al imprimir',
   [CUSTOM_PAPER_STORAGE]: 'Papel personalizado',
   [PALETTE_STORAGE]: 'Acciones recientes',
+  [TIPS_STORAGE]: 'Consejos de uso',
   [SAVINGS_STORAGE]: 'Hojas ahorradas',
   [DONATE_STORAGE]: 'Invitación a aportar',
   [LAST_PROJECT_STORAGE]: 'Último proyecto',

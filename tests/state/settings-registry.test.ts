@@ -19,9 +19,10 @@ import { rememberView, setView, useView } from '../../src/state/view.ts';
 import { setPaperSide, choosePaper } from '../../src/state/actions/sheets.ts';
 import { neverAskDonation } from '../../src/components/dialogs/donate.ts';
 import { rememberCommand } from '../../src/components/palette/recents.ts';
+import { neverShow, resetTips, setTipsOn, used, useTips } from '../../src/state/tips.ts';
 import { fakeImageMm, piece, resetState } from '../support/state.ts';
 
-const STORES = { document: useDocument, prefs: usePrefs, view: useView } as const;
+const STORES = { document: useDocument, prefs: usePrefs, view: useView, tips: useTips } as const;
 
 /** How the person changes each setting (through the same calls the app uses). */
 const CHANGES: Record<string, () => void> = {
@@ -53,6 +54,10 @@ const CHANGES: Record<string, () => void> = {
   'null.donateDismissed': () => neverAskDonation(),
   'null.savings': () => recordSavings(3, 'a-pdf', 'print'),
   'null.paletteRecents': () => rememberCommand('undo'),
+  'tips.on': () => setTipsOn(false),
+  'tips.dismissed': () => neverShow('undoKey'),
+  'null.tipCounts': () => used('undo', 'pointer'),
+  'tips.tip': () => useTips.setState({ tip: { id: 'undoKey', topic: 'undoKey', text: 'Un consejo', action: null, shown: true } }),
   'view.sheet': () => setView({ sheet: 7 }),
   'view.pinned': () => setView({ pinned: true }),
   'view.drawer': () => setView({ drawer: 'props' }),
@@ -79,6 +84,7 @@ beforeEach(() => {
   resetState({ items: [piece(1, fakeImageMm(40, 30), 20, 20)] });
   setView({ zoomMode: 'fit', zoom: fromPercent(100), alignTo: 'selection', distribute: 'gap' });
   rememberView();
+  resetTips();
   localStorage.clear();
   writes = [];
   const setItem = Storage.prototype.setItem;

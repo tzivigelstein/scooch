@@ -98,6 +98,11 @@ En localStorage, con nombres que empiezan con `scooch:`:
 - **Papel personalizado:** la última medida de papel que escribiste.
 - **Acciones recientes:** las últimas 5 acciones que elegiste en Buscar
   acciones.
+- **Consejos de uso:** si se muestran, los que elegiste no volver a ver y,
+  para saber cuándo ofrecer uno, cuántas veces hiciste algunas acciones con
+  un botón o un menú en lugar de su atajo y cuáles ya hiciste de la forma
+  más rápida. Son solo cifras y nombres de acciones, no lo que hay en tus
+  proyectos.
 - **Hojas ahorradas:** el total de hojas que ahorraste en este dispositivo,
   que muestra el resumen después de imprimir; una cifra redonda que
   alcanzaste, si el resumen todavía no te la mostró, y a qué comparación le

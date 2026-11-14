@@ -980,6 +980,39 @@ const es = {
     empty: 'No hay acciones que coincidan con «{query}»',
     emptyChoice: 'No hay opciones que coincidan con «{query}»',
   },
+
+  // Usage tips: after something is done the slow way several times, the
+  // faster way, once (state/tips.ts). {keys}, {right} and {left} come already
+  // as this device shows them («Ctrl+Z», «⌘Z», «Supr o Retroceso»).
+  tips: {
+    // The name of the box with the tip and its buttons, for screen readers
+    label: 'Consejo',
+    never: 'No volver a mostrar',
+    close: 'Cerrar consejo',
+    duplicateMany: 'Puedes hacer varias copias de una vez: escribe cuántas junto a Duplicar, en la pestaña Pieza',
+    showDuplicate: 'Ir a Duplicar',
+    undoKey: 'También puedes deshacer con {keys}',
+    redoKey: 'También puedes rehacer con {keys}',
+    removeKey: 'También puedes quitar las piezas seleccionadas con {keys}',
+    rotateKey: 'También puedes rotar con {right} a la derecha y con {left} a la izquierda',
+    arrangeKey: 'También puedes acomodar las piezas con {keys}',
+    // While «Atajos de 1 tecla» is off
+    rotateKeysOff: 'Si activas los atajos de 1 tecla en Preferencias, puedes rotar con {right} y {left}',
+    arrangeKeysOff: 'Si activas los atajos de 1 tecla en Preferencias, puedes acomodar las piezas con {keys}',
+    openPrefs: 'Abrir Preferencias',
+    arrangeAll: 'Acomodar ubica todas las piezas de una vez, sin superponerlas',
+    palette: 'Busca cualquier acción con {keys}',
+    openPalette: 'Buscar acciones',
+    zoomWheel: 'También puedes acercar o alejar la vista con {keys} o pellizcando el trackpad',
+    zoomPinch: 'También puedes acercar o alejar la vista pellizcando con dos dedos',
+    alignButtons: 'Para alinear varias piezas, selecciónalas juntas y usa Alinear, en la pestaña Pieza',
+    sameFile: 'Duplicar y Rellenar con copias repiten una pieza sin agregar el archivo otra vez',
+    // «Preferencias»
+    prefsTitle: 'Consejos de uso',
+    prefsSwitch: 'Mostrar consejos',
+    restore: 'Volver a mostrar los consejos',
+    restored: 'Los consejos que ocultaste vuelven a mostrarse',
+  },
 };
 
 export default es;
