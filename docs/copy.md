@@ -58,7 +58,12 @@ revisión de hablantes nativos.
   otro idioma), con exactamente las claves de `es.ts`, los mismos parámetros
   y los mismos `<link>…</link>`. El tipo `Catalogue` lo exige al compilar y
   `tests/core/copy-catalogues.test.ts` lo revisa y nombra cada clave que
-  falta o sobra. Una clave nueva va en `es.ts` y en todos los idiomas.
+  falta (con su texto en español) o sobra. Una clave nueva va en `es.ts` y
+  en todos los idiomas, en el mismo lugar del archivo.
+- Un texto en español que cambia hace fallar `tests/core/copy-source.test.ts`,
+  con el texto anterior y el nuevo: se traduce el cambio en los cuatro
+  idiomas y se registra con `node_modules/.bin/vitest run
+  tests/core/copy-source.test.ts --update`.
 - Los plurales llevan las formas de su idioma, ni más ni menos: `one` y
   `other` en español, inglés, francés e hindi; solo `other` en chino. En
   francés e hindi `one` también es el 0: ahí la forma `one` usa `{n}`, nunca

@@ -6,7 +6,7 @@ import { describe, expect, test } from 'vitest';
 import es from '../../src/copy/es.ts';
 import { textsFor, type Catalogue, type Plural } from '../../src/copy/index.ts';
 
-const NNBSP = ' ';
+const NNBSP = '\u202f';
 
 /** Spanish's texts with `lang` rules and `count` as «pieces.count». */
 const textsIn = (lang: string, count: Plural = { one: 'one {n}', other: 'other {n}' }) =>

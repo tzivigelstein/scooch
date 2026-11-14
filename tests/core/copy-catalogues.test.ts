@@ -47,16 +47,16 @@ const TYPOGRAPHY: Record<string, readonly { rule: string; bad: RegExp }[]> = {
     { rule: 'no space before %', bad: /\d %|\} %/ },
   ],
   'zh-Hans': [
-    { rule: 'full-width punctuation next to Chinese (，。：；！？（）)', bad: /[㐀-鿿][,.:;!?()]|[,:;!?(][㐀-鿿]/ },
-    { rule: 'no space between Chinese and a number or a Latin word', bad: /[㐀-鿿] [\w{]|[\w}] [㐀-鿿]/ },
+    { rule: 'full-width punctuation next to Chinese (，。：；！？（）)', bad: /[\u3400-\u9fff][,.:;!?()]|[,:;!?(][\u3400-\u9fff]/ },
+    { rule: 'no space between Chinese and a number or a Latin word', bad: /[\u3400-\u9fff] [\w{]|[\w}] [\u3400-\u9fff]/ },
     { rule: 'Chinese quotes (“ ”), not guillemets or straight ones', bad: /["«»]/ },
   ],
   fr: [
-    { rule: 'a no-break space before : and inside « », a narrow one before ; ! ? and %', bad: /[^  ][:;!?»%]|«[^  ]/ },
+    { rule: 'a no-break space before : and inside « », a narrow one before ; ! ? and %', bad: /[^\u00a0\u202f][:;!?»%]|«[^\u00a0\u202f]/ },
     { rule: 'typographic apostrophe (’), not a straight one', bad: /['"]/ },
   ],
   hi: [
-    { rule: 'a sentence ends with ।, not with a point', bad: /[ऀ-ॿ]\.(\s|$)/ },
+    { rule: 'a sentence ends with ।, not with a point', bad: /[\u0900-\u097f]\.(\s|$)/ },
     { rule: 'curly quotes (“ ”), not guillemets or straight ones', bad: /["«»]/ },
     { rule: 'no space before %', bad: /\d %|\} %/ },
   ],
@@ -72,8 +72,11 @@ describe.each(LANGUAGES.map((language) => [language, CATALOGUES[language]] as co
   const own = leaves(catalogue as unknown as Tree, es as unknown as Tree);
 
   test('has exactly the keys of es.ts', () => {
-    expect([...SPANISH.keys()].filter((key) => !own.has(key)), 'missing').toEqual([]);
-    expect([...own.keys()].filter((key) => !SPANISH.has(key)), 'not in es.ts').toEqual([]);
+    // Each missing key with its Spanish text, ready to translate (how: docs/copy.md, «Idiomas»).
+    const missing = [...SPANISH].filter(([key]) => !own.has(key)).map(([key, spanish]) => `${key}: ${JSON.stringify(spanish)}`);
+    expect(missing, `in es.ts but not in src/copy/${language}.ts: add each one, translated as docs/copy/${language}.md says`).toEqual([]);
+    const extra = [...own.keys()].filter((key) => !SPANISH.has(key));
+    expect(extra, `in src/copy/${language}.ts but no longer in es.ts: remove them`).toEqual([]);
   });
 
   test('each text has the parameters and links of its Spanish one', () => {
@@ -81,12 +84,12 @@ describe.each(LANGUAGES.map((language) => [language, CATALOGUES[language]] as co
       const value = own.get(key);
       if (value === undefined) continue;
       expect(typeof value === 'string', `${key}: a plural where Spanish has one, and only there`).toBe(typeof spanish === 'string');
-      expect(params(value), `${key}: parameters`).toEqual(params(spanish));
-      if (typeof value === 'string') expect(links(value), `${key}: <link>…</link>`).toEqual(links(spanish));
+      expect(params(value), `${key}: the parameters of the Spanish ${JSON.stringify(spanish)}`).toEqual(params(spanish));
+      if (typeof value === 'string') expect(links(value), `${key}: the <link>…</link> of the Spanish ${JSON.stringify(spanish)}`).toEqual(links(spanish));
       // Every form of a plural keeps what every Spanish form says («{max}»), whatever it says of the count.
       const always = params(spanish).filter((name) => forms(spanish).every((text) => text.includes(`{${name}}`)));
       for (const [form, text] of Object.entries(typeof value === 'string' ? { text: value } : value))
-        expect(always.filter((name) => !text.includes(`{${name}}`)), `${key}.${form}: parameters every form has`).toEqual([]);
+        expect(always.filter((name) => !text.includes(`{${name}}`)), `${key}.${form}: parameters every Spanish form has (${JSON.stringify(spanish)})`).toEqual([]);
     }
   });
 
