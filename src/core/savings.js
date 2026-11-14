@@ -1,7 +1,8 @@
 // What a printed (or downloaded) PDF saves: how much of the printable area the
 // pieces use, how many sheets it takes against printing each piece on a sheet
 // of its own, and that difference in plain physical terms (paper weight, a
-// ream, a stack). Device-local totals with a few milestones. Pure module.
+// stack, reams) when they are big enough to picture. Device-local totals with
+// a few milestones. Pure module.
 //
 // Only facts that don't need estimates: 80 g/m² office paper, about 0.1 mm
 // thick, sold in reams of 500. No ink, water, trees or CO₂.
@@ -14,8 +15,8 @@ export const SHEET_MM = 0.1;
 export const REAM = 500;
 /** Running totals that get a line of their own when reached. */
 export const MILESTONES = Object.freeze([10, 50, 100, 500]);
-/** The practical equivalents, in the order they take turns. */
-export const EQUIVALENTS = Object.freeze(['grams', 'ream', 'stack']);
+/** Fewer grams of paper than this get no equivalent in weight. */
+export const MIN_GRAMS = 10;
 /** Below this share of the printable area, a fuller arrangement may be suggested. */
 export const LOW_USAGE = 0.5;
 
@@ -91,10 +92,29 @@ export function paperFacts(saved, w, h) {
   };
 }
 
-/** The equivalent to show this time (they take turns): {kind, value}. */
+const tenth = (value) => Math.round(value * 10) / 10;
+
+/**
+ * The physical facts of `saved` sheets of `w` × `h` mm that a person can
+ * picture, in the order they take turns, each from 1 of its unit (below it,
+ * the number makes the saving look smaller than it is): the weight, in grams
+ * from MIN_GRAMS (a few grams is no amount of paper anyone pictures) and in
+ * kg from 1 kg; the stack, in cm from 1 cm; and reams, from 1. Values come
+ * rounded as they show: whole grams, tenths of the rest. [{kind, value}]
+ */
+export function tangibleFacts(saved, w, h) {
+  const { grams, ream, stack } = paperFacts(saved, w, h);
+  const facts = [];
+  if (tenth(grams / 1000) >= 1) facts.push({ kind: 'kg', value: tenth(grams / 1000) });
+  else if (Math.round(grams) >= MIN_GRAMS) facts.push({ kind: 'grams', value: Math.round(grams) });
+  if (tenth(stack / 10) >= 1) facts.push({ kind: 'stack', value: tenth(stack / 10) });
+  if (tenth(ream) >= 1) facts.push({ kind: 'reams', value: tenth(ream) });
+  return facts;
+}
+
+/** The fact to show this time (they take turns), or null when there is none. */
 export function equivalent(turn, facts) {
-  const kind = EQUIVALENTS[((turn % EQUIVALENTS.length) + EQUIVALENTS.length) % EQUIVALENTS.length];
-  return { kind, value: facts[kind] };
+  return facts.length ? facts[((turn % facts.length) + facts.length) % facts.length] : null;
 }
 
 /** The milestone a total reached going from `before` to `after` (the highest one), or null. */

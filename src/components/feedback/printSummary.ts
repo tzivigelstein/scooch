@@ -4,7 +4,7 @@
 // next print or download.
 
 import { create } from 'zustand';
-import type { EquivalentKind } from '../../core/savings.js';
+import type { Equivalent } from '../../core/savings.js';
 import type { OutputKind } from '../dialogs/printTip.ts';
 
 export interface PrintSummary {
@@ -17,13 +17,15 @@ export interface PrintSummary {
   used: number;
   baseline: number;
   saved: number;
-  /** The practical equivalent of what was saved (none when nothing was). */
-  equivalent: { kind: EquivalentKind; value: number } | null;
+  /** A physical equivalent of what this PDF saved, when big enough to picture (core/savings.js tangibleFacts). */
+  equivalent: Equivalent | null;
   /**
    * The sheets saved on this device so far (a print's join later, see
-   * core/savings.js countPdf), and the milestone reached since the last summary.
+   * core/savings.js countPdf), their equivalent when big enough to picture,
+   * and the milestone reached since the last summary.
    */
   total: number;
+  totalEquivalent: Equivalent | null;
   milestone: number | null;
   /** Arranging would take one sheet fewer (checked). */
   suggest: boolean;

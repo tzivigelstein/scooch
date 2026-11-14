@@ -4,7 +4,7 @@
 // may be suggested, counting each PDF once, and a print joining the total
 // only once it settles.
 import { describe, expect, test } from 'vitest';
-import { countPdf, equivalent, milestoneReached, paperFacts, pdfKey, settlePending, sheetSavings, sheetUsage, suggestArrange, unionArea } from '../../src/core/savings.js';
+import { countPdf, equivalent, milestoneReached, paperFacts, pdfKey, settlePending, sheetSavings, sheetUsage, suggestArrange, tangibleFacts, unionArea } from '../../src/core/savings.js';
 
 const r = (x, y, w, h) => ({ x, y, w, h });
 const A4_AREA = r(10, 10, 190, 277); // A4 with a 10 mm margin
@@ -63,10 +63,25 @@ describe('paperFacts and the equivalent that takes its turn', () => {
     expect(facts.stack).toBeCloseTo(0.5, 9);
   });
 
-  test('they take turns: grams, the ream, the stack, and again', () => {
-    const facts = paperFacts(5, 210, 297);
-    expect([0, 1, 2, 3].map((turn) => equivalent(turn, facts).kind)).toEqual(['grams', 'ream', 'stack', 'grams']);
-    expect(equivalent(2, facts)).toEqual({ kind: 'stack', value: facts.stack });
+  test.each([
+    [0, 210, 297, []],
+    // 5 g of paper: too little to picture.
+    [1, 210, 297, []],
+    [2, 210, 297, [{ kind: 'grams', value: 10 }]],
+    // A stack of 0.9 mm and 2 % of a ream would make it look smaller.
+    [9, 210, 297, [{ kind: 'grams', value: 45 }]],
+    [100, 210, 297, [{ kind: 'grams', value: 499 }, { kind: 'stack', value: 1 }]],
+    [250, 297, 420, [{ kind: 'kg', value: 2.5 }, { kind: 'stack', value: 2.5 }]],
+    [600, 210, 297, [{ kind: 'kg', value: 3 }, { kind: 'stack', value: 6 }, { kind: 'reams', value: 1.2 }]],
+  ])('only what a person pictures, from 1 of its unit: %d sheets of %d × %d mm', (sheets, w, h, facts) => {
+    expect(tangibleFacts(sheets, w, h)).toEqual(facts);
+  });
+
+  test('the tangible ones take turns, and with none there is no equivalent', () => {
+    const facts = tangibleFacts(600, 210, 297);
+    expect([0, 1, 2, 3].map((turn) => equivalent(turn, facts)?.kind)).toEqual(['kg', 'stack', 'reams', 'kg']);
+    expect(equivalent(5, tangibleFacts(9, 210, 297))).toEqual({ kind: 'grams', value: 45 });
+    expect(equivalent(0, [])).toBeNull();
   });
 });
 

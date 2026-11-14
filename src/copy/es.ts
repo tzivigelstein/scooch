@@ -724,16 +724,31 @@ const es = {
 
   // The summary after printing or downloading (what the PDF saves)
   summary: {
-    title: 'Resumen del PDF',
+    // The dialog's title: the sheets saved or, with none, that the PDF is ready
+    saved: { one: 'Ahorraste {n} hoja', other: 'Ahorraste {n} hojas' },
+    ready: 'El PDF está listo',
     done: 'Listo',
     percent: '{n} %',
+    // {pct}: «60 %», shown bigger than the rest
+    less: '{pct} menos papel',
     usage: { one: '{pct} de la hoja aprovechada', other: '{pct} de las hojas aprovechadas' },
     sheets: { one: 'Usaste {n} hoja en lugar de {baseline}', other: 'Usaste {n} hojas en lugar de {baseline}' },
-    baseline: 'Comparado con imprimir cada pieza en su propia hoja',
-    grams: 'Son unos {n} g de papel menos',
-    ream: 'Es el {n} % de una resma de 500 hojas',
-    stack: 'Es una pila de {n} mm menos',
+    // The comparison drawn with sheets: a row for each way of printing, with its count
+    oneEach: 'Una pieza por hoja',
+    withApp: 'Con {app}',
+    count: { one: '{n} hoja', other: '{n} hojas' },
+    // The sheets beyond the ones drawn
+    more: '+{n}',
     total: { one: 'Llevas {n} hoja ahorrada', other: 'Llevas {n} hojas ahorradas' },
+    // {fact}: one of summary.facts
+    totalWith: { one: 'Llevas {n} hoja ahorrada: {fact}', other: 'Llevas {n} hojas ahorradas: {fact}' },
+    equivalent: 'Equivale a {fact}',
+    facts: {
+      grams: 'unos {n} g de papel',
+      kg: 'unos {n} kg de papel',
+      stack: 'una pila de papel de {n} cm',
+      reams: { one: '{n} resma de 500 hojas', other: '{n} resmas de 500 hojas' },
+    },
     milestone: 'Llegaste a {n} hojas ahorradas',
     suggest: 'Con <link>Acomodar</link> podrían entrar en una hoja menos',
   },

@@ -9,7 +9,7 @@ import { t } from '../../copy/index.ts';
 import { askTip, isTipOpen, shouldShowTip, type OutputKind } from '../../components/dialogs/printTip.ts';
 import { takeDonationAsk } from '../../components/dialogs/donate.ts';
 import { closeSummary, showSummary, usePrintSummary, type PrintSummary } from '../../components/feedback/printSummary.ts';
-import { equivalent, paperFacts, sheetSavings, sheetUsage, suggestArrange, LOW_USAGE } from '../../core/savings.js';
+import { equivalent, sheetSavings, sheetUsage, suggestArrange, tangibleFacts, LOW_USAGE } from '../../core/savings.js';
 import { makePdf, pdfContentKey, pdfFileName } from '../../services/export.ts';
 import { downloadBytes, printBytes } from '../../services/print.ts';
 import { getDocument } from '../document.ts';
@@ -59,8 +59,10 @@ export function summarize(kind: OutputKind, key: string, countAs: OutputKind = k
     used,
     baseline,
     saved,
-    equivalent: saved ? equivalent(turn, paperFacts(saved, W, H)) : null,
+    equivalent: equivalent(turn, tangibleFacts(saved, W, H)),
     total,
+    // On this paper: the total doesn't keep the size of each sheet it counted.
+    totalEquivalent: equivalent(turn, tangibleFacts(total, W, H)),
     milestone,
     suggest,
     ask: false,

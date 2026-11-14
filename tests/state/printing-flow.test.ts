@@ -207,11 +207,11 @@ describe('the summary after', () => {
     back();
     await printing;
     const summary = shown();
-    expect(summary).toMatchObject({ kind: 'print', used: 2, baseline: 7, saved: 5, total: 0, milestone: null, ask: false, added: 5 });
+    expect(summary).toMatchObject({ kind: 'print', used: 2, baseline: 7, saved: 5, total: 0, totalEquivalent: null, milestone: null, ask: false, added: 5 });
     // 7 pieces of 60 × 60 mm over two printable areas of 190 × 277 mm.
     expect(summary.share).toBeCloseTo((7 * 3600) / (2 * 190 * 277), 3);
-    expect(summary.equivalent).toMatchObject({ kind: 'grams' });
-    expect(summary.equivalent!.value).toBeCloseTo(5 * 0.21 * 0.297 * 80, 6);
+    // 5 A4 sheets at 80 g/m²: 24,9 g.
+    expect(summary.equivalent).toEqual({ kind: 'grams', value: 25 });
     expect(saved()).toEqual({ v: 3, sheets: 0, turn: 1, counted: [], pending: { key: summary.key, sheets: 5 }, milestone: null });
   });
 
@@ -222,12 +222,11 @@ describe('the summary after', () => {
     expect(usePrintSummary.getState().returnTo).toBe(document.getElementById('print'));
   });
 
-  test('another PDF adds to the total, with the next equivalent; reaching 10 is a milestone', async () => {
+  test('another PDF adds to the total, with its equivalent on this paper; reaching 10 is a milestone', async () => {
     await printPdf();
     nudge();
     await exportPdf();
-    expect(shown()).toMatchObject({ kind: 'download', total: 10, milestone: 10, added: 5 });
-    expect(shown().equivalent?.kind).toBe('ream');
+    expect(shown()).toMatchObject({ kind: 'download', total: 10, totalEquivalent: { kind: 'grams', value: 50 }, milestone: 10, added: 5 });
   });
 
   describe('each PDF counts once', () => {
