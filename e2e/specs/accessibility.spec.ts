@@ -200,6 +200,37 @@ flow('preferences and shortcuts', [DESKTOP, MEDIUM, PHONE, WIDE], async (c, app)
   else await page.keyboard.press('Shift+Slash');
   await expect(page.locator('#shortcuts[open]')).toBeVisible();
   await c.state('shortcuts, with the link to Preferences');
+  await page.locator('#shortcuts-search').fill('hoja');
+  await expect(page.locator('#shortcuts-rows table')).toHaveCount(4);
+  await c.state('shortcuts filtered by a search');
+});
+
+// ---------- The command palette ----------
+
+flow('command palette', [DESKTOP, MEDIUM, PHONE, WIDE], async (c, app) => {
+  const page = c.page;
+  const shown = page.locator('#palette[open]');
+  await app.addFiles(cards(0, 4));
+  await page.locator('#palette-open').click();
+  await expect(page.locator('#palette-input')).toBeFocused();
+  await page.keyboard.type('acomodar');
+  await page.keyboard.press('Enter');
+  await expect(shown).toHaveCount(0);
+  await page.locator('#palette-open').click();
+  await expect(page.locator('#palette-group-0')).toHaveText('Recientes');
+  await c.state('command palette: the recent command, then every command by section');
+  await page.keyboard.type('rehacer');
+  await expect(page.locator('#palette-option-redo')).toHaveAttribute('aria-disabled', 'true');
+  await c.state('command palette: a search, with a command that can’t run and why');
+  await page.locator('#palette-input').fill('papel');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#palette-step')).toHaveText('Cambiar el papel');
+  await c.state('command palette: the paper’s choices, the one in use marked');
+  await page.keyboard.type('xyzzy');
+  await expect(page.locator('#palette-empty')).toHaveText('No hay opciones que coincidan con «xyzzy»');
+  await c.state('command palette: nothing found');
+  await page.keyboard.press('Escape');
+  await expect(shown).toHaveCount(0);
 });
 
 // ---------- Multiple selection ----------

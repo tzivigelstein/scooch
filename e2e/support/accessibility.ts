@@ -96,7 +96,7 @@ export const readLayout = (): Layout => {
   //    line: the tooltip has a max width so a long label wraps by design, and
   //    its keys sit beside the label in a flex row whatever the label does.)
   const ONE_LINE =
-    '.btn, .chip-btn, .dock-btn, .pill-action, .seg > span, .text-btn, kbd, .off-badge, .piecebar-size, .paper-label, .section-toggle, .panel-title, .field-label, .foot-count, .dock-count, legend, th, .row-dims, .page-label, .add-sheet, .project-status, .group-head, .projects-note, .project-badge';
+    '.btn, .chip-btn, .dock-btn, .pill-action, .seg > span, .text-btn, kbd, .off-badge, .piecebar-size, .paper-label, .section-toggle, .panel-title, .field-label, .foot-count, .dock-count, legend, th[scope="col"], .row-dims, .page-label, .add-sheet, .project-status, .group-head, .projects-note, .project-badge';
   for (const el of document.querySelectorAll(ONE_LINE)) {
     if (!visible(el)) continue;
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
