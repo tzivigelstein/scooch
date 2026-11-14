@@ -7,7 +7,7 @@
 // to how it was. Arrows step (Shift: coarse; Alt: fine).
 
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type InputHTMLAttributes, type Ref } from 'react';
-import { asSentence, t } from '../../copy/index.ts';
+import { t } from '../../copy/index.ts';
 import { cancelEdit } from '../../state/history.ts';
 import { setView } from '../../state/view.ts';
 import { announce } from '../feedback/announcer.ts';
@@ -31,8 +31,6 @@ export interface NumberFieldProps extends Omit<InputHTMLAttributes<HTMLInputElem
   apply: (value: number, options: { final: boolean }) => void;
   /** The values the field accepts (what is typed beyond them is clamped). */
   range?: () => Range | null;
-  /** Another problem with a readable value (not its range), or null. */
-  check?: (value: number) => string | null;
   /** Reads what was typed; null when it can't be read. */
   parse: (text: string) => number | null;
   /** Is it the beginning of something readable (still being typed)? */
@@ -64,7 +62,6 @@ export function NumberField({
   value,
   apply,
   range,
-  check,
   parse,
   isPartial,
   format,
@@ -83,9 +80,9 @@ export function NumberField({
 }: NumberFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
   const [limit, setLimit] = useState<string | null>(null);
-  const props = useRef({ value, apply, range, check, parse, isPartial, format, describe, stepBy, problem, unreadable, busy, editKey, onEnter });
+  const props = useRef({ value, apply, range, parse, isPartial, format, describe, stepBy, problem, unreadable, busy, editKey, onEnter });
   useLayoutEffect(() => {
-    props.current = { value, apply, range, check, parse, isPartial, format, describe, stepBy, problem, unreadable, busy, editKey, onEnter };
+    props.current = { value, apply, range, parse, isPartial, format, describe, stepBy, problem, unreadable, busy, editKey, onEnter };
   });
   // The edit in progress: the value before it, and whether the person changed anything.
   const edit = useRef<{ start: number | null; dirty: boolean }>({ start: null, dirty: false });
@@ -138,9 +135,7 @@ export function NumberField({
         p.problem?.(p.isPartial?.(el.value) ? null : (p.unreadable ?? t('units.unreadable')));
         return;
       }
-      const issue = p.check?.(v) ?? null;
-      p.problem?.(issue);
-      if (issue) return setLimit(null);
+      p.problem?.(null);
       const r = p.range?.() ?? null;
       setLimit(limitText(v, r));
       p.apply(clampTo(v, r), { final: false });
@@ -152,15 +147,13 @@ export function NumberField({
       // Nothing typed (focus and leave, or Enter on the shown value): nothing to apply.
       if (!edit.current.dirty) return finish(p.value());
       const v = p.parse(el.value);
-      const issue = v === null ? null : (p.check?.(v) ?? null);
-      if (v === null || issue) {
+      if (v === null) {
         const typed = el.value.trim();
         const { start } = edit.current;
         revert();
         if (!typed || start === null) return; // empty: back to the previous value, nothing else
         const shown = p.describe(start);
-        const text = issue ? t('units.invalidValue', { text: asSentence(issue), value: shown }) : t('units.invalid', { text: typed, value: shown });
-        announce(text, { assertive: true });
+        announce(t('units.invalid', { text: typed, value: shown }), { assertive: true });
         return;
       }
       const next = clampTo(v, p.range?.() ?? null);
@@ -190,7 +183,6 @@ export function NumberField({
       const current = p.value();
       const base = current !== null && el.value === p.format(current) ? current : (p.parse(el.value) ?? current ?? 0);
       const next = clampTo(base + (e.key === 'ArrowUp' ? amount : -amount), p.range?.() ?? null);
-      if (p.check?.(next)) return;
       begin();
       setLimit(null);
       p.problem?.(null);
