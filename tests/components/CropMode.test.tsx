@@ -70,7 +70,7 @@ describe('crop mode', () => {
 
   test('with a standard size, the instructions say the proportion is kept', () => {
     start({ size: '10x15' });
-    expect(help()).toMatch(/cambiar el tamaño del recorte, que mantiene la proporción de 10 × 15\./);
+    expect(help()).toMatch(/cambiar el tamaño del recorte, que mantiene la proporción de 10 × 15\./);
   });
 
   test('zooming is announced', () => {
