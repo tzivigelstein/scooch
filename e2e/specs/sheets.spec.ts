@@ -356,3 +356,26 @@ test.describe('dragging pieces out of the sheets onto a new sheet', () => {
     await app.heard(/Se creó la hoja 3 y se movió 1 pieza/);
   });
 });
+
+test('«Quitar todas» asks first, focused on «Cancelar»; confirmed, one empty sheet is left with the focus on it and a notice that offers «Deshacer»', async ({ app, page }) => {
+  await app.addFiles(cards(0, 12));
+  const before = await app.snapshot();
+  await page.locator('#clear').click();
+  await expect(page.locator('#confirm')).toHaveAttribute('open', '');
+  await expect(page.locator('#confirm-title')).toHaveText('¿Quitar las 12 piezas de las 2 hojas?');
+  await expect(page.locator('#confirm-cancel')).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#confirm')).not.toHaveAttribute('open');
+  await expect(app.pieces()).toHaveCount(12);
+  await expect(page.locator('#clear')).toBeFocused();
+
+  await page.locator('#clear').click();
+  await page.locator('#confirm-ok').click();
+  await expect(app.pieces()).toHaveCount(0);
+  await expect(page.locator('#sheets .page')).toHaveCount(1);
+  await expect(page.locator('#clear')).toBeDisabled();
+  await expect(page.locator('#empty')).toBeFocused();
+  await expect.poll(() => app.notice()).toEqual({ text: 'Se quitaron las 12 piezas', action: 'Deshacer', warn: false });
+  await page.locator('#pill-action').click();
+  await expect.poll(() => app.snapshot()).toBe(before);
+});

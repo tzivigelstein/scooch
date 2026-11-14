@@ -20,7 +20,7 @@ import { revealPanel } from './drawers.ts';
 import { focusSheet, pieceNode, sheetNode } from './focus.ts';
 import { showPropsTab } from './panels.ts';
 import { forgetSpill } from './layout.ts';
-import { arrangeAll } from './edit.ts';
+import { arrangeAll, undoLast } from './edit.ts';
 import { say, singleOnly } from './notify.ts';
 import { select, setSelection } from './selection.ts';
 
@@ -203,15 +203,34 @@ export function moveToNewSheet() {
   );
 }
 
-/** «Quitar todas»: removes the pieces of every sheet and leaves one empty sheet. */
-export function clearAll() {
+/**
+ * «Quitar todas»: after confirming (it says how many pieces and sheets go;
+ * «Cancelar» starts focused), removes the pieces of every sheet and leaves one
+ * empty sheet, in one undo step; the notice offers «Deshacer».
+ */
+export async function clearAll() {
   const { items, sheets } = getDocument();
   if (!items.length || busy()) return;
+  const n = items.length;
+  const many = sheets.length > 1;
+  const ok = await confirmAction({
+    title: many ? t('confirm.clearTitleSheets', { n, sheets: sheets.length }) : t('confirm.clearTitle', { n }),
+    body: t(many ? 'confirm.clearBodySheets' : 'confirm.clearBody'),
+    confirm: t('pieces.clear'),
+    focus: 'cancel',
+    returnTo: document.activeElement,
+  });
+  if (!ok || !getDocument().items.length || busy()) return;
+  const first = getDocument().sheets[0];
+  const removed = getDocument().items.length;
   commit();
-  setDocument({ items: [], sheets: [sheets[0]] });
+  forgetSpill();
+  setDocument({ items: [], sheets: [first] });
   setSelection([]);
-  setView({ sheet: sheets[0].id });
-  announce(t('announce.cleared'));
+  setView({ sheet: first.id });
+  say(t('notices.cleared', { n: removed }), { action: { label: t('bar.undo'), run: undoLast } });
+  // The button that removed them is off now: the focus goes to the empty sheet.
+  focusSheet();
 }
 
 // ---------- Sheet settings ----------

@@ -11,6 +11,7 @@ import { historyDepth, redo, undo } from '../../src/state/history.ts';
 import { arrange, fillSummary, fillWithCopies, forgetSpill, placeNew } from '../../src/state/actions/layout.ts';
 import { fit, setLengthField } from '../../src/state/actions/pieces.ts';
 import { choosePaper, clearAll } from '../../src/state/actions/sheets.ts';
+import { useConfirm } from '../../src/components/dialogs/confirm.ts';
 import { setSelection } from '../../src/state/actions/selection.ts';
 import { dims, sheetProblems, sheetSize } from '../../src/state/selectors.ts';
 import { getView } from '../../src/state/view.ts';
@@ -284,14 +285,47 @@ describe('filling a sheet with copies and removing everything', () => {
     expect(nb(fillSummary(getDocument().items[0]).text)).toMatch(/^\d+ copias en A4$/);
   });
 
-  test('«Quitar todas» leaves one empty sheet, and one undo brings everything back', () => {
+  test('«Quitar todas» asks first, saying what goes, focused on «Cancelar»; canceled, nothing changes', async () => {
+    loadSeven();
+    const before = getDocument();
+    const clearing = clearAll();
+    const request = useConfirm.getState().request!;
+    expect(nb(request.title)).toBe(`¿Quitar las 7 piezas de las ${before.sheets.length} hojas?`);
+    expect(request).toMatchObject({ body: 'Queda 1 hoja vacía. Puedes deshacerlo.', confirm: 'Quitar todas', focus: 'cancel' });
+    useConfirm.setState({ request: null });
+    request.resolve(false);
+    await clearing;
+    expect(getDocument().items).toBe(before.items);
+    expect(historyDepth().undo).toBe(0);
+  });
+
+  test('«Quitar todas» confirmed leaves one empty sheet in one undo step, and the notice offers «Deshacer», which brings everything back', async () => {
     loadSeven();
     const { items, sheets } = getDocument();
-    clearAll();
+    const clearing = clearAll();
+    const request = useConfirm.getState().request!;
+    useConfirm.setState({ request: null });
+    request.resolve(true);
+    await clearing;
     expect(getDocument().items).toEqual([]);
     expect(getDocument().sheets).toEqual([sheets[0]]);
-    undo();
+    expect(historyDepth().undo).toBe(1);
+    const flash = getView().flash!;
+    expect(flash).toMatchObject({ text: 'Se quitaron las 7 piezas' });
+    expect(flash.action?.label).toBe('Deshacer');
+    flash.action!.run();
     expect(getDocument().items).toEqual(items);
     expect(getDocument().sheets).toEqual(sheets);
+  });
+
+  test('«Quitar todas» with one sheet and one piece: «¿Quitar la pieza?»', async () => {
+    resetState({ items: [piece(1, a.small, 30, 40)] });
+    const clearing = clearAll();
+    const request = useConfirm.getState().request!;
+    expect(request).toMatchObject({ title: '¿Quitar la pieza?', body: 'Puedes deshacerlo.' });
+    useConfirm.setState({ request: null });
+    request.resolve(true);
+    await clearing;
+    expect(getView().flash?.text).toBe('Se quitó 1 pieza');
   });
 });

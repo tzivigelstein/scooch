@@ -501,6 +501,7 @@ const es = {
     uncroppedMany: { one: 'Se quitó el recorte de 1 pieza', other: 'Se quitó el recorte de {n} piezas' },
     movedAside: { one: '1 pieza se movió a un lugar libre para no superponerse', other: '{n} piezas se movieron a lugares libres para no superponerse' },
     sheetEmptied: 'La hoja {i} quedó vacía',
+    cleared: { one: 'Se quitó 1 pieza', other: 'Se quitaron las {n} piezas' },
     pageCropDropped: 'La página {page} tiene otro tamaño, así que se quitó el recorte',
     sizeOutOfRange: { one: '{names} no se puede llevar a ese tamaño: su escala pasaría de 1 % a 1000 %', other: '{n} piezas no se pueden llevar a ese tamaño: su escala pasaría de 1 % a 1000 %' },
     downloaded: 'Se descargó {file}. Al imprimirlo, elige «Tamaño real» o «100 %».',
@@ -598,7 +599,6 @@ const es = {
     sheet: 'Hoja {paper}',
     gridShown: 'Grilla visible, cada {size}',
     gridHidden: 'Grilla oculta',
-    cleared: 'Se quitaron todas las piezas',
     added: { one: 'Se agregó 1 archivo', other: 'Se agregaron {n} archivos' },
     addedSheets: {
       one: 'Se agregó 1 archivo. No entraba en las hojas que había, así que va en {sheets}.',
@@ -761,6 +761,11 @@ const es = {
       other: 'Se quita con sus {n} piezas. Puedes deshacerlo.',
     },
     removeSheet: 'Quitar hoja',
+    // «Quitar todas»
+    clearTitle: { one: '¿Quitar la pieza?', other: '¿Quitar las {n} piezas?' },
+    clearTitleSheets: { one: '¿Quitar la pieza de las {sheets} hojas?', other: '¿Quitar las {n} piezas de las {sheets} hojas?' },
+    clearBody: 'Puedes deshacerlo.',
+    clearBodySheets: 'Queda 1 hoja vacía. Puedes deshacerlo.',
   },
 
   // «Preferencias» dialog (settings of this browser)

@@ -57,7 +57,7 @@ export function PiecesPanel() {
         <span id="piece-total" className="foot-count">
           {t('pieces.count', { n })}
         </span>
-        <button type="button" id="clear" className="text-btn danger" disabled={disabledUnlessFocused(busy || !n, 'clear', busy, !n)} onClick={clearAll}>
+        <button type="button" id="clear" className="text-btn danger" disabled={disabledUnlessFocused(busy || !n, 'clear', busy, !n)} onClick={() => void clearAll()}>
           {t('pieces.clear')}
         </button>
       </div>
