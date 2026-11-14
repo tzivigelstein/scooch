@@ -79,7 +79,7 @@ describe('the gap the marks need', () => {
     expect(byId('cut-gap-note')).toBeNull();
     setMode('corners');
     expect(nbsp(byId('cut-gap-note')?.textContent)).toMatch(/^Con una separación menor que 5,5 mm, las marcas tocan las piezas vecinas/);
-    fireEvent.click(screen.getByRole('button', { name: /^Usar 5,5\smm$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Usar separación de 5,5\smm$/ }));
     expect(getDocument().gap).toBe(5.5);
     expect(byId('cut-gap-note')).toBeNull();
   });

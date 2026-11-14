@@ -8,7 +8,7 @@ import { expect, fixture } from './test.ts';
 export const DB = 'scooch';
 export const LAST_PROJECT = 'scooch:last-project';
 
-/** What stops the project from being saved, next to its name («No se guardó», «Sin guardar»); nothing shows otherwise. */
+/** What stops the project from being saved, next to its name («No se guardó», «Sin guardar», «En otra pestaña»); nothing shows otherwise. */
 export const status = (page: Page) => page.locator('#project-status-text');
 
 /** The save status the page keeps (not shown: 'saved', 'pending', 'saving', 'loading', 'error', 'off', 'readonly'). */

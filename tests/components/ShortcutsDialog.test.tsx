@@ -69,7 +69,7 @@ describe('the shortcuts table', () => {
       'Copiar, cortar o pegar piezas. Una imagen copiada en otra app se pega como pieza nueva.',
       'Abrir el menú de la pieza o de la hoja (también con clic derecho o manteniendo presionado)',
       'Acercar o alejar la vista (también con Ctrl y la rueda, o pellizcando el trackpad)',
-      'Ajustar la hoja entera o su ancho a la vista',
+      'Ver la hoja entera o su ancho',
       'Mover la vista (también con el botón del medio o desplazando con dos dedos)',
       'Seleccionar las piezas del mismo archivo',
       'Recortar la pieza (también con doble clic); en el recorte, flechas para mover la imagen, más y menos para acercarla, Enter para aplicar y Esc para cancelar',

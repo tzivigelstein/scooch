@@ -44,12 +44,12 @@ async function openWithKeyboard() {
 }
 
 describe('zoom menu', () => {
-  test('lists Ajustar hoja, Ajustar ancho, 50 %, 100 % and 200 %', async () => {
+  test('lists Ver la hoja entera, Ver el ancho de la hoja, 50 %, 100 % and 200 %', async () => {
     const { menu } = await openWithKeyboard();
     const labels = within(menu)
       .getAllByRole('menuitem')
       .map((item) => plain(item.querySelector('.menu-label')!.textContent));
-    expect(labels).toEqual(['Ajustar hoja', 'Ajustar ancho', '50 %', '100 %', '200 %']);
+    expect(labels).toEqual(['Ver la hoja entera', 'Ver el ancho de la hoja', '50 %', '100 %', '200 %']);
   });
 
   test('opens with the focus on its first item and the button expanded', async () => {

@@ -437,7 +437,7 @@ test.describe('two tabs', () => {
 
     await test.step('the old tab says so, offers «Editar aquí» and stops saving', async () => {
       await expect.poll(() => app.notice()).toEqual({ text: TAKEN, action: 'Editar aquí', warn: true });
-      await expect(status(a)).toHaveText('Sin guardar');
+      await expect(status(a)).toHaveText('En otra pestaña');
     });
 
     await test.step('what the old tab edits doesn’t reach the new one', async () => {
@@ -446,7 +446,7 @@ test.describe('two tabs', () => {
       await saved(b);
       await firstA.focus();
       await a.keyboard.press('ArrowRight');
-      await expect(status(a)).toHaveText('Sin guardar');
+      await expect(status(a)).toHaveText('En otra pestaña');
       // Reopening the project in the new tab asks the other tabs for it: an old
       // tab that still saved would hand over its own version now.
       await b.reload();
@@ -460,7 +460,7 @@ test.describe('two tabs', () => {
       await saved(a);
       await expect(firstA).toHaveAttribute('aria-label', /a 11\smm del borde izquierdo y 11\smm del superior/);
       await expect.poll(() => appB.notice()).toEqual({ text: TAKEN, action: 'Editar aquí', warn: true });
-      await expect(status(b)).toHaveText('Sin guardar');
+      await expect(status(b)).toHaveText('En otra pestaña');
     });
     expect(errorsB, 'no errors in the second tab').toEqual([]);
   });
