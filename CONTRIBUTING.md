@@ -22,9 +22,10 @@ yarn playwright install chromium   # once, for the browser suites
 | `yarn dev` | Development server with hot reload |
 | `yarn test` | Every Vitest project: unit, properties, state, ui and performance |
 | `yarn e2e` | Builds the app into `e2e/out/build`, serves it on port 4319 and runs the browser tests (Playwright) |
-| `yarn verify` | `typecheck`, `test`, `build`, `e2e` and the ledger check, in that order |
+| `yarn verify` | `typecheck`, `test`, `build`, `size`, `e2e` and the ledger check, in that order |
 | `yarn typecheck` | TypeScript (src, tests and e2e), no emit |
 | `yarn build` | Production build in `dist/` |
+| `yarn size` | Gzip sizes of `dist/` against their budgets (`scripts/size-budgets.json`) |
 | `yarn preview` | Serves `dist/` to try the build |
 
 [docs/testing.md](docs/testing.md) explains which layer a test belongs to,
@@ -32,7 +33,9 @@ how to run only the tests a change touches (`node_modules/.bin/vitest run
 <file>`, `node_modules/.bin/playwright test <spec>`) and how to add one. Two
 `yarn e2e` runs at the same time need different `E2E_PORT` and `E2E_OUT`.
 
-Before opening a pull request, run `yarn verify`.
+Before opening a pull request, run `yarn verify`. CI runs the same checks on
+every pull request and every push to `main`; [docs/testing.md](docs/testing.md#continuous-integration)
+says what each job does and how to reproduce a failure locally.
 
 ## Project structure
 
@@ -49,6 +52,7 @@ src/
 tests/            Vitest tests by layer (see docs/testing.md)
   fixtures/documents/   one stored project document per format version
 e2e/              browser tests (Playwright): specs/, support/, fixtures/ and the ledger
+scripts/          the bundle size check (yarn size) and its budgets
 docs/copy.md      copy guide for the interface texts (in Spanish)
 docs/testing.md   test layers, running them and adding one
 ```
@@ -140,8 +144,8 @@ Every change keeps this bar:
 
 - [Conventional Commits](https://www.conventionalcommits.org/):
   `type(scope): subject`, or `type: subject` when no scope fits.
-- Types in use: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `build`
-  and `chore`.
+- Types in use: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `build`,
+  `ci` and `chore`.
 - Scopes in use: `a11y`, `canvas`, `copy`, `core`, `crop`, `cutmarks`,
   `deps`, `e2e`, `export`, `fonts`, `group`, `icons`, `layout`, `pack`,
   `papers`, `piece-list`, `piecebar`, `prefs`, `projects`, `props`,
@@ -152,6 +156,8 @@ Every change keeps this bar:
   characters or fewer. For example:
   `fix(canvas): keep floating controls off the stage's scrollbars`.
 - Use the body to explain why, when it isn't obvious.
+- A commit that raises a size budget says why in its message: what grew, by
+  how much and why it is worth it ([docs/testing.md](docs/testing.md#size-budgets)).
 - One logical change per commit.
 - No trailers: no `Co-authored-by`, `Signed-off-by` or similar lines.
 

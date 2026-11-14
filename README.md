@@ -1,5 +1,7 @@
 # Scooch
 
+[![CI](https://github.com/tzivigelstein/scooch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tzivigelstein/scooch/actions/workflows/ci.yml)
+
 A web app to arrange images and PDF pages on sheets of paper at real size and
 download or print an exact PDF. Everything happens in the browser: files are
 never uploaded anywhere.
@@ -20,7 +22,8 @@ yarn preview      # serves dist/ to try the build
 yarn typecheck    # TypeScript (src, tests and e2e), no emit
 yarn test         # every Vitest project: unit, properties, state, ui, performance
 yarn e2e          # browser tests (Playwright), see below
-yarn verify       # typecheck + test + build + e2e + the ledger check
+yarn size         # gzip sizes of dist/ against their budgets
+yarn verify       # typecheck + test + build + size + e2e + the ledger check
 ```
 
 ### Tests
@@ -41,6 +44,11 @@ The browser tests include axe checks of every state in light and dark mode,
 keyboard-only flows, the exported PDF's contents, the projects' storage and
 performance budgets for dragging, scrolling and zooming with 150 pieces.
 There is no quick mode and no retries.
+
+CI (GitHub Actions, `.github/workflows/ci.yml`) runs the same checks on every
+push to `main` and every pull request, plus the browser tests on WebKit
+(allowed to fail for now). [docs/testing.md](docs/testing.md#continuous-integration)
+explains the jobs and the size budgets.
 
 ## Projects and privacy
 
@@ -150,6 +158,7 @@ src/
   styles/               stylesheet by area (index.css sets the order)
 tests/                  Vitest tests by layer (core, properties, state, services, components, hooks, performance)
 e2e/                    browser tests (Playwright): specs/, their support/ helpers, fixtures and the ledger
+scripts/                the bundle size check (yarn size) and its budgets
 docs/testing.md         test layers, how to run them and how to add a test
 docs/copy.md            copy guide: rules, glossary and examples
 vite.config.ts          React, the static texts of index.html and chunk names

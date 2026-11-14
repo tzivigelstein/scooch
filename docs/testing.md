@@ -23,8 +23,9 @@ component, without measuring a `getBoundingClientRect`, it doesn't go in e2e.
 ```sh
 yarn test        # every Vitest project: unit, properties, state, ui, performance
 yarn e2e         # every Playwright project: chromium, then performance
-yarn verify      # typecheck + yarn test + build + yarn e2e + ledger check
+yarn verify      # typecheck + yarn test + build + size + yarn e2e + ledger check
 yarn typecheck   # src and tests, and e2e (e2e/tsconfig.json)
+yarn size        # gzip sizes of dist/ against their budgets (after yarn build)
 ```
 
 While working on something, run only what it touches:
@@ -50,6 +51,73 @@ node_modules/.bin/playwright install webkit
 sudo node_modules/.bin/playwright install-deps webkit   # libgtk-4-1, libgstreamer-plugins-bad1.0-0, …
 E2E_WEBKIT=1 yarn e2e
 ```
+
+CI runs the WebKit project too (see below). The touch tests that
+send their touches through the Chrome DevTools Protocol skip themselves
+outside Chromium, saying why.
+
+## Continuous integration
+
+GitHub Actions (`.github/workflows/ci.yml`) runs what `yarn verify` runs on
+every push to `main` and on every pull request, in jobs side by side, after
+`yarn install --frozen-lockfile` with the Node version of `.nvmrc`:
+
+| Job | Runs |
+|---|---|
+| Typecheck, unit tests and ledger | `yarn typecheck`, `yarn test`, `yarn ledger` |
+| Build and size budgets | `yarn build`, `yarn size` |
+| Browser tests (Chromium) | `yarn e2e` (chromium, then performance) with `E2E_TIME_FACTOR=2` |
+| Browser tests (WebKit, allowed to fail) | `E2E_WEBKIT=1 yarn e2e --project=webkit` |
+
+- **CI builds as `yarn build` does locally.** `VERCEL_ENV` isn't set, so the
+  missing `SITE_URL` and the legal placeholders only warn; only a Vercel
+  production deployment stops on them ([site.md](site.md)).
+- **Clock budgets.** A shared runner is slower and noisier than the machines
+  the budgets of `e2e/specs/performance.spec.ts` were set on, so CI multiplies
+  each one (and the 50 ms long-task threshold) by `E2E_TIME_FACTOR`
+  (`e2e/support/timing.ts`; 1 when unset, so locally they apply as written).
+  If CI fails a budget that passes locally, look at the test's «measures»
+  attachment, which records the factor. Raise the factor in `ci.yml` only with
+  those numbers in the commit message; never change a budget in the spec for
+  CI's sake. The Vitest performance project's clock guards are generous
+  enough not to need it.
+- **WebKit is allowed to fail for now** (`continue-on-error`): nobody has seen
+  the suite pass on WebKit yet. Its job can end red without failing the run,
+  and stops after 30 minutes (`--global-timeout`) so it always writes its
+  report. Read the report, fix what is a real bug, and remove
+  `continue-on-error` once it passes reliably.
+- A newer push to the same pull request or branch cancels the run in progress.
+
+**Reproducing a failure.** Each step of a job is a command you can run the
+same way locally, after `yarn install --frozen-lockfile`. `CI` is set on the
+runner: Playwright then refuses `test.only` and also writes a JUnit file, so
+`CI=1 yarn e2e` is the closest local run. A failed browser job uploads an
+artifact (`playwright-chromium` or `playwright-webkit`, on the run's summary
+page) with the HTML report and the traces of the failed tests:
+
+```sh
+node_modules/.bin/playwright show-report <unzipped artifact>/report
+node_modules/.bin/playwright show-trace <unzipped artifact>/results/<test>/trace.zip
+E2E_TIME_FACTOR=2 node_modules/.bin/playwright test e2e/specs/performance.spec.ts --project=performance --no-deps   # with CI's factor
+```
+
+## Size budgets
+
+`yarn size` (after `yarn build`; part of `yarn verify` and CI) measures the
+gzip size (level 9) of what the build serves and fails when one is over its
+budget in `scripts/size-budgets.json`, with a table of every size, its budget
+and the difference. It checks the JavaScript the editor's `index.html` loads
+at start (read from the built HTML), every JavaScript file, the CSS, each
+static page (its HTML with the inline CSS) and the static pages' scripts (the
+calculator). Each budget says what it covers and the size measured when it
+was set; it is that size plus about 5 %, rounded up.
+
+When a size grows on purpose, set the budget to the new size plus about 5 %
+(and `measured` to the new size) in the same commit, and **say in the commit
+message why it is worth it** (what grew, by how much). Lowering a budget after
+making something smaller is welcome. A new static page falls under the budget
+for any page (`pages["*"]`); a page much larger than the rest gets its own
+entry.
 
 ## Adding a test
 
