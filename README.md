@@ -138,7 +138,7 @@ src/
     pieces-panel/       pieces list, grouped by sheet
     canvas/             sheets, pieces, selection frame, piece toolbar
     properties-panel/   piece, sheet, arrange and grid sections
-    dialogs/            shortcuts, preferences, projects, donation, confirm
+    dialogs/            shortcuts, preferences, projects, the advice before printing, confirm
     feedback/           notice pill, tooltip and live regions
     ui/                 shared controls (buttons, fields, switches, dialog)
   hooks/                keyboard shortcuts, pointer gestures, focus rescue
