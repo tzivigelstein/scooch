@@ -5,6 +5,7 @@
 // matrix and the copies are tested on the stores (tests/state/align-and-
 // distribute, group-transforms, group-operations-matrix, duplicate-and-
 // select-same) and the panel's controls in tests/components.
+import { frames } from '../support/canvas.ts';
 import { boundsOf, centersOutside, onGrid, overlapping } from '../support/geometry.ts';
 import { placeThree, positions } from '../support/selection.ts';
 import { expect, norm, test, tiles } from '../support/test.ts';
@@ -91,6 +92,63 @@ test.describe('selecting pieces', () => {
     await expect.poll(() => app.selectedIds()).toEqual([all[0], focused].sort((x, y) => x - y));
     await page.keyboard.press('Shift+Space');
     await expect.poll(() => app.selectedIds()).toEqual([all[0]]);
+  });
+});
+
+test.describe('pieces on several sheets', () => {
+  const OFF = 'Disponible cuando las piezas están en una misma hoja';
+  const MEASURES = ['#pos-x', '#pos-y', '#width', '#height'];
+
+  test('by click and Shift+click, then by Ctrl+A: the title names the spread, the measures are off in place with the reason and show nothing on the canvas, the scale changes them all; back on one sheet the measures come back', async ({ app, page }) => {
+    await app.addFiles(tiles(0, 3));
+    await page.click('#add-sheet');
+    await app.addFiles(tiles(3, 2));
+    const g = await app.geometry();
+    const [a, b, c] = g.pieces.filter((p) => p.sheetIndex === 0).map((p) => p.id);
+    const [d] = g.pieces.filter((p) => p.sheetIndex === 1).map((p) => p.id);
+    const width = g.pieces[0].w;
+
+    await app.piece(a).click();
+    await app.piece(b).click({ modifiers: ['Shift'] });
+    await app.openMeasures();
+    await expect(page.locator('#piece-title')).toHaveText('2 piezas en la hoja 1');
+    const field = await page.locator('#pos-x').boundingBox();
+
+    await app.piece(d).click({ modifiers: ['Shift'] });
+    await expect.poll(() => app.selectedIds()).toEqual([a, b, d].sort((x, y) => x - y));
+    await expect(page.locator('#piece-title')).toHaveText('3 piezas en 2 hojas');
+    for (const id of MEASURES) {
+      const input = page.locator(id);
+      await expect(input, id).toBeVisible();
+      await expect(input, id).toHaveValue('');
+      await expect(input, id).toBeDisabled();
+      await expect(input, id).toHaveAccessibleDescription(OFF);
+    }
+    expect(await page.locator('#pos-x').boundingBox(), 'the fields stay where they were').toEqual(field);
+    await page.locator('#pos-x').hover();
+    await expect(page.locator('#tooltip .tip-note')).toHaveText(OFF);
+    await frames(page);
+    await expect(page.locator('.preview-dimension')).toHaveCount(0);
+
+    await app.setMeasure('scale', '50');
+    await expect.poll(async () => (await app.geometry()).pieces.filter((p) => p.selected).map((p) => Math.round((p.w / width) * 100))).toEqual([50, 50, 50]);
+    expect((await app.geometry()).pieces.find((p) => p.id === c)!.w).toBeCloseTo(width, 3);
+
+    await app.piece(a).focus();
+    await page.keyboard.press('Control+a');
+    await page.keyboard.press('Control+a');
+    await expect.poll(async () => (await app.selectedIds()).length).toBe(5);
+    await expect(page.locator('#piece-title')).toHaveText('5 piezas en 2 hojas');
+    for (const id of MEASURES) await expect(page.locator(id), id).toHaveValue('');
+
+    await app.selectIds([a, c]);
+    await expect(page.locator('#piece-title')).toHaveText('2 piezas en la hoja 1');
+    for (const id of MEASURES) {
+      await expect(page.locator(id), id).toBeEnabled();
+      await expect(page.locator(id), id).not.toHaveValue('');
+    }
+    await page.locator('label:has(#width)').hover();
+    await expect(page.locator('.preview-dimension')).toHaveCount(1);
   });
 });
 

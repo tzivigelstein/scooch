@@ -299,6 +299,22 @@ flow('multiple selection', [DESKTOP, MEDIUM, PHONE, WIDE], async (c, app) => {
 
   await openList(c);
   await c.state('piece list with several selected');
+  if (c.listHidden) await closeList(c);
+
+  // On two sheets: X, Y, width and height off, in place, the reason in the focused one's tooltip.
+  // (The notice of the refused alignment is closed: it isn't what this state is about.)
+  await page.locator('#pill-close').click();
+  await expect(page.locator('#pill')).toBeHidden();
+  await page.locator('#add-sheet').click();
+  await app.addFiles(cards(4, 1));
+  await app.selectIds([ids[0], (await app.ids()).at(-1)!]);
+  await openProps(c);
+  await expect(page.locator('#piece-title')).toHaveText('2 piezas en 2 hojas');
+  await page.locator('#pos-y').focus();
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.locator('#pos-x')).toBeFocused();
+  await expect(page.locator('#tooltip .tip-note')).toHaveText('Disponible cuando las piezas están en una misma hoja');
+  await c.state('several selected on two sheets: the measures off, with the reason');
 });
 
 // ---------- Sheets ----------
