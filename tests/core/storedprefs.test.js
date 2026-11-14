@@ -5,7 +5,8 @@
 import { describe, expect, test } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { VIEW_DEFAULTS, parseSections, parseViewPrefs, serializeSections, serializeViewPrefs } from '../../src/core/storedprefs.js';
+import { VIEW_DEFAULTS, parsePrintPrefs, parseSections, parseViewPrefs, serializePrintPrefs, serializeSections, serializeViewPrefs } from '../../src/core/storedprefs.js';
+import { parseSavings, serializeSavings } from '../../src/core/savings.js';
 
 const DIR = join(import.meta.dirname, '../fixtures/storage');
 const fixtures = readdirSync(DIR)
@@ -17,6 +18,8 @@ const fixtures = readdirSync(DIR)
 const SHAPES = {
   'scooch:panel-sections': { parse: parseSections, serialize: serializeSections },
   'scooch:view-preferences': { parse: parseViewPrefs, serialize: serializeViewPrefs },
+  'scooch:print-preferences': { parse: parsePrintPrefs, serialize: serializePrintPrefs },
+  'scooch:savings': { parse: parseSavings, serialize: serializeSavings },
 };
 
 describe('stored preferences of every version', () => {
@@ -48,6 +51,15 @@ describe('view preferences', () => {
 
   test('the percentage is written with two decimals at most', () => {
     expect(serializeViewPrefs({ zoomMode: 'manual', zoomPct: 123.456789, alignTo: 'selection', distribute: 'gap' }).zoomPct).toBe(123.46);
+  });
+});
+
+describe('printing preferences and savings', () => {
+  test('both on unless turned off; a total that can’t be read is 0', () => {
+    expect(parsePrintPrefs(null)).toEqual({ tip: true, summary: true });
+    expect(parsePrintPrefs({ tip: 'no' })).toEqual({ tip: true, summary: true });
+    expect(parseSavings({ sheets: -3, turn: 1.5 })).toEqual({ sheets: 0, turn: 0 });
+    expect(parseSavings('34')).toEqual({ sheets: 0, turn: 0 });
   });
 });
 

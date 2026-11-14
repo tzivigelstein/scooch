@@ -63,8 +63,12 @@ export const JOURNAL_STORAGE = stored('project-journal');
 export const LAST_PROJECT_STORAGE = stored('last-project');
 /** Last custom paper ({w, h} in mm, as typed): a local preference. */
 export const CUSTOM_PAPER_STORAGE = stored('custom-paper');
-/** «No volver a mostrar en este dispositivo» of the donation dialog. */
+/** «No volver a mostrar» of the request for a donation (after printing): 'never'. */
 export const DONATE_STORAGE = stored('donate-dismissed');
+/** Whether the advice before printing and the summary after show ({v: 1, tip, summary}). */
+export const PRINT_STORAGE = stored('print-preferences');
+/** The sheets saved on this device and whose turn the next equivalent is ({v: 1, sheets, turn}); never sent anywhere. */
+export const SAVINGS_STORAGE = stored('savings');
 
 /**
  * Where those lived before the app was renamed (database «pliego», keys
@@ -87,8 +91,8 @@ export const LEGACY_STORAGE_KEYS: Readonly<Record<string, string>> = Object.free
 
 // ---------- Donations ----------
 
-/** Patreon page. Empty: the dialog never shows and exporting works as always. */
+/** Patreon page. Empty: no request for a donation ever shows. */
 export const DONATE_URL = '';
-/** 'session': only the first print/download of each page load; 'always': every one. */
+/** 'session': only after the first print/download of each page load; 'always': after every one. */
 export const DONATE_EVERY: 'session' | 'always' = 'session';
-// The texts of the dialog are in src/copy (donate).
+// The texts of the request are in src/copy (donate).

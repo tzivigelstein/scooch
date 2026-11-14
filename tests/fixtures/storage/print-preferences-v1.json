@@ -1,0 +1,6 @@
+{
+  "about": "scooch:print-preferences version 1: the advice before printing off, the summary after on",
+  "key": "scooch:print-preferences",
+  "value": { "v": 1, "tip": false, "summary": true },
+  "reads": { "tip": false, "summary": true }
+}

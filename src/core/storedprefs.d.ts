@@ -12,6 +12,15 @@ export const VIEW_DEFAULTS: Readonly<ViewPrefs>;
 export function parseViewPrefs(raw: unknown): ViewPrefs;
 export function serializeViewPrefs(prefs: ViewPrefs): ViewPrefs & { v: 1 };
 
+export interface PrintPrefs {
+  /** The advice before printing or downloading shows. */
+  tip: boolean;
+  /** The summary after printing or downloading shows. */
+  summary: boolean;
+}
+export function parsePrintPrefs(raw: unknown): PrintPrefs;
+export function serializePrintPrefs(prefs: PrintPrefs): PrintPrefs & { v: 1 };
+
 export type SectionName = 'sheet' | 'arrange' | 'cuts' | 'grid';
 export const SECTION_NAMES: readonly SectionName[];
 

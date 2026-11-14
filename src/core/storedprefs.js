@@ -32,6 +32,18 @@ export function parseViewPrefs(raw) {
 
 export const serializeViewPrefs = ({ zoomMode, zoomPct, alignTo, distribute }) => ({ v: 1, zoomMode, zoomPct: Math.round(zoomPct * 100) / 100, alignTo, distribute });
 
+// ---------- Printing (scooch:print-preferences) ----------
+//
+// Version 1: {v: 1, tip: boolean, summary: boolean}: whether the advice
+// shows before printing or downloading, and the summary after (both on by default).
+
+export function parsePrintPrefs(raw) {
+  const saved = isRecord(raw) ? raw : {};
+  return { tip: saved.tip !== false, summary: saved.summary !== false };
+}
+
+export const serializePrintPrefs = ({ tip, summary }) => ({ v: 1, tip, summary });
+
 // ---------- Panel sections (scooch:panel-sections) ----------
 //
 // Version 1 (no `v`): {sheet?, arrange?, cuts?, grid?: boolean}, false when
