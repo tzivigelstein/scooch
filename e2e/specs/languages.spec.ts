@@ -1,8 +1,8 @@
 // Each language other than Spanish, in a real browser that speaks it
 // (navigator.languages, so «Automático» picks it): the page is in it before
 // the app's script runs, only its texts download, and the key screens (the
-// top bar, both tabs, Preferences, the shortcuts, the palette and the summary
-// after downloading) show no Spanish, scroll nothing sideways and cut no
+// top bar, both tabs, Preferences, the shortcuts, the palette, the summary
+// after downloading and a usage tip) show no Spanish, scroll nothing sideways and cut no
 // control's text, at 1440 and 390 px; axe finds nothing in one state. And
 // choosing a language in Preferences, once, end to end. The rest of the suite
 // runs in Spanish (playwright.config.ts). How texts are chosen, switched and
