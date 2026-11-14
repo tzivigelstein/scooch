@@ -87,7 +87,7 @@ test.describe('documents saved by other versions of the app', () => {
     await seedStorage(page, scooch([record('pbroken', 'Roto', broken)], [], 'pbroken'));
     const app = new App(page, testInfo);
     await app.open();
-    await expect.poll(() => app.notice()).toEqual({ text: 'No se pudo abrir «Roto» porque sus datos están dañados', action: 'Eliminar', warn: true });
+    await expect.poll(() => app.notice()).toEqual({ text: 'No se pudo abrir «Roto» porque sus datos están dañados', action: 'Eliminar proyecto', warn: true });
     await expect(app.pieces()).toHaveCount(0);
 
     await openProjects(page);

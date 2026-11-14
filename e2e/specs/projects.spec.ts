@@ -545,7 +545,7 @@ test.describe('when storage fails', () => {
     await patchStored(page, (doc) => ({ ...doc, sheets: 'roto' }));
     await page.reload();
     await app.ready();
-    await expect.poll(() => app.notice()).toEqual({ text: 'No se pudo abrir «Sin título» porque sus datos están dañados', action: 'Eliminar', warn: true });
+    await expect.poll(() => app.notice()).toEqual({ text: 'No se pudo abrir «Sin título» porque sus datos están dañados', action: 'Eliminar proyecto', warn: true });
     await expect(app.pieces()).toHaveCount(0);
 
     await openProjects(page);
