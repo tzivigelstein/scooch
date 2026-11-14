@@ -39,6 +39,11 @@
   max-width: 17.5rem;
 }
 
+/* The legal links wrap between them, never inside one (each name stays whole). */
+#prefs-legal a {
+  white-space: nowrap;
+}
+
 .segmented.themes .seg > span {
   height: 2.125rem;
   font-size: 0.84375rem;
