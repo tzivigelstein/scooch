@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import type { ListedProject } from '../../core/types.ts';
 import { estimate, list, projectSession } from '../../services/projects.ts';
 import { closeDialog, isDialogOpen, openDialog } from '../../components/dialogs/dialogs.ts';
-import { PrefsContent, ProjectsContent, ShortcutsContent, whenLoaded } from '../../components/dialogs/lazy.ts';
+import { PaletteContent, PrefsContent, ProjectsContent, ShortcutsContent, whenLoaded } from '../../components/dialogs/lazy.ts';
 import { useProject } from '../project.ts';
 
 /**
@@ -35,6 +35,12 @@ export const closeProjects = () => closeDialog('projects');
 export function openShortcuts() {
   const returnTo = document.activeElement;
   whenLoaded(ShortcutsContent, () => openDialog('shortcuts', returnTo));
+}
+
+/** Mod+K or the search button: the command palette. */
+export function openPalette() {
+  const returnTo = document.activeElement;
+  whenLoaded(PaletteContent, () => openDialog('palette', returnTo));
 }
 
 /** Opens «Preferencias». `returnTo`: where the focus goes when it closes. */

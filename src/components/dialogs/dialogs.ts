@@ -3,7 +3,7 @@
 
 import { create } from 'zustand';
 
-export type DialogName = 'shortcuts' | 'prefs' | 'projects';
+export type DialogName = 'shortcuts' | 'prefs' | 'projects' | 'palette';
 
 export interface DialogsState {
   open: Partial<Record<DialogName, { returnTo: Element | null }>>;

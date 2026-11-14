@@ -6,7 +6,7 @@ import { usePrefs } from '../../state/prefs.ts';
 import { Dialog } from '../ui/Dialog.tsx';
 import { ConfirmDialog } from './ConfirmDialog.tsx';
 import { closeDialog, useDialogs, type DialogName } from './dialogs.ts';
-import { PrefsContent, PrintTipContent, ProjectsContent, ShortcutsContent } from './lazy.ts';
+import { PaletteContent, PrefsContent, PrintTipContent, ProjectsContent, ShortcutsContent } from './lazy.ts';
 import { finishTip, usePrintTip } from './printTip.ts';
 
 const byId = (id: string) => () => document.getElementById(id);
@@ -64,6 +64,23 @@ export function Dialogs() {
         {open.projects && (
           <Suspense fallback={null}>
             <ProjectsContent />
+          </Suspense>
+        )}
+      </Dialog>
+      <Dialog
+        id="palette"
+        className="dialog palette"
+        labelledBy="palette-title"
+        open={!!open.palette}
+        returnTo={open.palette?.returnTo ?? null}
+        fallback={byId('palette-open')}
+        initialFocus={byId('palette-input')}
+        focusTaken={otherDialogOpen('palette')}
+        onClose={() => closeDialog('palette')}
+      >
+        {open.palette && (
+          <Suspense fallback={null}>
+            <PaletteContent />
           </Suspense>
         )}
       </Dialog>

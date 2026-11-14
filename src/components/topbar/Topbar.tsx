@@ -1,11 +1,12 @@
-// The top bar: brand, open project, add, arrange, undo and redo,
-// preferences, shortcuts, download and print.
+// The top bar: brand, open project, add, arrange, undo and redo, the command
+// palette, preferences, shortcuts, download and print.
 
-import { Download, ImagePlus, Keyboard, LayoutDashboard, Printer, Redo2, Settings, Undo2 } from 'lucide-react';
+import { Download, ImagePlus, Keyboard, LayoutDashboard, Printer, Redo2, Search, Settings, Undo2 } from 'lucide-react';
 import { useRef } from 'react';
-import { t } from '../../copy/index.ts';
+import { keyLabel, t } from '../../copy/index.ts';
+import { SHORTCUTS } from '../../hooks/shortcuts.ts';
 import { useDocument } from '../../state/document.ts';
-import { openPrefs, openShortcuts } from '../../state/actions/dialogs.ts';
+import { openPalette, openPrefs, openShortcuts } from '../../state/actions/dialogs.ts';
 import { arrangeAll, redoLast, undoLast } from '../../state/actions/edit.ts';
 import { loadFiles, openFiles } from '../../state/actions/files.ts';
 import { exportPdf, printPdf } from '../../state/actions/output.ts';
@@ -63,6 +64,12 @@ export function Topbar() {
       </div>
 
       <div className="bar-group end">
+        {/* The way to the palette: its keys show (not only in the tooltip) so it can be found. */}
+        <Button id="palette-open" className="tool palette-open" aria-haspopup="dialog" aria-label={t('palette.title')} icon={Search} tip={t('palette.title')} shortcut="palette" onClick={openPalette}>
+          <kbd className="palette-open-keys" aria-hidden="true">
+            {keyLabel(SHORTCUTS.palette.kbd)}
+          </kbd>
+        </Button>
         <IconButton id="prefs-open" className="tool" aria-haspopup="dialog" icon={Settings} label={t('prefs.title')} tip={t('prefs.title')} onClick={() => openPrefs()} />
         <IconButton id="help" className="tool" aria-haspopup="dialog" icon={Keyboard} label={t('bar.shortcuts')} tip={t('bar.shortcuts')} shortcut="help" onClick={openShortcuts} />
         <IconButton

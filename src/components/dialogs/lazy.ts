@@ -9,6 +9,7 @@ export const ShortcutsContent = lazyContent(() => import('./ShortcutsDialog.tsx'
 export const PrefsContent = lazyContent(() => import('./PrefsDialog.tsx'));
 export const ProjectsContent = lazyContent(() => import('./ProjectsDialog.tsx'));
 export const PrintTipContent = lazyContent(() => import('./PrintTipDialog.tsx'));
+export const PaletteContent = lazyContent(() => import('../palette/CommandPalette.tsx'));
 
 /** Loads the dialogs most likely to be opened, without blocking anything. */
 export function preloadDialogs() {
@@ -16,4 +17,5 @@ export function preloadDialogs() {
   void PrefsContent.preload();
   void ProjectsContent.preload();
   void PrintTipContent.preload();
+  void PaletteContent.preload();
 }

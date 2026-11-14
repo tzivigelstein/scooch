@@ -14,12 +14,13 @@ import { getView, setView } from '../../src/state/view.ts';
 import { piece as makePiece, resetState } from '../support/state.ts';
 import { exportPdf, printPdf } from '../../src/state/actions/output.ts';
 import { useProject } from '../../src/state/project.ts';
-import { openProjects } from '../../src/state/actions/dialogs.ts';
+import { openPalette, openProjects } from '../../src/state/actions/dialogs.ts';
 
 vi.mock('../../src/state/actions/output.ts', () => ({ exportPdf: vi.fn(async () => {}), printPdf: vi.fn(async () => {}) }));
 vi.mock('../../src/state/actions/dialogs.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../src/state/actions/dialogs.ts')>()),
   openProjects: vi.fn(async () => {}),
+  openPalette: vi.fn(),
 }));
 
 const key = addAsset({
@@ -490,6 +491,31 @@ describe('the keys the browser would take', () => {
     expect(exportPdf).toHaveBeenCalledTimes(2);
     expect(getView().flash).toEqual({ text: 'Los cambios se guardan automáticamente', info: true });
     expect(openProjects).toHaveBeenCalledTimes(1);
+  });
+
+  test('Ctrl+K (⌘K) opens the command palette and does nothing else; it never reaches the browser, and in a dialog or a menu it does nothing; Ctrl+Shift+K stays the browser’s', () => {
+    const pressK = (target: Element, init: KeyboardEventInit = {}) => {
+      const event = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, ...init, bubbles: true, cancelable: true });
+      act(() => void target.dispatchEvent(event));
+      return event.defaultPrevented;
+    };
+    vi.mocked(openPalette).mockClear();
+    const before = JSON.stringify(getDocument());
+    expect(pressK(document.getElementById('menu-item')!)).toBe(true);
+    document.getElementById('dialog')!.setAttribute('open', '');
+    expect(pressK(document.getElementById('dialog-button')!)).toBe(true);
+    expect(pressK(piece())).toBe(true);
+    document.getElementById('dialog')!.removeAttribute('open');
+    expect(openPalette).not.toHaveBeenCalled();
+    expect(pressK(piece(), { key: 'K', shiftKey: true })).toBe(false);
+    expect(openPalette).not.toHaveBeenCalled();
+    expect(pressK(piece())).toBe(true);
+    expect(pressK(document.getElementById('text')!, { ctrlKey: false, metaKey: true })).toBe(true);
+    expect(openPalette).toHaveBeenCalledTimes(2);
+    expect(pressK(piece(), { repeat: true })).toBe(true);
+    expect(openPalette).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(getDocument()), 'nothing else changes').toBe(before);
+    nothingHappened();
   });
 
   test('Ctrl+D never reaches the browser (its bookmark): it duplicates on the canvas and does nothing while typing, in a dialog or in a menu; Ctrl+Shift+D stays the browser’s', () => {

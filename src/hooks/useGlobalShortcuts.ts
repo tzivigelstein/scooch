@@ -14,7 +14,7 @@ import { flushUi } from '../state/flush.ts';
 import { endEdit } from '../state/history.ts';
 import { getPrefs } from '../state/prefs.ts';
 import { currentSheet, primaryItem } from '../state/selectors.ts';
-import { openProjects, openShortcuts } from '../state/actions/dialogs.ts';
+import { openPalette, openProjects, openShortcuts } from '../state/actions/dialogs.ts';
 import { closeDrawer, drawerOf, isCollapsible, isDrawerOpen, revealPanel } from '../state/actions/drawers.ts';
 import { arrangeAll, redoLast, undoLast } from '../state/actions/edit.ts';
 import { openFiles } from '../state/actions/files.ts';
@@ -56,14 +56,15 @@ let spaceOn: HTMLElement | null = null;
 const SHRINKS = new Set(['-', '_', '−']);
 
 // Ctrl/⌘ + these are browser commands the app replaces with its own (open a
-// file, print the page, save the page, the address bar, a bookmark): they
-// never reach the browser, also where the app's shortcut does nothing (a
-// dialog, a menu, a text field). Ctrl/⌘ + Shift + D stays the browser's.
-const CLAIMED = new Set(['o', 'p', 's', 'e', 'd']);
+// file, print the page, save the page, the address bar, a bookmark, the
+// search bar): they never reach the browser, also where the app's shortcut
+// does nothing (a dialog, a menu, a text field). Ctrl/⌘ + Shift + D and K
+// stay the browser's.
+const CLAIMED = new Set(['o', 'p', 's', 'e', 'd', 'k']);
 
 const isClaimed = (e: KeyboardEvent) => {
   const lower = e.key.toLowerCase();
-  return (e.ctrlKey || e.metaKey) && !e.altKey && CLAIMED.has(lower) && !(lower === 'd' && e.shiftKey);
+  return (e.ctrlKey || e.metaKey) && !e.altKey && CLAIMED.has(lower) && !((lower === 'd' || lower === 'k') && e.shiftKey);
 };
 
 /** Captured on the window, before any handler can stop the key on its way to the document. */
@@ -150,10 +151,13 @@ function onKeyDown(e: KeyboardEvent) {
   const typing = isTyping(target);
 
   // With Ctrl/Cmd: they always work (except undo while typing, which is the field's).
-  // The claimed ones (O, P, S, E, D) never reach the browser (holdBack).
+  // The claimed ones (O, P, S, E, D, K) never reach the browser (holdBack).
   if (mod && !e.altKey) {
     if (lower === 'o') {
       void openProjects();
+    } else if (lower === 'k' && !e.shiftKey) {
+      // The command palette, and nothing else.
+      if (!e.repeat) openPalette();
     } else if (lower === 'e' || (lower === 's' && e.shiftKey)) {
       void exportPdf();
     } else if (lower === 's') {
