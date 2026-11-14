@@ -1,9 +1,9 @@
 // What a PDF saves (src/core/savings.js): the share of the printable area the
 // pieces use, the sheets against one sheet per piece, those sheets in plain
-// physical terms, the running total's milestones and when a fuller
-// arrangement may be suggested.
+// physical terms, the running total's milestones, when a fuller arrangement
+// may be suggested, and counting each PDF once.
 import { describe, expect, test } from 'vitest';
-import { equivalent, milestoneReached, paperFacts, sheetSavings, sheetUsage, suggestArrange, unionArea } from '../../src/core/savings.js';
+import { countPdf, equivalent, milestoneReached, paperFacts, pdfKey, sheetSavings, sheetUsage, suggestArrange, unionArea } from '../../src/core/savings.js';
 
 const r = (x, y, w, h) => ({ x, y, w, h });
 const A4_AREA = r(10, 10, 190, 277); // A4 with a 10 mm margin
@@ -90,5 +90,32 @@ describe('suggestArrange', () => {
     expect(suggestArrange(0.3, 3, null), 'the check couldn’t place them').toBe(false);
     expect(suggestArrange(0.7, 3, 2), 'well used already').toBe(false);
     expect(suggestArrange(null, 3, 2)).toBe(false);
+  });
+});
+
+describe('counting each PDF once', () => {
+  const before = { sheets: 8, turn: 4, counted: ['older'] };
+
+  test('pdfKey: the same description gives the same key, any change another one', () => {
+    const pdf = { size: [210, 297], pages: [[['file-a', 0, 56, 80, 10, 10, 100, 0, null]]] };
+    expect(pdfKey(structuredClone(pdf))).toBe(pdfKey(pdf));
+    expect(pdfKey(pdf)).toMatch(/^[0-9a-z]{6,11}$/);
+    const moved = { ...pdf, pages: [[['file-a', 0, 56, 80, 10, 10.1, 100, 0, null]]] };
+    const otherFile = { ...pdf, pages: [[['file-b', 0, 56, 80, 10, 10, 100, 0, null]]] };
+    const otherPaper = { ...pdf, size: [297, 210] };
+    expect(new Set([pdf, moved, otherFile, otherPaper].map(pdfKey)).size).toBe(4);
+  });
+
+  test('a new PDF adds its sheets to the total and is remembered; the equivalent takes its turn', () => {
+    expect(countPdf(before, 'k1', 5)).toEqual({ savings: { sheets: 13, turn: 5, counted: ['older', 'k1'] }, added: 5 });
+  });
+
+  test('the same PDF again adds nothing (the equivalent still takes its turn)', () => {
+    const { savings } = countPdf(before, 'k1', 5);
+    expect(countPdf(savings, 'k1', 5)).toEqual({ savings: { sheets: 13, turn: 6, counted: ['older', 'k1'] }, added: 0 });
+  });
+
+  test('a PDF that saves nothing adds nothing and isn’t remembered', () => {
+    expect(countPdf(before, 'k1', 0)).toEqual({ savings: { sheets: 8, turn: 5, counted: ['older'] }, added: 0 });
   });
 });

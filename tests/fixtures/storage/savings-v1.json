@@ -1,6 +1,6 @@
 {
-  "about": "scooch:savings version 1: 34 sheets saved on this device, and the third equivalent's turn next",
+  "about": "scooch:savings version 1: 34 sheets saved on this device, and the third equivalent's turn next (no PDFs counted: it didn't keep them)",
   "key": "scooch:savings",
   "value": { "v": 1, "sheets": 34, "turn": 2 },
-  "reads": { "sheets": 34, "turn": 2 }
+  "reads": { "sheets": 34, "turn": 2, "counted": [] }
 }

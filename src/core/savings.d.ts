@@ -1,3 +1,4 @@
+import type { Savings } from './storedprefs';
 import type { Rect } from './types';
 
 export const PAPER_GSM: number;
@@ -17,11 +18,5 @@ export function equivalent(turn: number, facts: Record<EquivalentKind, number>):
 export function milestoneReached(before: number, after: number): number | null;
 export function suggestArrange(share: number | null, used: number, packed: number | null): boolean;
 
-export interface Savings {
-  /** Sheets saved so far on this device. */
-  sheets: number;
-  /** Whose turn the next equivalent is. */
-  turn: number;
-}
-export function parseSavings(raw: unknown): Savings;
-export function serializeSavings(savings: Savings): Savings & { v: 1 };
+export function pdfKey(description: unknown): string;
+export function countPdf(savings: Savings, key: string, saved: number): { savings: Savings; added: number };

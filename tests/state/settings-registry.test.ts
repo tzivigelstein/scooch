@@ -49,7 +49,7 @@ const CHANGES: Record<string, () => void> = {
   'view.distribute': () => (setView({ distribute: 'even' }), rememberView()),
   'null.customPaper': () => (choosePaper('custom'), setPaperSide('w', 120, { final: true })),
   'null.donateDismissed': () => neverAskDonation(),
-  'null.savings': () => recordSavings(3),
+  'null.savings': () => recordSavings(3, 'a-pdf'),
   'view.sheet': () => setView({ sheet: 7 }),
   'view.pinned': () => setView({ pinned: true }),
   'view.drawer': () => setView({ drawer: 'props' }),

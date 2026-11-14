@@ -109,15 +109,40 @@ export function milestoneReached(before, after) {
  */
 export const suggestArrange = (share, used, packed) => share !== null && share < LOW_USAGE && packed !== null && packed < used;
 
-// ---------- The running total (scooch:savings) ----------
+// ---------- Counting each PDF once ----------
 //
-// Version 1: {v: 1, sheets, turn}: the sheets saved so far on this device
-// and whose turn the next equivalent is.
+// The browser doesn't say whether the person printed, so the total counts
+// what goes out, once per PDF: printing or downloading the same document
+// again adds nothing. A PDF is told apart by what it contains (its key), not
+// by when it was made.
 
-export function parseSavings(raw) {
-  const saved = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-  const count = (v) => (Number.isInteger(v) && v >= 0 ? v : 0);
-  return { sheets: count(saved.sheets), turn: count(saved.turn) };
+/**
+ * A short key for what a PDF contains, from any JSON-able description of it:
+ * equal descriptions, equal keys (cyrb53, 53 bits). Tells apart the PDFs of
+ * one device; not a security hash.
+ */
+export function pdfKey(description) {
+  const text = JSON.stringify(description);
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 2654435761);
+    h2 = Math.imul(h2 ^ c, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 
-export const serializeSavings = ({ sheets, turn }) => ({ v: 1, sheets, turn });
+/**
+ * Counts a PDF that went out (`savings` as storedprefs.parseSavings reads
+ * it): its `saved` sheets go into the total unless that PDF was counted
+ * before, and the next equivalent takes its turn either way. Returns the new
+ * savings and the sheets `added` now.
+ */
+export function countPdf(savings, key, saved) {
+  const added = savings.counted.includes(key) ? 0 : Math.max(0, saved);
+  const counted = added ? [...savings.counted, key] : savings.counted;
+  return { savings: { sheets: savings.sheets + added, turn: savings.turn + 1, counted }, added };
+}

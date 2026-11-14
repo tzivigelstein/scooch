@@ -27,6 +27,9 @@ export interface PrintSummary {
   suggest: boolean;
   /** It asks for a donation (once per page load, see donate.ts). */
   ask: boolean;
+  /** The PDF's key (see pdfContentKey) and the sheets it added to the total now (0 when it was counted before). */
+  key: string;
+  added: number;
 }
 
 export const usePrintSummary = create<{ summary: PrintSummary | null }>()(() => ({ summary: null }));

@@ -4,13 +4,13 @@
 // the click of its button; closing it otherwise sends nothing; turned off, it
 // goes straight out; nothing else exports meanwhile. What each way of
 // printing says (no tip any more: the advice gave it), and the summary once
-// the person is back, with what it counts on this device.
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+// the person is back, with what it counts on this device: each PDF once.
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { usePrintSummary } from '../../src/components/feedback/printSummary.ts';
 import { askTip } from '../../src/components/dialogs/printTip.ts';
 import { makePdf } from '../../src/services/export.ts';
 import { downloadBytes, printBytes } from '../../src/services/print.ts';
-import { setDocument } from '../../src/state/document.ts';
+import { getDocument, setDocument } from '../../src/state/document.ts';
 import { setPrinting } from '../../src/state/prefs.ts';
 import { getView } from '../../src/state/view.ts';
 import { exportPdf, printPdf } from '../../src/state/actions/output.ts';
@@ -40,6 +40,10 @@ vi.mock('../../src/services/print.ts', () => ({ printBytes: vi.fn(), downloadByt
 
 /** The copy puts non-breaking spaces between numbers and units. */
 const norm = (s: string | undefined) => String(s ?? '').replace(/ /g, ' ');
+const saved = () => JSON.parse(localStorage.getItem('scooch:savings')!);
+const shown = () => usePrintSummary.getState().summary!;
+/** Moves the first piece 1 mm: another PDF. */
+const nudge = () => setDocument({ items: getDocument().items.map((item, i) => (i === 0 ? { ...item, x: item.x + 1 } : item)) });
 const flash = () => {
   const f = getView().flash;
   return f && { ...f, text: norm(f.text) };
@@ -200,28 +204,68 @@ describe('the summary after', () => {
     expect(usePrintSummary.getState().summary, 'not while the print dialog is open').toBeNull();
     back();
     await printing;
-    const summary = usePrintSummary.getState().summary!;
-    expect(summary).toMatchObject({ kind: 'print', used: 2, baseline: 7, saved: 5, total: 5, milestone: null, ask: false });
+    const summary = shown();
+    expect(summary).toMatchObject({ kind: 'print', used: 2, baseline: 7, saved: 5, total: 5, milestone: null, ask: false, added: 5 });
     // 7 pieces of 60 × 60 mm over two printable areas of 190 × 277 mm.
     expect(summary.share).toBeCloseTo((7 * 3600) / (2 * 190 * 277), 3);
     expect(summary.equivalent).toMatchObject({ kind: 'grams' });
     expect(summary.equivalent!.value).toBeCloseTo(5 * 0.21 * 0.297 * 80, 6);
-    expect(JSON.parse(localStorage.getItem('scooch:savings')!)).toEqual({ v: 1, sheets: 5, turn: 1 });
+    expect(saved()).toEqual({ v: 2, sheets: 5, turn: 1, counted: [summary.key] });
   });
 
-  test('the next one adds to the total, with the next equivalent; reaching 10 is a milestone', async () => {
+  test('another PDF adds to the total, with the next equivalent; reaching 10 is a milestone', async () => {
     await printPdf();
+    nudge();
     await exportPdf();
-    const summary = usePrintSummary.getState().summary!;
-    expect(summary).toMatchObject({ kind: 'download', total: 10, milestone: 10 });
-    expect(summary.equivalent?.kind).toBe('ream');
+    expect(shown()).toMatchObject({ kind: 'download', total: 10, milestone: 10, added: 5 });
+    expect(shown().equivalent?.kind).toBe('ream');
+  });
+
+  describe('each PDF counts once', () => {
+    afterEach(() => vi.useRealTimers());
+
+    test('printing or downloading the same document again, however much later, adds nothing to the total', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      await printPdf();
+      const key = shown().key;
+      vi.setSystemTime(Date.now() + 3 * 24 * 3600_000);
+      await printPdf();
+      expect(shown()).toMatchObject({ key, total: 5, added: 0, milestone: null });
+      await exportPdf();
+      expect(shown()).toMatchObject({ key, total: 5, added: 0 });
+      expect(saved()).toMatchObject({ sheets: 5, counted: [key] });
+    });
+
+    test('a change to what prints (a piece moved, the paper, the cut lines) makes it another PDF', async () => {
+      await printPdf();
+      const keys = new Set([shown().key]);
+      for (const change of [nudge, () => setDocument({ paper: 'A3' }), () => setDocument({ cuts: { ...getDocument().cuts, mode: 'outline' } })]) {
+        change();
+        await printPdf();
+        expect(shown().added).toBe(5);
+        keys.add(shown().key);
+      }
+      expect(keys.size).toBe(4);
+      expect(saved().sheets).toBe(20);
+    });
+
+    test('a milestone shows once: the same PDF again doesn’t reach it again', async () => {
+      localStorage.setItem('scooch:savings', JSON.stringify({ v: 1, sheets: 8, turn: 0 }));
+      await printPdf();
+      expect(shown()).toMatchObject({ total: 13, milestone: 10 });
+      await printPdf();
+      expect(shown()).toMatchObject({ total: 13, milestone: null });
+      nudge();
+      await exportPdf();
+      expect(shown()).toMatchObject({ total: 18, milestone: null });
+    });
   });
 
   test('turned off: no summary (the total still counts)', async () => {
     setPrinting({ summary: false });
     await printPdf();
     expect(usePrintSummary.getState().summary).toBeNull();
-    expect(JSON.parse(localStorage.getItem('scooch:savings')!).sheets).toBe(5);
+    expect(saved().sheets).toBe(5);
   });
 
   test('a fuller arrangement is suggested only when little is used and packing surely takes a sheet fewer', async () => {

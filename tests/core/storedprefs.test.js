@@ -5,8 +5,18 @@
 import { describe, expect, test } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { VIEW_DEFAULTS, parsePrintPrefs, parseSections, parseViewPrefs, serializePrintPrefs, serializeSections, serializeViewPrefs } from '../../src/core/storedprefs.js';
-import { parseSavings, serializeSavings } from '../../src/core/savings.js';
+import {
+  COUNTED_MAX,
+  VIEW_DEFAULTS,
+  parsePrintPrefs,
+  parseSavings,
+  parseSections,
+  parseViewPrefs,
+  serializePrintPrefs,
+  serializeSavings,
+  serializeSections,
+  serializeViewPrefs,
+} from '../../src/core/storedprefs.js';
 
 const DIR = join(import.meta.dirname, '../fixtures/storage');
 const fixtures = readdirSync(DIR)
@@ -58,8 +68,16 @@ describe('printing preferences and savings', () => {
   test('both on unless turned off; a total that can’t be read is 0', () => {
     expect(parsePrintPrefs(null)).toEqual({ tip: true, summary: true });
     expect(parsePrintPrefs({ tip: 'no' })).toEqual({ tip: true, summary: true });
-    expect(parseSavings({ sheets: -3, turn: 1.5 })).toEqual({ sheets: 0, turn: 0 });
-    expect(parseSavings('34')).toEqual({ sheets: 0, turn: 0 });
+    expect(parseSavings({ sheets: -3, turn: 1.5 })).toEqual({ sheets: 0, turn: 0, counted: [] });
+    expect(parseSavings('34')).toEqual({ sheets: 0, turn: 0, counted: [] });
+  });
+
+  test('the PDFs counted are only read from version 2, keys only, and only the last ones are kept', () => {
+    expect(parseSavings({ v: 1, sheets: 3, turn: 0, counted: ['a'] }).counted).toEqual([]);
+    expect(parseSavings({ v: 2, sheets: 3, turn: 0, counted: ['a', 7, '', null, 'b'] }).counted).toEqual(['a', 'b']);
+    const many = Array.from({ length: COUNTED_MAX + 5 }, (_, i) => `k${i}`);
+    expect(parseSavings({ v: 2, sheets: 3, turn: 0, counted: many }).counted).toEqual(many.slice(5));
+    expect(serializeSavings({ sheets: 3, turn: 0, counted: many }).counted).toEqual(many.slice(5));
   });
 });
 

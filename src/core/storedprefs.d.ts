@@ -33,3 +33,15 @@ export interface PanelPrefs {
 
 export function parseSections(raw: unknown): PanelPrefs;
 export function serializeSections(prefs: PanelPrefs): Partial<Record<SectionName, boolean>> & { v: 2; cutOptions?: true };
+
+export interface Savings {
+  /** Sheets saved so far on this device. */
+  sheets: number;
+  /** Whose turn the next equivalent is. */
+  turn: number;
+  /** The keys of the last PDFs that added to the total, the newest last. */
+  counted: string[];
+}
+export const COUNTED_MAX: number;
+export function parseSavings(raw: unknown): Savings;
+export function serializeSavings(savings: Savings): Savings & { v: 2 };

@@ -13,7 +13,7 @@ vi.mock('../../src/components/dialogs/donate.ts', () => ({ donateUrl: () => 'htt
 vi.mock('../../src/state/actions/edit.ts', () => ({ arrangeAll: vi.fn() }));
 
 const nb = (s: string | null | undefined) => String(s ?? '').replace(/ /g, ' ');
-const base: Summary = { kind: 'print', share: 0.82, used: 2, baseline: 7, saved: 5, equivalent: { kind: 'grams', value: 24.9 }, total: 34, milestone: null, suggest: false, ask: false };
+const base: Summary = { kind: 'print', share: 0.82, used: 2, baseline: 7, saved: 5, equivalent: { kind: 'grams', value: 24.9 }, total: 34, milestone: null, suggest: false, ask: false, key: 'pdf-1', added: 5 };
 const show = (changes: Partial<Summary> = {}) => act(() => usePrintSummary.setState({ summary: { ...base, ...changes } }));
 const lines = () => [...document.querySelectorAll('#print-summary p')].map((p) => nb(p.textContent));
 

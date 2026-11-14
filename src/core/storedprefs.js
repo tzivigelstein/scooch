@@ -66,3 +66,22 @@ export const serializeSections = ({ sections, cutOptions }) => {
   if (cutOptions) out.cutOptions = true;
   return out;
 };
+
+// ---------- Sheets saved (scooch:savings) ----------
+//
+// Version 1: {v: 1, sheets, turn}: the sheets saved so far on this device
+// and whose turn the next equivalent is.
+// Version 2: {v: 2, sheets, turn, counted}: also the keys of the last PDFs
+// that added to the total (core/savings.js pdfKey, the newest last, at most
+// COUNTED_MAX), so the same PDF doesn't count twice. Version 1 read as none.
+
+export const COUNTED_MAX = 50;
+
+export function parseSavings(raw) {
+  const saved = isRecord(raw) ? raw : {};
+  const count = (v) => (Number.isInteger(v) && v >= 0 ? v : 0);
+  const counted = saved.v === 2 && Array.isArray(saved.counted) ? saved.counted.filter((key) => typeof key === 'string' && key).slice(-COUNTED_MAX) : [];
+  return { sheets: count(saved.sheets), turn: count(saved.turn), counted };
+}
+
+export const serializeSavings = ({ sheets, turn, counted }) => ({ v: 2, sheets, turn, counted: counted.slice(-COUNTED_MAX) });

@@ -4,6 +4,7 @@
 
 import { APP_NAME } from '../config.ts';
 import { cutLines, cutStyle } from '../core/cutmarks.js';
+import { pdfKey } from '../core/savings.js';
 import { slug } from '../core/util.ts';
 import { t } from '../copy/index.ts';
 import { getAsset } from '../state/assets.ts';
@@ -27,4 +28,23 @@ export function makePdf() {
       lines: cutLines(items.map(imageBoxOf), { ...cuts, bounds: { x: 0, y: 0, w: W, h: H } }),
     }));
   return buildPdf({ width: W, height: H, pages, title: t('print.pdfTitle', { paper: paperName() }), creator: APP_NAME, cutStyle: cutStyle(cuts) });
+}
+
+/**
+ * The key of what makePdf draws (see pdfKey): the paper, the cut lines and
+ * each printed sheet's pieces, their files told apart by content. The same
+ * document gives the same key, however many times it goes out.
+ */
+export function pdfContentKey() {
+  const { sheets, cuts } = getDocument();
+  const piece = (item: Piece) => {
+    const asset = getAsset(item.asset);
+    const file = asset.hashes?.bytes ?? asset.hashes?.src ?? `${asset.src}:${asset.name}`;
+    return [file, asset.kind === 'pdf' ? asset.page : 0, asset.w, asset.h, item.x, item.y, item.scale, item.r, item.crop ?? null];
+  };
+  const pages = sheets
+    .map((sheet) => itemsOn(sheet.id))
+    .filter((items) => items.length)
+    .map((items) => items.map(piece));
+  return pdfKey({ size: sheetSize(), cuts, pages });
 }
