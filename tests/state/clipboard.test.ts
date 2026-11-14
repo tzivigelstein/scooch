@@ -88,7 +88,7 @@ describe('clipboard', () => {
     copySelection();
     setDocument({ items: Array.from({ length: 200 }, (_, i) => piece(i + 1, key, 10, 10)), selection: [] });
     expect(pastePieces()).toBe(false);
-    expect(getView().flash).toMatchObject({ text: 'Se admiten hasta 200 piezas en total, así que ya no entran más piezas', warn: true });
+    expect(getView().flash).toMatchObject({ text: 'Ya hay 200 piezas, el máximo. Quita alguna para pegar.', warn: true });
     expect(getDocument().items).toHaveLength(200);
   });
 });

@@ -194,7 +194,7 @@ describe('arranging', () => {
     choosePaper('A6');
     expect(arrange()).toBe('arranged');
     const flash = getView().flash!;
-    expect(nb(flash.text)).toMatch(/^Se acomodaron 6 piezas en \d+ hojas\. big\.png no entra en la hoja ni sola, así que quedó donde estaba\.$/);
+    expect(nb(flash.text)).toMatch(/^Se acomodaron 6 piezas en \d+ hojas\. big\.png no entra en la hoja ni sola: quedó donde estaba\.$/);
     expect(flash.warn).toBe(true);
     expect(flash.action?.label).toBe('Ajustar a la hoja');
     const now = shown();
@@ -302,7 +302,7 @@ describe('filling a sheet with copies and removing everything', () => {
     const clearing = clearAll();
     const request = useConfirm.getState().request!;
     expect(nb(request.title)).toBe(`¿Quitar las 7 piezas de las ${before.sheets.length} hojas?`);
-    expect(request).toMatchObject({ body: 'Queda 1 hoja vacía. Puedes deshacerlo.', confirm: 'Quitar todas', focus: 'cancel' });
+    expect(request).toMatchObject({ body: 'Queda 1 hoja vacía. Se puede deshacer.', confirm: 'Quitar todas', focus: 'cancel' });
     useConfirm.setState({ request: null });
     request.resolve(false);
     await clearing;
@@ -333,7 +333,7 @@ describe('filling a sheet with copies and removing everything', () => {
     resetState({ items: [piece(1, a.small, 30, 40)] });
     const clearing = clearAll();
     const request = useConfirm.getState().request!;
-    expect(request).toMatchObject({ title: '¿Quitar la pieza?', body: 'Puedes deshacerlo.' });
+    expect(request).toMatchObject({ title: '¿Quitar la pieza?', body: 'Se puede deshacer' });
     useConfirm.setState({ request: null });
     request.resolve(true);
     await clearing;

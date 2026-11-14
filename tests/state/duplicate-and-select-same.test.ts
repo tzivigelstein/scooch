@@ -136,7 +136,7 @@ describe('duplicate ×N', () => {
     expect(getView().flash).toMatchObject({ text: 'Se admiten hasta 200 piezas en total. Quita alguna para duplicar esta.', warn: true });
     expect(documentNow()).toEqual(before);
     duplicate(2);
-    expect(getView().flash).toMatchObject({ text: 'Se admiten hasta 200 piezas en total, así que ya no entran más copias', warn: true });
+    expect(getView().flash).toMatchObject({ text: 'Ya hay 200 piezas, el máximo. Quita alguna para duplicar.', warn: true });
     expect(documentNow()).toEqual(before);
     expect(historyDepth().undo).toBe(0);
   });

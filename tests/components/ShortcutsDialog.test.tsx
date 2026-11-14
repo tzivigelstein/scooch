@@ -50,7 +50,7 @@ describe('the shortcuts table', () => {
     expect(row('Rehacer')).toBe('Ctrl+Shift+Z o Ctrl+Y');
     expect(row('Quitar la pieza')).toBe('Supr o Retroceso');
     expect(row('Mover la pieza 1 mm (Shift: 10 mm; Alt: 0,1 mm). Si choca con otra, salta al otro lado.')).toBe('← ↑ → ↓');
-    expect(row('Copiar, cortar o pegar piezas. Si copiaste una imagen en otra app, la pega como pieza nueva.')).toBe('Ctrl+C Ctrl+X Ctrl+V');
+    expect(row('Copiar, cortar o pegar piezas. Una imagen copiada en otra app se pega como pieza nueva.')).toBe('Ctrl+C Ctrl+X Ctrl+V');
     expect(row('En las hojas, ir a la hoja anterior o a la siguiente')).toBe('Re Pág o Av Pág');
     expect(row('Mostrar estos atajos')).toBe('?');
     const kbds = [...document.querySelectorAll('#shortcuts-rows tr')].find((tr) => /Descargar PDF/.test(tr.textContent ?? ''))!.querySelectorAll('kbd');
@@ -66,7 +66,7 @@ describe('the shortcuts table', () => {
       'Rotar 90° a la derecha o a la izquierda',
       'Duplicar la pieza',
       'Duplicar la selección (siempre, también con los atajos de 1 tecla desactivados)',
-      'Copiar, cortar o pegar piezas. Si copiaste una imagen en otra app, la pega como pieza nueva.',
+      'Copiar, cortar o pegar piezas. Una imagen copiada en otra app se pega como pieza nueva.',
       'Abrir el menú de la pieza o de la hoja (también con clic derecho o manteniendo presionado)',
       'Acercar o alejar la vista (también con Ctrl y la rueda, o pellizcando el trackpad)',
       'Ajustar la hoja entera o su ancho a la vista',

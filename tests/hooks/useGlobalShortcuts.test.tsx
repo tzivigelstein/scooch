@@ -288,7 +288,7 @@ describe('single keys', () => {
     press(']');
     expect(ids()).toEqual([1, 2]);
     expect(historyDepth().undo).toBe(depth);
-    expect(heard()).toBe('La pieza no se superpone con otras, así que no hace falta traerla al frente.');
+    expect(heard()).toBe('La pieza no se superpone con otras: no hace falta traerla al frente.');
   });
 
   test('] on a piece under another one brings it to the front, in one undo step', () => {
