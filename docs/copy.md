@@ -201,6 +201,7 @@ mantiene gracias a personas como tú», no «Lo mantengo…»).
 | atajos de teclado | combinaciones de teclas | accesos rápidos, teclas rápidas |
 | barra de acciones | la barra flotante de la pieza | menú, toolbar |
 | aviso | la píldora de mensajes (ver «Avisos: visibles o solo anunciados») | notificación, toast |
+| consejo | lo que el área de avisos propone una sola vez para hacer más rápido algo que se repite («Consejos de uso», «No volver a mostrar»); también el consejo antes de imprimir | tip, sugerencia, truco |
 | aporte / aportar | la donación en Patreon | donar, donación, apoyar |
 | proyecto | cada trabajo guardado en el navegador (nombre, hojas, piezas y archivos) | documento, archivo, diseño |
 | nuevo proyecto | empezar otro en blanco; el abierto queda guardado | limpiar, vaciar (eso es «Quitar todas») |
