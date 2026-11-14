@@ -129,6 +129,35 @@ describe('the advice before printing', () => {
   });
 });
 
+describe('one at a time', () => {
+  test('until the person is back, Imprimir and Descargar PDF don’t start another one (advice turned off)', async () => {
+    setPrinting({ tip: false });
+    let sent!: (printed: Awaited<ReturnType<typeof printBytes>>) => void;
+    let back!: () => void;
+    vi.mocked(printBytes).mockReturnValue(new Promise((resolve) => (sent = resolve)));
+    const tryAgain = () => {
+      void printPdf();
+      void exportPdf();
+      return settle();
+    };
+    const printing = printPdf();
+    await settle();
+    // The PDF is made and loading to print.
+    await tryAgain();
+    sent({ how: 'dialog', back: new Promise<void>((resolve) => (back = resolve)) });
+    await settle();
+    // In the print dialog.
+    await tryAgain();
+    expect(makePdf).toHaveBeenCalledTimes(1);
+    expect(printBytes).toHaveBeenCalledTimes(1);
+    expect(downloadBytes).not.toHaveBeenCalled();
+    back();
+    await printing;
+    await exportPdf();
+    expect(downloadBytes).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('what printing says', () => {
   beforeEach(() => setPrinting({ tip: false, summary: false }));
 

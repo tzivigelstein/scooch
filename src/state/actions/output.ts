@@ -21,7 +21,10 @@ import { setBusy } from './files.ts';
 import { sheetsNeeded } from './layout.ts';
 import { say } from './notify.ts';
 
-const canExport = () => getDocument().items.length > 0 && !getDocument().busy && !isTipOpen();
+/** One print or download at a time: from the key or the click until the person is back. */
+let outputting = false;
+
+const canExport = () => getDocument().items.length > 0 && !getDocument().busy && !isTipOpen() && !outputting;
 
 /** The PDF's bytes once made (or null, saying it couldn't be), with the pill saying it meanwhile. */
 async function finished(job: Promise<Uint8Array>, busyText: string) {
@@ -81,6 +84,15 @@ function summaryAfter(kind: OutputKind, note?: string) {
 
 async function output(kind: OutputKind) {
   if (!canExport()) return;
+  outputting = true;
+  try {
+    await sendOut(kind);
+  } finally {
+    outputting = false;
+  }
+}
+
+async function sendOut(kind: OutputKind) {
   closeSummary();
   const fileName = pdfFileName();
   const job = makePdf();
