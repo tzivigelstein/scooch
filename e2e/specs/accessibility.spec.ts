@@ -8,7 +8,7 @@
 // scroll, enough contrast inside modal dialogs. Screenshots of each state (up
 // to 1440 px) are attached to the report. See e2e/support/accessibility.ts.
 import type { Locator, Page } from '@playwright/test';
-import { App, cards, expect, test } from '../support/test.ts';
+import { App, cards, expect, norm, test } from '../support/test.ts';
 import { Catalogue, DESKTOP, MEDIUM, PHONE, WIDE, readLayout, sizeTitle, type Size } from '../support/accessibility.ts';
 
 const LONG_NAME = 'Tarjetas de cumpleaños de la abuela Marta (versión final)';
@@ -546,20 +546,32 @@ flow('measurement field limit', [DESKTOP, PHONE], async (c, app) => {
   await c.state('margin field showing its limit while typing');
 });
 
-// ---------- Known layout problems ----------
+// ---------- The piece list's rows ----------
 
-// Real product problems the detectors found. Each test fails today (expected)
-// and the catalogue above skips that one finding (KNOWN_PROBLEMS in
-// e2e/support/accessibility.ts); when the product is fixed the test passes,
-// Playwright reports it, and both go.
-test.describe('known layout problems', () => {
-  // The piece list's column (1440 px) is too narrow for a PDF page's size and
-  // page number («91,2 × 129,4 mm · pág. 1»): «pág. 1» drops to a second line,
-  // unlike every other row. It should fit, or be cut with an ellipsis.
-  test.fail('a PDF page’s row in the piece list shows its size and page on one line', async ({ app }) => {
+// The list's column goes from 14.25rem (up to about 1520 px wide) to 20rem
+// (from about 2130 px). Whatever its width, each line of a row (the name, and
+// the size with the page for a PDF) stays on one line, cut with «…» when it
+// doesn't fit; the tooltip has both whole (and so does the accessible name:
+// tests/components/PieceList.test.tsx).
+test.describe('piece list rows', () => {
+  test('a PDF page’s name and its size and page stay on one line each, cut with an ellipsis, at every width of the list', async ({ app, page }) => {
     await app.addFiles(['big.png', 'twopage.pdf']);
-    await expect(app.page.locator('#piece-list .row-dims').filter({ hasText: 'pág. 1' })).toBeVisible();
-    const { wrapped } = await app.page.evaluate(readLayout);
-    expect(wrapped.filter((f) => f.startsWith('span.row-dims'))).toEqual([]);
+    const row = page.locator('#piece-list [role="option"]').filter({ hasText: 'pág. 1' });
+    const dims = row.locator('.row-dims');
+    await expect(dims).toBeVisible();
+    const columns: number[] = [];
+    for (let width = 1440; width <= 2200; width += 20) {
+      await page.setViewportSize({ width, height: 900 });
+      columns.push(Math.round((await page.locator('#pieces-panel').boundingBox())!.width));
+      const { clipped, wrapped } = await page.evaluate(readLayout);
+      expect([...clipped, ...wrapped].filter((f) => /^span\.row-(name|dims) /.test(f)), `with the list ${columns.at(-1)} px wide`).toEqual([]);
+    }
+    expect([Math.min(...columns), Math.max(...columns)], 'from the narrowest list to the widest').toEqual([228, 320]);
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    expect(await dims.evaluate((el) => el.scrollWidth > el.clientWidth), 'cut where the list is narrowest').toBe(true);
+    await row.hover();
+    await expect(page.locator('#tooltip')).toBeVisible();
+    expect(norm(await page.locator('#tooltip .tip-note').textContent())).toBe(norm(await dims.textContent()));
   });
 });

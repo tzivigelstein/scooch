@@ -314,14 +314,7 @@ export interface KnownProblem {
   documentedBy: string;
 }
 
-export const KNOWN_PROBLEMS: readonly KnownProblem[] = [
-  {
-    kind: 'wrapped',
-    finding: /^span\.row-dims «[^»]* · pág\. \d+» on \d+ lines$/,
-    widths: [DESKTOP.width],
-    documentedBy: 'e2e/specs/accessibility.spec.ts › known layout problems › a PDF page’s row in the piece list shows its size and page on one line',
-  },
-];
+export const KNOWN_PROBLEMS: readonly KnownProblem[] = [];
 
 const isKnown = (kind: KnownProblem['kind'], width: number, finding: string) =>
   KNOWN_PROBLEMS.some((k) => k.kind === kind && k.widths.includes(width) && k.finding.test(finding));

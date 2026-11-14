@@ -2,12 +2,12 @@
 // The list of pieces as a multi-select listbox: clicks with Shift and Ctrl,
 // the arrows with and without modifiers, Shift+Space and Shift+Enter, and
 // aria-selected kept equal to the document's selection.
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { PieceList } from '../../src/components/pieces-panel/PieceList.tsx';
 import { getDocument } from '../../src/state/document.ts';
 import { setSelection } from '../../src/state/actions/selection.ts';
-import { fakeImage, piece, resetState } from '../support/state.ts';
+import { fakeImage, fakePdf, piece, resetState } from '../support/state.ts';
 
 beforeAll(() => {
   URL.revokeObjectURL ??= () => {};
@@ -81,6 +81,15 @@ describe('piece list (listbox)', () => {
     key('ArrowDown');
     expect(selected()).toEqual([3]);
     expect(focusedId()).toBe(3);
+  });
+
+  test('a PDF page’s row has its name and its size and page whole in its tooltip and its accessible name (the row may cut them with «…»)', () => {
+    const pdf = fakePdf({ name: 'catálogo de verano.pdf', w: 91.2, h: 129.4, page: 2, pages: 3 });
+    act(() => resetState({ items: [piece(1, pdf, 10, 10)] }));
+    // The copy joins these with non-breaking spaces; \s matches them.
+    const option = screen.getByRole('option', { name: /^catálogo de verano\.pdf\s?91,2\s×\s129,4\smm\s·\spág\.\s2$/ });
+    expect(option.dataset.tip).toBe('catálogo de verano.pdf');
+    expect(option.dataset.tipNote).toMatch(/^91,2\s×\s129,4\smm\s·\spág\.\s2$/);
   });
 
   test('aria-selected is the selection, also when it changes elsewhere; the listbox is multiselectable', () => {

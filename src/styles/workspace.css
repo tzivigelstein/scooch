@@ -251,6 +251,9 @@
 }
 
 .row-dims {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--muted);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;

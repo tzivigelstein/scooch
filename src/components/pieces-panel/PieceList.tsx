@@ -58,8 +58,10 @@ const Row = memo(function Row({ item, selected, tabStop, cut, pastMargin, overla
   const res = printResolution(item);
   const thumb = thumbView(item, asset, THUMB_REM);
   const flags = { cut, pastMargin, overlap, lowRes: !res.vector && res.level === 'low' };
+  const size = t(paged ? 'pieces.rowSizePage' : 'pieces.rowSize', { size: sizeText(w, h), page: asset.kind === 'pdf' ? asset.page : 1 });
+  // Both lines can be cut with «…» in a narrow list: the tooltip has them whole.
   return (
-    <div role="option" className="piece-row" data-id={item.id} aria-selected={selected} tabIndex={tabStop ? 0 : -1} data-tip={asset.name}>
+    <div role="option" className="piece-row" data-id={item.id} aria-selected={selected} tabIndex={tabStop ? 0 : -1} data-tip={asset.name} data-tip-note={size}>
       <span className="thumb">
         <span className="thumb-piece" style={thumb.box}>
           <img alt="" draggable={false} src={asset.url} style={thumb.img} />
@@ -67,7 +69,7 @@ const Row = memo(function Row({ item, selected, tabStop, cut, pastMargin, overla
       </span>
       <span className="row-text">
         <span className="row-name">{asset.name}</span>
-        <span className="row-dims">{t(paged ? 'pieces.rowSizePage' : 'pieces.rowSize', { size: sizeText(w, h), page: asset.kind === 'pdf' ? asset.page : 1 })}</span>
+        <span className="row-dims">{size}</span>
       </span>
       <span className="row-badges">
         {BADGES.filter((badge) => flags[badge.key]).map((badge) => {
