@@ -247,6 +247,9 @@ flow('multiple selection', [DESKTOP, MEDIUM, PHONE, WIDE], async (c, app) => {
 flow('sheets', [DESKTOP, MEDIUM, PHONE], async (c, app) => {
   const page = c.page;
   await app.addFiles([...cards(0, 12), 'twopage.pdf', 'big.png']);
+  // They went to two sheets, and a notice says so: closed, it isn't what these states are about.
+  await page.locator('#pill-close').click();
+  await expect(page.locator('#pill')).toBeHidden();
   await page.locator('#project-name').click();
   await page.locator('#project-name-input').fill(LONG_NAME);
   await page.keyboard.press('Enter');

@@ -391,16 +391,19 @@ describe('adding files when the sheets are full', () => {
     });
   });
 
-  test('files that all land on the sheet in view are only announced; on another sheet, a notice says which', async () => {
+  test('added files: the last one selected; on one sheet, even another one, they are announced with it (the view goes there); on several, a notice names them', async () => {
     await loadFiles(cardFiles(0, 5));
+    expect(getDocument().selection).toEqual([getDocument().items.at(-1)!.id]);
     expect(getView().flash).toBeNull();
-    expect(heard()).toBe('Se agregaron 5 archivos.');
+    expect(heard()).toBe('Se agregaron 5 archivos a la hoja 1.');
     await loadFiles(cardFiles(5, 4));
     expect(counts()).toEqual([9]);
+    await loadFiles(cardFiles(9, 1));
+    expect(counts()).toEqual([9, 1]);
+    const added = getDocument().items.at(-1)!;
+    expect(getDocument().selection).toEqual([added.id]);
     expect(getView().flash).toBeNull();
-    await loadFiles(cardFiles(9, 2));
-    expect(counts()).toEqual([9, 2]);
-    expect(getView().flash).toMatchObject({ text: 'Se agregaron 2 archivos en la hoja 2' });
+    expect(heard()).toBe('Se agregaron 4 archivos a la hoja 1. Se agregó 1 archivo a la hoja 2.');
   });
 
   test('then arranging (one undo step, redone exactly) offers to shrink to one sheet; shrinking puts all 12 on it; one undo brings the two sheets back', async () => {

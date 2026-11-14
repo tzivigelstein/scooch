@@ -65,9 +65,9 @@ test.describe('editing with the keyboard only', () => {
     expect(first).not.toBeNull();
     const piece = app.piece(first);
 
-    await test.step('A arranges, announced, and the focus stays on the piece', async () => {
+    await test.step('A arranges (they were already: it says so), and the focus stays on the piece', async () => {
       await page.keyboard.press('a');
-      await app.heard(/Se acomodaron 3 piezas/);
+      await app.heard(/Las piezas ya están acomodadas/);
       await expect(piece).toBeFocused();
     });
 

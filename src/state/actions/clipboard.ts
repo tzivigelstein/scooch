@@ -149,7 +149,7 @@ export function pastePieces() {
   setSelection(ids, { pinned: ids.length > 1 });
   setView({ sheet: fresh.at(-1)!.sheet });
   flushUi();
-  revealPieces(ids, ids.at(-1)!);
+  revealPieces(ids, ids[0]);
   focusSheet();
   const sheets = new Set(fresh.map((item) => item.sheet)).size;
   // The view shows the last sheet they went to: pasted on several sheets, a notice says so.

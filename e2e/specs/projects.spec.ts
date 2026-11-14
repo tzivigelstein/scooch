@@ -703,12 +703,8 @@ for (const viewport of [
       await page.keyboard.press('Escape');
       await expect(page.locator('#prefs')).not.toHaveAttribute('open');
 
-      // Removing a sheet with a piece on it asks first.
-      await page.locator('#add-sheet').click();
-      await app.pieces().first().click();
-      await page.keyboard.press('Shift+PageDown');
-      await expect(page.locator('#sheets .page').nth(1).locator('.piece')).toHaveCount(1);
-      await page.evaluate(() => document.querySelectorAll<HTMLButtonElement>('.page-remove')[1].click());
+      // «Quitar todas» asks first.
+      await page.evaluate(() => document.getElementById('clear')!.click());
       await expect(page.locator('#confirm')).toHaveAttribute('open', '');
       await audit('confirmation');
       await page.keyboard.press('Escape');

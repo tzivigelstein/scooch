@@ -495,9 +495,7 @@ const es = {
     removedMany: { one: 'Se quitó 1 pieza', other: 'Se quitaron {n} piezas' },
     removedManyLast: { one: 'Se quitó 1 pieza. La hoja está vacía.', other: 'Se quitaron {n} piezas. La hoja está vacía.' },
     sheetRemoved: { one: 'Se quitó la hoja {i} con 1 pieza', other: 'Se quitó la hoja {i} con {n} piezas' },
-    // What lands on sheets that aren't in view ({list}: «2 y 3»)
-    addedOnSheet: { one: 'Se agregó 1 archivo en la hoja {i}', other: 'Se agregaron {n} archivos en la hoja {i}' },
-    // On several sheets, so always 2 files or more
+    // Added files spread over several sheets, so always 2 or more ({list}: «2 y 3»); the view shows the first one
     addedOnSheets: 'Se agregaron {n} archivos en las hojas {list}',
     pastedSheets: { one: 'Se pegó 1 pieza en {sheets} hojas', other: 'Se pegaron {n} piezas en {sheets} hojas' },
     duplicatedManySheets: {
@@ -602,7 +600,7 @@ const es = {
     sheet: 'Hoja {paper}',
     gridShown: 'Grilla visible, cada {size}',
     gridHidden: 'Grilla oculta',
-    added: { one: 'Se agregó 1 archivo', other: 'Se agregaron {n} archivos' },
+    addedTo: { one: 'Se agregó 1 archivo a la hoja {i}', other: 'Se agregaron {n} archivos a la hoja {i}' },
     sheetAdded: 'Se agregó la hoja {i}',
     sheetRemovedEmpty: 'Se quitó la hoja {i}',
     movedToSheet: 'Se movió a la hoja {i} de {total}',

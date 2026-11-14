@@ -5,9 +5,11 @@ import { formatList, t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
 import { FileProblem, openPdf, pdfPage, readFile, withHashes } from '../../services/assets.ts';
 import { addAsset, assetEntries, getAsset } from '../assets.ts';
-import { getDocument, patchItems, setDocument } from '../document.ts';
+import { getDocument, patchItems, setDocument, type Piece } from '../document.ts';
 import { commit } from '../history.ts';
-import { currentSheet, selectedItem, sheetIndex } from '../selectors.ts';
+import { selectedItem, sheetIndex } from '../selectors.ts';
+import { flushUi } from '../flush.ts';
+import { revealPieces } from '../../components/canvas/viewport.ts';
 import { setView } from '../view.ts';
 import { say } from './notify.ts';
 import { placeNew } from './layout.ts';
@@ -48,8 +50,6 @@ export async function loadFiles(files: readonly File[]) {
       errors.push(t('errors.loadItem', { name: file.name || t('errors.unnamedFile'), reason }));
     }
   }
-  // The sheet in view: what lands on other sheets gets a notice.
-  const inView = currentSheet();
   const before = new Set(getDocument().items.map((item) => item.id));
   if (keys.length) {
     commit(); // still busy: the cleanup leaves the assets just created alone
@@ -59,13 +59,26 @@ export async function loadFiles(files: readonly File[]) {
   const failed = errors.length + skipped;
   if (skipped) errors.push(t('errors.maxReached', { max: MAX_ITEMS, n: skipped }));
   if (errors.length) say(t('errors.load', { n: failed, list: errors.join(t('errors.loadSeparator')) }), { warn: true });
-  if (keys.length) {
-    const sheets = [...new Set(getDocument().items.filter((item) => !before.has(item.id)).map((item) => item.sheet))].map((id) => sheetIndex(id)).sort((a, b) => a - b);
-    const n = keys.length;
-    if (sheets.length > 1) say(t('notices.addedOnSheets', { n, list: formatList(sheets.map((i) => i + 1)) }));
-    else if (sheets[0] !== sheetIndex(inView)) say(t('notices.addedOnSheet', { n, i: sheets[0] + 1 }));
-    else announce(t('announce.added', { n }));
-  }
+  if (keys.length) showAdded(getDocument().items.filter((item) => !before.has(item.id)), { quiet: errors.length > 0 });
+}
+
+/**
+ * What was just added comes into view: the view goes there if it is out of
+ * sight (a full sheet sends it to the next one); on several sheets, to the
+ * first one. The last one added is selected (placeNew). On one sheet, that
+ * sheet is announced; on several, the notice says which (unless `quiet`:
+ * another notice, like a file that failed, has to stay).
+ */
+function showAdded(fresh: readonly Piece[], { quiet = false } = {}) {
+  const ids = fresh.map((item) => item.id);
+  flushUi();
+  revealPieces(ids, ids[0]);
+  const n = ids.length;
+  const sheets = [...new Set(fresh.map((item) => sheetIndex(item.sheet) + 1))].sort((a, b) => a - b);
+  if (sheets.length === 1) return announce(t('announce.addedTo', { n, i: sheets[0] }));
+  const text = t('notices.addedOnSheets', { n, list: formatList(sheets) });
+  if (quiet) announce(text);
+  else say(text);
 }
 
 /** Files from a drop or a paste. */

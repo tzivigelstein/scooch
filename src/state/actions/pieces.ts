@@ -208,7 +208,11 @@ export function duplicate(times = 1, { focus = false }: FocusOption = {}) {
   );
   setView({ sheet: copies.at(-1)!.sheet });
   flushUi();
-  revealPieces(copies.map((copy) => copy.id), copies.at(-1)!.id);
+  // On several sheets the view goes to the first copy; the notice says how many sheets.
+  revealPieces(
+    copies.map((copy) => copy.id),
+    copies[0].id
+  );
   const n = copies.length;
   const sheets = new Set(copies.map((copy) => copy.sheet)).size;
   const total = getDocument().items.length;

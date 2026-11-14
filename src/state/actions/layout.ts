@@ -16,6 +16,8 @@ import { getDocument, newItem, newItemId, newSheetId, setDocument, type Piece } 
 import { commit } from '../history.ts';
 import { area, boxOf, boxWith, currentSheet, dims, findItem, itemsOn, layoutPad, pieceName, selectedItem, sheetIndex } from '../selectors.ts';
 import { animateNext } from '../view.ts';
+import { flushUi } from '../flush.ts';
+import { revealPiece } from '../../components/canvas/viewport.ts';
 import { announce } from '../../components/feedback/announcer.ts';
 import { say, sayUndoable } from './notify.ts';
 import { setSelection } from './selection.ts';
@@ -135,6 +137,7 @@ export function arrange(): 'arranged' | 'same' | 'error' | null {
   commit();
   animateNext();
   applyPlan(plan);
+  followSelection();
   const fromOne = before === 1 || spilled;
   spilled = false;
   const placed = n - plan.unplaced.length;
@@ -162,6 +165,14 @@ export function arrange(): 'arranged' | 'same' | 'error' | null {
   if (plan.sheets.length > before) say(arrangedText(n, plan.packed));
   else announce(arrangedText(n, plan.packed));
   return 'arranged';
+}
+
+/** The view goes to the selected piece if the change took it out of sight (to another sheet, say). */
+function followSelection() {
+  const primary = getDocument().selection.at(-1);
+  if (primary === undefined) return;
+  flushUi();
+  revealPiece(primary);
 }
 
 /**
@@ -439,6 +450,7 @@ export function fillWithCopies() {
   rest.splice(Math.min(at, rest.length), 0, ...copies);
   setDocument({ items: rest });
   setSelection([copies[0].id]);
+  followSelection();
   // It replaced the sheet's other pieces: easy to miss, and to want back.
   const many = getDocument().sheets.length > 1;
   sayUndoable(many ? t('notices.filledSheet', { n: plan.count, i: sheetIndex(sheet) + 1 }) : t('notices.filled', { n: plan.count }));
