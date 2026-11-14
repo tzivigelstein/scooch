@@ -283,6 +283,49 @@ test.describe('with 150 pieces on 10 sheets', () => {
     expect(long(glide.longs)).toEqual([]);
   });
 
+  test('hovering across the six align buttons with a sheet’s 15 pieces selected, each showing its ghosts: frames p95 < 34 ms, no long tasks', async ({ app, page }, info) => {
+    await app.clickPiece(page.locator('#sheets .page').nth(4).locator('.piece').first());
+    await page.keyboard.press('Control+a');
+    await expect.poll(async () => (await app.selectedIds()).length).toBe(15);
+    await app.openMeasures();
+    const hover = await page.evaluate(async () => {
+      const frame = () => new Promise((done) => requestAnimationFrame(done));
+      const buttons = [...document.querySelectorAll<HTMLElement>('[data-align]')];
+      const longs: number[] = [];
+      const observer = new PerformanceObserver((l) => longs.push(...l.getEntries().map((e) => e.duration)));
+      observer.observe({ entryTypes: ['longtask'] });
+      const gaps: number[] = [];
+      const ghosts = new Set<number>();
+      let last = performance.now();
+      // Five passes, as a pointer sweeps back and forth: a button a frame.
+      for (let pass = 0; pass < 5; pass++) {
+        for (const button of pass % 2 ? [...buttons].reverse() : buttons) {
+          button.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse', pointerId: 9, isPrimary: true }));
+          await frame();
+          ghosts.add(document.querySelectorAll('.preview-ghost').length);
+          const now = performance.now();
+          gaps.push(now - last);
+          last = now;
+        }
+      }
+      document.getElementById('stage')!.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse', pointerId: 9, isPrimary: true }));
+      // A long task is reported when it ends, before the next frames: after two,
+      // its entry is in the observer's buffer, and takeRecords() collects it.
+      await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+      longs.push(...observer.takeRecords().map((e) => e.duration));
+      observer.disconnect();
+      gaps.sort((a, b) => a - b);
+      const at = (q: number) => gaps[Math.min(gaps.length - 1, Math.floor(gaps.length * q))];
+      return { buttons: buttons.length, hovers: gaps.length, frameMedian: at(0.5), frameP95: at(0.95), frameMax: gaps.at(-1)!, mostGhosts: Math.max(...ghosts), longs, left: document.querySelectorAll('.preview').length };
+    });
+    await attach(info, hover);
+    expect(hover.buttons).toBe(6);
+    expect(hover.mostGhosts, 'the hovers really show ghosts').toBeGreaterThan(5);
+    expect(hover.left, 'gone once the pointer is elsewhere').toBe(0);
+    expect(hover.frameP95).toBeLessThan(34);
+    expect(long(hover.longs)).toEqual([]);
+  });
+
   test('dragging at 200 % and out of the sheets (where the new-sheet placeholders show): each move < 1 ms (p95), no long tasks', async ({ page }, info) => {
     await page.locator('#zoom-level').click();
     await page.locator('#zoom-menu-level-200').click();

@@ -212,6 +212,11 @@ flow('multiple selection', [DESKTOP, MEDIUM, PHONE, WIDE], async (c, app) => {
   await app.selectIds([ids[0]]);
   await openProps(c);
   await c.state('one piece: align to the usable area');
+  // With the keyboard on an align button, the canvas shows where the piece would go.
+  await page.locator('[data-align="left"]').focus();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('.preview-ghost')).toHaveCount(1);
+  await c.state('the ghost of aligning, from the keyboard');
   await closeProps(c);
 
   await app.selectIds(ids.slice(0, 3));
