@@ -431,6 +431,7 @@ export function PieceSection() {
               <IconButton
                 key={mode}
                 data-align={mode}
+                {...previewAttrs('align', mode)}
                 icon={icon}
                 label={t(key)}
                 tip={t(key)}
@@ -464,6 +465,7 @@ export function PieceSection() {
                 <IconButton
                   key={axis}
                   data-distribute={axis}
+                  {...previewAttrs('distribute', axis)}
                   icon={axis === 'x' ? AlignHorizontalSpaceBetween : AlignVerticalSpaceBetween}
                   label={label}
                   tip={label}
@@ -482,7 +484,7 @@ export function PieceSection() {
           </div>
         </div>
         <div className="copy-row">
-          <div className="dup-group" role="group" aria-label={t('props.duplicateGroup')}>
+          <div className="dup-group" role="group" aria-label={t('props.duplicateGroup')} {...previewAttrs('duplicate', dupN)}>
             <Button
               id="dup-many"
               className="chip-btn icon-chip"
@@ -551,7 +553,7 @@ export function PieceSection() {
               <Icon icon={TriangleAlert} />
               <span id="fill-warning">{summary?.warning ?? t('props.fillWarning')}</span>
             </p>
-            <button type="button" id="fill" className="btn primary block" disabled={busy || !summary?.ok} onClick={() => fillWithCopies()}>
+            <button type="button" id="fill" className="btn primary block" disabled={busy || !summary?.ok} onClick={() => fillWithCopies()} {...previewAttrs('fill')}>
               {t('props.fill')}
             </button>
           </div>

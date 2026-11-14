@@ -4,6 +4,7 @@
 import { CopyPlus, Crop, RotateCcw, RotateCw, Trash2 } from 'lucide-react';
 import { useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { t } from '../../copy/index.ts';
+import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';
 import { getAsset } from '../../state/assets.ts';
 import { useDocument } from '../../state/document.ts';
 import { duplicate, remove, rotate } from '../../state/actions/pieces.ts';
@@ -60,7 +61,7 @@ export function PieceToolbar() {
       <IconButton icon={RotateCcw} label={t('piecebar.rotateLeft')} tip={t('piecebar.rotateLeftTip')} shortcut="rotateLeft" {...props('rotate-left')} />
       <IconButton icon={RotateCw} label={t('piecebar.rotateRight')} tip={t('piecebar.rotateRightTip')} shortcut="rotateRight" {...props('rotate-right')} />
       {n === 1 && <IconButton icon={Crop} label={t('crop.start')} tip={t('crop.start')} shortcut="crop" data-crop-toggle="" {...props('crop')} />}
-      <IconButton icon={CopyPlus} label={t('piecebar.duplicate')} tip={t('piecebar.duplicate')} shortcut="duplicate" {...props('duplicate')} />
+      <IconButton icon={CopyPlus} label={t('piecebar.duplicate')} tip={t('piecebar.duplicate')} shortcut="duplicate" {...props('duplicate')} {...previewAttrs('duplicate', 1)} />
       <span className="piecebar-sep" aria-hidden="true" />
       <IconButton icon={Trash2} className="icon-btn danger" label={t('piecebar.remove')} tip={t('piecebar.removeTip')} shortcut="remove" {...props('remove')} />
     </div>
