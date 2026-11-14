@@ -233,15 +233,29 @@ export function shrinkAndArrange(factor: number, exact: number) {
 // ---------- What is new (added files, copies) ----------
 
 /**
- * Where new pieces go without moving the ones already there: fills gaps from
- * sheet index `from` and continues on the next ones or on new sheets at the
- * end. `rotate`: whether they may turn to fit better. Sets the new pieces'
- * sheet and position (they are not in the document yet), adds the new sheets
- * and returns the ids that don't fit even alone on an empty sheet.
+ * Ids for pieces and sheets that aren't in the document yet: the real ones to
+ * add them, made-up ones to preview where they would go. Made-up ones go up
+ * like the real ones: the packer breaks ties by id.
  */
-export function placeInto(fresh: Item[], from: number, { rotate = getDocument().rotate } = {}): number[] {
+export interface NewIds {
+  item: () => number;
+  sheet: () => number;
+}
+
+const REAL_IDS: NewIds = { item: newItemId, sheet: newSheetId };
+
+/**
+ * Where new pieces would go without moving the ones already there, without
+ * changing anything: gaps from sheet index `from` on, then the next sheets or
+ * new ones at the end (ids from `newSheet`). `rotate`: whether they may turn
+ * to fit better. Returns the sheet, position and rotation of each one placed
+ * (by id), the sheets to add and the ids that don't fit even alone on an
+ * empty sheet.
+ */
+export function placementsFor(fresh: readonly Item[], from: number, { rotate = getDocument().rotate, newSheet = newSheetId } = {}) {
+  const placed = new Map<number, Pick<Item, 'sheet' | 'x' | 'y' | 'r'>>();
   const { m, aw, ah } = area();
-  if (aw <= 0 || ah <= 0) return fresh.map((item) => item.id);
+  if (aw <= 0 || ah <= 0) return { placed, sheets: [] as number[], unplaced: fresh.map((item) => item.id) };
   const { items, sheets, gap } = getDocument();
   const pad = layoutPad();
   const plan = placeIntoSheets(rects(fresh), items.map((item) => boxWith(item, pad)), sheets.map((sheet) => sheet.id), {
@@ -250,18 +264,35 @@ export function placeInto(fresh: Item[], from: number, { rotate = getDocument().
     margin: m,
     gap,
     rotate,
-    newId: newSheetId,
+    newId: newSheet,
   });
+  const byId = new Map(fresh.map((item) => [item.id, item]));
   for (const p of plan.placements) {
-    const item = fresh.find((f) => f.id === p.id)!;
-    item.sheet = p.sheet;
-    item.x = tidy(p.x + pad);
-    item.y = tidy(p.y + pad);
-    if (p.rotated) item.r = ((item.r + 90) % 360) as Item['r'];
+    const { r } = byId.get(p.id)!;
+    placed.set(p.id, { sheet: p.sheet, x: tidy(p.x + pad), y: tidy(p.y + pad), r: p.rotated ? (((r + 90) % 360) as Item['r']) : r });
   }
-  if (plan.sheets.length && sheets.length === 1) spilled = true;
-  if (plan.sheets.length) setDocument({ sheets: [...sheets, ...plan.sheets.map((id) => ({ id }))] });
-  return plan.unplaced;
+  return { placed, sheets: plan.sheets, unplaced: plan.unplaced };
+}
+
+/** Adds sheets at the end (new ids). */
+function addSheets(ids: readonly number[]) {
+  if (!ids.length) return;
+  const { sheets } = getDocument();
+  if (sheets.length === 1) spilled = true;
+  setDocument({ sheets: [...sheets, ...ids.map((id) => ({ id }))] });
+}
+
+/**
+ * Where new pieces go without moving the ones already there (placementsFor).
+ * Sets the new pieces' sheet and position (they are not in the document yet),
+ * adds the new sheets and returns the ids that don't fit even alone on an
+ * empty sheet.
+ */
+export function placeInto(fresh: Item[], from: number, { rotate = getDocument().rotate } = {}): number[] {
+  const { placed, sheets, unplaced } = placementsFor(fresh, from, { rotate });
+  for (const item of fresh) Object.assign(item, placed.get(item.id));
+  addSheets(sheets);
+  return unplaced;
 }
 
 /**
@@ -294,30 +325,42 @@ export function placeNew(keys: readonly string[]) {
 }
 
 /**
- * `times` copies of each of `items`, identical (unrotated, with their crop),
- * in the free gaps from sheet index `from` (default: the first one's sheet),
- * continuing on the next sheets and on new ones, without moving anything. The
- * ones that don't fit even alone go 5 mm right and down from their original
- * (overlapping, with a notice). Returns the copies, already added.
+ * Where `times` copies of each of `items` would go, without changing
+ * anything: identical (unrotated, with their crop), in the free gaps from
+ * sheet index `from` (default: the first one's sheet), continuing on the next
+ * sheets and on new ones. The ones that don't fit even alone go 5 mm right
+ * and down from their original (overlapping). Returns the copies (ids from
+ * `ids.item`) and the sheets to add (ids from `ids.sheet`).
  */
-export function duplicatePieces(items: readonly Piece[], times = 1, from = sheetIndex(items[0].sheet)): Item[] {
+export function copiesOf(items: readonly Piece[], times = 1, from = sheetIndex(items[0].sheet), ids: NewIds = REAL_IDS) {
   const copies: Item[] = [];
   const original = new Map<number, Piece>();
   for (let i = 0; i < times; i++) {
     for (const item of items) {
-      const copy = { ...item, id: newItemId() };
+      const copy = { ...item, id: ids.item() };
       original.set(copy.id, item);
       copies.push(copy);
     }
   }
-  const unplaced = new Set(placeInto(copies, from, { rotate: false }));
+  const { placed, sheets, unplaced } = placementsFor(copies, from, { rotate: false, newSheet: ids.sheet });
+  const away = new Set(unplaced);
   for (const copy of copies) {
-    if (!unplaced.has(copy.id)) continue;
+    if (!away.has(copy.id)) {
+      Object.assign(copy, placed.get(copy.id));
+      continue;
+    }
     const item = original.get(copy.id)!;
     copy.sheet = item.sheet;
     copy.x = item.x + 5;
     copy.y = item.y + 5;
   }
+  return { copies, sheets };
+}
+
+/** Adds the copies of copiesOf (and the sheets they need). Returns the copies. */
+export function duplicatePieces(items: readonly Piece[], times = 1, from = sheetIndex(items[0].sheet)): Item[] {
+  const { copies, sheets } = copiesOf(items, times, from);
+  addSheets(sheets);
   setDocument({ items: [...getDocument().items, ...copies] });
   return copies;
 }
@@ -423,29 +466,38 @@ export function fillSummary(item: Piece) {
   return { text, warning, ok: true };
 }
 
-/** Replaces the pieces of the selected one's sheet with copies of it (the other sheets don't change). */
-export function fillWithCopies() {
-  const item = selectedItem();
-  if (!item || getDocument().busy) return false;
+/**
+ * The copies «Rellenar con copias» would leave on `item`'s sheet in place of
+ * its pieces, without changing anything (ids from `newId`), or null when it
+ * can't (nothing fits, or too many).
+ */
+export function fillCopies(item: Piece, newId = newItemId): Item[] | null {
   const plan = fillPlan(item);
-  if (!fillSummary(item).ok) return false;
+  if (!fillSummary(item).ok) return null;
   const { W, H } = area();
   const g = getDocument().gap;
   const x0 = (W - (plan.cols * plan.w + (plan.cols - 1) * g)) / 2;
   const y0 = (H - (plan.rows * plan.h + (plan.rows - 1) * g)) / 2;
   const r = (plan.rotated ? (item.r + 90) % 360 : item.r) as Item['r'];
-  const sheet = item.sheet;
   const pad = layoutPad();
-
-  commit();
   const copies: Item[] = [];
   for (let row = 0; row < plan.rows; row++) {
     for (let col = 0; col < plan.cols; col++) {
       const x = tidy(x0 + col * (plan.w + g) + pad);
       const y = tidy(y0 + row * (plan.h + g) + pad);
-      copies.push(newItem(item.asset, { sheet, scale: item.scale, r, x, y, crop: item.crop ?? null }));
+      copies.push({ id: newId(), asset: item.asset, sheet: item.sheet, scale: item.scale, r, x, y, crop: item.crop ?? null });
     }
   }
+  return copies;
+}
+
+/** Replaces the pieces of the selected one's sheet with copies of it (the other sheets don't change). */
+export function fillWithCopies() {
+  const item = selectedItem();
+  if (!item || getDocument().busy || !fillSummary(item).ok) return false;
+  const sheet = item.sheet;
+  commit();
+  const copies = fillCopies(item)!;
   // The copies take the place of that sheet's first piece in the overall order.
   const items = getDocument().items;
   const at = items.findIndex((other) => other.sheet === sheet);
@@ -456,6 +508,6 @@ export function fillWithCopies() {
   followSelection(item.sheet);
   // It replaced the sheet's other pieces: easy to miss, and to want back.
   const many = getDocument().sheets.length > 1;
-  sayUndoable(many ? t('notices.filledSheet', { n: plan.count, i: sheetIndex(sheet) + 1 }) : t('notices.filled', { n: plan.count }));
+  sayUndoable(many ? t('notices.filledSheet', { n: copies.length, i: sheetIndex(sheet) + 1 }) : t('notices.filled', { n: copies.length }));
   return true;
 }

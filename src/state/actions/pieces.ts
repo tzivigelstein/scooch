@@ -75,7 +75,7 @@ import {
 } from '../selectors.ts';
 import { animateNext, getView, setView } from '../view.ts';
 import { focusList, focusSheet, focusSheetNode } from './focus.ts';
-import { centeredOnSheet, duplicatePieces, fittedToSheet, withCenterKept } from './layout.ts';
+import { centeredOnSheet, copiesOf, duplicatePieces, fittedToSheet, withCenterKept, type NewIds } from './layout.ts';
 import { say, sayUndoable, singleOnly } from './notify.ts';
 import { setSelection } from './selection.ts';
 
@@ -94,10 +94,15 @@ const busy = () => getDocument().busy;
  */
 function apply(rects: ReadonlyMap<number, IdRect>, patch: ((item: Piece) => Partial<Item>) | null = null, key: string | null = null, { image = false } = {}) {
   commit(key);
+  patchItems(planPatches(rects, patch, { image }));
+}
+
+/** What a plan changes in each piece (see apply), without changing anything. */
+export function planPatches(rects: ReadonlyMap<number, IdRect>, patch: ((item: Piece) => Partial<Item>) | null = null, { image = false } = {}) {
   const pad = image ? 0 : layoutPad();
   const patches = new Map<number, Partial<Item>>();
   for (const [id, r] of rects) patches.set(id, { ...patch?.(findItem(id)!), ...fromBox(r.x, r.y, pad) });
-  patchItems(patches);
+  return patches;
 }
 
 type GroupAction = 'align' | 'distribute' | 'rotate' | 'scale' | 'move';
@@ -183,6 +188,17 @@ function rotateSelection(dir: 1 | -1) {
 
 /** How many times the selection can be duplicated without going over the piece limit. */
 export const maxCopies = () => copiesAllowed(getDocument().items.length, getDocument().selection.length, MAX_ITEMS);
+
+/**
+ * Where «Duplicar ×`times`» would put the copies, without changing anything:
+ * the copies (ids from `ids`) and the sheets it would add. null without a
+ * selection or past the piece limit.
+ */
+export function duplicatePlan(times: number, ids?: NewIds) {
+  const items = selectedItems();
+  if (!items.length || times > maxCopies()) return null;
+  return copiesOf(items, times, sheetIndex(currentSheet()), ids);
+}
 
 /**
  * `times` copies of each selected piece, in the gaps from the current sheet
@@ -525,6 +541,26 @@ export function setScaleField(name: 'scale' | 'slider', value: number, { final =
 export const alignsToSheet = () => getDocument().selection.length === 1 || getView().alignTo === 'sheet';
 
 /**
+ * What aligning with `mode` would do, without changing anything: the plan,
+ * whether it goes against the printable area and the box it aligns to on each
+ * sheet with selected pieces (layout boxes). null without a selection, or
+ * against a printable area the margin leaves no room for.
+ */
+export function alignPlan(mode: AlignMode) {
+  if (!getDocument().selection.length) return null;
+  const toSheet = alignsToSheet();
+  const { m, aw, ah } = area();
+  if (toSheet && (aw <= 0 || ah <= 0)) return null;
+  const printable = toSheet ? { x: m, y: m, w: aw, h: ah } : null;
+  const all = boxes();
+  const selected = ids();
+  const plan = planAlign(all, selected, mode, { ...groupOptions(), area: printable });
+  const parts = groupBounds(all, selected);
+  const references = printable ? new Map([...parts.keys()].map((sheet) => [sheet, printable])) : parts;
+  return { plan, toSheet, references };
+}
+
+/**
  * Aligns: two or more against the selection's box (of each sheet) or, with
  * «Alinear a: hoja», against the printable area; one piece against the
  * printable area.
@@ -533,10 +569,9 @@ export function alignSelection(mode: AlignMode) {
   const n = getDocument().selection.length;
   if (!n) return announce(t('announce.needSelection'));
   if (busy()) return;
-  const toSheet = alignsToSheet();
-  const { m, aw, ah } = area();
-  if (toSheet && (aw <= 0 || ah <= 0)) return say(t('errors.marginTooBig'), { warn: true });
-  const plan = planAlign(boxes(), ids(), mode, { ...groupOptions(), area: toSheet ? { x: m, y: m, w: aw, h: ah } : null });
+  const aligned = alignPlan(mode);
+  if (!aligned) return say(t('errors.marginTooBig'), { warn: true });
+  const { plan, toSheet } = aligned;
   if (!plan.ok) return refuse(plan, 'align', () => alignSelection(mode));
   if (!plan.changed) return announce(t('announce.alignedAlready', { n }));
   apply(plan.rects);
@@ -551,6 +586,15 @@ export const distributeNeeds = () => needsFor(getView().distribute);
 export const canDistribute = () => canDistributeIn(boxes(), ids(), getView().distribute);
 
 /**
+ * What distributing along `axis` would do, without changing anything: the
+ * plan, or null when no sheet has enough selected pieces.
+ */
+export function distributePlan(axis: Axis) {
+  if (!getDocument().selection.length || !canDistribute()) return null;
+  return planDistribute(boxes(), ids(), axis, { ...groupOptions(), mode: getView().distribute, gap: getDocument().gap });
+}
+
+/**
  * Distributes along `axis`: with the «Separación» of Distribución between
  * consecutive pieces (the first stays) or evenly between the first and the
  * last. Each sheet on its own.
@@ -559,9 +603,9 @@ export function distributeSelection(axis: Axis) {
   if (!getDocument().selection.length) return announce(t('announce.needSelection'));
   if (busy()) return;
   const mode = getView().distribute;
-  if (!canDistribute()) return announce(t(needsFor(mode) === 2 ? 'props.distributeNeedTwo' : 'props.distributeNeedThree'));
+  const plan = distributePlan(axis);
+  if (!plan) return announce(t(needsFor(mode) === 2 ? 'props.distributeNeedTwo' : 'props.distributeNeedThree'));
   const gap = getDocument().gap;
-  const plan = planDistribute(boxes(), ids(), axis, { ...groupOptions(), mode, gap });
   if (!plan.ok) return refuse(plan, 'distribute', () => distributeSelection(axis));
   const n = getDocument().selection.length;
   if (!plan.changed) return announce(t('announce.distributedAlready'));
