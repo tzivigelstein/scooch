@@ -25,7 +25,12 @@ import { fakeImage, piece, resetState } from '../support/state.ts';
 // Loading a file decodes it in the browser: here each file becomes a card-sized asset.
 vi.mock('../../src/services/assets.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../src/services/assets.ts')>();
-  const readFile = async (file: File) => ({
+  const readFile = async (file: File) => {
+    if (file.name === 'photo.heic') throw new actual.FileProblem('el navegador no puede abrir este formato; prueba con JPG, PNG o WebP');
+    if (file.name === 'broken.png') throw new TypeError('Failed to fetch dynamically imported module');
+    return readable(file);
+  };
+  const readable = (file: File) => ({
     kind: 'image' as const,
     name: file.name,
     src: Number(file.name.replace(/\D/g, '')) + 100,
@@ -154,28 +159,16 @@ describe('removeSheet', () => {
     expect(documentNow()).toEqual(before);
   });
 
-  test('one with pieces asks first; cancelling keeps it, confirming removes it with its pieces, in one undo step', async () => {
+  test('one with pieces goes at once with them, in one undo step, and the notice offers «Deshacer», which brings it back', () => {
     const { s2, on2 } = twelve();
     const before = documentNow();
-
-    const cancelled = removeSheet(getDocument().sheets[0].id);
-    const asked = useConfirm.getState().request!;
-    expect(asked).toMatchObject({ title: '¿Quitar la hoja 1?', body: 'Se quita con sus 9 piezas. Puedes deshacerlo.', confirm: 'Quitar hoja', focus: 'confirm' });
-    asked.resolve(false);
-    useConfirm.setState({ request: null }); // (what the dialog does when it closes)
-    await cancelled;
-    expect(documentNow()).toEqual(before);
-    expect(historyDepth().undo).toBe(0);
-
-    const confirmed = removeSheet(getDocument().sheets[0].id);
-    useConfirm.getState().request!.resolve(true);
-    useConfirm.setState({ request: null });
-    await confirmed;
+    removeSheet(getDocument().sheets[0].id);
+    expect(useConfirm.getState().request).toBeNull();
     expect(getDocument().sheets.map((sheet) => sheet.id)).toEqual([s2]);
     expect(getDocument().items.map((it) => it.id)).toEqual(on2);
-    expect(heard()).toBe('Se quitó la hoja 1 con 9 piezas.');
+    expect(getView().flash).toMatchObject({ text: 'Se quitó la hoja 1 con 9 piezas', action: { label: 'Deshacer' } });
     expect(historyDepth().undo).toBe(1);
-    undo();
+    getView().flash!.action!.run();
     expect(documentNow()).toEqual(before);
   });
 
@@ -337,6 +330,8 @@ describe('moveToNewSheetAt (dropping outside the sheets) and the sheet it leaves
     expect(heard()).toBe('Se creó la hoja 3 y se movieron 3 piezas.');
     const flash = getView().flash!;
     expect(flash.text).toBe('La hoja 2 quedó vacía');
+    // Something to know, not an action that went well.
+    expect(flash.info).toBe(true);
     expect(flash.action?.label).toBe('Quitar hoja');
 
     await flash.action!.run();
@@ -379,12 +374,33 @@ describe('adding files when the sheets are full', () => {
     return first5;
   }
 
-  test('7 more with 5: they fill the current sheet (9) and go on to a new one (3), nothing moves, and the new sheets are announced', async () => {
+  test('7 more with 5: they fill the current sheet (9) and go on to a new one (3), nothing moves, and a notice says on which sheets they are', async () => {
     const first5 = await fiveThenSeven();
     expect(counts()).toEqual([9, 3]);
     expect(getDocument().items.slice(0, 5)).toEqual(first5);
     expect(problems()).toEqual(valid);
-    expect(heard()).toBe('Se agregaron 7 archivos. Los que no entraban en las hojas que había van en 1 hoja nueva.');
+    expect(getView().flash).toMatchObject({ text: 'Se agregaron 7 archivos en las hojas 1 y 2' });
+  });
+
+  test('a file the browser can’t open says why; one that fails unexpectedly says it couldn’t be processed, not the technical error', async () => {
+    await loadFiles([new File([], 'photo.heic'), new File([], 'broken.png'), ...cardFiles(0, 1)]);
+    expect(counts()).toEqual([1]);
+    expect(getView().flash).toMatchObject({
+      text: 'No se pudieron agregar 2 archivos: photo.heic: el navegador no puede abrir este formato; prueba con JPG, PNG o WebP · broken.png: no se pudo procesar el archivo; inténtalo de nuevo',
+      warn: true,
+    });
+  });
+
+  test('files that all land on the sheet in view are only announced; on another sheet, a notice says which', async () => {
+    await loadFiles(cardFiles(0, 5));
+    expect(getView().flash).toBeNull();
+    expect(heard()).toBe('Se agregaron 5 archivos.');
+    await loadFiles(cardFiles(5, 4));
+    expect(counts()).toEqual([9]);
+    expect(getView().flash).toBeNull();
+    await loadFiles(cardFiles(9, 2));
+    expect(counts()).toEqual([9, 2]);
+    expect(getView().flash).toMatchObject({ text: 'Se agregaron 2 archivos en la hoja 2' });
   });
 
   test('then arranging (one undo step, redone exactly) offers to shrink to one sheet; shrinking puts all 12 on it; one undo brings the two sheets back', async () => {
@@ -438,7 +454,10 @@ describe('copies with a full sheet', () => {
     const filled = itemsOn(s2);
     expect(filled).toHaveLength(9);
     expect(new Set(filled.map((it) => it.asset))).toEqual(new Set([asset]));
-    expect(getView().flash?.text).toBe('Se rellenó la hoja 2 con 9 copias');
+    // The other pieces of the sheet were replaced: the notice offers them back.
+    expect(getView().flash).toMatchObject({ text: 'Se rellenó la hoja 2 con 9 copias', action: { label: 'Deshacer' } });
+    getView().flash!.action!.run();
+    expect(itemsOn(s2).map((it) => it.id)).toEqual(on2);
   });
 });
 

@@ -99,7 +99,7 @@ const Page = memo(function Page({ id, index, total, items, W, H, zoom, margin, e
           data-tip={t('sheet.remove')}
           aria-label={t('sheet.removeLabel', { i: index + 1 })}
           hidden={total < 2}
-          onClick={(e) => void removeSheet(id, { viaKeyboard: e.detail === 0 })}
+          onClick={(e) => removeSheet(id, { viaKeyboard: e.detail === 0 })}
         >
           <Icon icon={Trash2} />
         </button>

@@ -1,6 +1,7 @@
 // Shared setup for tests of the state layer (actions on the real Zustand stores)
 // and of components that read those stores. Assets are fake (no image is
 // decoded): only their size in mm, pixels and resolution matter to the actions.
+import { vi } from 'vitest';
 import { addAsset } from '../../src/state/assets.ts';
 import { DEFAULT_CUTS } from '../../src/core/projectdoc.js';
 import { setDocument, resetIds, type DocumentState, type Piece } from '../../src/state/document.ts';
@@ -17,6 +18,24 @@ let fakes = 0;
 const fakeHashes = (src: number) => ({ src: `fake-src-${src}`, preview: `fake-preview-${++fakes}` });
 
 /** Adds a fake image asset of `px` pixels at `dpi` (300 by default) and returns its key. */
+/**
+ * Live regions in the page and fake timers, for tests that check what an
+ * action announces: then `heard()` says it (what the polite region holds).
+ */
+export function listen() {
+  document.body.insertAdjacentHTML('beforeend', '<div id="live-polite"></div><div id="live-assertive"></div>');
+  vi.useFakeTimers();
+}
+
+/** What was announced (after `listen()`), with plain spaces; the region is emptied. */
+export function heard(ms = 1000) {
+  vi.advanceTimersByTime(ms);
+  const region = document.getElementById('live-polite')!;
+  const text = (region.textContent ?? '').replace(/\u00a0/g, ' ').trim();
+  region.textContent = '';
+  return text;
+}
+
 export function fakeImage({ name = 'foto.png', src = 1, px = [600, 400] as [number, number], dpi = 300, format = 'png' as 'png' | 'jpg' } = {}) {
   const asset: ImageAsset = {
     kind: 'image',

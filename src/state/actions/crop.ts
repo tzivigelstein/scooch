@@ -3,18 +3,21 @@
 
 import { fitToSize, matchPhotoSize, photoSize } from '../../core/crop.js';
 import type { Item } from '../../core/types.ts';
-import { formatList, t } from '../../copy/index.ts';
+import { formatList, sentences, t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
 import { sizeText } from '../../services/measure.ts';
 import { getAsset } from '../assets.ts';
 import { getDocument, type Piece } from '../document.ts';
 import { commit } from '../history.ts';
-import { dims, findItem, pieceName, selectedItems } from '../selectors.ts';
+import { dims, findItem, pieceName, selectedItems, sheetIndex } from '../selectors.ts';
 import { animateNext } from '../view.ts';
 import { settle, withCenterKept } from './layout.ts';
 import { say } from './notify.ts';
 
-/** What the «Tamaño» select shows for a piece: a standard size id, 'original' or 'custom'. */
+const same = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+const sameCrop = (a: Item['crop'], b: Item['crop']) => (!a || !b ? a === b : same(a.x, b.x) && same(a.y, b.y) && same(a.w, b.w) && same(a.h, b.h));
+
+/** What the «Tamaño de foto» select shows for a piece: a standard size id, 'original' or 'custom'. */
 export function photoSizeOf(item: Piece): string {
   const [w, h] = dims(item);
   return matchPhotoSize(w, h)?.id ?? (item.crop ? 'custom' : 'original');
@@ -53,25 +56,50 @@ export function applyPhotoSize(id: string) {
       continue;
     }
     const next = withCenterKept(item, { crop: fit.crop, scale: fit.scale });
-    if (next.crop !== item.crop || next.scale !== item.scale) changed.push(next);
+    if (!sameCrop(next.crop, item.crop) || !same(next.scale, item.scale)) changed.push(next);
   }
-  const notes: string[] = [];
-  if (refused.length) notes.push(t('notices.sizeOutOfRange', { n: refused.length, names: formatList(refused.map(pieceName)) }));
+  const outOfRange = refused.length ? t('notices.sizeOutOfRange', { n: refused.length, names: formatList(refused.map(pieceName)) }) : '';
   if (!changed.length) {
-    if (notes.length) say(notes.join(' '), { warn: true });
-    else announce(resultText(id, list));
+    if (outOfRange) say(outOfRange, { warn: true });
+    else announce(t(id === 'original' ? 'announce.uncroppedAlready' : 'announce.sizedAlready', { n: list.length }));
     return;
   }
   commit();
   animateNext();
-  const moved = settle(changed);
-  if (moved.length) notes.unshift(t('notices.movedAside', { n: moved.length }));
+  const { near, away } = movedBy(changed, settle(changed));
   const result = resultText(
     id,
     changed.map((item) => findItem(item.id)!)
   );
-  if (notes.length) say(t('notices.twoSentences', { first: result, second: notes.join('. ').replace(/\.$/, '') }), { warn: refused.length > 0 });
-  else announce(result);
+  // The canvas shows the new sizes; pieces sent to other sheets, or refused, are told.
+  const text = sentences([result, near, away, outOfRange]);
+  if (outOfRange) say(text, { warn: true });
+  else if (away) say(text, { info: true });
+  else announce(text);
+}
+
+/**
+ * What settle did with the pieces that changed size, as texts: how many moved
+ * to a free spot of their sheet and where the ones that went to other sheets are.
+ */
+function movedBy(changed: readonly Item[], moved: readonly number[]) {
+  const before = new Map(changed.map((item) => [item.id, item.sheet]));
+  const awaySheets = new Set<number>();
+  let near = 0;
+  let away = 0;
+  for (const id of moved) {
+    const sheet = findItem(id)!.sheet;
+    if (sheet === before.get(id)) near++;
+    else {
+      away++;
+      awaySheets.add(sheetIndex(sheet) + 1);
+    }
+  }
+  const list = [...awaySheets].sort((a, b) => a - b);
+  return {
+    near: near ? t('notices.movedAside', { n: near }) : '',
+    away: !away ? '' : list.length > 1 ? t('notices.movedToSheets', { n: away, list: formatList(list) }) : t('notices.movedToSheet', { n: away, i: list[0] }),
+  };
 }
 
 function resultText(id: string, list: readonly Piece[]) {
@@ -90,17 +118,16 @@ function resultText(id: string, list: readonly Piece[]) {
 export function commitCrop(id: number, patch: Pick<Item, 'x' | 'y' | 'scale' | 'crop'>) {
   const item = findItem(id);
   if (!item || getDocument().busy) return;
-  const same = (a: number, b: number) => Math.abs(a - b) < 1e-9;
-  const sameCrop = (a: Item['crop'], b: Item['crop']) => (!a || !b ? a === b : same(a.x, b.x) && same(a.y, b.y) && same(a.w, b.w) && same(a.h, b.h));
   if (same(item.x, patch.x) && same(item.y, patch.y) && same(item.scale, patch.scale) && sameCrop(item.crop, patch.crop)) {
     announce(t('crop.unchanged'));
     return;
   }
   commit();
-  const moved = settle([{ ...item, ...patch }]);
+  const changed = { ...item, ...patch };
+  const { near, away } = movedBy([changed], settle([changed]));
   const next = findItem(id)!;
   const [w, h] = dims(next);
-  const applied = t('crop.applied', { name: pieceName(id), size: sizeText(w, h) });
-  if (moved.length) say(t('notices.twoSentences', { first: applied, second: t('notices.movedAside', { n: 1 }) }));
-  else announce(applied);
+  const text = sentences([t('crop.applied', { name: pieceName(id), size: sizeText(w, h) }), near, away]);
+  if (away) say(text, { info: true });
+  else announce(text);
 }

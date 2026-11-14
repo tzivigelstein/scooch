@@ -21,7 +21,7 @@ import { focusSheet, pieceNode, sheetNode } from './focus.ts';
 import { showPropsTab } from './panels.ts';
 import { forgetSpill } from './layout.ts';
 import { arrangeAll, undoLast } from './edit.ts';
-import { say, singleOnly } from './notify.ts';
+import { say, sayUndoable, singleOnly } from './notify.ts';
 import { select, setSelection } from './selection.ts';
 
 const busy = () => getDocument().busy;
@@ -40,21 +40,15 @@ export function addSheet() {
   announce(t('announce.sheetAdded', { i: getDocument().sheets.length }));
 }
 
-/** Removes a sheet (with pieces, it asks first); there's always at least one left. */
-export async function removeSheet(id: number, { viaKeyboard = false } = {}) {
+/**
+ * Removes a sheet; there's always at least one left. With pieces it doesn't
+ * ask: the notice offers «Deshacer».
+ */
+export function removeSheet(id: number, { viaKeyboard = false } = {}) {
   if (busy() || getDocument().sheets.length < 2) return;
   const index = sheetIndex(id);
   if (index < 0) return;
   const n = itemsOn(id).length;
-  if (n) {
-    const ok = await confirmAction({
-      title: t('confirm.removeSheetTitle', { i: index + 1 }),
-      body: t('confirm.removeSheetBody', { n }),
-      confirm: t('confirm.removeSheet'),
-      returnTo: document.activeElement,
-    });
-    if (!ok || sheetIndex(id) !== index) return;
-  }
   commit();
   forgetSpill();
   const { items, sheets, selection } = getDocument();
@@ -69,7 +63,8 @@ export async function removeSheet(id: number, { viaKeyboard = false } = {}) {
     revealSheet(next.id);
     sheetNode(next.id)?.focus({ preventScroll: true });
   }
-  announce(n ? t('announce.sheetRemoved', { i: index + 1, n }) : t('announce.sheetRemovedEmpty', { i: index + 1 }));
+  if (n) sayUndoable(t('notices.sheetRemoved', { i: index + 1, n }));
+  else announce(t('announce.sheetRemovedEmpty', { i: index + 1 }));
 }
 
 /**
@@ -158,7 +153,7 @@ export const canMoveToNewSheet = () => {
 export function sheetEmptied(id: number) {
   const i = sheetIndex(id);
   if (i < 0 || itemsOn(id).length || getDocument().sheets.length < 2) return;
-  say(t('notices.sheetEmptied', { i: i + 1 }), { action: { label: t('sheet.remove'), run: () => void removeSheet(id) } });
+  say(t('notices.sheetEmptied', { i: i + 1 }), { info: true, action: { label: t('sheet.remove'), run: () => removeSheet(id) } });
 }
 
 /**

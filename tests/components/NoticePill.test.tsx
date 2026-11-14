@@ -108,6 +108,8 @@ describe('notice pill', () => {
     act(() => fireEvent.click(action));
     const [a, b] = getDocument().items;
     expect(a.x + 50.8 + 5 <= b.x + 1e-6 || b.x + 50.8 + 5 <= a.x + 1e-6 || a.y + 50.8 + 5 <= b.y + 1e-6 || b.y + 50.8 + 5 <= a.y + 1e-6).toBe(true);
-    expect(text()).toBe('Se acomodaron 2 piezas');
+    // The canvas shows the result: only announced, and the problem is gone.
+    expect(text()).toBe('');
+    expect(pill().hidden).toBe(true);
   });
 });

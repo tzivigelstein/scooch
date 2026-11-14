@@ -65,9 +65,9 @@ test.describe('editing with the keyboard only', () => {
     expect(first).not.toBeNull();
     const piece = app.piece(first);
 
-    await test.step('A arranges, and the focus stays on the piece', async () => {
+    await test.step('A arranges, announced, and the focus stays on the piece', async () => {
       await page.keyboard.press('a');
-      await expect.poll(async () => (await app.notice()).text).toBe('Se acomodaron 3 piezas');
+      await app.heard(/Se acomodaron 3 piezas/);
       await expect(piece).toBeFocused();
     });
 
@@ -410,13 +410,13 @@ test.describe('papers, units, sheets and projects with the keyboard only', () =>
       await expect.poll(async () => (await focused(page)).cls).toMatch(/\bsheet\b/);
     });
 
-    await test.step('Shift+Tab: «Quitar la hoja 2»; Enter asks, Enter confirms: sheet 2 goes with its 3 pieces; Ctrl+Z brings it back', async () => {
+    await test.step('Shift+Tab: «Quitar la hoja 2»; Enter: sheet 2 goes at once with its 3 pieces, the notice offers «Deshacer»; Ctrl+Z brings it back', async () => {
       await page.keyboard.press('Shift+Tab');
       expect((await focused(page)).label).toBe('Quitar la hoja 2');
       await page.keyboard.press('Enter');
-      await expect(page.locator('#confirm')).toHaveAttribute('open', '');
-      await page.keyboard.press('Enter');
       await expect.poll(() => perSheet(app)).toEqual([9]);
+      await expect(page.locator('#confirm')).not.toHaveAttribute('open');
+      expect(await app.notice()).toMatchObject({ text: 'Se quitó la hoja 2 con 3 piezas', action: 'Deshacer' });
       await page.keyboard.press('Control+z');
       await expect.poll(() => perSheet(app)).toEqual([9, 3]);
     });
@@ -599,7 +599,7 @@ test('multiple selection with the keyboard only: Shift+Space, Shift+Tab without 
     await page.keyboard.type('3');
     await page.keyboard.press('Enter');
     await expect(app.pieces()).toHaveCount(10);
-    expect((await app.notice()).text).toMatch(/^Se agregaron 6 copias/);
+    await app.heard(/Se agregaron 6 copias/);
   });
 
   await test.step('I on the first piece: it and its 3 copies; Ctrl+A: every piece of the sheet, announced; Esc: none, announced', async () => {

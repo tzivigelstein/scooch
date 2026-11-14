@@ -66,9 +66,12 @@ export type AppAsset = ImageAsset | PdfAsset;
 
 let lastSource = 0;
 
+/** Why a file can't be added, said to the person (errors.file.*); anything else failed unexpectedly. */
+export class FileProblem extends Error {}
+
 /** Reads a File into an image asset or a PDF asset (page 1), with its hashes. */
 export async function readFile(file: File): Promise<AppAsset> {
-  if (file.size > MAX_FILE_BYTES) throw new Error(t('errors.file.tooHeavy'));
+  if (file.size > MAX_FILE_BYTES) throw new FileProblem(t('errors.file.tooHeavy'));
   const bytes = new Uint8Array(await file.arrayBuffer());
   const name = file.name || t('pieces.pastedName');
   return withHashes(await (looksLikePdf(file, bytes) ? readPdf(name, bytes) : readImage(name, file, bytes)));
@@ -101,9 +104,9 @@ async function readImage(name: string, file: File, bytes: Uint8Array): Promise<I
   const img = await decodeImage(file);
   const pw = img.naturalWidth;
   const ph = img.naturalHeight;
-  if (!pw || !ph) throw new Error(t('errors.file.noSize'));
+  if (!pw || !ph) throw new FileProblem(t('errors.file.noSize'));
   if (pw * ph > MAX_PIXELS) {
-    throw new Error(t('errors.file.tooManyPixels', { mp: Math.round((pw * ph) / 1e6) }));
+    throw new FileProblem(t('errors.file.tooManyPixels', { mp: Math.round((pw * ph) / 1e6) }));
   }
 
   // pdf-lib only embeds JPG and PNG and ignores the EXIF orientation: those
@@ -148,7 +151,7 @@ async function decodeImage(file: File) {
     await img.decode();
     return img;
   } catch {
-    throw new Error(t('errors.file.unsupported'));
+    throw new FileProblem(t('errors.file.unsupported'));
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -164,7 +167,7 @@ function rasterize(source: CanvasImageSource, width: number, height: number) {
 
 function canvasBlob(canvas: HTMLCanvasElement, type: string, quality?: number) {
   return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error(t('errors.file.processFailed')))), type, quality)
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new FileProblem(t('errors.file.processFailed')))), type, quality)
   );
 }
 
@@ -259,9 +262,9 @@ async function readPdf(name: string, bytes: Uint8Array) {
     pdf = await pdfjs.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise;
   } catch (err) {
     if ((err as Error | null)?.name === 'PasswordException') {
-      throw new Error(t('errors.file.password'));
+      throw new FileProblem(t('errors.file.password'));
     }
-    throw new Error(t('errors.file.damaged'));
+    throw new FileProblem(t('errors.file.damaged'));
   }
   return pdfPage({ name, src: ++lastSource, pdf, bytes }, 1);
 }

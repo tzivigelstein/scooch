@@ -78,8 +78,20 @@ const listFormat = new Intl.ListFormat(messages.meta.lang, { style: 'long', type
 /** A list for a sentence: «1, 2 y 3», «foto.jpg y plano.pdf». */
 export const formatList = (items: readonly (string | number)[]) => listFormat.format(items.map(String));
 
-/** The text with a final period (to join loose messages when announcing them). */
-export const asSentence = (text: string) => (/[.!?…:]$/.test(text.trim()) ? text.trim() : `${text.trim()}.`);
+/** The text with the language's final period (meta.period), unless it already ends like a sentence. */
+export const asSentence = (text: string) => (/[.!?…:。]$/.test(text.trim()) ? text.trim() : `${text.trim()}${messages.meta.period}`);
+
+/** Messages joined as sentences, each with its final period (what the live regions say). */
+export const joinSentences = (parts: readonly string[]) => parts.filter(Boolean).map(asSentence).join(messages.meta.sentenceGap);
+
+/**
+ * Messages shown as one text (docs/copy.md): a single one stays as it is,
+ * without a final period; two or more become sentences, each with its period.
+ */
+export const sentences = (parts: readonly string[]) => {
+  const list = parts.filter(Boolean);
+  return list.length < 2 ? (list[0] ?? '') : joinSentences(list);
+};
 
 /**
  * A text with a link inside: the string marks the linked part with

@@ -5,7 +5,7 @@
 
 import { CircleCheck, Info, LoaderCircle, TriangleAlert, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { asSentence, formatList, t } from '../../copy/index.ts';
+import { formatList, joinSentences, t } from '../../copy/index.ts';
 import { useDocument, type DocumentData } from '../../state/document.ts';
 import { sheetProblems } from '../../state/selectors.ts';
 import { getView, setView, useView, type Flash, type NoticeAction } from '../../state/view.ts';
@@ -134,7 +134,7 @@ export function NoticePill() {
     // Results of an action are announced right away (warnings, assertively);
     // problems that show up on their own (e.g. moving a piece), with a delay
     // so each step isn't repeated.
-    const spoken = action && !busy ? t('notices.withAction', { text: asSentence(text), action: action.label }) : text;
+    const spoken = action && !busy ? joinSentences([text, t('notices.actionAvailable', { action: action.label })]) : text;
     if (flash) announce(spoken, { assertive: warn, key: 'notice' });
     else announce(spoken, { key: 'notice', delay: busy ? 250 : 900 });
     // Only when what the notice says changes.

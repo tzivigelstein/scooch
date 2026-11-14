@@ -76,7 +76,7 @@ import {
 import { animateNext, getView, setView } from '../view.ts';
 import { focusList, focusSheet, focusSheetNode } from './focus.ts';
 import { centeredOnSheet, duplicatePieces, fittedToSheet, withCenterKept } from './layout.ts';
-import { say, singleOnly } from './notify.ts';
+import { say, sayUndoable, singleOnly } from './notify.ts';
 import { setSelection } from './selection.ts';
 
 const ids = () => new Set(getDocument().selection);
@@ -188,8 +188,8 @@ export const maxCopies = () => copiesAllowed(getDocument().items.length, getDocu
 /**
  * `times` copies of each selected piece, in the gaps from the current sheet
  * (and on the next ones or new sheets), without moving anything. The copies
- * end up selected. D and the toolbar make 1 of each; «Duplicar ×N» in the
- * panel tells how many and on which sheets.
+ * end up selected and in view; copies spread over several sheets get a
+ * notice (only the last one is in view).
  */
 export function duplicate(times = 1, { focus = false }: FocusOption = {}) {
   const items = selectedItems();
@@ -213,20 +213,16 @@ export function duplicate(times = 1, { focus = false }: FocusOption = {}) {
   const sheets = new Set(copies.map((copy) => copy.sheet)).size;
   const total = getDocument().items.length;
   if (times > 1) {
-    say(sheets > 1 ? t('notices.duplicatedTimesSheets', { n, sheets }) : t('notices.duplicatedTimes', { n, i: sheetNumber(copies[0].sheet) }));
+    if (sheets > 1) say(t('notices.duplicatedTimesSheets', { n, sheets }));
+    else announce(t('announce.duplicatedTimes', { n, i: sheetNumber(copies[0].sheet) }));
     return;
   }
   if (focus) focusSheet();
   if (single) {
     const moved = copies[0].sheet !== items[0].sheet;
     announce(moved ? t('announce.duplicatedTo', { n: total, i: sheetNumber(copies[0].sheet) }) : t('announce.duplicated', { n: total }));
-  } else {
-    announce(
-      sheets > 1 || copies[0].sheet !== currentSheet()
-        ? t('announce.duplicatedManySheets', { n, sheets, total })
-        : t('announce.duplicatedMany', { n, total })
-    );
-  }
+  } else if (sheets > 1) say(t('notices.duplicatedManySheets', { n, sheets, total }));
+  else announce(t('announce.duplicatedMany', { n, total }));
 }
 
 // ---------- Fit, center, bring to front, actual size ----------
@@ -271,7 +267,8 @@ export function actualSize() {
 /**
  * Removes the selection. From the keyboard, the selection and the focus move
  * to a neighbor on the same sheet (on the sheet, or in the list if it was
- * removed from there); with the mouse, nothing stays selected.
+ * removed from there); with the mouse, nothing stays selected. Several at
+ * once get a notice with «Deshacer»; `announced` (cutting) only says it.
  */
 export function remove({ focus = true, inList = false, announced = '' } = {}) {
   const items = selectedItems();
@@ -297,7 +294,7 @@ export function remove({ focus = true, inList = false, announced = '' } = {}) {
   const left = getDocument().items.length;
   if (announced) announce(announced);
   else if (items.length === 1) announce(t(left ? 'announce.removed' : 'announce.removedLast', { name }));
-  else announce(t(left ? 'announce.removedMany' : 'announce.removedManyLast', { n: items.length }));
+  else sayUndoable(t(left ? 'notices.removedMany' : 'notices.removedManyLast', { n: items.length }));
 }
 
 // ---------- Move with the arrows ----------
@@ -336,7 +333,8 @@ export function scaleBy(delta: number) {
     if (Number.isFinite(growth)) scale = Math.min(scale, Math.max(item.scale, Math.floor(item.scale * growth * 10) / 10));
     if (scale <= item.scale) {
       focusSheet();
-      return announce(t('announce.noRoom'), { key: 'scale' });
+      // Holding + repeats the key: said once it stops.
+      return announce(t('announce.noRoom'), { key: 'scale', delay: 300 });
     }
   }
   commit(`scale-key:${item.id}`);
@@ -349,7 +347,7 @@ export function scaleBy(delta: number) {
 function scaleSelectionBy(delta: number) {
   const primary = primaryItem()!;
   const result = planScaleBy(imageBoxes(), ids(), scales(), primary.scale, delta, scaleOptions());
-  if (!result) return announce(t(delta > 0 ? 'announce.noRoomGroup' : 'announce.noSmallerGroup'), { key: 'scale' });
+  if (!result) return announce(t(delta > 0 ? 'announce.noRoomGroup' : 'announce.noSmallerGroup'), { key: 'scale', delay: 300 });
   apply(result.plan.rects, (item) => ({ scale: item.scale * result.k }), `scale-key:${getDocument().selection.join(',')}`, { image: true });
   const box = groupBounds(imageBoxes(), ids()).get(primary.sheet)!;
   announce(t('announce.groupScaled', { n: getDocument().selection.length, size: sizeText(box.w, box.h) }), { key: 'scale', delay: 600 });

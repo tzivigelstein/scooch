@@ -152,7 +152,9 @@ export function pastePieces() {
   revealPieces(ids, ids.at(-1)!);
   focusSheet();
   const sheets = new Set(fresh.map((item) => item.sheet)).size;
-  announce(sheets > 1 ? t('announce.pastedSheets', { n, sheets }) : t('announce.pasted', { n, i: sheetIndex(fresh[0].sheet) + 1 }));
+  // The view shows the last sheet they went to: pasted on several sheets, a notice says so.
+  if (sheets > 1) say(t('notices.pastedSheets', { n, sheets }));
+  else announce(t('announce.pasted', { n, i: sheetIndex(fresh[0].sheet) + 1 }));
   // Pasted into a project: the saved cut pieces aren't needed any more.
   void forgetCut();
   return true;

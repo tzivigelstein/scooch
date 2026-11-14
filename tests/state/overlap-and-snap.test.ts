@@ -121,7 +121,8 @@ describe('+ and −', () => {
     const left = b1.x - (a1.x + a1.w);
     expect(left).toBeGreaterThanOrEqual(-0.02);
     expect(left).toBeLessThan(0.5);
-    expect(heard()).toMatch(/No hay más espacio para agrandarla/);
+    // Said once the presses stop (holding + repeats the key).
+    expect(heard(400)).toMatch(/No hay más espacio para agrandarla/);
     // The refused presses took no undo step.
     const depth = historyDepth().undo;
     press(() => scaleBy(10));

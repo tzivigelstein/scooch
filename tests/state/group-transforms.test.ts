@@ -189,7 +189,7 @@ describe('group transforms', () => {
     expect(getDocument().items).toEqual(before);
   });
 
-  test('D with two selected: two copies, selected; Delete removes both; each undoes in one step', () => {
+  test('D with two selected: two copies, selected; Delete removes both with a notice that offers «Deshacer»; each undoes in one step', () => {
     const before = group();
     duplicate();
     const copies = getDocument().items.slice(3);
@@ -199,7 +199,7 @@ describe('group transforms', () => {
     const duplicated = getDocument().items;
     remove();
     expect(getDocument().items).toEqual(before);
-    expect(heard()).toContain('Se quitaron 2 piezas');
+    expect(getView().flash).toMatchObject({ text: 'Se quitaron 2 piezas', action: { label: 'Deshacer' } });
     expect(historyDepth().undo).toBe(2);
     undo();
     expect(getDocument().items).toEqual(duplicated);

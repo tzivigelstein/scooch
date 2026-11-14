@@ -79,6 +79,8 @@ describe('quick actions', () => {
     show([piece(1, photo, 30, 30)]);
     expect($<HTMLDetailsElement>('fill-details').open).toBe(false);
     expect($('fill-summary').textContent!.replace(/ /g, ' ')).toMatch(/^\d+ copias en A4$/);
+    // It changes with the scale: not a live region, or it would speak on every step.
+    expect($('fill-summary').hasAttribute('aria-live')).toBe(false);
     expect($('fill-warning').textContent).toMatch(/^Reemplaza todas las piezas de la hoja/);
     expect($<HTMLButtonElement>('fill').disabled).toBe(false);
   });

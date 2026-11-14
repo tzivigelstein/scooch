@@ -9,14 +9,15 @@ import { fitScale, pack, packSheets } from '../../core/pack.js';
 import { arrangeSheets, freeSpotNear, keepCenterInside, placeIntoSheets, samePlan, type ArrangePlan } from '../../core/sheets.js';
 import type { Item } from '../../core/types.ts';
 import { clamp, tidy } from '../../core/util.ts';
-import { formatList, t } from '../../copy/index.ts';
+import { formatList, sentences, t } from '../../copy/index.ts';
 import { paperName } from '../../services/measure.ts';
 import { getAsset } from '../assets.ts';
 import { getDocument, newItem, newItemId, newSheetId, setDocument, type Piece } from '../document.ts';
 import { commit } from '../history.ts';
 import { area, boxOf, boxWith, currentSheet, dims, findItem, itemsOn, layoutPad, pieceName, selectedItem, sheetIndex } from '../selectors.ts';
 import { animateNext } from '../view.ts';
-import { say } from './notify.ts';
+import { announce } from '../../components/feedback/announcer.ts';
+import { say, sayUndoable } from './notify.ts';
 import { setSelection } from './selection.ts';
 
 const packOptions = () => ({ gap: getDocument().gap, rotate: getDocument().rotate });
@@ -106,6 +107,8 @@ const arrangedText = (n: number, sheets: number) => (sheets > 1 ? t('notices.arr
  * Arranges ALL the pieces without overlaps, on as many sheets as needed
  * (creates or removes sheets: no empty sheets are left at the end). Returns
  * the result ('arranged', 'same' or 'error') or null if there was nothing to do.
+ * The canvas shows the result: a notice only when it needs sheets that weren't
+ * there, when something didn't fit or when shrinking to one sheet is offered.
  */
 export function arrange(): 'arranged' | 'same' | 'error' | null {
   const { items, sheets, busy } = getDocument();
@@ -117,7 +120,7 @@ export function arrange(): 'arranged' | 'same' | 'error' | null {
     return 'error';
   }
   if (lastArranged === layoutSignature()) {
-    say(arrangedText(n, sheets.length));
+    announce(t('announce.arrangedAlready', { n }));
     return 'same';
   }
   const before = sheets.length;
@@ -126,7 +129,7 @@ export function arrange(): 'arranged' | 'same' | 'error' | null {
   const plan = arrangeSheets(all, sheetIds, { area: { w: aw, h: ah }, margin: m, ...packOptions(), newId: newSheetId });
   if (samePlan(plan, all, sheetIds, tidy)) {
     lastArranged = layoutSignature();
-    say(arrangedText(n, sheets.length));
+    announce(t('announce.arrangedAlready', { n }));
     return 'same';
   }
   commit();
@@ -140,7 +143,7 @@ export function arrange(): 'arranged' | 'same' | 'error' | null {
   if (plan.unplaced.length) {
     const names = formatList(plan.unplaced.map(pieceName));
     const unplaced = t('notices.unplaced', { n: plan.unplaced.length, names });
-    const text = placed ? t('notices.twoSentences', { first: arrangedText(placed, plan.packed), second: unplaced }) : unplaced;
+    const text = sentences([placed ? arrangedText(placed, plan.packed) : '', unplaced]);
     const ids = [...plan.unplaced];
     say(text, { warn: true, action: { label: t('props.fit'), run: () => fitPieces(ids) } });
     return 'arranged';
@@ -156,7 +159,8 @@ export function arrange(): 'arranged' | 'same' | 'error' | null {
       return 'arranged';
     }
   }
-  say(arrangedText(n, plan.packed));
+  if (plan.sheets.length > before) say(arrangedText(n, plan.packed));
+  else announce(arrangedText(n, plan.packed));
   return 'arranged';
 }
 
@@ -180,7 +184,7 @@ function fitPieces(ids: readonly number[]) {
   animateNext();
   const fitted = new Map(items.map((item) => [item.id, fittedToSheet(item)]));
   setDocument({ items: getDocument().items.map((item) => fitted.get(item.id) ?? item) });
-  say(t('notices.fitted', { n: items.length }));
+  announce(t('notices.fitted', { n: items.length }));
 }
 
 /**
@@ -206,7 +210,7 @@ export function shrinkAndArrange(factor: number, exact: number) {
       sheets: [sheet],
       placements: new Map(placements.map((p) => [p.id, { sheet, x: m + p.x, y: m + p.y, rotated: p.rotated }])),
     });
-    say(t('notices.shrunk', { n, pct: f * 100 }));
+    announce(t('notices.shrunk', { n, pct: f * 100 }));
     return true;
   }
   say(t('errors.shrinkFailed'), { warn: true });
@@ -435,7 +439,8 @@ export function fillWithCopies() {
   rest.splice(Math.min(at, rest.length), 0, ...copies);
   setDocument({ items: rest });
   setSelection([copies[0].id]);
+  // It replaced the sheet's other pieces: easy to miss, and to want back.
   const many = getDocument().sheets.length > 1;
-  say(many ? t('notices.filledSheet', { n: plan.count, i: sheetIndex(sheet) + 1 }) : t('notices.filled', { n: plan.count }));
+  sayUndoable(many ? t('notices.filledSheet', { n: plan.count, i: sheetIndex(sheet) + 1 }) : t('notices.filled', { n: plan.count }));
   return true;
 }

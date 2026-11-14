@@ -4,7 +4,7 @@
 // with copies, removing everything and the warnings for pieces off the sheet
 // or past the margin. The assets mimic the e2e fixtures (300 ppp images, PDF
 // pages in mm), so the numbers are the ones a person sees.
-import { beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { t } from '../../src/copy/index.ts';
 import { getDocument, type Piece } from '../../src/state/document.ts';
 import { historyDepth, redo, undo } from '../../src/state/history.ts';
@@ -15,7 +15,7 @@ import { useConfirm } from '../../src/components/dialogs/confirm.ts';
 import { setSelection } from '../../src/state/actions/selection.ts';
 import { dims, sheetProblems, sheetSize } from '../../src/state/selectors.ts';
 import { getView } from '../../src/state/view.ts';
-import { fakeImage, fakePdf, piece, resetState } from '../support/state.ts';
+import { fakeImage, fakePdf, heard, listen, piece, resetState } from '../support/state.ts';
 
 const nb = (s: string | undefined) => String(s ?? '').replace(/ /g, ' ');
 
@@ -59,6 +59,10 @@ function outsideMargin(list: readonly Box[], eps = 0.02) {
 }
 
 let a: ReturnType<typeof assets>;
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 beforeEach(() => {
   resetState();
@@ -150,12 +154,15 @@ describe('arranging', () => {
     arrange();
     const arranged = shown();
     const arrangedScales = new Map(getDocument().items.map((item) => [item.id, item.scale]));
+    listen();
     getView().flash!.action!.run(); // «Reducir al … % para usar 1 hoja»
     const shrunk = shown();
     expect(getDocument().sheets).toHaveLength(1);
     expect(closerThan(shrunk, 5)).toEqual([]);
     expect(outsideMargin(shrunk)).toEqual([]);
-    expect(nb(getView().flash?.text)).toMatch(/^Se acomodaron 7 piezas, reducidas al [\d,]+ %$/);
+    // The canvas shows it: announced, without a notice.
+    expect(getView().flash).toBeNull();
+    expect(heard()).toMatch(/^Se acomodaron 7 piezas, reducidas al [\d,]+ %\.$/);
     // Every piece shrank by the same factor.
     const scale = (id: number) => getDocument().items.find((item) => item.id === id)!.scale;
     const k = scale(shrunk[0].id) / arrangedScales.get(shrunk[0].id)!;
@@ -168,7 +175,8 @@ describe('arranging', () => {
     const depth = historyDepth().undo;
     expect(arrange()).toBe('same');
     expect(shown()).toEqual(shrunk);
-    expect(nb(getView().flash?.text)).toBe('Se acomodaron 7 piezas');
+    expect(getView().flash).toBeNull();
+    expect(heard()).toBe('Las piezas ya están acomodadas.');
     expect(historyDepth().undo).toBe(depth);
     // One undo takes back the shrinking (arranging again added nothing).
     undo();
@@ -177,6 +185,7 @@ describe('arranging', () => {
 
   test('on A6 the one that doesn’t fit even alone stays as it was, alone on its sheet, and «Ajustar a la hoja» is offered', () => {
     // Where the old walk was: the seven arranged and shrunk to one A4 sheet.
+    listen();
     loadSeven();
     arrange();
     getView().flash!.action!.run();
@@ -196,11 +205,13 @@ describe('arranging', () => {
     expect(outsideMargin(rest)).toEqual([]);
     expect(now.filter((b) => b.sheet === byId(now, bigId).sheet)).toHaveLength(1);
 
+    heard();
     flash.action!.run(); // «Ajustar a la hoja»
     const fitted = byId(shown(), bigId);
     expect(fitted.w).toBeCloseTo(85, 2);
     expect(outsideMargin([fitted])).toEqual([]);
-    expect(nb(getView().flash?.text)).toBe('Se ajustó 1 pieza a la hoja');
+    expect(getView().flash).toBeNull();
+    expect(heard()).toBe('Se ajustó 1 pieza a la hoja.');
 
     undo();
     for (const b of shown()) expect(b.w).toBeCloseTo(byId(now, b.id).w, 6);

@@ -194,7 +194,8 @@ describe('single keys', () => {
     expect(closerThan(getDocument().items, 0)).not.toEqual([]);
     press('a');
     expect(closerThan(getDocument().items, 5)).toEqual([]);
-    expect(getView().flash?.text).toBe('Se acomodaron 3 piezas');
+    expect(getView().flash).toBeNull();
+    expect(heard()).toBe('Se acomodaron 3 piezas.');
     expect(document.activeElement).toBe(node(1));
   });
 

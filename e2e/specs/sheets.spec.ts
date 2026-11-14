@@ -1,6 +1,6 @@
 // Several sheets in the browser: «Acomodar» across sheets, the sheets as named
-// groups, removing a sheet (with and without confirmation, and where the focus
-// goes), dragging a piece to another sheet (the stage scrolls by itself, the
+// groups, removing a sheet (at once, with «Deshacer» in the notice, and where the
+// focus goes), dragging a piece to another sheet (the stage scrolls by itself, the
 // target sheet is marked, dropping onto a piece there), which sheet is the
 // current one, and dragging pieces out of the sheets onto a new one (the
 // placeholders, by mouse, touch and zoomed in, and the context menu's
@@ -31,7 +31,8 @@ test('«Acomodar» puts 20 equal cards back on 3 sheets, 9 + 9 + 2, and says so;
 
   await page.locator('#arrange').click();
   await expect.poll(() => counts(app)).toEqual([9, 9, 2]);
-  expect((await app.notice()).text).toBe('Se acomodaron 20 piezas en 3 hojas');
+  // Still three sheets: the canvas shows it, and it is announced.
+  await app.heard(/Se acomodaron 20 piezas en 3 hojas/);
   g = await app.geometry();
   expect(overlapping(g.pieces)).toEqual([]);
   expect(outsideMargin(g)).toEqual([]);
@@ -45,7 +46,7 @@ test('«Acomodar» puts 20 equal cards back on 3 sheets, 9 + 9 + 2, and says so;
   expect(new Set(boxes).size).toBe(1);
 });
 
-test('removing a sheet: an empty one goes at once and its place takes the focus; one with pieces asks first, Esc keeps it, Enter removes it; the last one has no remove button', async ({ app, page }) => {
+test('removing a sheet: an empty one goes at once and its place takes the focus; one with pieces too, with «Deshacer» in the notice; the last one has no remove button', async ({ app, page }) => {
   await app.addFiles(cards(0, 12));
   await page.locator('#add-sheet').click();
   // The second sheet's pieces go on to the third: it is left empty, in the middle.
@@ -66,22 +67,14 @@ test('removing a sheet: an empty one goes at once and its place takes the focus;
   const removeFirst = pageAt(page, 0).locator('.page-remove');
   await removeFirst.focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('#confirm')).toHaveAttribute('open', '');
-  await expect(page.locator('#confirm-title')).toHaveText('¿Quitar la hoja 1?');
-  await expect(page.locator('#confirm-body')).toHaveText('Se quita con sus 9 piezas. Puedes deshacerlo.');
-  await expect(page.locator('#confirm-ok')).toBeFocused();
-  await expect(page.locator('#confirm-ok')).toHaveText('Quitar hoja');
-  await page.keyboard.press('Escape');
-  await expect(page.locator('#confirm')).not.toHaveAttribute('open');
-  await expect(removeFirst).toBeFocused();
-  expect(await counts(app)).toEqual([9, 3]);
-
-  await page.keyboard.press('Enter');
-  await expect(page.locator('#confirm')).toHaveAttribute('open', '');
-  await page.keyboard.press('Enter');
   await expect.poll(() => counts(app)).toEqual([3]);
+  await expect(page.locator('#confirm')).not.toHaveAttribute('open');
   await expect(app.pieces()).toHaveCount(3);
   await expect(page.locator('#sheets .page-remove')).toBeHidden();
+  await expect(page.locator(`#sheets .page[data-sheet="${ids[2]}"] .sheet`)).toBeFocused();
+  expect(await app.notice()).toMatchObject({ text: 'Se quitó la hoja 1 con 9 piezas', action: 'Deshacer' });
+  await page.locator('#pill-action').click();
+  await expect.poll(() => counts(app)).toEqual([9, 3]);
 });
 
 test('dragging a piece down to the next sheet: the stage scrolls by itself, that sheet is marked, and the piece moves there, announced, keeping the focus', async ({ app, page }) => {

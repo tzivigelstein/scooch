@@ -70,7 +70,9 @@ describe('duplicate ×N', () => {
     expect(items).toHaveLength(8);
     const copies = items.filter((item) => !ids.includes(item.id));
     expect(selection).toEqual(copies.map((copy) => copy.id));
-    expect(getView().flash).toMatchObject({ text: 'Se agregaron 5 copias en la hoja 1' });
+    // The copies are in view: announced, without a notice.
+    expect(getView().flash).toBeNull();
+    expect(heard()).toBe('Se agregaron 5 copias en la hoja 1.');
     expect(items.slice(0, 3)).toEqual(before.items);
     expect(overlapping(items)).toEqual([]);
     for (const copy of copies) expect(copy).toMatchObject({ asset: original.asset, scale: original.scale, r: original.r, crop: original.crop, sheet: 1 });
@@ -85,7 +87,7 @@ describe('duplicate ×N', () => {
     expect(getDocument().items).toHaveLength(9);
     expect(getDocument().selection).toHaveLength(6);
     expect(overlapping(getDocument().items)).toEqual([]);
-    expect(getView().flash?.text).toBe('Se agregaron 6 copias en la hoja 1');
+    expect(heard()).toBe('Se agregaron 6 copias en la hoja 1.');
   });
 
   test('what does not fit on the sheet goes to new sheets, and the notice says on how many', () => {

@@ -301,11 +301,13 @@ flow('sheets', [DESKTOP, MEDIUM, PHONE], async (c, app) => {
   await expect(page.locator('#sheets .grid-layer').first()).toBeHidden();
 
   const remove = secondSheet.locator('.page-remove');
+  const sheetsBefore = await page.locator('#sheets .page').count();
   await remove.focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('#confirm[open]')).toBeVisible();
-  await c.state('confirm removing a sheet');
-  await closeWithEscape(page, '#confirm');
+  await expect(page.locator('#pill-action')).toHaveText('Deshacer');
+  await c.state('a sheet removed with its pieces, «Deshacer» in the notice');
+  await page.locator('#pill-action').click();
+  await expect(page.locator('#sheets .page')).toHaveCount(sheetsBefore);
 
   await openList(c);
   await page.locator('#clear').click();

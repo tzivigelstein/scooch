@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { PdfAsset } from '../../src/services/assets.ts';
 import { addAsset, getAsset } from '../../src/state/assets.ts';
 import { getDocument, resetIds, setDocument, type Piece } from '../../src/state/document.ts';
@@ -11,7 +11,7 @@ import { applyPhotoSize, photoSizeOf, selectionPhotoSize } from '../../src/state
 import { changePage } from '../../src/state/actions/files.ts';
 import { fillWithCopies, printResolution } from '../../src/state/actions/layout.ts';
 import { actualSize, duplicate, fit, rotate } from '../../src/state/actions/pieces.ts';
-import { fakePdf } from '../support/state.ts';
+import { fakePdf, heard, listen } from '../support/state.ts';
 
 // Another page of a PDF: pdf.js is faked, each page has the size set in `pageSizes` (mm).
 const pageSizes = vi.hoisted(() => new Map<number, [number, number]>());
@@ -44,6 +44,10 @@ const center = (p: Piece) => {
   const [w, h] = dims(p);
   return [p.x + w / 2, p.y + h / 2].map((v) => Math.round(v * 1000) / 1000);
 };
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 beforeEach(() => {
   wide = image(160, 100);
@@ -206,11 +210,15 @@ describe('another page of a cropped PDF piece', () => {
   }
 
   test('of another size: the crop goes away and it says so; undo brings back page 1 cropped', async () => {
+    listen();
     const before = croppedPage(101, [200, 100]);
+    heard();
     await changePage(2);
     expect(getAsset(item(1).asset)).toMatchObject({ kind: 'pdf', page: 2 });
     expect(item(1).crop).toBeNull();
-    expect(getView().flash?.text).toBe('La página 2 tiene otro tamaño, así que se quitó el recorte');
+    // The whole page shows: announced, without a notice.
+    expect(getView().flash).toBeNull();
+    expect(heard()).toBe('Se quitó el recorte: la página 2 tiene otro tamaño.');
     expect(historyDepth().undo).toBe(1);
     undo();
     expect(item(1)).toEqual(before);

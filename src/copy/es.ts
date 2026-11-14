@@ -7,6 +7,9 @@ const es = {
     lang: 'es',
     // Decimal comma and no thousands separator in 4-digit numbers («1189 mm»).
     numberLocale: 'es',
+    // How messages become sentences when they are joined (see sentences in index.ts).
+    period: '.',
+    sentenceGap: ' ',
   },
 
   app: {
@@ -429,8 +432,8 @@ const es = {
   // Notice pill
   notices: {
     close: 'Cerrar aviso',
-    // For screen readers, when the notice has a button ({text} already ends with a period)
-    withAction: '{text} Botón {action} disponible en el aviso',
+    // For screen readers, after the notice's text when it has a button
+    actionAvailable: 'Botón {action} disponible en el aviso',
     cut: {
       one: '1 pieza se sale de la hoja y se corta al imprimir',
       other: '{n} piezas se salen de la hoja y se cortan al imprimir',
@@ -449,8 +452,6 @@ const es = {
       one: '{names} no entra en la hoja ni sola, así que quedó donde estaba',
       other: '{n} piezas no entran en la hoja ni solas, así que quedaron donde estaban: {names}',
     },
-    // Two notices in one ({first} and {second} without a period)
-    twoSentences: '{first}. {second}.',
     shrinkToOne: 'Reducir al {pct} % para usar 1 hoja',
     fitted: { one: 'Se ajustó 1 pieza a la hoja', other: 'Se ajustaron {n} piezas a la hoja' },
     shrunk: {
@@ -464,7 +465,6 @@ const es = {
     shrinkAction: 'Reducir al {pct} % y acomodar',
     filled: { one: 'Se rellenó la hoja con 1 copia', other: 'Se rellenó la hoja con {n} copias' },
     filledSheet: { one: 'Se rellenó la hoja {i} con 1 copia', other: 'Se rellenó la hoja {i} con {n} copias' },
-    duplicatedTimes: { one: 'Se agregó 1 copia en la hoja {i}', other: 'Se agregaron {n} copias en la hoja {i}' },
     duplicatedTimesSheets: { one: 'Se agregó 1 copia en {sheets} hojas', other: 'Se agregaron {n} copias en {sheets} hojas' },
     // A group operation that wasn't applied ({action}: groupActions)
     wouldOverlap: 'No se puede {action}: las piezas se superpondrían',
@@ -484,9 +484,26 @@ const es = {
     uncropped: 'Se quitó el recorte',
     uncroppedMany: { one: 'Se quitó el recorte de 1 pieza', other: 'Se quitó el recorte de {n} piezas' },
     movedAside: { one: '1 pieza se movió a un lugar libre para no superponerse', other: '{n} piezas se movieron a lugares libres para no superponerse' },
+    // Pieces that changed size and had no room left on their sheet
+    movedToSheet: { one: '1 pieza pasó a la hoja {i} para no superponerse', other: '{n} piezas pasaron a la hoja {i} para no superponerse' },
+    // On several sheets, so always 2 pieces or more
+    movedToSheets: '{n} piezas pasaron a las hojas {list} para no superponerse',
     sheetEmptied: 'La hoja {i} quedó vacía',
     cleared: { one: 'Se quitó 1 pieza', other: 'Se quitaron las {n} piezas' },
-    pageCropDropped: 'La página {page} tiene otro tamaño, así que se quitó el recorte',
+    pageCropDropped: 'Se quitó el recorte: la página {page} tiene otro tamaño',
+    // Several pieces removed at once, a sheet with its pieces (the notice offers «Deshacer»)
+    removedMany: { one: 'Se quitó 1 pieza', other: 'Se quitaron {n} piezas' },
+    removedManyLast: { one: 'Se quitó 1 pieza. La hoja está vacía.', other: 'Se quitaron {n} piezas. La hoja está vacía.' },
+    sheetRemoved: { one: 'Se quitó la hoja {i} con 1 pieza', other: 'Se quitó la hoja {i} con {n} piezas' },
+    // What lands on sheets that aren't in view ({list}: «2 y 3»)
+    addedOnSheet: { one: 'Se agregó 1 archivo en la hoja {i}', other: 'Se agregaron {n} archivos en la hoja {i}' },
+    // On several sheets, so always 2 files or more
+    addedOnSheets: 'Se agregaron {n} archivos en las hojas {list}',
+    pastedSheets: { one: 'Se pegó 1 pieza en {sheets} hojas', other: 'Se pegaron {n} piezas en {sheets} hojas' },
+    duplicatedManySheets: {
+      one: 'Se agregó 1 copia en {sheets} hojas. Hay {total} piezas.',
+      other: 'Se agregaron {n} copias en {sheets} hojas. Hay {total} piezas.',
+    },
     sizeOutOfRange: { one: '{names} no se puede llevar a ese tamaño: su escala pasaría de 1 % a 1000 %', other: '{n} piezas no se pueden llevar a ese tamaño: su escala pasaría de 1 % a 1000 %' },
     downloaded: 'Se descargó {file}',
     // Ctrl+S: there is nothing to save by hand
@@ -551,7 +568,7 @@ const es = {
       noSize: 'la imagen no tiene ancho ni alto definidos; guárdala como PNG o JPG',
       tooManyPixels: 'tiene {mp} MP y el máximo es 60 MP; reduce su resolución',
       unsupported: 'el navegador no puede abrir este formato; prueba con JPG, PNG o WebP',
-      processFailed: 'no se pudo procesar la imagen; inténtalo de nuevo',
+      processFailed: 'no se pudo procesar el archivo; inténtalo de nuevo',
       password: 'el PDF tiene contraseña; guárdalo sin contraseña y vuelve a agregarlo',
       damaged: 'no se pudo leer el PDF; si está dañado, vuelve a exportarlo',
     },
@@ -576,19 +593,17 @@ const es = {
     position: 'A {x} del borde izquierdo y {y} del superior',
     noRoom: 'No hay más espacio para agrandarla',
     scaled: 'Escala {scale} %: {size}',
+    arrangedAlready: { one: 'La pieza ya está acomodada', other: 'Las piezas ya están acomodadas' },
+    // A photo size or «Original» that changes nothing
+    sizedAlready: { one: 'La pieza ya tiene ese tamaño', other: 'Las piezas ya tienen ese tamaño' },
+    uncroppedAlready: { one: 'La pieza no tiene recorte', other: 'Las piezas no tienen recorte' },
     undone: 'Se deshizo el último cambio',
     redone: 'Se rehízo el último cambio',
     sheet: 'Hoja {paper}',
     gridShown: 'Grilla visible, cada {size}',
     gridHidden: 'Grilla oculta',
     added: { one: 'Se agregó 1 archivo', other: 'Se agregaron {n} archivos' },
-    addedSheets: {
-      one: 'Se agregó 1 archivo. No entraba en las hojas que había, así que va en {sheets}.',
-      other: 'Se agregaron {n} archivos. Los que no entraban en las hojas que había van en {sheets}.',
-    },
-    newSheets: { one: '{n} hoja nueva', other: '{n} hojas nuevas' },
     sheetAdded: 'Se agregó la hoja {i}',
-    sheetRemoved: { one: 'Se quitó la hoja {i} con 1 pieza', other: 'Se quitó la hoja {i} con {n} piezas' },
     sheetRemovedEmpty: 'Se quitó la hoja {i}',
     movedToSheet: 'Se movió a la hoja {i} de {total}',
     // A drop where the piece can't go: it goes back (the canvas shows it; this is for screen readers)
@@ -610,7 +625,6 @@ const es = {
     copied: { one: 'Se copió 1 pieza', other: 'Se copiaron {n} piezas' },
     cut: { one: 'Se cortó 1 pieza', other: 'Se cortaron {n} piezas' },
     pasted: { one: 'Se pegó 1 pieza en la hoja {i}', other: 'Se pegaron {n} piezas en la hoja {i}' },
-    pastedSheets: { one: 'Se pegó 1 pieza en {sheets} hojas', other: 'Se pegaron {n} piezas en {sheets} hojas' },
     nothingToPaste: 'No hay piezas copiadas para pegar',
     // The text that goes to the system clipboard with the copied pieces
     copiedText: { one: '1 pieza de {app}', other: '{n} piezas de {app}' },
@@ -635,12 +649,7 @@ const es = {
       one: 'Se duplicó 1 pieza. Hay {total} piezas.',
       other: 'Se agregaron {n} copias. Hay {total} piezas.',
     },
-    duplicatedManySheets: {
-      one: 'Se agregó 1 copia en {sheets} hojas. Hay {total} piezas.',
-      other: 'Se agregaron {n} copias en {sheets} hojas. Hay {total} piezas.',
-    },
-    removedMany: { one: 'Se quitó 1 pieza', other: 'Se quitaron {n} piezas' },
-    removedManyLast: { one: 'Se quitó 1 pieza. La hoja está vacía.', other: 'Se quitaron {n} piezas. La hoja está vacía.' },
+    duplicatedTimes: { one: 'Se agregó 1 copia en la hoja {i}', other: 'Se agregaron {n} copias en la hoja {i}' },
     alignHow: {
       left: 'a la izquierda',
       centerX: 'al centro en horizontal',
@@ -765,12 +774,6 @@ const es = {
   // Short confirmations
   confirm: {
     cancel: 'Cancelar',
-    removeSheetTitle: '¿Quitar la hoja {i}?',
-    removeSheetBody: {
-      one: 'Se quita con su pieza. Puedes deshacerlo.',
-      other: 'Se quita con sus {n} piezas. Puedes deshacerlo.',
-    },
-    removeSheet: 'Quitar hoja',
     // «Quitar todas»
     clearTitle: { one: '¿Quitar la pieza?', other: '¿Quitar las {n} piezas?' },
     clearTitleSheets: { one: '¿Quitar la pieza de las {sheets} hojas?', other: '¿Quitar las {n} piezas de las {sheets} hojas?' },

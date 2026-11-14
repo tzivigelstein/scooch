@@ -1,7 +1,7 @@
 // Screen reader announcements through two live regions that exist from the
 // first render (#live-polite and #live-assertive).
 
-import { asSentence } from '../../copy/index.ts';
+import { joinSentences } from '../../copy/index.ts';
 
 type Channel = 'polite' | 'assertive';
 
@@ -74,7 +74,7 @@ function flush() {
     // An alternating no-break space forces a change even when the text repeats.
     toggle = !toggle;
     // Messages come without a final period (docs/copy.md): it is added when joining them.
-    region.textContent = pending[channel].map(asSentence).join(' ') + (toggle ? ' ' : '');
+    region.textContent = joinSentences(pending[channel]) + (toggle ? ' ' : '');
     pending[channel] = [];
   }
 }

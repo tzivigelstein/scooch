@@ -531,7 +531,7 @@ export function PieceSection() {
             <span>{t('props.fill')}</span>
           </summary>
           <div className="fill-body">
-            <p id="fill-summary" className="fill-summary" aria-live="polite">
+            <p id="fill-summary" className="fill-summary">
               {summary?.text}
             </p>
             <p className="callout">

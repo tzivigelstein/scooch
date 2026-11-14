@@ -1,13 +1,13 @@
 // Adding files (button, drop zone, pasting) and changing a PDF piece's page.
 
 import { MAX_ITEMS } from '../../config.ts';
-import { t } from '../../copy/index.ts';
+import { formatList, t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
-import { openPdf, pdfPage, readFile, withHashes } from '../../services/assets.ts';
+import { FileProblem, openPdf, pdfPage, readFile, withHashes } from '../../services/assets.ts';
 import { addAsset, assetEntries, getAsset } from '../assets.ts';
 import { getDocument, patchItems, setDocument } from '../document.ts';
 import { commit } from '../history.ts';
-import { selectedItem } from '../selectors.ts';
+import { currentSheet, selectedItem, sheetIndex } from '../selectors.ts';
 import { setView } from '../view.ts';
 import { say } from './notify.ts';
 import { placeNew } from './layout.ts';
@@ -43,10 +43,14 @@ export async function loadFiles(files: readonly File[]) {
       keys.push(addAsset(await readFile(file)));
     } catch (err) {
       console.warn(file.name, err);
-      errors.push(t('errors.loadItem', { name: file.name || t('errors.unnamedFile'), reason: (err as Error).message }));
+      // An unexpected failure (a chunk that didn't load, the browser's canvas) isn't explained in its own words.
+      const reason = err instanceof FileProblem ? err.message : t('errors.file.processFailed');
+      errors.push(t('errors.loadItem', { name: file.name || t('errors.unnamedFile'), reason }));
     }
   }
-  const sheetsBefore = getDocument().sheets.length;
+  // The sheet in view: what lands on other sheets gets a notice.
+  const inView = currentSheet();
+  const before = new Set(getDocument().items.map((item) => item.id));
   if (keys.length) {
     commit(); // still busy: the cleanup leaves the assets just created alone
     placeNew(keys);
@@ -56,9 +60,11 @@ export async function loadFiles(files: readonly File[]) {
   if (skipped) errors.push(t('errors.maxReached', { max: MAX_ITEMS, n: skipped }));
   if (errors.length) say(t('errors.load', { n: failed, list: errors.join(t('errors.loadSeparator')) }), { warn: true });
   if (keys.length) {
-    const added = getDocument().sheets.length - sheetsBefore;
-    const sheets = t('announce.newSheets', { n: added });
-    announce(added ? t('announce.addedSheets', { n: keys.length, sheets }) : t('announce.added', { n: keys.length }));
+    const sheets = [...new Set(getDocument().items.filter((item) => !before.has(item.id)).map((item) => item.sheet))].map((id) => sheetIndex(id)).sort((a, b) => a - b);
+    const n = keys.length;
+    if (sheets.length > 1) say(t('notices.addedOnSheets', { n, list: formatList(sheets.map((i) => i + 1)) }));
+    else if (sheets[0] !== sheetIndex(inView)) say(t('notices.addedOnSheet', { n, i: sheets[0] + 1 }));
+    else announce(t('announce.added', { n }));
   }
 }
 
@@ -87,7 +93,8 @@ export async function changePage(n: number) {
     commit();
     patchItems(new Map([[item.id, dropCrop ? { asset: key, crop: null } : { asset: key }]]));
     setBusy(false);
-    if (dropCrop) say(t('notices.pageCropDropped', { page: n }));
+    // The whole page shows: said, not noticed.
+    if (dropCrop) announce(t('notices.pageCropDropped', { page: n }));
   } catch (err) {
     console.error(err);
     setBusy(false);

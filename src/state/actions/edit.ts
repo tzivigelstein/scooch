@@ -3,7 +3,7 @@
 import { t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
 import { redo, undo } from '../history.ts';
-import { getView, animateNext } from '../view.ts';
+import { animateNext } from '../view.ts';
 import { focusSheet } from './focus.ts';
 import { arrange } from './layout.ts';
 
@@ -25,8 +25,7 @@ export function redoLast() {
   announce(t('announce.redone'));
 }
 
-/** Arranging twice in a row changes nothing: it is confirmed anyway. */
+/** «Acomodar» from the bar, the keyboard, a menu or a notice. */
 export function arrangeAll() {
-  const result = arrange();
-  if (result === 'same') announce(getView().flash?.text ?? '');
+  arrange();
 }
