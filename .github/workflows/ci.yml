@@ -54,7 +54,9 @@ jobs:
 
   e2e:
     name: Browser tests (Chromium)
-    runs-on: ubuntu-latest
+    # Pinned: Playwright installs its browsers only on the Ubuntu releases it
+    # supports, and ubuntu-latest moved past them (26.04 with Playwright 1.60).
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       # The clock budgets of performance.spec.ts were set on faster machines
@@ -94,7 +96,7 @@ jobs:
     # Nobody has seen the suite pass on WebKit yet: this job reports, but its
     # failure doesn't fail the run (docs/testing.md).
     continue-on-error: true
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       E2E_WEBKIT: '1'
