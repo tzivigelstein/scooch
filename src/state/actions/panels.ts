@@ -4,7 +4,7 @@
 // moves the focus; it is announced only when the keyboard caused it.
 
 import { t } from '../../copy/index.ts';
-import { announce } from '../../components/feedback/announcer.ts';
+import { announce, cancelAnnounce } from '../../components/feedback/announcer.ts';
 import { getDocument, useDocument } from '../document.ts';
 import { flushUi } from '../flush.ts';
 import { getView, setView, type PropsTab } from '../view.ts';
@@ -20,7 +20,10 @@ export const tabFor = (selection: readonly number[]): PropsTab => (selection.len
 
 /** Shows a tab (the person's choice, or a shortcut's); with `focus`, the focus goes to the tab. */
 export function showPropsTab(tab: PropsTab, { focus = false } = {}) {
-  if (getView().propsTab !== tab) setView({ propsTab: tab });
+  if (getView().propsTab !== tab) {
+    setView({ propsTab: tab });
+    cancelAnnounce('props-tab');
+  }
   if (!focus) return;
   flushUi();
   document.getElementById(`props-tab-${tab}`)?.focus();
@@ -38,7 +41,9 @@ function selectionChanged(selection: readonly number[]) {
   const current = getView().propsTab;
   if (tab === current || typingIn(current)) return;
   setView({ propsTab: tab });
+  // A switch the pointer caused also drops a pending one the keyboard caused: it would name the other tab.
   if (lastInput === 'keyboard') announce(t(tab === 'piece' ? 'announce.propsPiece' : 'announce.propsSheet'), { key: 'props-tab', delay: 400 });
+  else cancelAnnounce('props-tab');
 }
 
 /** Starts following the selection (returns the cleanup). */

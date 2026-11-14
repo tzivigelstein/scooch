@@ -147,6 +147,21 @@ describe('the tab follows the selection', () => {
     expect(heard()).toBe('');
   });
 
+  test('a keyboard switch still pending when the pointer switches back isn’t announced: it would name the tab that no longer shows', () => {
+    select(1);
+    heard();
+    byKeyboard();
+    select(null);
+    byPointer();
+    select(2);
+    expect(tab()).toBe('piece');
+    expect(heard()).toBe('');
+    byKeyboard();
+    select(null);
+    showPropsTab('piece');
+    expect(heard()).toBe('');
+  });
+
   test('typing in a field of the tab showing keeps that tab when the selection changes', () => {
     focus('gap');
     byKeyboard();
