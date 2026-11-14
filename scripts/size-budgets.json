@@ -1,0 +1,40 @@
+{
+  "$comment": [
+    "Bundle size budgets, checked by `yarn size` (scripts/check-size.mjs) on what `yarn build` writes to dist/.",
+    "Sizes are gzip at level 9, in kB of 1000 bytes; a group of files is the sum of each file's size, as each one is sent apart.",
+    "«measured» is the size when the budget was set; the budget is that plus about 5 %, rounded up (to 0.1 kB under 100 kB, to 1 kB above).",
+    "Raising a budget needs a reason in the commit message: see docs/testing.md."
+  ],
+  "initialJs": {
+    "kB": 189,
+    "measured": 179.6,
+    "what": "The JavaScript the editor's index.html loads at start: its module script and every module it preloads. What a first visit waits for; React is about 68 kB of it."
+  },
+  "totalJs": {
+    "kB": 923,
+    "measured": 878.5,
+    "what": "Every .js and .mjs file of the build: the editor's lazy chunks (dialogs, crop mode), pdf.js and its worker (about 500 kB), pdf-lib (about 180 kB), the contour worker and the static pages' scripts. Catches a dependency that grows or gets in by accident."
+  },
+  "css": {
+    "kB": 13.5,
+    "measured": 12.8,
+    "what": "Every .css file of the build: today only the editor's stylesheet, which blocks its first paint. The static pages carry their CSS inline (counted in each page)."
+  },
+  "pageScripts": {
+    "kB": 6.5,
+    "measured": 6.2,
+    "what": "The scripts the static pages load, built apart from the editor: today only the calculator (cuantas-fotos-caben-en-una-hoja). Grows a lot if it ever pulls in editor code."
+  },
+  "pages": {
+    "*": {
+      "kB": 7.4,
+      "measured": 7.0,
+      "what": "Each static page (every .html of the build but the editor's index.html), its HTML with its inline CSS; it applies to new pages too. Set on the largest one, cuantas-fotos-caben-en-una-hoja; the other guides are 5.3 to 5.8 kB and the legal pages 5.7 to 6.4 kB."
+    },
+    "es/licencias-de-terceros.html": {
+      "kB": 14,
+      "measured": 13.3,
+      "what": "The third-party licenses page, from THIRD_PARTY_NOTICES.md: it grows with each dependency the build ships."
+    }
+  }
+}

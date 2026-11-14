@@ -25,7 +25,7 @@ export default defineConfig({
     // of test broke. `yarn test` runs them all.
     projects: [
       // Pure functions of src/core and pure helpers: exact results, tables of cases.
-      { extends: true, test: { name: 'unit', include: ['tests/core/**/*.test.{js,ts}', 'tests/site/**/*.test.{js,ts}'], environment: 'node', sequence: { groupOrder: 0 } } },
+      { extends: true, test: { name: 'unit', include: ['tests/core/**/*.test.{js,ts}', 'tests/site/**/*.test.{js,ts}', 'tests/scripts/**/*.test.{js,ts}'], environment: 'node', sequence: { groupOrder: 0 } } },
       // Properties checked over many generated cases (fuzz).
       { extends: true, test: { name: 'properties', include: ['tests/properties/**/*.test.{js,ts}'], environment: 'node', sequence: { groupOrder: 0 } } },
       // Actions on the real stores, history, selectors and services (PDF, projects,

@@ -14,8 +14,9 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "ledger": "node e2e/scripts/check-ledger.mjs",
+    "size": "node scripts/check-size.mjs",
     "typecheck": "tsc && tsc -p e2e",
-    "verify": "yarn typecheck && yarn test && yarn build && yarn e2e && yarn ledger"
+    "verify": "yarn typecheck && yarn test && yarn build && yarn size && yarn e2e && yarn ledger"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
