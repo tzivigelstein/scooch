@@ -13,8 +13,11 @@ import { gzipSync } from 'node:zlib';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BUDGETS = join(ROOT, 'scripts/size-budgets.json');
 
-/** The key in `pages` whose budget applies to every page without an entry of its own. */
+/** The key in `pages` (and `languages`) whose budget applies to every page (language) without an entry of its own. */
 export const ANY_PAGE = '*';
+
+/** Groups measured one by one, by the prefix of their id, and the budgets they take. */
+const KEYED = Object.freeze({ 'page:': 'pages', 'language:': 'languages' });
 
 /** Bytes after gzip at its highest level, as a server that compresses ahead of time sends them. */
 export const gzipSize = (bytes) => gzipSync(bytes, { level: 9 }).length;
@@ -50,6 +53,16 @@ export const eagerScripts = (html) =>
     return [];
   });
 
+/**
+ * The file of each language's texts, from the data the editor's index.html
+ * carries for its head script (`#boot-copy`, see src/copy/static.ts): only
+ * the language shown loads, so none of them is among the eager scripts.
+ */
+export function languageChunks(html) {
+  const json = /<script\b[^>]*\bid=["']?boot-copy["']?[^>]*>([\s\S]*?)<\/script\s*>/i.exec(html)?.[1];
+  return json ? (JSON.parse(json).chunks ?? {}) : {};
+}
+
 /** A URL of the site as a path inside the build folder, or null when it points elsewhere. */
 export function buildPath(url) {
   if (/^[a-z][a-z\d+.-]*:|^\/\//i.test(url)) return null;
@@ -58,15 +71,17 @@ export function buildPath(url) {
 
 /**
  * Each measured group against its budget. `measures`: { id, label, files: [{ path, bytes }] },
- * where a page's id is `page:<path>`. Returns the table's rows and the problems
- * that aren't a size (a group without a budget, a page budget for no page).
+ * where a page's id is `page:<path>` and a language's `language:<tag>`. Returns
+ * the table's rows and the problems that aren't a size (a group without a
+ * budget, a page or language budget for none in the build).
  */
 export function compare(measures, budgets) {
   const problems = [];
-  const pages = budgets.pages ?? {};
+  const keyed = (id) => Object.entries(KEYED).find(([prefix]) => id.startsWith(prefix));
   const rows = measures.map(({ id, label, files }) => {
-    const page = id.startsWith('page:') ? id.slice('page:'.length) : null;
-    const entry = page === null ? budgets[id] : (pages[page] ?? pages[ANY_PAGE]);
+    const [prefix, group] = keyed(id) ?? [];
+    const own = budgets[group] ?? {};
+    const entry = prefix ? (own[id.slice(prefix.length)] ?? own[ANY_PAGE]) : budgets[id];
     const bytes = files.reduce((sum, f) => sum + f.bytes, 0);
     if (!(entry?.kB > 0)) {
       problems.push(`${label}: no budget (a positive «kB») in scripts/size-budgets.json`);
@@ -75,9 +90,11 @@ export function compare(measures, budgets) {
     const budget = Math.round(entry.kB * 1000);
     return { id, label, files: files.length, bytes, budget, delta: bytes - budget, over: bytes > budget };
   });
-  const measuredPages = new Set(measures.filter((m) => m.id.startsWith('page:')).map((m) => m.id.slice('page:'.length)));
-  for (const page of Object.keys(pages)) {
-    if (page !== ANY_PAGE && !measuredPages.has(page)) problems.push(`pages › ${page}: the build has no such page; remove its budget`);
+  for (const [prefix, group] of Object.entries(KEYED)) {
+    const measured = new Set(measures.filter((m) => m.id.startsWith(prefix)).map((m) => m.id.slice(prefix.length)));
+    for (const name of Object.keys(budgets[group] ?? {})) {
+      if (name !== ANY_PAGE && !measured.has(name)) problems.push(`${group} › ${name}: the build has no such ${prefix.slice(0, -1)}; remove its budget`);
+    }
   }
   return { rows, problems };
 }
@@ -126,8 +143,10 @@ export function measureBuild(dir) {
   const local = (urls) => [...new Set(urls.map(buildPath).filter((p) => p !== null))].map(file);
   const all = filesUnder(dir);
   const pages = all.filter((p) => p.endsWith('.html') && p !== 'index.html');
+  const editor = readFileSync(join(dir, 'index.html'), 'utf8');
   return [
-    { id: 'initialJs', label: 'editor: JS loaded at start', files: local(eagerScripts(readFileSync(join(dir, 'index.html'), 'utf8'))) },
+    { id: 'initialJs', label: 'editor: JS loaded at start', files: local(eagerScripts(editor)) },
+    ...Object.entries(languageChunks(editor)).map(([language, url]) => ({ id: `language:${language}`, label: `editor: texts, ${language} (one loads at start)`, files: local([url]) })),
     { id: 'totalJs', label: 'JS, every file', files: all.filter((p) => /\.m?js$/.test(p)).map(file) },
     { id: 'css', label: 'CSS, every file', files: all.filter((p) => p.endsWith('.css')).map(file) },
     { id: 'pageScripts', label: 'static pages: their scripts', files: local(pages.flatMap((p) => scriptSources(readFileSync(join(dir, p), 'utf8')))) },

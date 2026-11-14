@@ -1,7 +1,7 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
-import { ANY_PAGE, buildPath, compare, eagerScripts, formatTable, gzipSize, kB, parseAttributes, parseTags, scriptSources } from '../../scripts/check-size.mjs';
+import { ANY_PAGE, buildPath, compare, eagerScripts, formatTable, gzipSize, kB, languageChunks, parseAttributes, parseTags, scriptSources } from '../../scripts/check-size.mjs';
 
 // The pure parts of the bundle size check (`yarn size`): reading the built
 // HTML, comparing sizes with budgets and the table it prints.
@@ -45,6 +45,13 @@ describe('reading the built HTML', () => {
 
   test('the JavaScript the editor loads at start is its entry script and the modules it preloads; not the font, the stylesheet, the icon or data', () => {
     assert.deepEqual(eagerScripts(EDITOR), ['/assets/index-AbC123.js', '/assets/rolldown-runtime-x1.js', '/assets/shared-y2.js']);
+  });
+
+  test('each language’s texts are read from the data of the head’s script, and none of them is loaded at once', () => {
+    const editor = EDITOR.replace('<head>', `<head>\n  <script type="application/json" id="boot-copy">{"languages":["es","en"],"chunks":{"es":"/assets/copy-es-1.js","en":"/assets/copy-en-2.js"}}</script>`);
+    assert.deepEqual(languageChunks(editor), { es: '/assets/copy-es-1.js', en: '/assets/copy-en-2.js' });
+    assert.deepEqual(eagerScripts(editor), eagerScripts(EDITOR));
+    assert.deepEqual(languageChunks(EDITOR), {});
   });
 
   test("a static page's scripts are those with a src", () => {
@@ -92,6 +99,25 @@ describe('comparing sizes with their budgets', () => {
         { id: 'page:es/big.html', files: 1, bytes: 11000, budget: 12000, delta: -1000, over: false },
       ]
     );
+  });
+
+  test('each language takes its own budget or the one for any language', () => {
+    const { rows, problems } = compare(
+      [
+        { id: 'language:es', label: 'es', files: files(900) },
+        { id: 'language:hi', label: 'hi', files: files(1500) },
+      ],
+      { languages: { [ANY_PAGE]: { kB: 1 }, hi: { kB: 1.4 } } }
+    );
+    assert.deepEqual(problems, []);
+    assert.deepEqual(
+      rows.map(({ id, budget, over }) => ({ id, budget, over })),
+      [
+        { id: 'language:es', budget: 1000, over: false },
+        { id: 'language:hi', budget: 1400, over: true },
+      ]
+    );
+    assert.deepEqual(compare([], { languages: { xx: { kB: 1 } } }).problems, ['languages › xx: the build has no such language; remove its budget']);
   });
 
   test('a group without a budget (or without a positive kB) and a budget for a page the build no longer has are problems', () => {
