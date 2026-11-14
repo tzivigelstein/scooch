@@ -266,6 +266,7 @@ function offer() {
  */
 export function used(id: UsageId, route: Route, { keyed = false } = {}) {
   if (!useTips.getState().on) return;
+  const before = counts;
   note({ action: id, route, keyed });
   if (id === 'duplicate' || id === 'duplicateMany') {
     // One copy at a time of the same piece: the copy is selected now, of the same file.
@@ -276,7 +277,8 @@ export function used(id: UsageId, route: Route, { keyed = false } = {}) {
     note({ pattern: 'duplicateSame', n: session.copies.n });
   }
   if (id === 'arrange') session.drags = fresh().drags;
-  offer();
+  // Nothing counted (a wheel zoom many times a second, once known): nothing can be due.
+  if (counts !== before) offer();
 }
 
 // The kind of the last pointer pressed: a control's click doesn't say whether it was a tap.
