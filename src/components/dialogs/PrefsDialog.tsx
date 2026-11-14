@@ -6,9 +6,8 @@ import { X } from 'lucide-react';
 import { THEMES, type ThemeChoice } from '../../core/storedprefs.js';
 import { UNITS, type Unit } from '../../core/units.js';
 import { t } from '../../copy/index.ts';
-import { unitName } from '../../services/measure.ts';
-import { setPrinting, setSingleKeys, setTheme, setUnit, usePrefs } from '../../state/prefs.ts';
-import { announce } from '../feedback/announcer.ts';
+import { setPrinting, setSingleKeys, setTheme, usePrefs } from '../../state/prefs.ts';
+import { chooseUnit } from '../../state/actions/prefs.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
 import { Switch } from '../ui/Switch.tsx';
@@ -38,11 +37,7 @@ export default function PrefsDialog() {
             className="segmented chips units"
             name="unit"
             value={unit}
-            onChange={(value) => {
-              if (value === unit) return;
-              setUnit(value);
-              announce(t('prefs.unitChanged', { unit: unitName() }));
-            }}
+            onChange={chooseUnit}
             options={UNITS.map((value) => ({
               value,
               input: { 'aria-label': t('prefs.unitLabel', { symbol: t(`units.${value}`), name: t(`units.names.${value}`) }) },

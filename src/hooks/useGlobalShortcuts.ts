@@ -88,7 +88,7 @@ function adopt(target: Element) {
  * arrows too, Tab goes into the tab's controls and Esc back to the canvas.
  * Without a selection, Pieza shows its hint.
  */
-function focusPropsTab(tab: PropsTab) {
+export function focusPropsTab(tab: PropsTab) {
   const active = document.activeElement;
   const back = active?.closest('#sheets') ? active : (pieceNode(primaryItem()?.id) ?? sheetNode(currentSheet()));
   revealPanel('props', back);
@@ -96,7 +96,7 @@ function focusPropsTab(tab: PropsTab) {
 }
 
 /** P: to the list of pieces (or to the add zone when it is empty). */
-function focusPieces() {
+export function focusPieces() {
   revealPanel('pieces');
   if (!focusList()) document.getElementById('addzone')?.focus();
 }

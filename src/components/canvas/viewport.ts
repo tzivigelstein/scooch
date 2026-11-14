@@ -193,6 +193,12 @@ export function pinchTo(before: PinchPair, after: PinchPair, anchor: PinchAnchor
   return { sheet, corner: { x: Math.abs(x + next.scroll.x) > 1 ? x : -next.scroll.x, y: Math.abs(y + next.scroll.y) > 1 ? y : -next.scroll.y } };
 }
 
+/** A zoom level in percent (from the zoom menu or the command palette), and says it. */
+export function zoomToPercent(pct: number) {
+  zoomTo(fromPercent(pct));
+  announce(t('zoom.changed', { pct }));
+}
+
 /** One level in (1) or out (−1), around the middle of the stage, and says the new level. */
 export function stepZoom(dir: 1 | -1) {
   zoomTo(fromPercent(stepPercent(zoomPercent(), dir)));

@@ -90,10 +90,15 @@ export function gotoSheet(dir: 1 | -1) {
   if (target < 0 || target >= sheets.length) {
     return announce(t(dir > 0 ? 'announce.lastSheet' : 'announce.firstSheet'));
   }
-  const sheet = sheets[target];
+  showSheet(sheets[target].id);
+}
+
+/** The sheet in view, with the focus and the selection on its first piece (or on the sheet, if empty). */
+export function showSheet(id: number) {
+  if (sheetIndex(id) < 0) return;
   // The first piece in reading order (top to bottom, left to right).
-  const first = [...itemsOn(sheet.id)].sort((a, b) => a.y - b.y || a.x - b.x)[0];
-  setView({ sheet: sheet.id });
+  const first = [...itemsOn(id)].sort((a, b) => a.y - b.y || a.x - b.x)[0];
+  setView({ sheet: id });
   if (first) {
     select(first.id);
     flushUi();
@@ -102,8 +107,8 @@ export function gotoSheet(dir: 1 | -1) {
   } else {
     setSelection([]);
     flushUi();
-    revealSheet(sheet.id);
-    sheetNode(sheet.id)?.focus({ preventScroll: true });
+    revealSheet(id);
+    sheetNode(id)?.focus({ preventScroll: true });
   }
 }
 
