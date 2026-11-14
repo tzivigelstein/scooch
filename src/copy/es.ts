@@ -700,8 +700,6 @@ const es = {
 
   print: {
     frameTitle: 'PDF para imprimir',
-    pdfTitle: '{app} {paper}',
-    fallbackName: 'hoja',
   },
 
   // The request for a donation, in the summary after printing

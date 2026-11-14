@@ -7,21 +7,22 @@ import { APP_NAME } from '../config.ts';
 import { cutStyle } from '../core/cutmarks.js';
 import { pdfKey } from '../core/savings.js';
 import { slug } from '../core/util.ts';
-import { t } from '../copy/index.ts';
+import { OUTPUT_TEXTS, outputText } from '../copy/output.ts';
 import { getAsset } from '../state/assets.ts';
 import { getDocument, type Piece } from '../state/document.ts';
 import { itemsOn, sheetSize } from '../state/selectors.ts';
 import { shapesReady, sheetCuts } from './contours.ts';
-import { paperName, paperSlug } from './measure.ts';
+import { paperSlug, writtenPaperName } from './measure.ts';
 import { buildPdf } from './pdf.ts';
 
-export const pdfFileName = () => `${slug(APP_NAME, t('print.fallbackName'))}-${paperSlug()}.pdf`;
+/** «scooch-a4.pdf»: the same in every language, like the PDF's title (copy/output.ts). */
+export const pdfFileName = () => `${slug(APP_NAME, OUTPUT_TEXTS.fallbackName)}-${paperSlug()}.pdf`;
 
 /** The bytes of the document's PDF. */
 export async function makePdf() {
   const [W, H] = sheetSize();
   const { sheets, cuts } = getDocument();
-  const title = t('print.pdfTitle', { paper: paperName() });
+  const title = outputText(OUTPUT_TEXTS.title, { app: APP_NAME, paper: writtenPaperName() });
   const filled = sheets.map((sheet) => itemsOn(sheet.id)).filter((items) => items.length);
   // The assets as they are now: nothing the document does meanwhile changes this PDF.
   const assets = new Map(filled.flat().map((item) => [item.asset, getAsset(item.asset)]));
