@@ -192,7 +192,8 @@ mantiene gracias a personas como tú», no «Lo mantengo…»).
 | descargar PDF | guardar el PDF | exportar, bajar |
 | deshacer / rehacer | historial | revertir |
 | propiedades | el panel de la derecha | ajustes, inspector |
-| pestaña | cada parte de Propiedades: Pieza y Hojas (la del navegador, «pestaña» a secas cuando no hay duda: «En otra pestaña») | solapa |
+| pestaña | cada parte de Propiedades: Pieza y Proyecto (la del navegador, «pestaña» a secas cuando no hay duda: «En otra pestaña») | solapa |
+| pestaña Proyecto | la configuración del proyecto abierto, para todas sus hojas; sus secciones son Papel, Distribución, Líneas de corte y Grilla (el diálogo Proyectos es para pasar de un proyecto a otro) | Hojas, ajustes de la hoja, configurar hoja |
 | recorte / líneas de corte | la parte de la imagen que se ve / las marcas para cortar las piezas impresas | crop, guías |
 | margen de corte | lo que se deja alrededor de cada imagen para cortarla (negativo: el corte entra en la imagen) | sangrado, bleed |
 | marcas | las líneas en L de las esquinas, con «Esquinas» («Largo de las marcas», «Distancia a la esquina») | guías, crop marks |
@@ -243,7 +244,9 @@ Esc. Las letras y los signos se muestran tal cual.
 | Apoyar en Patreon | Aportar en Patreon | Un solo término para la donación |
 | Se admiten hasta 200 piezas en total, así que ya no entran más copias | Ya hay 200 piezas, el máximo. Quita alguna para duplicar. | Sin relleno; qué pasó y cómo seguir |
 | No se pudo completar la acción en Proyectos | No se pudo duplicar «Tarjetas». Inténtalo de nuevo. | Un error por acción, que dice cuál falló |
-| Se aplica a todas las hojas (sobre la pestaña Hoja) | Pestaña Hojas | El nombre dice lo que explicaba la nota |
+| Se aplica a todas las hojas (sobre la pestaña Hoja) | Pestaña Proyecto | El nombre dice lo que explicaba la nota |
+| Pestaña Hojas | Pestaña Proyecto | Nada de lo que tiene es de una hoja: es la configuración del proyecto abierto |
+| Configurar hoja (en el título de cada hoja) | Cambiar el papel | No hay ajustes por hoja; el botón dice exactamente qué hace |
 | Configurar · Usar 5 mm · Guardar como nuevo | Usar separación de 5 mm · Guardar como proyecto nuevo | El botón dice exactamente qué hace |
 
 ## Decisiones tomadas
@@ -263,8 +266,13 @@ Esc. Las letras y los signos se muestran tal cual.
   palabra que «quitar» (piezas y hojas, que se pueden deshacer).
 - **Preferencias** para los ajustes de este navegador (no del documento): se
   abre con el engranaje y no entra en el historial.
-- **Hojas** como nombre de la pestaña de Propiedades con el papel, la
-  distribución, las líneas de corte y la grilla: se aplica a todas las hojas.
+- **Proyecto** como nombre de la pestaña de Propiedades con el papel, la
+  distribución, las líneas de corte y la grilla (2026-11; antes «Hojas»):
+  nada de eso es de una hoja, es la configuración del proyecto abierto, para
+  todas sus hojas. El diálogo Proyectos es para pasar de un proyecto a otro;
+  la pestaña es el proyecto abierto por dentro, y Papel, Distribución, Líneas
+  de corte y Grilla son secciones de ella. El título de cada hoja («Hoja 1 de
+  3») es el botón **Cambiar el papel**, que lleva a Papel.
 - **Quitar una hoja con piezas** no pregunta: el aviso ofrece «Deshacer».
   «Quitar todas» sí pregunta (decisión del dueño) y además ofrece «Deshacer».
 - **En otra pestaña** para el proyecto que se abrió en otra pestaña del
