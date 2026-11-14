@@ -2,11 +2,11 @@
 // what was typed against a name and its other words, ignoring case, accents
 // and the order of the words. Pure.
 //
-// Each word typed has to be found, in the name or in the other words: at the
-// start of a word (best), inside one, or as its letters in order starting at
-// the start of a word («dpl» finds «Duplicar»). The name counts more than the
-// other words, the whole query at the start of the name more still, and a
-// shorter name wins a tie.
+// Each word typed has to be found, in the name or in one of the other words:
+// at the start of a word (best), inside one, or as its letters in order
+// starting at the start of a word («dpl» finds «Duplicar»). The name counts
+// more than the other words, the whole query at the start of the name more
+// still, and a shorter name wins a tie.
 
 const WORD = /[\p{L}\p{N}]/u;
 const SPACE = /\s/;
@@ -23,9 +23,16 @@ export function fold(text) {
   return out;
 }
 
-/** A name and its other words, folded once for many searches. */
+/** A name and its other words (a comma-separated list), folded once for many searches. */
 export function prepare(name, aliases = '') {
-  return { name, key: fold(name), alt: fold(aliases) };
+  return {
+    name,
+    key: fold(name),
+    alt: aliases
+      .split(',')
+      .map((alias) => fold(alias.trim()))
+      .filter(Boolean),
+  };
 }
 
 const wordStart = (text, i) => i === 0 || !WORD.test(text[i - 1]);
@@ -47,17 +54,21 @@ function findToken(token, text) {
   }
   if (inside >= 0) return { score: INSIDE_WORD + token.length, from: inside, to: inside + token.length, indices: null };
   if (token.length < 2) return null;
-  // Its letters in order, from the start of a word: the tightest such run.
+  // Its letters in order from the start of a word, going on to another word
+  // only at its start («rad»: Rotar a la derecha): the tightest such run.
   let best = null;
   for (let start = text.indexOf(token[0]); start >= 0; start = text.indexOf(token[0], start + 1)) {
     if (!wordStart(text, start)) continue;
     const indices = [start];
-    for (let k = 1, at = start + 1; k < token.length; k++, at++) {
-      at = text.indexOf(token[k], at);
-      if (at < 0) break;
-      indices.push(at);
+    let crossed = false;
+    for (let j = start + 1; j < text.length && indices.length < token.length; j++) {
+      if (!WORD.test(text[j])) crossed = true;
+      else if (text[j] === token[indices.length] && (!crossed || wordStart(text, j))) {
+        indices.push(j);
+        crossed = false;
+      }
     }
-    if (indices.length < token.length) break;
+    if (indices.length < token.length) continue;
     const span = indices.at(-1) - start + 1;
     const score = IN_ORDER + (token.length / span) * IN_ORDER;
     if (!best || score > best.score) best = { score, indices };
@@ -95,7 +106,11 @@ export function fuzzyMatch(query, target) {
   const inName = [];
   for (const token of q.split(' ')) {
     const found = findToken(token, target.key);
-    const alias = target.alt ? findToken(token, target.alt) : null;
+    let alias = null;
+    for (const text of target.alt) {
+      const match = findToken(token, text);
+      if (match && (!alias || match.score > alias.score)) alias = match;
+    }
     if (found && (!alias || found.score >= alias.score * IN_ALIASES)) {
       score += found.score;
       inName.push(found);

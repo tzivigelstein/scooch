@@ -49,6 +49,16 @@ describe('what a query finds', () => {
     expect(fuzzyMatch(query, prepare(name)) !== null).toBe(found);
   });
 
+  test('letters in order go on to another word only at its start', () => {
+    expect(parts('Rotar a la derecha', fuzzyMatch('rald', prepare('Rotar a la derecha')).ranges)).toEqual(['R', 'a', 'l', 'd']);
+    expect(fuzzyMatch('rte', prepare('Rotar a la derecha'))).toBeNull();
+  });
+
+  test('the other words are each on their own: letters in order don’t run from one into the next', () => {
+    expect(fuzzyMatch('rot', prepare('Cambiar el nombre', 'renombrar, título'))).toBeNull();
+    expect(fuzzyMatch('tit', prepare('Cambiar el nombre', 'renombrar, título'))).not.toBeNull();
+  });
+
   test('another word for it finds it, without marking anything in the name', () => {
     const match = fuzzyMatch('girar', prepare('Rotar a la derecha', 'girar, voltear'));
     expect(match).not.toBeNull();

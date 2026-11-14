@@ -2,7 +2,8 @@
 export interface FuzzyTarget {
   name: string;
   key: string;
-  alt: string;
+  /** Each of the other words (or phrases), on its own. */
+  alt: string[];
 }
 
 /** Matched parts of a name: [start, end) pairs, sorted and merged. */
