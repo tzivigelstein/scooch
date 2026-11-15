@@ -43,18 +43,58 @@ node_modules/.bin/playwright show-report e2e/out/report    # traces and screensh
 `e2e/out` (`E2E_OUT`). Two runs at the same time need different `E2E_PORT` and
 `E2E_OUT`. It never reuses a server that is already running.
 
-**WebKit** (Safari, the iPhone) is defined but opt-in, because its system
-libraries need root to install. On Ubuntu 22.04:
+**WebKit** (Safari, the iPhone) and **Firefox** are defined but opt-in
+(`E2E_WEBKIT=1`, `E2E_FIREFOX=1`), because their system libraries need root
+to install. With root, on Ubuntu:
 
 ```sh
 node_modules/.bin/playwright install webkit
 sudo node_modules/.bin/playwright install-deps webkit   # libgtk-4-1, libgstreamer-plugins-bad1.0-0, …
-E2E_WEBKIT=1 yarn e2e
+E2E_WEBKIT=1 yarn e2e --project=webkit
 ```
 
-CI runs the WebKit project too (see below). The touch tests that
-send their touches through the Chrome DevTools Protocol skip themselves
-outside Chromium, saying why.
+CI runs the WebKit and Firefox projects too (see below). A test that can't
+work in an engine skips itself there, saying why: the ones that go through
+the Chrome DevTools Protocol (touch, a mouse move without its button)
+outside Chromium, and printing from a hidden frame in WebKit (Safari prints
+the page instead, so the app opens the PDF in a tab) and in Firefox (no PDF
+viewer).
+
+### Running WebKit (or Firefox) locally with Docker
+
+Without root, or without a Mac, Playwright's Docker image has every browser
+and its libraries. Its version must be the project's Playwright version. From
+the repository, after `yarn install --frozen-lockfile` (the image runs the
+same `node_modules`):
+
+```sh
+PW=$(node -p 'require("@playwright/test/package.json").version')
+docker run --rm --init --ipc=host --user "$(id -u):$(id -g)" -e HOME=/tmp \
+  -v "$PWD":/work -w /work -e E2E_WEBKIT=1 -e E2E_OUT=e2e/out/webkit \
+  mcr.microsoft.com/playwright:v$PW-noble \
+  node_modules/.bin/playwright test --project=webkit
+```
+
+- Add a spec's path, `-g '<title>'` or `--workers=N` after `--project=webkit`
+  as with any run. For Firefox: `-e E2E_FIREFOX=1 -e E2E_OUT=e2e/out/firefox`
+  and `--project=firefox`.
+- The container has a network of its own, so its server's port (4319) never
+  clashes with one on the machine; the build, results and report go to
+  `E2E_OUT` (inside the ignored `e2e/out/`), owned by you (`--user`).
+- `node_modules/.bin/playwright show-report e2e/out/webkit/report` on the
+  machine opens the report, with the traces of the failures.
+- Playwright's WebKit is close to Safari, but not Safari. It runs on Linux
+  (WebKitGTK) and draws in software, so the project runs at 1× (at 2× the
+  large windows timed out). Its contexts are ephemeral, like a private
+  window: IndexedDB can't store a Blob there (which is why the app stores
+  bytes; the specs that seed Blobs, as earlier layouts stored them, use a
+  profile on disk: `seedingTest`). It has no `navigator.storage`; Ctrl+C,
+  X and V fire no clipboard event (`clipboardKey` dispatches it); wheel
+  deltas and pointer positions come in whole pixels; during a drag it draws
+  a frame only when the pointer moves; a lazy chunk that failed to load
+  stays failed, even from a new page; and it focuses a button on click,
+  which Safari on a Mac doesn't. Whatever depends on those still needs a
+  real Safari.
 
 ## Continuous integration
 
@@ -68,6 +108,7 @@ every push to `main` and on every pull request, in jobs side by side, after
 | Build and size budgets | `yarn build`, `yarn size` |
 | Browser tests (Chromium) | `yarn e2e` (chromium, then performance) with `E2E_TIME_FACTOR=2` |
 | Browser tests (WebKit, allowed to fail) | `E2E_WEBKIT=1 yarn e2e --project=webkit` |
+| Browser tests (Firefox, allowed to fail) | `E2E_FIREFOX=1 yarn e2e --project=firefox` |
 
 - **CI builds as `yarn build` does locally.** `VERCEL_ENV` isn't set, so the
   missing `SITE_URL` and the legal placeholders only warn; only a Vercel
@@ -81,19 +122,20 @@ every push to `main` and on every pull request, in jobs side by side, after
   those numbers in the commit message; never change a budget in the spec for
   CI's sake. The Vitest performance project's clock guards are generous
   enough not to need it.
-- **WebKit is allowed to fail for now** (`continue-on-error`): nobody has seen
-  the suite pass on WebKit yet. Its job can end red without failing the run,
-  and stops after 30 minutes (`--global-timeout`) so it always writes its
-  report. Read the report, fix what is a real bug, and remove
-  `continue-on-error` once it passes reliably.
+- **WebKit and Firefox are allowed to fail for now** (`continue-on-error`):
+  their jobs can end red without failing the run, and stop after 30 minutes
+  (`--global-timeout`) so they always write their report. Read the report
+  (or reproduce it with Docker, above), fix what is a real bug, and remove a
+  job's `continue-on-error` once it passes reliably.
 - A newer push to the same pull request or branch cancels the run in progress.
 
 **Reproducing a failure.** Each step of a job is a command you can run the
 same way locally, after `yarn install --frozen-lockfile`. `CI` is set on the
 runner: Playwright then refuses `test.only` and also writes a JUnit file, so
 `CI=1 yarn e2e` is the closest local run. A failed browser job uploads an
-artifact (`playwright-chromium` or `playwright-webkit`, on the run's summary
-page) with the HTML report and the traces of the failed tests:
+artifact (`playwright-chromium`, `playwright-webkit` or `playwright-firefox`,
+on the run's summary page) with the HTML report and the traces of the failed
+tests:
 
 ```sh
 node_modules/.bin/playwright show-report <unzipped artifact>/report

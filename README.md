@@ -48,8 +48,8 @@ performance budgets for dragging, scrolling and zooming with 150 pieces.
 There is no quick mode and no retries.
 
 CI (GitHub Actions, `.github/workflows/ci.yml`) runs the same checks on every
-push to `main` and every pull request, plus the browser tests on WebKit
-(allowed to fail for now). [docs/testing.md](docs/testing.md#continuous-integration)
+push to `main` and every pull request, plus the browser tests on WebKit and
+Firefox (allowed to fail for now). [docs/testing.md](docs/testing.md#continuous-integration)
 explains the jobs and the size budgets.
 
 ## Projects and privacy
