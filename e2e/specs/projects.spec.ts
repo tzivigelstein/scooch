@@ -781,7 +781,8 @@ test('the top bar renames the project the same way: text selected, Esc cancels, 
   await saved(page);
 });
 
-test('the top bar’s name field, opened again while a stylesheet is loading, keeps the focus and the typing', async ({ page, app }) => {
+test('the top bar’s name field, opened again while a stylesheet is loading, keeps the focus and the typing', async ({ app }) => {
+  const page = app.page;
   await renameInBar(page, 'Hojas');
   // A stylesheet that keeps loading until the end, as the CSS of the lazy
   // parts does when the app fetches it while idle (without
