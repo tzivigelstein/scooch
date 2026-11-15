@@ -25,6 +25,38 @@ export const norm = (s: string | null | undefined) => String(s ?? '').replace(/Â
 const quietPages = new WeakSet<Page>();
 /** Pages whose app starts with the usage tips turned off. */
 const tiplessPages = new WeakSet<Page>();
+/** Pages that record what their live regions say (recordAnnouncements). */
+const listenedPages = new WeakSet<Page>();
+
+interface Heard {
+  __heard?: string[];
+  __heardFrom?: number;
+}
+
+/**
+ * For addInitScript: keeps everything the live regions say, in order, in
+ * window.__heard, so a check doesn't miss an announcement another one
+ * replaced before it looked (a later one can come within half a second).
+ */
+function recordAnnouncements() {
+  const w = window as unknown as Heard;
+  w.__heard = [];
+  let last = '';
+  const record = () => {
+    const now = `${document.getElementById('live-polite')?.textContent ?? ''} ${document.getElementById('live-assertive')?.textContent ?? ''}`;
+    if (now !== last) w.__heard!.push((last = now));
+  };
+  // The regions come with the app; then only they are watched.
+  const find = new MutationObserver(() => {
+    const regions = ['live-polite', 'live-assertive'].map((id) => document.getElementById(id));
+    if (regions.some((r) => !r)) return;
+    find.disconnect();
+    const watch = new MutationObserver(record);
+    for (const region of regions) watch.observe(region!, { childList: true, characterData: true, subtree: true });
+    record();
+  });
+  find.observe(document, { childList: true, subtree: true });
+}
 
 export class App {
   /**
@@ -63,6 +95,10 @@ export class App {
         const storage = window.localStorage;
         if (storage && storage.getItem('scooch:usage-tips') === null) storage.setItem('scooch:usage-tips', JSON.stringify({ v: 1, on: false, dismissed: [], known: [], counts: {} }));
       });
+    }
+    if (!listenedPages.has(this.page)) {
+      listenedPages.add(this.page);
+      await this.page.addInitScript(recordAnnouncements);
     }
     await this.page.goto(query ? `./${query}` : './');
     await this.ready();
@@ -243,9 +279,25 @@ export class App {
     return this.page.evaluate(readLive);
   }
 
-  /** Waits until a live region says something matching `re`. */
+  /**
+   * Waits until a live region says something matching `re`: what they said
+   * since the last announcement this found (see recordAnnouncements), or what
+   * they say now in a page that doesn't record them.
+   */
   async heard(re: RegExp, timeout = 5_000) {
-    await expect.poll(() => this.live(), { timeout, message: `announced ${re}` }).toMatch(re);
+    const found = () =>
+      this.page.evaluate(
+        ([source, flags]) => {
+          const w = window as unknown as Heard;
+          const re = new RegExp(source, flags);
+          if (!w.__heard) return re.test(`${document.getElementById('live-polite')?.textContent ?? ''} ${document.getElementById('live-assertive')?.textContent ?? ''}`);
+          const i = w.__heard.findIndex((said, k) => k >= (w.__heardFrom ?? 0) && re.test(said));
+          if (i >= 0) w.__heardFrom = i + 1;
+          return i >= 0;
+        },
+        [re.source, re.flags] as const
+      );
+    await expect.poll(found, { timeout, message: `announced ${re}` }).toBe(true);
   }
 
   /** What has the focus. */
