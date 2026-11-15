@@ -4,11 +4,10 @@
 // carries, the font and the lazy chunks of pdf.js and pdf-lib. That the
 // skeleton copies the stylesheet's values is in tests/site/boot-skeleton.test.ts.
 import { readFileSync } from 'node:fs';
-import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import { CATALOGUES } from '../../src/copy/all.ts';
 import { textsFor } from '../../src/copy/index.ts';
-import { AXE_TAGS, DESKTOP, PHONE, axeSummary, sizeTitle } from '../support/accessibility.ts';
+import { DESKTOP, PHONE, axeSummary, scan, sizeTitle } from '../support/accessibility.ts';
 import { holdApp, layoutShift, readAbout, skeletonShown, watchHandOff } from '../support/boot.ts';
 import { App, expect, test } from '../support/test.ts';
 
@@ -243,9 +242,10 @@ test.describe('when the editor can’t open', () => {
   test.describe('its texts don’t download', () => {
     const FRENCH = /\/assets\/copy-fr-[\w-]+\.js$/;
     // The French texts' failed request (and the browser's line for it), and the app saying so in the console.
-    test.use({ locale: 'fr-FR', allowErrors: [/^requestfailed: .*\/assets\/copy-fr-[\w-]+\.js \(net::ERR_FAILED\)$|^Failed to load resource: net::ERR_FAILED$|^The texts could not be loaded\./] });
+    // Each engine words the request's failure its own way (WebKit: «Blocked by Web Inspector»).
+    test.use({ locale: 'fr-FR', allowErrors: [/^requestfailed: .*\/assets\/copy-fr-[\w-]+\.js \(.+\)$|^Failed to load resource: net::ERR_FAILED$|^The texts could not be loaded\./] });
 
-    test('the skeleton gives way to a message in the page’s language with the focus on its reload button, which opens the editor once they do', async ({ page }, testInfo) => {
+    test('the skeleton gives way to a message in the page’s language with the focus on its reload button, which opens the editor once they do', async ({ page, browserName }, testInfo) => {
       const { t } = textsFor(CATALOGUES.fr);
       await page.route(FRENCH, (route) => route.abort('failed'));
       await page.goto('./');
@@ -254,8 +254,15 @@ test.describe('when the editor can’t open', () => {
       await expect(page.locator('.boot')).toHaveCount(0);
       const reload = failed.getByRole('button', { name: t('notices.reload') });
       await expect(reload).toBeFocused();
-      const { violations } = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      const { violations } = await scan(page);
       expect(axeSummary(violations)).toEqual([]);
+      if (browserName === 'webkit') {
+        // Playwright's WebKit keeps the failed chunk in its memory cache (aborted or
+        // answered with a 503) and doesn't ask for it again, even from a new page:
+        // the editor can't open in this browser context.
+        testInfo.annotations.push({ type: 'not in WebKit', description: 'the reload opening the editor' });
+        return;
+      }
       await page.unroute(FRENCH);
       await page.keyboard.press('Enter');
       await new App(page, testInfo).ready();
@@ -336,13 +343,15 @@ test.describe('the build', () => {
     const fonts = await page.evaluate(() => ({
       family: getComputedStyle(document.body).fontFamily,
       check: document.fonts.check('14px "Inter Variable"'),
-      loaded: [...document.fonts].filter((f) => f.status === 'loaded').map((f) => `${f.family} ${f.unicodeRange.slice(0, 12)}`),
+      // WebKit gives the family in quotes.
+      loaded: [...document.fonts].filter((f) => f.status === 'loaded').map((f) => `${f.family.replace(/^"(.*)"$/, '$1')} ${f.unicodeRange.slice(0, 12)}`),
       button: getComputedStyle(document.getElementById('arrange')!).fontFamily,
     }));
     expect(fonts.family, 'body uses Inter Variable with system-ui behind').toMatch(/^"?Inter Variable"?, system-ui/);
     expect(fonts.check && fonts.loaded.some((f) => f.startsWith('Inter Variable')), 'Inter is loaded').toBe(true);
     expect(fonts.button, 'buttons inherit Inter').toMatch(/Inter Variable/);
-    const woff = initial.filter((u) => /\.woff2/.test(u));
+    // WebKit lists it twice: it fetches it again instead of using the preload.
+    const woff = [...new Set(initial.filter((u) => /\.woff2/.test(u)))];
     expect(woff, 'only the Latin subset').toHaveLength(1);
     expect(woff[0]).toMatch(/inter-latin-wght/);
     expect(initial.filter((u) => /pdfjs|pdf\.worker|pdf-lib/.test(u)), 'nothing of pdf.js or pdf-lib on start').toEqual([]);
