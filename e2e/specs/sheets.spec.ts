@@ -9,6 +9,7 @@
 import { expect, test, cards } from '../support/test.ts';
 import { frames, setZoom } from '../support/canvas.ts';
 import { outsideMargin, overlapping } from '../support/geometry.ts';
+import { movesOutsideWindow, OUTSIDE_WINDOW } from '../support/pointer.ts';
 import { counts, holdPiece, lastSheetBottom, pageAt, pieceIds, placeholders, scrollOf, scrollStops, sheetIds, stageBox, toBelowLastSheet } from '../support/sheets.ts';
 
 test('«Acomodar» puts 20 equal cards back on 3 sheets, 9 + 9 + 2, and says so; each sheet is a group named after its visible label', async ({ app, page }) => {
@@ -211,7 +212,8 @@ test.describe('dragging pieces out of the sheets onto a new sheet', () => {
     await expect.poll(() => app.sheets()).toEqual(after);
   });
 
-  test('released far past the window, beyond the placeholders, pieces land on a real sheet: below, inside a new last sheet; above, inside a new first one; beside, on their sheet with the center on it; a group inside the new sheet too', async ({ app, page }) => {
+  test('released far past the window, beyond the placeholders, pieces land on a real sheet: below, inside a new last sheet; above, inside a new first one; beside, on their sheet with the center on it; a group inside the new sheet too', async ({ app, page, browserName }) => {
+    test.skip(!movesOutsideWindow(browserName), OUTSIDE_WINDOW);
     const [first9, last3] = await pieceIds(app);
     const before = await app.sheets();
     const stage = await stageBox(page);
@@ -412,7 +414,7 @@ test.describe('dragging pieces out of the sheets onto a new sheet', () => {
 });
 
 test.describe('something held at an edge of the stage scrolls it only as far as there is something to show', () => {
-  test('a piece held below the bottom edge with one sheet: the stage scrolls until the new sheet’s placeholder shows whole and stops there for good, past the window too; with Esc the extent is the one it had, dropped it is the new document’s', async ({ app, page }) => {
+  test('a piece held below the bottom edge with one sheet: the stage scrolls until the new sheet’s placeholder shows whole and stops there for good, past the window too; with Esc the extent is the one it had, dropped it is the new document’s', async ({ app, page, browserName }) => {
     await app.addFiles(cards(0, 2));
     const [[id]] = await pieceIds(app);
     const stage = await stageBox(page);
@@ -433,9 +435,12 @@ test.describe('something held at an edge of the stage scrolls it only as far as 
 
         await frames(page, 120);
         expect(await scrollOf(page), 'held on, nothing grows').toEqual(held);
-        await page.mouse.move(from.x, 900 + 300, { steps: 4 });
-        await frames(page, 120);
-        expect(await scrollOf(page), 'held past the window’s bottom, nothing grows either').toEqual(held);
+        // (Not in Firefox: see movesOutsideWindow.)
+        if (movesOutsideWindow(browserName)) {
+          await page.mouse.move(from.x, 900 + 300, { steps: 4 });
+          await frames(page, 120);
+          expect(await scrollOf(page), 'held past the window’s bottom, nothing grows either').toEqual(held);
+        }
 
         if (end === 'cancel') {
           // React renders #sheets' classes anew when an animation ends, whatever the drag added.
@@ -462,7 +467,7 @@ test.describe('something held at an edge of the stage scrolls it only as far as 
     expect(dropped, 'after the drop, the extent of the new document').toBe((await scrollOf(page)).height);
   });
 
-  test('at 400 %, a piece held at the right edge scrolls sideways only to the sheets’ edge, and at the left edge back to the start; with Esc nothing is left', async ({ app, page }) => {
+  test('at 400 %, a piece held at the right edge scrolls sideways only to the sheets’ edge, and at the left edge back to the start; with Esc nothing is left', async ({ app, page, browserName }) => {
     await app.addFiles(cards(0, 2));
     const [[id]] = await pieceIds(app);
     await setZoom(page, 400);
@@ -482,9 +487,12 @@ test.describe('something held at an edge of the stage scrolls it only as far as 
     let held = await scrollStops(page);
     expect(held.left, 'to the right end').toBe(end);
     expect(held.width, 'the sheets’ width, not one pixel more').toBe(before.width);
-    await page.mouse.move(1440 + 300, from.y, { steps: 4 });
-    await frames(page, 120);
-    expect(await scrollOf(page), 'held past the window’s right edge, nothing grows').toEqual(held);
+    // (Not in Firefox: see movesOutsideWindow.)
+    if (movesOutsideWindow(browserName)) {
+      await page.mouse.move(1440 + 300, from.y, { steps: 4 });
+      await frames(page, 120);
+      expect(await scrollOf(page), 'held past the window’s right edge, nothing grows').toEqual(held);
+    }
 
     await page.mouse.move(stage.x + 4, from.y, { steps: 8 });
     held = await scrollStops(page);
@@ -498,7 +506,7 @@ test.describe('something held at an edge of the stage scrolls it only as far as 
     expect([after.width, after.height], 'the extent it had before').toEqual([before.width, before.height]);
   });
 
-  test('a marquee held past the bottom edge scrolls to the end of the sheet and no further', async ({ app, page }) => {
+  test('a marquee held past the bottom edge scrolls to the end of the sheet and no further', async ({ app, page, browserName }) => {
     await app.addFiles(cards(0, 2));
     await setZoom(page, 100);
     await page.locator('#stage').evaluate((el) => el.scrollTo(0, 0));
@@ -508,7 +516,9 @@ test.describe('something held at an edge of the stage scrolls it only as far as 
     await page.mouse.move(sheet.x - 12, sheet.y + 10);
     await page.mouse.down();
     await page.mouse.move(sheet.x + sheet.width - 20, sheet.y + 80, { steps: 4 });
-    await page.mouse.move(sheet.x + sheet.width - 20, 900 + 300, { steps: 8 });
+    // Past the window's bottom; in Firefox on the stage's bottom edge, as fast (see movesOutsideWindow).
+    const stage = await stageBox(page);
+    await page.mouse.move(sheet.x + sheet.width - 20, movesOutsideWindow(browserName) ? 900 + 300 : stage.y + stage.height - 1, { steps: 8 });
     const held = await scrollStops(page);
     expect(held.top, 'to the end').toBe(before.maxTop);
     expect(held.height, 'and no further').toBe(before.height);

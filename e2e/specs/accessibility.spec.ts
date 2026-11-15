@@ -11,6 +11,7 @@ import type { Locator, Page } from '@playwright/test';
 import { App, cards, expect, norm, test } from '../support/test.ts';
 import { Catalogue, DESKTOP, MEDIUM, PHONE, SCHEMES, WIDE, axeSummary, readLayout, scan, sizeTitle, type Size } from '../support/accessibility.ts';
 import { holdApp, skeletonShown } from '../support/boot.ts';
+import { movesOutsideWindow } from '../support/pointer.ts';
 
 const LONG_NAME = 'Tarjetas de cumpleaños de la abuela Marta (versión final)';
 
@@ -365,7 +366,8 @@ flow('sheets', [DESKTOP, MEDIUM, PHONE], async (c, app) => {
   const box = (await piece.boundingBox())!;
   const sheet = (await page.locator('#sheets .page').first().locator('.sheet').boundingBox())!;
   const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-  const to = sheet.x + sheet.width + 200;
+  // On phones that is past the window: in Firefox, up to its edge instead (see movesOutsideWindow).
+  const to = Math.min(sheet.x + sheet.width + 200, movesOutsideWindow(page.context().browser()!.browserType().name()) ? Infinity : c.width - 2);
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   for (let i = 1; i <= 12; i++) await page.mouse.move(from.x + ((to - from.x) * i) / 12, from.y);
