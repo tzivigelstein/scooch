@@ -31,8 +31,8 @@ test.describe('dragging a piece lands where the pointer leaves it, on the grid w
       const target = await dragPieceTo(app, id, spot(p0.x), spot(p0.y));
       await expect.poll(async () => (await pieceOf(app, id)).x).not.toBe(p0.x);
       const p1 = await pieceOf(app, id);
-      // Within what a pixel of the pointer is worth, plus half a step.
-      const tol = (step ? step / 2 : 0) + 0.3;
+      // Within what a pixel of the pointer is worth (WebKit gives the pointer whole pixels), plus half a step.
+      const tol = (step ? step / 2 : 0) + 1 / p0.zoom;
       expect(Math.abs(p1.x - target.x), `x ${p1.x} vs ${target.x}`).toBeLessThanOrEqual(tol);
       expect(Math.abs(p1.y - target.y), `y ${p1.y} vs ${target.y}`).toBeLessThanOrEqual(tol);
       if (step) {

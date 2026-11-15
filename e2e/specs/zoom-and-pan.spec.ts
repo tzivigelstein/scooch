@@ -128,11 +128,13 @@ test.describe('zooming with the wheel and the keys', () => {
         [x, y] as const
       );
     const s = await stageBox(page);
-    const at = { x: s.x + s.width * 0.62, y: s.y + s.height * 0.4 };
+    // Whole pixels: WebKit gives the pointer whole pixels, and the error would grow with the zoom.
+    const at = { x: Math.round(s.x + s.width * 0.62), y: Math.round(s.y + s.height * 0.4) };
     const before = (await anchorOf(at.x, at.y))!;
     expect(before, 'a sheet under the pointer').not.toBeNull();
     await wheelZoom(page, 1.6, at);
-    await expect.poll(async () => (await stageState(page)).pct).toBeCloseTo(160, 1);
+    // Within 0.3 %: the wheel turns in whole pixels (wheelZoom).
+    await expect.poll(async () => (await stageState(page)).pct).toBeCloseTo(160, 0);
     const took = await wheels();
     expect(took.length).toBeGreaterThan(0);
     expect(took.every((w) => w.prevented && w.overCanvas), 'every Ctrl + wheel over the canvas taken (never the page zoom)').toBe(true);
@@ -151,7 +153,7 @@ test.describe('zooming with the wheel and the keys', () => {
     });
     expect(prevented, 'Ctrl + wheel over the top bar is left to the browser').toBe(false);
     await frames(page);
-    expect((await stageState(page)).pct, 'and the sheets keep their zoom').toBeCloseTo(160, 1);
+    expect((await stageState(page)).pct, 'and the sheets keep their zoom').toBeCloseTo(160, 0);
   });
 
   test('Ctrl + = and Ctrl + − with the pointer over the canvas step the sheets’ zoom', async ({ app, page }) => {

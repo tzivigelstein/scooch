@@ -85,7 +85,8 @@ export const stageBox = async (page: Page) => (await page.locator('#stage').boun
  * Turns the mouse wheel with Ctrl held at window point `at` (default: the
  * middle of the stage) so the zoom grows by `factor`: the app multiplies the
  * zoom by exp(−0.006 · deltaY) per wheel event (at most 60 px a notch), so the
- * turn is split in notches of 60 px or less. Leaves the mouse at `at`.
+ * turn is split in notches of 60 px or less, in whole pixels: the zoom
+ * reached is within 0.3 % of `factor`. Leaves the mouse at `at`.
  */
 export async function wheelZoom(page: Page, factor: number, at?: { x: number; y: number }) {
   const point = at ?? (await page.evaluate(() => {
@@ -94,10 +95,11 @@ export async function wheelZoom(page: Page, factor: number, at?: { x: number; y:
     return { x: r.left + stage.clientWidth / 2, y: r.top + stage.clientHeight / 2 };
   }));
   await page.mouse.move(point.x, point.y);
-  let total = -Math.log(factor) / 0.006;
+  // Whole pixels: WebKit drops a delta's fraction (24.74 px arrives as 24).
+  let total = Math.round(-Math.log(factor) / 0.006);
   await page.keyboard.down('Control');
   try {
-    while (Math.abs(total) > 1e-9) {
+    while (total !== 0) {
       const d = Math.max(-60, Math.min(60, total));
       total -= d;
       await page.mouse.wheel(0, d);
@@ -118,13 +120,13 @@ export async function zoomMenu(page: Page, item: string) {
 /**
  * Sets the zoom to `pct` %: 100 % from the menu, then Ctrl + wheel in the
  * middle of the stage for the rest (so 116 % stays fractional). Returns the
- * zoom reached, in percent.
+ * zoom reached, in percent (within 0.3 % of `pct`, see wheelZoom).
  */
 export async function setZoom(page: Page, pct: number) {
   await zoomMenu(page, 'level-100');
   await expect.poll(async () => (await stageState(page)).pct).toBeCloseTo(100, 2);
   if (pct !== 100) await wheelZoom(page, pct / 100);
-  await expect.poll(async () => (await stageState(page)).pct).toBeCloseTo(pct, 1);
+  await expect.poll(async () => Math.abs((await stageState(page)).pct / pct - 1)).toBeLessThan(0.0031);
   return (await stageState(page)).pct;
 }
 
