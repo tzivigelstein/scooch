@@ -126,6 +126,8 @@ figcaption { margin-top: 0.5rem; color: var(--muted); font-size: 0.9375rem; text
 table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
 caption { padding-top: 0.5rem; caption-side: bottom; color: var(--muted); font-size: 0.875rem; text-align: left; }
 th, td { padding: 0.5rem 0.625rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+/* A long name or address breaks instead of pushing its column out; a heading never does, so no column gets narrower than its heading. */
+td { overflow-wrap: anywhere; }
 thead th { border-bottom-color: var(--line-strong); font-weight: 600; }
 tbody th { font-weight: 500; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }

@@ -107,6 +107,13 @@ test.describe('in the browser', () => {
         }));
         expect(sideways, `${pathOf(file)} at ${width} px`).toBeLessThanOrEqual(0);
         expect(tables.filter((extra) => extra > 0), `${pathOf(file)} at ${width} px`).toEqual([]);
+        // With wider letters too (another font, as on a system without the
+        // ones this machine has): a long name breaks instead of pushing its column out.
+        const wider = await page.evaluate(() => {
+          document.documentElement.style.letterSpacing = '0.04em';
+          return [...document.querySelectorAll('.table-wrap')].map((box) => box.scrollWidth - box.clientWidth);
+        });
+        expect(wider.filter((extra) => extra > 0), `${pathOf(file)} at ${width} px, with wider letters`).toEqual([]);
       }
     }
   });
