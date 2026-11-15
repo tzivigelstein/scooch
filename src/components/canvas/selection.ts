@@ -93,8 +93,8 @@ export function paintCommittedSelection() {
  * sheet on each side, and keeps the spot covering the fewest pieces; on a tie,
  * in that order. It never leaves the canvas or sits under a panel open over
  * the canvas. With no room beside the piece, it goes over it, lifted off the
- * notice and the zoom control if they are in the way. If the piece scrolled out of view, the toolbar hides
- * until it is back.
+ * notice and the zoom control if they are in the way. If the piece scrolled
+ * out of view, the toolbar hides until it is back.
  */
 export function placePiecebar(target: SelectionTarget) {
   const bar = document.getElementById('piecebar');
