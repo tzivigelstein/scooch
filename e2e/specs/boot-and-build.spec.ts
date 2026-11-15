@@ -89,6 +89,7 @@ test.describe('before the app mounts', () => {
     test.describe(`${scheme} theme, without JavaScript`, () => {
       // Without JavaScript the browser blocks the module preloads (reason «csp»).
       test.use({ javaScriptEnabled: false, colorScheme: scheme, allowErrors: [/^requestfailed: .*\/assets\/[\w-]+\.js \(csp\)$/] });
+      test.skip(({ browserName }) => browserName === 'firefox', 'Playwright can’t run a script in a Firefox page with JavaScript off, and these read the page with one');
 
       test('the app’s background and text, a hidden fallback heading, the message in the app’s font and no boot screen', async ({ page }) => {
         await page.goto('./');

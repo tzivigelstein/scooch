@@ -64,7 +64,7 @@ test.describe('pieces', () => {
 });
 
 test.describe('an image on the system clipboard', () => {
-  test.skip(({ browserName }) => browserName === 'webkit', 'Playwright’s WebKit can’t grant the clipboard permissions, nor turn Ctrl+V into a paste');
+  test.skip(({ browserName }) => browserName !== 'chromium', 'only Chromium grants the clipboard permissions in Playwright (and WebKit doesn’t turn Ctrl+V into a paste)');
   test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
 
   test('Ctrl+V adds it as a piece', async ({ app, page }) => {

@@ -97,8 +97,8 @@ for (const viewport of VIEWPORTS) {
         await zoomTo(page, level);
         const c = await page.evaluate(readChrome);
         const problems = problemsOf(c);
-        // Playwright's WebKit only has overlay scrollbars (Safari's by default), which take no room.
-        if (browserName !== 'webkit') {
+        // Only Chromium's are classic here: Playwright's WebKit and Firefox draw overlay ones (as Safari by default), which take no room.
+        if (browserName === 'chromium') {
           expect(c.bars.right, 'classic scrollbars: the stage’s takes room').toBeGreaterThan(0);
           if (level === 400 || c.wide) expect(c.bars.bottom, 'zoomed past the width: the bottom scrollbar takes room too').toBeGreaterThan(0);
         }
