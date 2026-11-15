@@ -22,6 +22,15 @@ export interface Rect {
 /** Same rectangle within `tol` px on every side. */
 export const nearRect = (a: Rect | null, b: Rect | null, tol = 1.5) => !!a && !!b && Math.abs(a.x - b.x) <= tol && Math.abs(a.y - b.y) <= tol && Math.abs(a.w - b.w) <= tol && Math.abs(a.h - b.h) <= tol;
 
+/**
+ * How far a piece's image may sit from its piece (px), by engine. The image is
+ * centered in its piece with a transform (translate(−50%)), and WebKit draws
+ * a transformed box on whole device pixels: up to half a pixel off at 1× (a
+ * quarter on a 2× screen), where Chromium and Firefox keep it within 0.05 px.
+ * Half a device pixel doesn't show; the bug this guards moved it by several.
+ */
+export const imageOnPiece = (browserName: string) => (browserName === 'webkit' ? 0.5 : 0.05);
+
 /** The rectangles overlap (by more than half a px). */
 export const hit = (a: Rect | null, b: Rect | null) => !!a && !!b && a.x < b.x + b.w - 0.5 && b.x < a.x + a.w - 0.5 && a.y < b.y + b.h - 0.5 && b.y < a.y + a.h - 0.5;
 

@@ -16,6 +16,7 @@ import {
   frames,
   grabPoint,
   hit,
+  imageOnPiece,
   nearRect,
   scrollPieceTo,
   setZoom,
@@ -475,7 +476,7 @@ test.describe('a drag to the next sheet, autoscrolling there', () => {
 test.describe('pieces taken off the sheet', () => {
   // The piece near a corner of sheet 3: at 400 % only that corner shows, so it goes off by the left and the top.
   for (const pct of [25, 100, 400]) {
-    test(`at ${pct} %, image and frame stay aligned, the center on the sheet and no stray scroll`, async ({ app, page }) => {
+    test(`at ${pct} %, image and frame stay aligned, the center on the sheet and no stray scroll`, async ({ app, page, browserName }) => {
       const ids = await cardsOnThreeSheets(app);
       const id = ids[2];
       await app.setPosition(id, 12, 12);
@@ -515,7 +516,7 @@ test.describe('pieces taken off the sheet', () => {
         const cx = r.piece.x + r.piece.w / 2;
         const cy = r.piece.y + r.piece.h / 2;
         const problems: string[] = [];
-        if (!nearRect(r.img, r.piece, 0.05)) problems.push(`image ${JSON.stringify(r.img)} off the piece ${JSON.stringify(r.piece)}`);
+        if (!nearRect(r.img, r.piece, imageOnPiece(browserName))) problems.push(`image ${JSON.stringify(r.img)} off the piece ${JSON.stringify(r.piece)}`);
         if (!nearRect(r.frame, r.piece, 0.05)) problems.push(`frame ${JSON.stringify(r.frame)} off the piece ${JSON.stringify(r.piece)}`);
         if (r.parent !== 'sheet') problems.push(`left in ${r.parent}`);
         if (cx < r.sheet.x - 1 || cx > r.sheet.x + r.sheet.w + 1 || cy < r.sheet.y - 1 || cy > r.sheet.y + r.sheet.h + 1) problems.push('center outside the sheet');

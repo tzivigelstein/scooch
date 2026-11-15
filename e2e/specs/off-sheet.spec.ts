@@ -5,7 +5,7 @@
 // or off center. The bug showed only at some window sizes, so it runs at four.
 // The same at other zooms: zoom-and-pan.spec.ts › pieces taken off the sheet.
 // And a project stored with a piece far off its sheet, and the way back.
-import { cardsOnThreeSheets, inside, nearRect, settled, type Rect } from '../support/canvas.ts';
+import { cardsOnThreeSheets, imageOnPiece, inside, nearRect, settled, type Rect } from '../support/canvas.ts';
 import { patchStored, saved } from '../support/projects.ts';
 import { cards, expect, test } from '../support/test.ts';
 
@@ -66,7 +66,7 @@ for (const viewport of VIEWPORTS) {
         };
 
         for (const dir of DIRECTIONS) {
-          test(`dragged off by the ${dir}: whole while dragged, then image, frame and toolbar aligned, its center on the sheet, the layers the sheet’s size and nothing scrolled`, async ({ app, page }) => {
+          test(`dragged off by the ${dir}: whole while dragged, then image, frame and toolbar aligned, its center on the sheet, the layers the sheet’s size and nothing scrolled`, async ({ app, page, browserName }) => {
             const id = await setup(app);
             const piece = app.piece(id);
             await piece.focus();
@@ -104,7 +104,7 @@ for (const viewport of VIEWPORTS) {
             await settled(page);
             const st = await page.evaluate(readState);
             expect(st.parent, 'back on its sheet').toBe('sheet');
-            expect(nearRect(st.img, st.piece, 0.05), `image ${JSON.stringify(st.img)} on the piece ${JSON.stringify(st.piece)}`).toBe(true);
+            expect(nearRect(st.img, st.piece, imageOnPiece(browserName)), `image ${JSON.stringify(st.img)} on the piece ${JSON.stringify(st.piece)}`).toBe(true);
             expect(nearRect(st.frame, st.piece, 0.05), `frame ${JSON.stringify(st.frame)} on the piece ${JSON.stringify(st.piece)}`).toBe(true);
 
             const p = st.piece!;
