@@ -430,6 +430,19 @@ describe('the cut pieces', () => {
     expect(await again.storage.clip()).toBeNull();
   });
 
+  test('cutting a piece whose files are stored saves the clipboard without them: nothing to read before writing it (the tab may be closing)', async () => {
+    const storage = memoryStorage();
+    const setClip = vi.spyOn(storage, 'setClip');
+    const app = await cutSecond(storage);
+    expect(setClip).toHaveBeenCalledTimes(1);
+    expect([...setClip.mock.calls[0][1]!.keys()]).toEqual([]);
+    // Still referenced by the clipboard: they stay, and paste back after a reload.
+    const again = await start(app.storage);
+    await again.clipboard.restoreCut();
+    expect(again.clipboard.pastePieces()).toBe(true);
+    expect(again.getAsset(again.getDocument().items.at(-1)!.asset).name).toBe('otra.png');
+  });
+
   test('copying replaces the saved cut pieces', async () => {
     const app = await cutSecond();
     app.setDocument({ selection: [1] });

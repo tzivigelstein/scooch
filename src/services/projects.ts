@@ -543,8 +543,14 @@ export async function keepCut(pieces: readonly CutPiece[]) {
         return file?.asset.hashes?.[file.kind === 'original' ? 'src' : file.kind];
       }
     );
+    // The binaries the project's files or its saved history keep are stored
+    // for sure (see historyFor); only the rest go with it. So a piece of a
+    // project opened from storage (whose Blobs would have to be read first)
+    // is written in this very task, before the tab can go away.
+    const kept = new Set([...session.stored.values(), ...session.historyHashes]);
     const blobs = new Map<string, Blob>();
     for (const [fileKey, hash] of Object.entries(record?.files ?? {})) {
+      if (kept.has(hash)) continue;
       const file = fileOf(fileKey)!;
       blobs.set(hash, assetBlob(file.asset, file.kind));
     }
