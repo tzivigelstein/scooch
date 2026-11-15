@@ -271,8 +271,12 @@ async function startNew({ remember = true, settings = {} as StartSettings } = {}
   try {
     replaceDocument(doc);
     const id = newProjectId();
+    // Written at once, while its lock is being taken (no other tab can know a
+    // new id): the tab may be closing (see storage/idb.ts).
+    const created = createProject(session.storage!, { id, name: untitled(), now: now(), doc });
+    created.catch(() => {}); // (its error comes out below)
     await claimNew(id);
-    const record = await createProject(session.storage!, { id, name: untitled(), now: now(), doc });
+    const record = await created;
     adopt(record, new Map(), { remember });
   } finally {
     replacing = false;

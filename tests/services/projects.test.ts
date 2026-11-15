@@ -517,6 +517,26 @@ describe('the cut pieces', () => {
   });
 });
 
+describe('a new project (the tab may be closing)', () => {
+  test('«Nuevo proyecto» writes it at once, without waiting for its lock first', async () => {
+    const storage = memoryStorage();
+    const app = await start(storage);
+    const write = vi.spyOn(storage, 'write');
+    // Web Locks that answer in a later task, as browsers do.
+    const request = (name: string, _options: unknown, callback: (lock: { name: string }) => unknown) => new Promise((resolve) => setTimeout(() => resolve(callback({ name })), 0));
+    Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true });
+    try {
+      const creating = app.projects.newProject();
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+      expect(write).toHaveBeenCalledWith(expect.objectContaining({ name: 'Sin título' }), { create: true });
+      await vi.advanceTimersByTimeAsync(0);
+      expect((await creating).id).toBe(write.mock.calls[0][0].id);
+    } finally {
+      delete (navigator as { locks?: unknown }).locks;
+    }
+  });
+});
+
 describe('renaming or duplicating another project (the tab may be closing)', () => {
   async function twoProjects() {
     const storage = memoryStorage();
