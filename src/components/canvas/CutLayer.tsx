@@ -10,6 +10,7 @@ import type { Cuts } from '../../core/types.ts';
 import { sheetCuts, shapesVersion, showShapes, subscribeShapes } from '../../services/contours.ts';
 import type { Piece } from '../../state/document.ts';
 import { usePreview } from '../../state/preview.ts';
+import './CutLayer.css';
 
 const MM_PER_PT = 25.4 / 72;
 /** How wide the highlight under the lines is while their settings are hovered or focused (px). */

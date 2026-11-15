@@ -11,6 +11,7 @@ import { duplicate, remove, rotate } from '../../state/actions/pieces.ts';
 import { controlRoute, used, type UsageId } from '../../state/tips.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { startCrop } from './cropMode.ts';
+import './PieceToolbar.css';
 
 const ACTIONS = ['rotate-left', 'rotate-right', 'crop', 'duplicate', 'remove'] as const;
 type Action = (typeof ACTIONS)[number];

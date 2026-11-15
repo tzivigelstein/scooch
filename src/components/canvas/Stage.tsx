@@ -30,6 +30,7 @@ import { Piece } from './Piece.tsx';
 import { PreviewLayer } from './PreviewLayer.tsx';
 import { fitZoom, sheetsAreWide, syncStageBars } from './viewport.ts';
 import { SelectionOverlay } from './SelectionOverlay.tsx';
+import './Stage.css';
 
 /**
  * Fine lines every `size` mm and stronger ones every 5 or 10 cells, drawn with

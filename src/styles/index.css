@@ -24,9 +24,7 @@
 @import "./buttons.css";
 @import "./controls.css";
 @import "./layout.css";
-@import "./workspace.css";
 @import "./canvas.css";
-@import "./preview.css";
 @import "./notice.css";
 @import "./tips.css";
 @import "./tooltip.css";
@@ -35,7 +33,6 @@
 @import "./prefs.css";
 @import "./palette.css";
 @import "./printing.css";
-@import "./medium-screens.css";
 @import "./narrow-screens.css";
 @import "./print.css";
 @import "./system.css";

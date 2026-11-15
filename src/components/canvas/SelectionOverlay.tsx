@@ -9,6 +9,7 @@ import { gestureStore } from '../../state/gesture.ts';
 import { usePrefs } from '../../state/prefs.ts';
 import { useView } from '../../state/view.ts';
 import { paintCommittedSelection, paintSelection } from './selection.ts';
+import './SelectionOverlay.css';
 
 export function SelectionOverlay({ layout }: { layout: number }) {
   const items = useDocument((s) => s.items);

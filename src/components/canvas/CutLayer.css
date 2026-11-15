@@ -1,0 +1,21 @@
+@layer components {
+  /* Cut lines, as they print (over the pieces, under nothing interactive). */
+  .cut-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  /* While dragging, the lines would show where the pieces were: they come back on drop. */
+  .canvas.is-dragging .cut-layer {
+    visibility: hidden;
+  }
+
+  /* The cut lines, emphasized while their settings are hovered or focused. */
+  .cut-layer .cut-emphasis {
+    stroke: rgb(0 102 255 / 0.5);
+  }
+}

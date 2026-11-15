@@ -5,6 +5,7 @@ import type { Piece as PieceData } from '../../state/document.ts';
 import type { Unit } from '../../core/units.js';
 import { useTextsLanguage } from '../../state/language.ts';
 import { pieceView } from './pieceView.ts';
+import './Piece.css';
 
 export interface PieceProps {
   item: PieceData;

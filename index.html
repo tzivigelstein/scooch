@@ -135,7 +135,7 @@
           font-weight: 800;
           letter-spacing: -0.03em;
         }
-        /* The canvas as .stage lays it out (canvas.css), its padding grown by
+        /* The canvas as .stage lays it out (canvas/Stage.css), its padding grown by
            the sheet's title above (.page-head) and «Agregar hoja» below (the
            .sheets gap, the .sheets-foot margin and the .add-sheet height): what
            is left is the room fitZoom (canvas/viewport.ts) fits the sheet in,
@@ -349,7 +349,7 @@
             opacity: 0.45;
           }
         }
-        /* Medium screens (LEFT_DRAWER_QUERY, medium-screens.css): a rail for the pieces panel, the brand without its name. */
+        /* Medium screens (LEFT_DRAWER_QUERY): a rail for the pieces panel, the brand without its name. */
         @media (max-width: 1099.98px) {
           .boot {
             grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--right-w);

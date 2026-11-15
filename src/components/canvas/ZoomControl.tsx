@@ -12,6 +12,7 @@ import { whenLoaded } from '../lazy.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { stepZoom, zoomPercent } from './viewport.ts';
 import { useZoomMenu, ZoomMenuContent } from './zoomMenu.ts';
+import './ZoomControl.css';
 
 export function ZoomControl() {
   const zoom = useView((s) => s.zoom);

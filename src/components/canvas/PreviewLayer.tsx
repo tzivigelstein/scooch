@@ -12,6 +12,7 @@ import { getAsset } from '../../state/assets.ts';
 import { useTextsLanguage } from '../../state/language.ts';
 import { usePreview, type Dimension, type Ghost, type Line } from '../../state/preview.ts';
 import { pieceView } from './pieceView.ts';
+import './PreviewLayer.css';
 
 /** How far outside the piece the width and height lines go, below and to the right (px). */
 const DIMENSION_OFFSET = 14;

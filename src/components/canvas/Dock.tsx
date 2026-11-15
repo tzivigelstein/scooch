@@ -9,6 +9,7 @@ import { useView } from '../../state/view.ts';
 import { toggleDrawer } from '../../state/actions/drawers.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { Icon } from '../ui/Icon.tsx';
+import './Dock.css';
 
 function useDrawerOpen(name: 'pieces' | 'props') {
   const collapsible = useMediaQuery(name === 'pieces' ? LEFT_DRAWER_QUERY : NARROW_QUERY);

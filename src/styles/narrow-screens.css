@@ -2,76 +2,6 @@
 
 @layer components {
   @media (max-width: 799.98px) {
-    .rail {
-      display: none;
-    }
-
-    /* Room at the top for the zoom control: the first sheet's heading (its title
-       and remove button) never starts under it. */
-    .stage-area {
-      padding: 4.25rem 1rem calc(8.25rem + var(--new-sheet-room));
-    }
-
-    .paper-label {
-      margin-top: 0.625rem;
-    }
-
-    .piecebar .icon-btn {
-      width: 2.5rem;
-      height: 2.5rem;
-    }
-
-    .add-sheet {
-      height: 2.5rem;
-    }
-
-    .page-head {
-      height: 2.75rem;
-    }
-
-    .page-label {
-      height: 2.5rem;
-    }
-
-    /* At the top: the bottom belongs to the panel buttons and the piece's toolbar. */
-    .zoom-control {
-      top: 0.75rem;
-      bottom: auto;
-    }
-
-    .zoom-control .icon-btn,
-    .zoom-level {
-      height: 2.5rem;
-    }
-
-    .zoom-control .icon-btn {
-      width: 2.5rem;
-    }
-
-    .dock {
-      position: absolute;
-      left: 0.75rem;
-      right: calc(0.75rem + var(--stage-bar-right, 0px));
-      bottom: calc(0.75rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
-      z-index: 16;
-      display: flex;
-      justify-content: space-between;
-      pointer-events: none;
-    }
-
-    .dock-btn {
-      pointer-events: auto;
-    }
-
-    /* The piece toolbar, anchored at the bottom: right above «Piezas» and «Propiedades». */
-    .piecebar {
-      left: calc((100% - var(--stage-bar-right, 0px)) / 2);
-      top: auto;
-      bottom: calc(4.125rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
-      transform: translateX(-50%);
-      transition: opacity var(--fast) var(--ease);
-    }
-
     .pill {
       bottom: calc(4.25rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
       font-size: 0.8125rem;
@@ -89,21 +19,6 @@
     .dialog {
       width: calc(100vw - 1rem);
       max-height: calc(100dvh - 1rem);
-    }
-  }
-}
-
-@layer components {
-  @media (pointer: coarse) {
-    .handle {
-      right: -0.875rem;
-      bottom: -0.875rem;
-      width: 1.75rem;
-      height: 1.75rem;
-    }
-
-    .handle::before {
-      inset: 0.3125rem;
     }
   }
 }
