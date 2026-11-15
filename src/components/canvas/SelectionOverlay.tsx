@@ -8,6 +8,7 @@ import { useDocument } from '../../state/document.ts';
 import { gestureStore } from '../../state/gesture.ts';
 import { usePrefs } from '../../state/prefs.ts';
 import { useView } from '../../state/view.ts';
+import { useCurrentNotice } from '../feedback/NoticePill.tsx';
 import { paintCommittedSelection, paintSelection } from './selection.ts';
 import './SelectionOverlay.css';
 
@@ -19,8 +20,12 @@ export function SelectionOverlay({ layout }: { layout: number }) {
   const drawer = useView((s) => s.drawer);
   const unit = usePrefs((s) => s.unit);
   const cuts = useDocument((s) => s.cuts);
-  // A notice that shows up over the canvas: the toolbar moves off it.
-  const flash = useView((s) => s.flash);
+  // The notice floats over the canvas: when it shows up, goes or changes, the
+  // toolbar moves off it. Not only an action's result: a problem notice waits
+  // while a measure is typed and shows up when it is confirmed, with no other
+  // change to the document.
+  const notice = useCurrentNotice();
+  const noticeShown = notice ? [notice.text, notice.action?.label ?? '', !!notice.flash].join('|') : '';
 
   // One frame per sheet with selected pieces (only with several selected).
   const frameSheets =
@@ -32,7 +37,7 @@ export function SelectionOverlay({ layout }: { layout: number }) {
     // During a gesture its live values are painted (below); a notice that comes or goes meanwhile waits for its end.
     if (gestureStore.getState().drafts) return;
     paintCommittedSelection();
-  }, [items, selection, sheets, zoom, drawer, layout, unit, cuts, flash]);
+  }, [items, selection, sheets, zoom, drawer, layout, unit, cuts, noticeShown]);
 
   // Live values during a gesture; when it ends, back to the document.
   useEffect(
