@@ -238,24 +238,3 @@
     }
   }
 }
-
-@layer ui {
-  /* Buttons at the foot of a short dialog (confirm). */
-  .dialog-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    padding: 0.25rem 1.25rem 1.125rem;
-  }
-}
-
-@layer components {
-  .dialog.confirm {
-    width: min(26.25rem, calc(100vw - 1.5rem));
-  }
-
-  .confirm-body {
-    margin: 0;
-    color: var(--muted);
-  }
-}

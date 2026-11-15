@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { t } from '../../copy/index.ts';
 import { Dialog } from '../ui/Dialog.tsx';
 import { useConfirm } from './confirm.ts';
+import './ConfirmDialog.css';
 
 export function ConfirmDialog() {
   const request = useConfirm((s) => s.request);

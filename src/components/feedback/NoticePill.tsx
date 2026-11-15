@@ -13,6 +13,7 @@ import { getView, setView, useView, type Flash, type NoticeAction } from '../../
 import { arrangeAll } from '../../state/actions/edit.ts';
 import { Icon } from '../ui/Icon.tsx';
 import { announce, cancelAnnounce } from './announcer.ts';
+import './NoticePill.css';
 
 const INFO_MS = 5000;
 const WARN_MS = 9000;

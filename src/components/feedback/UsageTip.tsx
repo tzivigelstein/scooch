@@ -22,6 +22,7 @@ import { usePrintTip } from '../dialogs/printTip.ts';
 import { Icon } from '../ui/Icon.tsx';
 import { useCurrentNotice } from './NoticePill.tsx';
 import { usePrintSummary } from './printSummary.ts';
+import './UsageTip.css';
 
 /** How long it stays, unless hovered or focused (ms). */
 export const TIP_MS = 15_000;

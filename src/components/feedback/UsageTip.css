@@ -1,6 +1,6 @@
-/* ---------- Usage tips ----------
-   In the notice pill's place, shown only while the pill isn't. A card in the
-   page's own colors (the pill uses the inverted ones), with a light bulb. */
+/* Usage tips: in the notice pill's place, shown only while the pill isn't. A
+   card in the page's own colors (the pill uses the inverted ones), with a
+   light bulb. It comes in with the pill's pill-in (NoticePill.css). */
 
 @layer components {
   .usage-tip {

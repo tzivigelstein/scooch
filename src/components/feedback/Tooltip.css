@@ -1,5 +1,3 @@
-/* ---------- Tooltip ---------- */
-
 @layer components {
   .tooltip {
     position: fixed;

@@ -25,14 +25,10 @@
 @import "./controls.css";
 @import "./layout.css";
 @import "./canvas.css";
-@import "./notice.css";
-@import "./tips.css";
-@import "./tooltip.css";
 @import "./dialogs.css";
 @import "./projects.css";
 @import "./prefs.css";
 @import "./palette.css";
 @import "./printing.css";
-@import "./narrow-screens.css";
 @import "./print.css";
 @import "./system.css";

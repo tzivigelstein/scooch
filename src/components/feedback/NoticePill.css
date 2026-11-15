@@ -1,5 +1,3 @@
-/* ---------- Notice pill ---------- */
-
 @layer components {
   .pill {
     position: absolute;
@@ -119,5 +117,17 @@
   .pill-close .icon {
     width: 1.125rem;
     height: 1.125rem;
+  }
+
+  @media (max-width: 799.98px) {
+    .pill {
+      bottom: calc(4.25rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
+      font-size: 0.8125rem;
+    }
+
+    /* With the piece toolbar visible, the notice goes above it. */
+    .canvas:has(.piecebar:not([hidden])) .pill {
+      bottom: calc(7.875rem + var(--stage-bar-bottom, 0px) + env(safe-area-inset-bottom));
+    }
   }
 }

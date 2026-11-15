@@ -18,6 +18,7 @@ import { Dialog } from '../ui/Dialog.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { donateUrl, neverAskDonation } from '../dialogs/donate.ts';
 import { closeSummary, usePrintSummary, type PrintSummary as Summary } from './printSummary.ts';
+import './PrintSummary.css';
 
 /** Sheets drawn in each row of the comparison; the rest is a «+N», so it never overflows. */
 export const DRAWN = 12;

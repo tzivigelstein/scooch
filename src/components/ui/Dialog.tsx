@@ -3,6 +3,7 @@
 // focus goes back to whoever opened them.
 
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import './Dialog.css';
 
 export interface DialogProps {
   id: string;

@@ -7,6 +7,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { clamp } from '../../core/util.ts';
 import { usePrefs } from '../../state/prefs.ts';
+import './Tooltip.css';
 
 interface Tip {
   el: HTMLElement;
