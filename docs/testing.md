@@ -107,8 +107,8 @@ every push to `main` and on every pull request, in jobs side by side, after
 | Typecheck, unit tests and ledger | `yarn typecheck`, `yarn test`, `yarn ledger` |
 | Build and size budgets | `yarn build`, `yarn size` |
 | Browser tests (Chromium) | `yarn e2e` (chromium, then performance) with `E2E_TIME_FACTOR=2` |
-| Browser tests (WebKit, allowed to fail) | `E2E_WEBKIT=1 yarn e2e --project=webkit` |
-| Browser tests (Firefox, allowed to fail) | `E2E_FIREFOX=1 yarn e2e --project=firefox` |
+| Browser tests (WebKit, `<group>`, allowed to fail) | `E2E_WEBKIT=1 E2E_GROUP=<group> yarn e2e --project=webkit`, one job a group |
+| Browser tests (Firefox, `<group>`, allowed to fail) | `E2E_FIREFOX=1 E2E_GROUP=<group> yarn e2e --project=firefox`, one job a group |
 
 - **CI builds as `yarn build` does locally.** `VERCEL_ENV` isn't set, so the
   missing `SITE_URL` and the legal placeholders only warn; only a Vercel
@@ -122,6 +122,14 @@ every push to `main` and on every pull request, in jobs side by side, after
   those numbers in the commit message; never change a budget in the spec for
   CI's sake. The Vitest performance project's clock guards are generous
   enough not to need it.
+- **WebKit and Firefox run one job for each group of specs.**
+  `e2e/groups.ts` says what each spec is about: `accessibility`, `sheet`
+  (working on the sheet) or `app` (projects, files, printing, panels,
+  preferences and the site's pages). `E2E_GROUP=<group>` runs one group, in
+  any browser; without it every spec runs. A job's name then says which part
+  of the app broke, and no job comes near its time limit (the whole suite on
+  WebKit takes over half an hour on a runner). A new spec has to be added to
+  a group: no run starts while a spec is in none.
 - **WebKit and Firefox are allowed to fail for now** (`continue-on-error`):
   their jobs can end red without failing the run, and stop after 30 minutes
   (`--global-timeout`) so they always write their report. Read the report
@@ -133,8 +141,8 @@ every push to `main` and on every pull request, in jobs side by side, after
 same way locally, after `yarn install --frozen-lockfile`. `CI` is set on the
 runner: Playwright then refuses `test.only` and also writes a JUnit file, so
 `CI=1 yarn e2e` is the closest local run. A failed browser job uploads an
-artifact (`playwright-chromium`, `playwright-webkit` or `playwright-firefox`,
-on the run's summary page) with the HTML report and the traces of the failed
+artifact (`playwright-chromium`, `playwright-webkit-<group>` or
+`playwright-firefox-<group>`, on the run's summary page) with the HTML report and the traces of the failed
 tests:
 
 ```sh

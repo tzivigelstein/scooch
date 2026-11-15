@@ -92,14 +92,21 @@ jobs:
           retention-days: 14
 
   webkit:
-    name: Browser tests (WebKit, allowed to fail)
+    name: Browser tests (WebKit, ${{ matrix.group }}, allowed to fail)
     # Nobody has seen the suite pass on WebKit yet: this job reports, but its
     # failure doesn't fail the run (docs/testing.md).
     continue-on-error: true
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    # One job for each group of specs (e2e/groups.ts): a failure says which
+    # part of the app broke, and each job stays well inside its time limit.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [accessibility, sheet, app]
     env:
       E2E_WEBKIT: '1'
+      E2E_GROUP: ${{ matrix.group }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -124,20 +131,27 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-webkit
+          name: playwright-webkit-${{ matrix.group }}
           path: |
             e2e/out/report
             e2e/out/results
           retention-days: 14
 
   firefox:
-    name: Browser tests (Firefox, allowed to fail)
+    name: Browser tests (Firefox, ${{ matrix.group }}, allowed to fail)
     # As WebKit's: it reports, but its failure doesn't fail the run (docs/testing.md).
     continue-on-error: true
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    # One job for each group of specs (e2e/groups.ts): a failure says which
+    # part of the app broke, and each job stays well inside its time limit.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [accessibility, sheet, app]
     env:
       E2E_FIREFOX: '1'
+      E2E_GROUP: ${{ matrix.group }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -160,7 +174,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-firefox
+          name: playwright-firefox-${{ matrix.group }}
           path: |
             e2e/out/report
             e2e/out/results

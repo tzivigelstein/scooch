@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { requestedGroup, specGroupPatterns } from './e2e/groups.ts';
 
 // Browser tests (`yarn e2e`): the production build served by `vite preview`.
 // See docs/testing.md for what belongs here and what belongs in Vitest.
@@ -34,12 +35,17 @@ const page = {
   contextOptions: { reducedMotion: 'reduce' as const },
 };
 
+const SPECS = 'e2e/specs';
 // Specs that measure time run alone, after everything else, so other workers
 // don't eat into their numbers.
-const TIMING = /performance\.spec\.ts$/;
+const TIMING = specGroupPatterns('timing', SPECS);
+// E2E_GROUP=<group> runs only the specs about one thing (e2e/groups.ts), as
+// CI's WebKit and Firefox jobs do. Without it, every spec runs.
+const GROUP = requestedGroup(process.env.E2E_GROUP);
+const ONLY = GROUP ? { testMatch: specGroupPatterns(GROUP, SPECS) } : {};
 
 export default defineConfig({
-  testDir: 'e2e/specs',
+  testDir: SPECS,
   outputDir: `${OUT}/results`,
   // Committed references (e2e/specs/<spec>-snapshots/) are the same for every
   // browser and platform.
@@ -63,6 +69,7 @@ export default defineConfig({
     {
       name: 'chromium',
       testIgnore: TIMING,
+      ...ONLY,
       use: { ...devices['Desktop Chrome'], ...page },
     },
     {
@@ -78,6 +85,7 @@ export default defineConfig({
           {
             name: 'webkit',
             testIgnore: TIMING,
+            ...ONLY,
             // At 1× like the others: the suite measures in CSS px, and WebKit
             // draws in software here, so at Safari's 2× every frame is four
             // times the pixels (20 Mpx at 3440 × 1440): the large windows timed out.
@@ -90,6 +98,7 @@ export default defineConfig({
           {
             name: 'firefox',
             testIgnore: TIMING,
+            ...ONLY,
             use: { ...devices['Desktop Firefox'], ...page },
           },
         ]
