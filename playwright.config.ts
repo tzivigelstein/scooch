@@ -78,7 +78,10 @@ export default defineConfig({
           {
             name: 'webkit',
             testIgnore: TIMING,
-            use: { ...devices['Desktop Safari'], ...page },
+            // At 1× like the others: the suite measures in CSS px, and WebKit
+            // draws in software here, so at Safari's 2× every frame is four
+            // times the pixels (20 Mpx at 3440 × 1440): the large windows timed out.
+            use: { ...devices['Desktop Safari'], ...page, deviceScaleFactor: 1 },
           },
         ]
       : []),
