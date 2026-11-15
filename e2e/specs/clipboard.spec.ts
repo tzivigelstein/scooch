@@ -3,7 +3,9 @@
 // image on the system clipboard is decoded into a piece; what is cut survives
 // a reload until it is pasted. Every combination of
 // selection × «Permitir superposición» × action is in tests/state/clipboard.test.ts.
+// In Playwright's WebKit the keys don't fire the clipboard events (clipboardKey).
 import { overlapping } from '../support/geometry.ts';
+import { clipboardKey } from '../support/keyboard.ts';
 import { saved } from '../support/projects.ts';
 import { cards, expect, test } from '../support/test.ts';
 
@@ -16,10 +18,10 @@ test.describe('pieces', () => {
     const [first] = await app.ids();
     await app.selectIds([first]);
     const before = await app.snapshot();
-    await page.keyboard.press('Control+c');
+    await clipboardKey(page, 'copy');
     await expect.poll(async () => (await app.notice()).text).toBe('Se copió 1 pieza');
     expect(await app.snapshot()).toBe(before);
-    await page.keyboard.press('Control+v');
+    await clipboardKey(page, 'paste');
     await expect(app.pieces()).toHaveCount(3);
     const g = await app.geometry();
     const pasted = g.pieces.find((p) => p.id !== first && !JSON.parse(before).pieces.some((q: string[]) => Number(q[0]) === p.id))!;
@@ -34,14 +36,14 @@ test.describe('pieces', () => {
     const [first, second] = await app.ids();
     const name = (await app.geometry()).pieces.find((p) => p.id === second)!.name;
     await app.selectIds([second]);
-    await page.keyboard.press('Control+x');
+    await clipboardKey(page, 'cut');
     await expect(app.pieces()).toHaveCount(1);
     await saved(page);
     await page.reload();
     await app.ready();
     await expect(app.pieces()).toHaveCount(1);
     await app.selectIds([first]);
-    await page.keyboard.press('Control+v');
+    await clipboardKey(page, 'paste');
     await expect(app.pieces()).toHaveCount(2);
     expect((await app.geometry()).pieces.map((p) => p.name).sort()).toEqual([(await app.geometry()).pieces.find((p) => p.id === first)!.name, name].sort());
     await expect.poll(() => page.evaluate(() => [...document.querySelectorAll<HTMLImageElement>('#sheets .piece img')].every((img) => img.complete && img.naturalWidth > 0))).toBe(true);
@@ -62,6 +64,7 @@ test.describe('pieces', () => {
 });
 
 test.describe('an image on the system clipboard', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'Playwright’s WebKit can’t grant the clipboard permissions, nor turn Ctrl+V into a paste');
   test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
 
   test('Ctrl+V adds it as a piece', async ({ app, page }) => {

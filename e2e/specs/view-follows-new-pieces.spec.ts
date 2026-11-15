@@ -5,6 +5,7 @@
 // tests/state/sheets.test.ts.)
 import type { Page } from '@playwright/test';
 import { frames } from '../support/canvas.ts';
+import { clipboardKey } from '../support/keyboard.ts';
 import { cards, expect, test, type App } from '../support/test.ts';
 
 /** Where a piece is against the stage's visible box, the stage's scroll and what is selected. */
@@ -66,8 +67,8 @@ test('pasted and duplicated pieces that go on to sheet 2 bring it into view, sel
 
   await test.step('Ctrl+C and Ctrl+V on a full sheet: the copy lands on sheet 2, in view and selected', async () => {
     await app.piece(first).click();
-    await page.keyboard.press('Control+c');
-    await page.keyboard.press('Control+v');
+    await clipboardKey(page, 'copy');
+    await clipboardKey(page, 'paste');
     await expect(page.locator('#sheets .page')).toHaveCount(2);
     const [pasted] = await onSheet(page, 1);
     await expect.poll(() => seen(page, pasted)).toMatchObject({ inside: true, selected: [pasted] });

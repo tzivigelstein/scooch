@@ -38,6 +38,31 @@ export const focused = (page: Page) =>
 export type Focused = Awaited<ReturnType<typeof focused>>;
 
 /**
+ * Copies, cuts or pastes with Ctrl+C, X or V. Playwright's WebKit (on Linux)
+ * doesn't turn those keys into the browser's editing commands, so no
+ * clipboard event fires (Safari fires one for ⌘C, ⌘X and ⌘V): where none did,
+ * the event the command fires is dispatched at what has the focus, with an
+ * empty clipboard.
+ */
+export async function clipboardKey(page: Page, command: 'copy' | 'cut' | 'paste') {
+  const key = { copy: 'c', cut: 'x', paste: 'v' }[command];
+  await page.evaluate((type) => {
+    const w = window as unknown as { __clipboardFired?: boolean; __clipboardListener?: () => void };
+    w.__clipboardFired = false;
+    w.__clipboardListener = () => (w.__clipboardFired = true);
+    document.addEventListener(type, w.__clipboardListener, true);
+  }, command);
+  await page.keyboard.press(`Control+${key}`);
+  await page.evaluate((type) => {
+    const w = window as unknown as { __clipboardFired?: boolean; __clipboardListener?: () => void };
+    document.removeEventListener(type, w.__clipboardListener!, true);
+    if (w.__clipboardFired) return;
+    const target = document.activeElement ?? document.body;
+    target.dispatchEvent(new ClipboardEvent(type, { bubbles: true, cancelable: true, composed: true, clipboardData: new DataTransfer() }));
+  }, command);
+}
+
+/**
  * Presses Tab (Shift+Tab with `back`) until `until` holds for what has the
  * focus, at most `max` times; returns whether it got there.
  */
