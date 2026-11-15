@@ -1,6 +1,5 @@
 @layer components {
-  /* Tabs of the properties panel: «Pieza» and «Proyecto». Selected: text color,
-     weight and an underline (not just color). They stay at the top on scroll. */
+  /* The panel's tabs, «Pieza» and «Proyecto»: they stay at the top on scroll. */
   .props-tabs {
     position: sticky;
     top: 0;

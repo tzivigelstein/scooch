@@ -6,6 +6,7 @@
 import { t } from '../../copy/index.ts';
 import { paperName } from '../../services/measure.ts';
 import { finishTip, usePrintTip } from './printTip.ts';
+import './PrintTipDialog.css';
 
 /** A simplified print dialog, drawn: the preview, «Papel» and «Escala» (decorative: the steps say it). */
 function PrintDialogDrawing({ paper }: { paper: string }) {

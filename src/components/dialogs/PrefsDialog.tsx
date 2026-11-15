@@ -19,6 +19,7 @@ import { Segmented } from '../ui/Segmented.tsx';
 import { Switch } from '../ui/Switch.tsx';
 import { closeDialog } from './dialogs.ts';
 import { LEGAL_PATHS } from '../../site/paths.ts';
+import './PrefsDialog.css';
 
 export default function PrefsDialog() {
   const unit = usePrefs((s) => s.unit);

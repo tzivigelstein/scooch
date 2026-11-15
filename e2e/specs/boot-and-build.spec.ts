@@ -378,4 +378,39 @@ test.describe('the build', () => {
     expect(requests.some((u) => /pdf-lib-[\w-]+\.js$/.test(u)), 'exporting loads pdf-lib').toBe(true);
     expect(readFileSync(file).subarray(0, 5).toString()).toBe('%PDF-');
   });
+
+  // Preferences' styles come with its chunk (dialogs/PrefsDialog.css): the
+  // dialog opens once they have arrived, so its first frame is already styled.
+  test('a lazy dialog opens only after its stylesheet arrives, styled from its first frame', async ({ page }, info) => {
+    let release!: () => void;
+    const held = new Promise<void>((done) => (release = done));
+    const stylesheets: string[] = [];
+    await page.route(/\/assets\/PrefsDialog-[\w-]+\.css$/, async (route) => {
+      stylesheets.push(route.request().url());
+      await held;
+      await route.continue();
+    });
+    const app = new App(page, info);
+    await app.open();
+    // What the dialog looks like when its stylesheet is there, read the moment it opens (before it is painted).
+    await page.evaluate(() => {
+      const dialog = document.getElementById('prefs') as HTMLDialogElement;
+      new MutationObserver((_, observer) => {
+        if (!dialog.open) return;
+        observer.disconnect();
+        const section = dialog.querySelector('.pref-section');
+        (window as unknown as { firstFrame: unknown }).firstFrame = {
+          width: getComputedStyle(dialog).width,
+          section: section ? getComputedStyle(section).display : null,
+        };
+      }).observe(dialog, { attributes: true, attributeFilter: ['open'] });
+    });
+    await page.locator('#prefs-open').click();
+    await expect.poll(() => stylesheets.length, { message: 'the dialog’s stylesheet is requested' }).toBe(1);
+    await expect(page.locator('#prefs[open]'), 'not open while its stylesheet is on its way').toHaveCount(0);
+    release();
+    await expect(page.locator('#prefs[open]')).toBeVisible();
+    // .dialog.prefs is 28.75rem wide and each .pref-section a grid (PrefsDialog.css).
+    expect(await page.evaluate(() => (window as unknown as { firstFrame: unknown }).firstFrame)).toEqual({ width: '460px', section: 'grid' });
+  });
 });

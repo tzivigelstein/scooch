@@ -1,5 +1,3 @@
-/* ---------- Printing: the advice before, the summary after ---------- */
-
 @layer components {
   .dialog.print-tip {
     width: min(24.5rem, calc(100vw - 1.5rem));

@@ -1,5 +1,3 @@
-/* ---------- Command palette ---------- */
-
 @layer components {
   /* Up top, so the list grows downward without the field moving. */
   .dialog.palette {

@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
 import { keyLabel } from '../../copy/index.ts';
 import { announce } from '../feedback/announcer.ts';
 import { Icon } from './Icon.tsx';
+import './Menu.css';
 
 export interface MenuEntry {
   id: string;

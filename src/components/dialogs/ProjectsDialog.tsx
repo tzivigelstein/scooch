@@ -16,6 +16,7 @@ import { IconButton } from '../ui/Button.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { confirmAction } from './confirm.ts';
 import { closeDialog, isDialogOpen, useDialogs } from './dialogs.ts';
+import './ProjectsDialog.css';
 
 type Act = 'open' | 'duplicate' | 'rename' | 'delete';
 

@@ -1,5 +1,3 @@
-/* ---------- Preferences ---------- */
-
 @layer components {
   .dialog.prefs {
     width: min(28.75rem, calc(100vw - 1.5rem));

@@ -46,6 +46,7 @@ import { Button, IconButton } from '../../ui/Button.tsx';
 import { onCropFinish, type CropEnd } from '../cropMode.ts';
 import { placeBar } from '../selection.ts';
 import { clientToSheet, measureBoxes, toLayer, viewZoom } from '../viewport.ts';
+import './CropMode.css';
 
 const ZOOM_STEP = 1.1;
 const WHEEL_RATE = 0.0015;

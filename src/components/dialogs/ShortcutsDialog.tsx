@@ -15,6 +15,7 @@ import { openPrefs } from '../../state/actions/dialogs.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { Keys } from '../ui/Keys.tsx';
 import { closeDialog, useDialogs } from './dialogs.ts';
+import './ShortcutsDialog.css';
 
 /** Two keys are alternatives («R o Shift+R»); more go side by side (the arrows). */
 function RowKeys({ keys }: { keys: readonly string[] }) {

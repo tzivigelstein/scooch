@@ -1,5 +1,3 @@
-/* ---------- Projects ---------- */
-
 @layer components {
   .dialog.projects {
     width: min(47.5rem, calc(100vw - 1.5rem));

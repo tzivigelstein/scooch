@@ -18,6 +18,7 @@ import { IconButton } from '../ui/Button.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { choiceGroups, commandGroups, commandTargets, type PaletteOption } from './options.ts';
 import { recentCommands, rememberCommand } from './recents.ts';
+import './CommandPalette.css';
 
 /** How many options Page Up and Page Down move. */
 const PAGE = 8;

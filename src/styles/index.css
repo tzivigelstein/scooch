@@ -1,4 +1,7 @@
-/* The stylesheet the editor loads at start.
+/* The stylesheet the editor loads at start: the tokens, the base, the
+   primitives every area shares, the layout and the overrides. Each
+   component's own styles live next to it (Name.css beside Name.tsx) and are
+   imported by it, so a part that loads later brings its styles with it.
 
    The cascade's order is the layers', declared once here: a rule in a later
    layer wins over one in an earlier layer whatever their selectors, and only
@@ -24,11 +27,5 @@
 @import "./buttons.css";
 @import "./controls.css";
 @import "./layout.css";
-@import "./canvas.css";
-@import "./dialogs.css";
-@import "./projects.css";
-@import "./prefs.css";
-@import "./palette.css";
-@import "./printing.css";
 @import "./print.css";
 @import "./system.css";

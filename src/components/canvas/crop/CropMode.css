@@ -1,7 +1,4 @@
-/* ---------- Canvas and sheet ---------- */
-
 @layer components {
-  /* ---------- Crop mode ---------- */
   /* The piece itself hides: the overlay draws it (dimmed whole image, bright visible area). */
   .piece.is-cropping {
     visibility: hidden;

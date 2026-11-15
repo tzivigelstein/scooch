@@ -1,4 +1,5 @@
 @layer ui {
+  /* Selected: text color, weight and an underline (not just color). */
   .tab {
     position: relative;
     height: 2.5rem;

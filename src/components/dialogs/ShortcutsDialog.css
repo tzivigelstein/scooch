@@ -1,0 +1,92 @@
+@layer components {
+  /* Up top, so filtering the rows doesn't move the search field. */
+  .dialog.shortcuts {
+    margin-top: 1.5rem;
+  }
+
+  input.keys-search {
+    height: 2.375rem;
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .keys-section + .keys-section {
+    margin-top: 1.125rem;
+  }
+
+  .keys-title {
+    margin: 0 0 0.125rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 650;
+  }
+
+  /* The action, then its keys at the end of the row. */
+  .keys {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .keys th,
+  .keys td {
+    padding: 0.4375rem 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+
+  .keys th {
+    padding-right: 0.75rem;
+    font-weight: 400;
+    text-align: left;
+  }
+
+  .keys td {
+    color: var(--muted);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 799.98px) {
+    .dialog.shortcuts {
+      margin-top: 0.5rem;
+    }
+  }
+
+  /* Phones: two keys may go one under the other. */
+  @media (max-width: 479.98px) {
+    .keys td {
+      white-space: normal;
+    }
+  }
+
+  .keys tr:last-child > * {
+    border-bottom: 0;
+  }
+
+  .keys-empty {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.875rem;
+    text-align: center;
+  }
+
+  .off-badge {
+    display: none;
+    margin-left: 0.25rem;
+    padding: 0 0.4375rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 62.4375rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    vertical-align: 1px;
+  }
+
+  .single-off .off-badge {
+    display: inline-block;
+  }
+
+  .single-off tr[data-single] th {
+    color: var(--muted);
+  }
+}
