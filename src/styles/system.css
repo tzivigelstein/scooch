@@ -35,9 +35,7 @@
       background: Highlight;
     }
 
-    .tool[aria-pressed="true"],
-    .tool.is-open,
-    .icon-btn.is-open {
+    .tool.is-open {
       outline: 0.125rem solid Highlight;
     }
 

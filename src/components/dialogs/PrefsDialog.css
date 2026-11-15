@@ -15,10 +15,6 @@
     border-top: 1px solid var(--line);
   }
 
-  .pref-section > p {
-    margin: 0;
-  }
-
   .pref-title {
     margin: 0 0 0.125rem;
     font-size: 0.875rem;
