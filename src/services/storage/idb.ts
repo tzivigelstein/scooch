@@ -549,16 +549,17 @@ function idbStorage(db: IDBDatabase): IdbStorage {
       // References of a project that isn't there go (a tab stored a new file
       // and went away before its record, while another deleted the project):
       // their binaries, with the next collection.
-      files.index('project').openKeyCursor(null, 'nextunique').onsuccess = (e) =>
+      // (Found from the rows' keys, [project, key]: WebKit fails a «nextunique»
+      // cursor on an empty index, and the whole collection with it.)
+      files.getAllKeys().onsuccess = (e) =>
         guarded(tx, fail, () => {
-          const cursor = (e.target as IDBRequest<IDBCursor | null>).result;
-          if (!cursor) return;
-          const project = cursor.key;
-          projects.getKey(project).onsuccess = (p) =>
-            guarded(tx, fail, () => {
-              if ((p.target as IDBRequest).result === undefined) deleteAll(files, 'project', project);
-            });
-          cursor.continue();
+          const ids = new Set(((e.target as IDBRequest<IDBValidKey[]>).result as [string, string][]).map(([project]) => project));
+          for (const id of ids) {
+            projects.getKey(id).onsuccess = (p) =>
+              guarded(tx, fail, () => {
+                if ((p.target as IDBRequest).result === undefined) files.delete(IDBKeyRange.bound([id], [id, []]));
+              });
+          }
         });
       const counters = [files.index('hash'), tx.objectStore('history').index('hashes'), tx.objectStore('clipboard').index('hashes')];
       let deleted = 0;

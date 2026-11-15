@@ -13,14 +13,24 @@
 //   transaction aborts. Here neither can, except while seeding what an
 //   earlier layout stored (`allowBlobs`).
 //
+// And on one that broke garbage collection in WebKit: a «nextunique» or
+// «prevunique» cursor on an empty index fails with UnknownError («Unable to
+// open cursor») and the transaction aborts. Here too.
+//
 // It relies on fake-indexeddb's internals (pinned in package.json): a
-// transaction's `_state` and `_execRequestAsync`.
-import { IDBDatabase, IDBFactory, IDBKeyRange, IDBObjectStore } from 'fake-indexeddb';
+// transaction's `_state` and `_execRequestAsync`, a cursor's `_iterate`,
+// `_position` and its index's `_rawIndex.records`.
+import { IDBCursor, IDBDatabase, IDBFactory, IDBKeyRange, IDBObjectStore } from 'fake-indexeddb';
 import { afterAll, beforeEach } from 'vitest';
 
 interface FakeTransaction extends IDBTransaction {
   _state: 'active' | 'inactive' | 'committing' | 'finished';
   _execRequestAsync(request: { source: IDBObjectStore; operation: () => unknown }): IDBRequest;
+}
+
+interface FakeCursor extends IDBCursor {
+  _position: IDBValidKey | undefined;
+  _iterate(...args: unknown[]): unknown;
 }
 
 const live = new Set<FakeTransaction>();
@@ -56,6 +66,14 @@ const originals = {
   add: IDBObjectStore.prototype.add,
   arrayBuffer: Blob.prototype.arrayBuffer,
   digest: crypto.subtle.digest,
+  iterate: (IDBCursor.prototype as FakeCursor)._iterate,
+};
+
+(IDBCursor.prototype as FakeCursor)._iterate = function (this: FakeCursor, ...args: unknown[]) {
+  const index = this.source as unknown as { _rawIndex?: { records: { size(): number } } };
+  const opening = this._position === undefined && this.direction.endsWith('unique') && index._rawIndex;
+  if (opening && index._rawIndex!.records.size() === 0) throw new DOMException('Unable to open cursor', 'UnknownError');
+  return originals.iterate.apply(this, args);
 };
 
 IDBDatabase.prototype.transaction = function (this: IDBDatabase, ...args: Parameters<IDBDatabase['transaction']>) {
@@ -90,6 +108,7 @@ afterAll(() => {
   IDBObjectStore.prototype.add = originals.add;
   Blob.prototype.arrayBuffer = originals.arrayBuffer;
   crypto.subtle.digest = originals.digest;
+  (IDBCursor.prototype as FakeCursor)._iterate = originals.iterate;
 });
 
 // A new, empty IndexedDB for every test.

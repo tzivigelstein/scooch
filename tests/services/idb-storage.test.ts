@@ -65,6 +65,20 @@ describe('the fake IndexedDB is as strict as a browser', () => {
     await expect(aborted).resolves.toBe('UnknownError');
     db.close();
   });
+
+  test('a «nextunique» cursor on an empty index fails with UnknownError and the transaction aborts, as in WebKit; on an index with rows it works', async () => {
+    (await open()).close();
+    const db = await openRaw(NAME);
+    const empty = db.transaction('files', 'readwrite');
+    const aborted = new Promise((resolve) => (empty.onabort = () => resolve(empty.error?.name)));
+    empty.objectStore('files').index('project').openKeyCursor(null, 'nextunique');
+    await expect(aborted).resolves.toBe('UnknownError');
+    const tx = db.transaction('files', 'readwrite');
+    tx.objectStore('files').put({ project: 'p1', key: 'src:1', hash: 'h' });
+    const cursor = tx.objectStore('files').index('project').openKeyCursor(null, 'nextunique');
+    await expect(new Promise((resolve) => (cursor.onsuccess = () => resolve(cursor.result?.key)))).resolves.toBe('p1');
+    db.close();
+  });
 });
 
 describe('what it stores', () => {
@@ -178,6 +192,13 @@ describe('the guarantees the projects service relies on', () => {
     await storage.collectGarbage();
     expect(await storedHashes()).not.toContain(fileOf('orphan').hash);
     expect((await storage.files('p1')).size).toBe(2);
+  });
+
+  test('garbage collection with no file stored (a new, empty project in an empty browser) runs and deletes nothing', async () => {
+    const storage = await open();
+    await createProject(storage, { id: 'p1', name: 'Nuevo', now: 1, doc: emptyDoc() });
+    await expect(storage.collectGarbage()).resolves.toBe(0);
+    expect((await dump(NAME)).projects).toHaveLength(1);
   });
 
   test('a binary is stored once per content, and garbage collection deletes only what no project, saved history or clipboard references', async () => {
