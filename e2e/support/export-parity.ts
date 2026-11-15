@@ -169,7 +169,8 @@ export async function embeddedFixtures(names: readonly string[]) {
   const byHash = new Map<string, string>();
   for (const name of names) {
     const doc = await PDFDocument.create();
-    const bytes = readFileSync(fixture(name));
+    // A copy with a buffer of its own: Node may hand out a view into a shared pool, and pdf-lib's JPEG embedder reads the buffer from its start.
+    const bytes = new Uint8Array(readFileSync(fixture(name)));
     const image = name.endsWith('.jpg') ? await doc.embedJpg(bytes) : await doc.embedPng(bytes);
     doc.addPage().drawImage(image, { x: 0, y: 0 });
     const saved = await PDFDocument.load(await doc.save());
