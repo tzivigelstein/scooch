@@ -10,6 +10,7 @@
 import type { Page } from '@playwright/test';
 import { overlapping } from '../support/geometry.ts';
 import { focused, region, tabTo } from '../support/keyboard.ts';
+import { printsInFrame } from '../support/print.ts';
 import { cards, expect, fixture, norm, test, tiles, type App } from '../support/test.ts';
 
 const selectedId = (page: Page) => page.evaluate(() => Number(document.querySelector<HTMLElement>('#sheets .piece.is-selected')?.dataset.id ?? NaN) || null);
@@ -236,8 +237,8 @@ test.describe('editing with the keyboard only', () => {
     });
 
     await test.step('Ctrl+P: without a PDF viewer, the PDF opens in another tab to print it there', async () => {
-      // Headless Chromium has no PDF viewer; with one, the PDF prints from a hidden frame (print-and-download.spec).
-      expect(await page.evaluate(() => navigator.pdfViewerEnabled)).toBe(false);
+      // Headless Chromium and Playwright's Firefox have no PDF viewer, and Safari can't print one in a frame; elsewhere the PDF prints from a hidden frame (print-and-download.spec).
+      expect(await printsInFrame(page)).toBe(false);
       const popup = page.context().waitForEvent('page');
       await page.keyboard.press('Control+p');
       const tab = await popup;

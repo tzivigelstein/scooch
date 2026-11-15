@@ -6,10 +6,11 @@
 //     a browser that can't print it;
 //   - a query string (`appQuery`, e.g. ?donar=… for the donation dialog);
 //   - localStorage keys set before the app starts (`initialStorage`);
-//   - full Chromium, which has a PDF viewer (`pdfViewer`), instead of the
-//     headless shell, which doesn't. Playwright doesn't allow
+//   - a PDF viewer (`pdfViewer`): in Chromium, full Chromium instead of the
+//     headless shell, which has none. Playwright doesn't allow
 //     `test.use({ channel })` inside a describe (it forces a new worker), so
 //     the test's context comes from a full Chromium launched for that test.
+//     Not in WebKit (Safari can't print a PDF in a frame) nor in Firefox (no viewer).
 // The spy also keeps every PDF Blob the page turns into a URL, to read what
 // was sent to print, and the URLs window.open was asked to open.
 import type { Page } from '@playwright/test';
@@ -77,11 +78,13 @@ interface PrintFixtures {
 
 export const test = base.extend<PrintFixtures>({
   pdfViewer: [false, { option: true }],
-  context: async ({ pdfViewer, context, playwright, viewport, colorScheme, acceptDownloads, baseURL, contextOptions }, use) => {
+  context: async ({ pdfViewer, context, playwright, browserName, viewport, colorScheme, acceptDownloads, baseURL, contextOptions }, use, testInfo) => {
     if (!pdfViewer) {
       await use(context);
       return;
     }
+    testInfo.skip(browserName === 'webkit', 'Safari prints the page instead of a PDF in a frame: the app opens the PDF in a tab there, as without a viewer');
+    testInfo.skip(browserName === 'firefox', 'Playwright’s Firefox has no PDF viewer');
     const browser = await playwright.chromium.launch({ channel: 'chromium' });
     const viewerContext = await browser.newContext({ ...contextOptions, viewport, colorScheme, acceptDownloads, baseURL });
     await use(viewerContext);
@@ -100,6 +103,12 @@ export const test = base.extend<PrintFixtures>({
     await use(app);
   },
 });
+
+/**
+ * Whether the app prints the PDF from a hidden frame here: the browser has a
+ * PDF viewer and isn't Safari, which prints the page instead (services/print.ts).
+ */
+export const printsInFrame = (page: Page) => page.evaluate(() => navigator.pdfViewerEnabled !== false && !/^((?!chrome|chromium|crios|fxios|edg|android).)*safari/i.test(navigator.userAgent));
 
 /** The print() calls the spy recorded. */
 export const printCalls = (page: Page) => page.evaluate(() => (window as unknown as SpyWindow).__print.calls);

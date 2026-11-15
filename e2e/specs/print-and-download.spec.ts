@@ -13,7 +13,7 @@
 import { readFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
 import { pdfInfo } from '../support/pdf.ts';
-import { expect, lastPdf, openedUrls, pdfUrls, printCalls, printFrames, test } from '../support/print.ts';
+import { expect, lastPdf, openedUrls, pdfUrls, printCalls, printFrames, printsInFrame, test } from '../support/print.ts';
 import { norm } from '../support/test.ts';
 
 const pill = (page: Page) => page.locator('#pill-text');
@@ -82,7 +82,7 @@ test.describe('printing with a PDF viewer', () => {
   test.use({ pdfViewer: true, printSpy: 'record' });
 
   test('Print is off with no pieces; then the advice shows (Esc prints nothing), and its «Imprimir» calls print() on the PDF in one hidden off-screen iframe; the summary shows after', async ({ app, page }) => {
-    expect(await page.evaluate(() => navigator.pdfViewerEnabled), 'full Chromium has a PDF viewer').toBe(true);
+    expect(await page.evaluate(() => navigator.pdfViewerEnabled), 'a PDF viewer').toBe(true);
     await expect(page.locator('#print')).toBeDisabled();
     await app.addFiles(['big.png', 'small.jpg']);
 
@@ -167,7 +167,7 @@ test.describe('printing without a PDF viewer', () => {
   test.use({ printSpy: 'record' });
 
   test('the PDF opens in another tab, without an iframe, in the click of «Imprimir»', async ({ app, page, context }) => {
-    expect(await page.evaluate(() => navigator.pdfViewerEnabled), 'the headless shell has no PDF viewer').toBe(false);
+    expect(await printsInFrame(page), 'no PDF viewer (the headless shell, Playwright’s Firefox), or Safari').toBe(false);
     await app.addFiles(['small.jpg']);
     await page.locator('#print').click();
     const [tab] = await Promise.all([context.waitForEvent('page'), page.locator('#print-tip-go').click()]);
