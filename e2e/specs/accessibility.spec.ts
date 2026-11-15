@@ -465,7 +465,15 @@ flow(
     await expect(c.page.locator('#storage-low')).toBeVisible();
     await c.state('projects dialog warning that space is running out');
   },
-  { before: (page) => page.addInitScript(() => Object.defineProperty(navigator.storage, 'estimate', { value: async () => ({ usage: 8.6e9, quota: 1e10 }), configurable: true })) }
+  {
+    before: (page) =>
+      page.addInitScript(() => {
+        const estimate = async () => ({ usage: 8.6e9, quota: 1e10 });
+        // Playwright's WebKit has no navigator.storage (Safari has).
+        if (navigator.storage) Object.defineProperty(navigator.storage, 'estimate', { value: estimate, configurable: true });
+        else Object.defineProperty(navigator, 'storage', { value: { estimate }, configurable: true });
+      }),
+  }
 );
 
 flow(

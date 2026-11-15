@@ -82,6 +82,8 @@ test.describe('saving and restoring', () => {
     await page.addInitScript(() => {
       const w = window as unknown as { __persist: number };
       w.__persist = 0;
+      // Playwright's WebKit has no navigator.storage (Safari has): one that isn't persisted yet.
+      if (!navigator.storage) Object.defineProperty(navigator, 'storage', { value: { persisted: async () => false, persist: async () => true }, configurable: true });
       const persist = navigator.storage.persist.bind(navigator.storage);
       navigator.storage.persist = () => {
         w.__persist++;
@@ -244,6 +246,8 @@ test.describe('the projects dialog', () => {
     const aLabels = await labels(page);
 
     await test.step('one project: the open one, with its thumbnail, time, sheets and pieces', async () => {
+      // Playwright's WebKit has no navigator.storage (Safari has): one that knows the space used.
+      await page.evaluate(() => navigator.storage ?? Object.defineProperty(navigator, 'storage', { value: { estimate: async () => ({ usage: 2.5e6, quota: 1e9 }) }, configurable: true }));
       await app.pieces().first().focus();
       await openProjects(page);
       await expect(page.locator('#project-new')).toBeFocused();
