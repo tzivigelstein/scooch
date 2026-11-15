@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles/index.css';
 import { App } from './App.tsx';
+import { showFocusMovedByKeys } from './hooks/keyboardFocus.ts';
 import { showBootFailure } from './services/bootFailure.ts';
 import { followLanguage } from './services/language.ts';
 import { followTheme } from './services/theme.ts';
@@ -9,6 +10,7 @@ import { settleSavings } from './state/savings.ts';
 
 followTheme();
 settleSavings();
+showFocusMovedByKeys();
 
 // Everything the app says comes from the language's texts: it renders once
 // they are here. If they never arrive, or the app fails while it is still
