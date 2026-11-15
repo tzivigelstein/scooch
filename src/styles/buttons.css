@@ -170,4 +170,59 @@
   .text-btn:disabled {
     opacity: 0.45;
   }
+
+  .icon-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .icon-chip .icon {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  /* Link inside a sentence: a button (opens something, doesn't navigate) that looks like a link. */
+  .link-btn {
+    display: inline;
+    padding: 0;
+    border: 0;
+    border-radius: 0.1875rem;
+    background: none;
+    color: var(--accent-strong);
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.1875rem;
+  }
+
+  .link-btn:hover {
+    text-decoration-thickness: 0.125rem;
+  }
+
+  .btn.danger {
+    background: var(--danger-bg);
+    color: var(--danger-ink);
+    font-weight: 600;
+  }
+
+  .btn.danger:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
+  @media (max-width: 799.98px) {
+    /* Narrow screens: big enough for a finger. */
+    .tool {
+      width: 2.5rem;
+      height: 2.5rem;
+      padding: 0;
+    }
+
+    .chip-btn {
+      height: 2.5rem;
+    }
+
+    .text-btn {
+      min-height: 2.5rem;
+    }
+  }
 }

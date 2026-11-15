@@ -82,30 +82,7 @@
     flex: none;
     display: block;
   }
-}
 
-@layer layout {
-  .skip-link {
-    position: fixed;
-    left: 0.5rem;
-    top: 0.5rem;
-    z-index: 300;
-    padding: 0.625rem 0.875rem;
-    border-radius: var(--radius-sm);
-    background: var(--primary-bg);
-    color: var(--primary-ink);
-    font-weight: 600;
-    text-decoration: none;
-    transform: translateY(-160%);
-  }
-
-  .skip-link:focus {
-    transform: none;
-    outline-offset: 0.1875rem;
-  }
-}
-
-@layer base {
   kbd {
     display: inline-block;
     min-width: 1.375rem;

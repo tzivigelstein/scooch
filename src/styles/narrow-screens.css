@@ -1,13 +1,5 @@
 /* ---------- Narrow screens: no columns ---------- */
 
-@layer layout {
-  @media (max-width: 799.98px) {
-    .workspace {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-}
-
 @layer components {
   @media (max-width: 799.98px) {
     /* Two rows: the brand and the project on top; the actions below. */
@@ -81,21 +73,7 @@
     .tool-sep {
       display: none;
     }
-  }
-}
 
-@layer primitives {
-  @media (max-width: 799.98px) {
-    .tool {
-      width: 2.5rem;
-      height: 2.5rem;
-      padding: 0;
-    }
-  }
-}
-
-@layer components {
-  @media (max-width: 799.98px) {
     .bar-group .btn {
       width: 2.5rem;
       height: 2.5rem;
@@ -171,20 +149,7 @@
       border-radius: 0.125rem;
       background: var(--line-strong);
     }
-  }
-}
 
-@layer layout {
-  @media (max-width: 799.98px) {
-    .panel .icon-btn.small {
-      width: 2.5rem;
-      height: 2.5rem;
-    }
-  }
-}
-
-@layer components {
-  @media (max-width: 799.98px) {
     .piecebar .icon-btn {
       width: 2.5rem;
       height: 2.5rem;
@@ -194,30 +159,7 @@
       min-width: 2.5rem;
       min-height: 2.5rem;
     }
-  }
-}
 
-@layer tokens {
-  @media (max-width: 799.98px) {
-    :root {
-      --control-h: 2.5rem;
-    }
-  }
-}
-
-@layer primitives {
-  @media (max-width: 799.98px) {
-    .panel select,
-    .panel input[type="number"],
-    .panel input[type="text"],
-    .chip-btn {
-      height: 2.5rem;
-    }
-  }
-}
-
-@layer components {
-  @media (max-width: 799.98px) {
     .action-row .icon-btn,
     .project-name,
     input.project-name-input,
@@ -242,19 +184,7 @@
     .piece-row {
       min-height: 3rem;
     }
-  }
-}
 
-@layer primitives {
-  @media (max-width: 799.98px) {
-    .text-btn {
-      min-height: 2.5rem;
-    }
-  }
-}
-
-@layer components {
-  @media (max-width: 799.98px) {
     .remove-btn {
       min-height: 2.5rem;
     }
@@ -306,19 +236,7 @@
       top: 0.75rem;
       bottom: auto;
     }
-  }
-}
 
-@layer layout {
-  @media (max-width: 799.98px) {
-    .canvas {
-      --zoom-room: 0.75rem;
-    }
-  }
-}
-
-@layer components {
-  @media (max-width: 799.98px) {
     .zoom-control .icon-btn,
     .zoom-level {
       height: 2.5rem;
@@ -410,20 +328,7 @@
     .handle::before {
       inset: 0.3125rem;
     }
-  }
-}
 
-@layer tokens {
-  @media (pointer: coarse) {
-    /* Segmented controls a finger's height, and the fields beside them as tall. */
-    :root {
-      --seg-h: max(var(--control-h), 2.75rem);
-    }
-  }
-}
-
-@layer components {
-  @media (pointer: coarse) {
     .panel .paper-props input[type="text"],
     .panel .grid-size input[type="text"] {
       height: var(--seg-h);

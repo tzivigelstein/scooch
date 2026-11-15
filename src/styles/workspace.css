@@ -1,87 +1,10 @@
 /* ---------- Workspace: panel · canvas · panel ---------- */
 
-@layer layout {
-  .workspace {
-    flex: 1;
-    min-height: 0;
-    position: relative;
-    display: grid;
-    grid-template-columns: var(--left-w) minmax(0, 1fr) var(--right-w);
-  }
-}
-
 @layer components {
   .rail {
     display: none;
   }
-}
 
-@layer layout {
-  .panel {
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    background: var(--surface);
-    color: var(--text);
-    overflow-anchor: none;
-  }
-
-  .panel-left {
-    border-right: 1px solid var(--line);
-  }
-
-  .panel-right {
-    border-left: 1px solid var(--line);
-  }
-
-  .panel-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    min-height: 2.75rem;
-    padding: 0.625rem 0.625rem 0.375rem 1rem;
-  }
-
-  .panel-title {
-    margin: 0;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    letter-spacing: -0.005em;
-  }
-
-  .drawer-close,
-  .drawer-head {
-    display: none !important;
-  }
-
-  .panel.is-drawer .drawer-close {
-    display: inline-grid !important;
-  }
-
-  .panel.is-drawer .drawer-head {
-    display: flex !important;
-  }
-
-  .panel-empty {
-    margin: 0;
-    padding: 0.125rem 1rem 0.75rem;
-    color: var(--muted);
-    font-size: 0.8125rem;
-  }
-
-  .prop-section .panel-empty {
-    padding: 0;
-  }
-
-  .panel-empty p {
-    margin: 0;
-  }
-}
-
-@layer components {
   .panel-tip {
     margin-top: 0.375rem !important;
     font-size: 0.78125rem;

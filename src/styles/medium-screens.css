@@ -1,13 +1,5 @@
 /* ---------- Medium screens: the pieces panel collapses ---------- */
 
-@layer layout {
-  @media (max-width: 1099.98px) {
-    .workspace {
-      grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--right-w);
-    }
-  }
-}
-
 @layer components {
   @media (max-width: 1099.98px) {
     /* A more compact top bar: the brand without its name, a shorter project

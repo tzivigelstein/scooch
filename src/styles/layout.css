@@ -1,0 +1,146 @@
+/* ---------- Layout ----------
+   The app's shell: the skip link, what shows while the last project opens,
+   the workspace's columns, the side panels and the canvas the stage fills. */
+
+@layer layout {
+  .skip-link {
+    position: fixed;
+    left: 0.5rem;
+    top: 0.5rem;
+    z-index: 300;
+    padding: 0.625rem 0.875rem;
+    border-radius: var(--radius-sm);
+    background: var(--primary-bg);
+    color: var(--primary-ink);
+    font-weight: 600;
+    text-decoration: none;
+    transform: translateY(-160%);
+  }
+
+  .skip-link:focus {
+    transform: none;
+    outline-offset: 0.1875rem;
+  }
+
+  /* While the last project is restored when the app opens, the skeleton in
+     index.html stands in for the app (no flash of an empty editor): nothing of
+     it shows, takes the focus or is read meanwhile, but what the live regions
+     announce. */
+  .is-loading #root {
+    visibility: hidden;
+  }
+
+  .is-loading #live-polite,
+  .is-loading #live-assertive {
+    visibility: visible;
+  }
+
+  .workspace {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--left-w) minmax(0, 1fr) var(--right-w);
+  }
+
+  .panel {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--surface);
+    color: var(--text);
+    overflow-anchor: none;
+  }
+
+  .panel-left {
+    border-right: 1px solid var(--line);
+  }
+
+  .panel-right {
+    border-left: 1px solid var(--line);
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.625rem 0.625rem 0.375rem 1rem;
+  }
+
+  .panel-title {
+    margin: 0;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+  }
+
+  .drawer-close,
+  .drawer-head {
+    display: none !important;
+  }
+
+  .panel.is-drawer .drawer-close {
+    display: inline-grid !important;
+  }
+
+  .panel.is-drawer .drawer-head {
+    display: flex !important;
+  }
+
+  .panel-empty {
+    margin: 0;
+    padding: 0.125rem 1rem 0.75rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .prop-section .panel-empty {
+    padding: 0;
+  }
+
+  .panel-empty p {
+    margin: 0;
+  }
+
+  .canvas {
+    /* What the zoom control takes at the bottom right, kept clear by the notice. */
+    --zoom-room: 9.5rem;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+    background: var(--canvas);
+    user-select: none;
+  }
+
+  @media (pointer: coarse) {
+    .canvas {
+      --zoom-room: 10.5rem;
+    }
+  }
+
+  @media (max-width: 1099.98px) {
+    .workspace {
+      grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--right-w);
+    }
+  }
+
+  @media (max-width: 799.98px) {
+    .workspace {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .panel .icon-btn.small {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+
+    .canvas {
+      --zoom-room: 0.75rem;
+    }
+  }
+}

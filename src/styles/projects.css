@@ -259,15 +259,3 @@
     color: var(--muted);
   }
 }
-
-@layer primitives {
-  .btn.danger {
-    background: var(--danger-bg);
-    color: var(--danger-ink);
-    font-weight: 600;
-  }
-
-  .btn.danger:hover:not(:disabled) {
-    filter: brightness(1.08);
-  }
-}

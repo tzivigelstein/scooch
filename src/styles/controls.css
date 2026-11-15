@@ -2,6 +2,104 @@
    The fields every area uses (select, text and number inputs, range,
    color) and the warning box that goes with them. */
 
+@layer primitives {
+  select,
+  input[type="number"],
+  input[type="text"] {
+    width: 100%;
+    height: 2.125rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 0.4375rem;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.84375rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  select:hover:not(:disabled),
+  input[type="number"]:hover:not(:disabled),
+  input[type="text"]:hover:not(:disabled):not([aria-disabled="true"]) {
+    border-color: var(--text);
+  }
+
+  /* Compact fields without spinners (the arrow keys still step the value up and down). */
+  input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  select:focus-visible,
+  input[type="number"]:focus-visible,
+  input[type="text"]:focus-visible {
+    outline: 0.125rem solid var(--focus);
+    outline-offset: 0;
+    border-color: var(--focus);
+  }
+
+  select:disabled,
+  input:disabled,
+  input[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Invalid measurement: border and message (not just color: the message says it). */
+  input[aria-invalid="true"],
+  input[aria-invalid="true"]:hover:not(:disabled) {
+    border-color: var(--danger);
+    box-shadow: inset 0 0 0 1px var(--danger);
+  }
+
+  input[type="range"] {
+    width: 100%;
+    height: 1.375rem;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .callout {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid var(--warn-line);
+    border-radius: var(--radius-sm);
+    background: var(--warn-bg);
+    color: var(--warn-text);
+    font-size: 0.78125rem;
+    line-height: 1.4;
+  }
+
+  .callout .icon {
+    width: 1rem;
+    height: 1rem;
+    margin-top: 1px;
+  }
+
+  input[type="color"] {
+    width: 2.5rem;
+    height: var(--control-h);
+    padding: 0.1875rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 0.4375rem;
+    background: var(--surface);
+    cursor: pointer;
+  }
+
+  input[type="color"]:focus-visible {
+    outline: 0.125rem solid var(--focus);
+    outline-offset: 0;
+  }
+}
+
 @layer ui {
   /* Segmented controls (radios, ui/Segmented.tsx): one track, and the chosen
      segment on a raised thumb that slides between them. The segments are as
@@ -207,5 +305,15 @@
 
   input[role="switch"]:checked::before {
     transform: translateX(1rem);
+  }
+}
+
+@layer primitives {
+  @media (max-width: 799.98px) {
+    .panel select,
+    .panel input[type="number"],
+    .panel input[type="text"] {
+      height: 2.5rem;
+    }
   }
 }

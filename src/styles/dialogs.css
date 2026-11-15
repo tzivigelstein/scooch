@@ -172,28 +172,7 @@
     color: var(--muted);
     font-size: 0.8125rem;
   }
-}
 
-@layer primitives {
-  /* Link inside a sentence: a button (opens something, doesn't navigate) that looks like a link. */
-  .link-btn {
-    display: inline;
-    padding: 0;
-    border: 0;
-    border-radius: 0.1875rem;
-    background: none;
-    color: var(--accent-strong);
-    font: inherit;
-    text-decoration: underline;
-    text-underline-offset: 0.1875rem;
-  }
-
-  .link-btn:hover {
-    text-decoration-thickness: 0.125rem;
-  }
-}
-
-@layer ui {
   /* ---------- Menus (context menu, zoom) ---------- */
   .menu {
     position: fixed;
