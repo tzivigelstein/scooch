@@ -5,8 +5,9 @@
 // under the notice. (Which spot wins is decided by pickSpot, unit-tested in
 // tests/core/placement.test.js.)
 import type { Page } from '@playwright/test';
+import { zoomMenu } from '../support/canvas.ts';
 import { frames, hit, within, type Rect } from '../support/layout.ts';
-import { expect, test, type App } from '../support/test.ts';
+import { cards, expect, test, type App } from '../support/test.ts';
 
 /** The toolbar and what it must avoid, in window px. */
 const RECTS = () => {
@@ -115,6 +116,43 @@ test.describe('at 1024 × 768', () => {
     expect(hit(g.bar, g.panels[0])).toBe(false);
     expect(within(g.bar, g.canvas)).toBe(true);
   });
+});
+
+// (At the default 1440 × 900.) It covered the notice: the spot over the piece
+// that it takes when none beside it is free ignored what floats there.
+test('with no room beside the piece, the toolbar goes over it, lifted off the notice and the zoom control', async ({ app, page }) => {
+  // A card sticking out of the sheet's bottom (the notice says so), centered on the sheet and
+  // at 100 %, so the sheet leaves no room for the toolbar on either side.
+  await app.addFiles(cards(0, 1));
+  const [id] = await app.ids();
+  await app.setPosition(id, 65, 260);
+  await zoomMenu(page, 'level-100');
+  await app.piece(id).focus();
+  await expect(page.locator('#pill')).toBeVisible();
+  // Scrolled so the piece's top is 20 px below the notice's: the spot above it would be on the
+  // notice and the one below it out of the canvas.
+  await page.evaluate((id) => {
+    const stage = document.getElementById('stage')!;
+    const top = document.querySelector(`#sheets .piece[data-id="${id}"]`)!.getBoundingClientRect().top;
+    stage.scrollTop += top - (document.getElementById('pill')!.getBoundingClientRect().top + 20);
+  }, id);
+  await frames(page);
+  const g = await rects(page);
+  const extra = await page.evaluate(() => {
+    const r = (el: Element) => {
+      const b = el.getBoundingClientRect();
+      return { x: b.left, y: b.top, w: b.width, h: b.height };
+    };
+    return { zoom: r(document.querySelector('.zoom-control')!), sheet: r(document.querySelector('#sheets .sheet')!) };
+  });
+  expect(Math.abs(g.selected.y - (g.pill!.y + 20)), 'scrolled there').toBeLessThan(1);
+  expect(extra.sheet.x - g.bar.w - 12, 'no room left of the sheet').toBeLessThan(g.canvas.x + 8);
+  expect(extra.sheet.x + extra.sheet.w + 12 + g.bar.w, 'nor right of it').toBeGreaterThan(g.canvas.x + g.canvas.w - 8);
+  expect(g.side).toBe('over');
+  expect(g.hidden).toBe(false);
+  expect(within(g.bar, g.canvas), 'inside the canvas').toBe(true);
+  expect(hit(g.bar, g.pill!), `the toolbar ${JSON.stringify(g.bar)} off the notice ${JSON.stringify(g.pill)}`).toBe(false);
+  expect(hit(g.bar, extra.zoom), `and off the zoom control ${JSON.stringify(extra.zoom)}`).toBe(false);
 });
 
 test('scrolling the piece out of view hides its toolbar; scrolling back shows it next to the piece again', async ({ app, page }) => {

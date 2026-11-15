@@ -6,7 +6,7 @@
 
 import { NARROW_QUERY } from '../../config.ts';
 import { bounds } from '../../core/align.js';
-import { clip, pickSpot } from '../../core/placement.js';
+import { clip, liftOff, pickSpot } from '../../core/placement.js';
 import type { Rect } from '../../core/types.ts';
 import { clamp } from '../../core/util.ts';
 import { t } from '../../copy/index.ts';
@@ -92,8 +92,9 @@ export function paintCommittedSelection() {
  * above, below (centered or aligned with an edge of the piece) and outside the
  * sheet on each side, and keeps the spot covering the fewest pieces; on a tie,
  * in that order. It never leaves the canvas or sits under a panel open over
- * the canvas. If the piece scrolled out of view, the toolbar hides until it is
- * back.
+ * the canvas. With no room beside the piece, it goes over it, lifted off the
+ * notice and the zoom control if they are in the way. If the piece scrolled out of view, the toolbar hides
+ * until it is back.
  */
 export function placePiecebar(target: SelectionTarget) {
   const bar = document.getElementById('piecebar');
@@ -169,12 +170,10 @@ export function placeBar(bar: HTMLElement, target: Pick<SelectionTarget, 'sheet'
     .map((other) => clip(onCanvas(rectOf(other)), sheet))
     .filter((r) => !!r)
     .concat({ x: head.left - canvas.left, y: head.top - canvas.top, w: head.width, h: head.height });
-  // If it fits nowhere, over the piece, inside the canvas.
-  const spot = pickSpot(candidates, { bounds: area, covers, blocked: panels }) ?? {
-    side: 'over',
-    x: inX(xs[0]),
-    y: clamp(above, edge, canvas.height - h - edge),
-  };
+  // If it fits nowhere, over the piece, inside the canvas: lifted off the
+  // notice and the zoom control when it would sit on them.
+  const over = { side: 'over', x: inX(xs[0]), y: clamp(above, edge, canvas.height - h - edge), w, h };
+  const spot = pickSpot(candidates, { bounds: area, covers, blocked: panels }) ?? liftOff(over, { bounds: area, blocked: panels, gap }) ?? over;
   bar.style.transform = `translate(${Math.round(spot.x)}px, ${Math.round(spot.y)}px)`;
   bar.dataset.side = spot.side;
 }

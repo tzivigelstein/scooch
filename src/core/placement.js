@@ -31,3 +31,19 @@ export function pickSpot(candidates, { bounds, covers = [], blocked = [] }) {
   }
   return best;
 }
+
+/**
+ * Where something that fits beside nothing goes, over its piece: `spot` if it
+ * is off every one of `blocked` (what floats over the canvas: the notice, the
+ * zoom control), else lifted to `gap` above the ones it sits on, again until
+ * it is off all of them. null if that leaves `bounds`.
+ */
+export function liftOff(spot, { bounds, blocked = [], gap = 0 }) {
+  let lifted = spot;
+  for (let i = 0; i <= blocked.length; i++) {
+    const hits = blocked.filter((b) => intersects(lifted, b));
+    if (!hits.length) return inside(lifted, bounds) ? lifted : null;
+    lifted = { ...lifted, y: Math.min(...hits.map((b) => b.y)) - lifted.h - gap };
+  }
+  return null;
+}

@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { pickSpot, clip } from '../../src/core/placement.js';
+import { pickSpot, clip, liftOff } from '../../src/core/placement.js';
 
 const r = (x, y, w, h, side) => ({ x, y, w, h, side });
 const bounds = r(0, 0, 1000, 800);
@@ -49,5 +49,37 @@ describe('pickSpot', () => {
 
   test('null si no queda ninguno', () => {
     assert.equal(pickSpot([r(-5, 0, 10, 10)], { bounds }), null);
+  });
+});
+
+describe('liftOff', () => {
+  const over = r(300, 700, 200, 40, 'over');
+  const notice = r(250, 720, 400, 44);
+  const zoom = r(560, 690, 130, 40);
+
+  test('a spot off everything stays where it is', () => {
+    assert.deepEqual(liftOff(over, { bounds, blocked: [zoom], gap: 12 }), over);
+  });
+
+  test('on the notice, it goes the gap above it', () => {
+    assert.deepEqual(liftOff(over, { bounds, blocked: [notice], gap: 12 }), r(300, 720 - 40 - 12, 200, 40, 'over'));
+  });
+
+  test('on two things, above the higher one', () => {
+    const wide = r(300, 700, 300, 40, 'over');
+    assert.deepEqual(liftOff(wide, { bounds, blocked: [notice, zoom], gap: 12 }), r(300, 690 - 40 - 12, 300, 40, 'over'));
+  });
+
+  test('lifted onto something above, it goes above that one too', () => {
+    const above = r(320, 640, 100, 30);
+    assert.deepEqual(liftOff(over, { bounds, blocked: [notice, above], gap: 12 }), r(300, 640 - 40 - 12, 200, 40, 'over'));
+  });
+
+  test('null when lifting it leaves the area', () => {
+    assert.equal(liftOff(r(300, 20, 200, 40), { bounds, blocked: [r(0, 30, 1000, 40)], gap: 12 }), null);
+  });
+
+  test('null when it is outside the area to begin with', () => {
+    assert.equal(liftOff(r(900, 100, 200, 40), { bounds }), null);
   });
 });
