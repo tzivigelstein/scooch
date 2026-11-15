@@ -45,10 +45,10 @@ src/
   copy/           every interface text, one file per language (es.ts is the source), and t()
   core/           pure logic: plain JavaScript with .d.ts types, no DOM
   state/          Zustand stores; actions/ holds everything that changes the document
-  components/     React components, by area
+  components/     React components, by area, each with its stylesheet beside it
   hooks/          keyboard shortcuts, pointer gestures, focus rescue
   services/       files, PDF export, printing, projects and storage
-  styles/         stylesheets by area
+  styles/         the shared stylesheets; index.css declares the cascade layers
 tests/            Vitest tests by layer (see docs/testing.md)
   fixtures/documents/   one stored project document per format version
 e2e/              browser tests (Playwright): specs/, support/, fixtures/ and the ledger
@@ -99,6 +99,30 @@ The [README](README.md) explains how the parts fit together.
 - **Lengths** are in millimetres in the document. Every conversion between
   screen pixels and millimetres goes through
   `src/components/canvas/viewport.ts`.
+- **Styles**: a component's CSS lives next to it (`Name.css` beside
+  `Name.tsx`) and is imported by its module, after the module's other
+  imports; one stylesheet may serve a folder that works as a unit
+  (`properties-panel/sections.css`, imported by each section before its own).
+  `src/styles/` holds only what several areas share: tokens, base, buttons,
+  form controls, the layout, printing and the system's preferences.
+  - Every rule is inside a cascade layer, in the order `src/styles/index.css`
+    declares once: `boot` (index.html's inline CSS), `tokens`, `base`,
+    `primitives`, `ui` (src/components/ui), `layout`, `components`,
+    `overrides` (printing, reduced motion, forced colors). A later layer wins
+    over an earlier one whatever the selectors: a component's rule overrides
+    a primitive's even when the primitive's is more specific, as with a
+    `:hover` or `:disabled` state, so a component that needs one of those
+    states to look different says so in its own file.
+  - Inside a layer, specificity and then source order decide, and only a
+    module's own imports fix the order between two files: never count on
+    two components' stylesheets coming in some order.
+  - A screen-size or touch rule (`@media`) goes in the file of what it
+    styles, in the same layer.
+  - What loads later (a lazy chunk: most dialogs, the menus, crop mode, the
+    command palette) brings its stylesheet with it: Vite loads it before the
+    chunk runs. What shows at start must be in the stylesheet `index.html`
+    links, which blocks the first paint: keep it small
+    (`scripts/size-budgets.json`).
 - **Interface texts** live only in `src/copy/`, one file per language with
   the keys of `es.ts`, and are used through `t('area.key', params)`. That
   includes `aria-label`s, tooltips and what is announced to screen readers.

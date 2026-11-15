@@ -123,6 +123,19 @@ Import the repository in Vercel: it detects Vite and needs no configuration
   that picks the language before the first paint.
 - **Dialogs** keep their `<dialog>` shells in the page; the contents of the
   rarely used ones load on first use or when the app is idle.
+- **Styles** are plain CSS with global class names. A component's styles
+  live next to it (`Stage.css` beside `Stage.tsx`) and its module imports
+  them; `src/styles/` keeps only what is shared: the tokens (colors, sizes,
+  per theme and screen size), the base, the buttons and form controls, the
+  app's layout, printing and the system's preferences. Cascade layers fix the
+  order, declared once in `src/styles/index.css` (`boot`, `tokens`, `base`,
+  `primitives`, `ui`, `layout`, `components`, `overrides`; `boot` is
+  `index.html`'s inline critical CSS): a later layer wins whatever the
+  selectors, so the order the files arrive in can't change the result. The
+  parts that load later (the dialogs but «confirm», the menus, crop mode,
+  the command palette) bring their own stylesheet with their chunk, and
+  Vite loads it before the chunk runs, so they open already styled; the rest
+  is in the stylesheet the editor loads at start.
 - **Commands**: every action the app has is listed once in
   `src/state/commands.ts` (name, other words that find it, keys from the
   shortcut table in `src/hooks/shortcuts.ts`, why it can't run now, and the
@@ -155,18 +168,18 @@ src/
   core/                 pure modules (no DOM), with tests in tests/core/
   state/                Zustand stores, selectors, the undo history and the commands
     actions/            everything that changes the document, by area
-  components/
+  components/           React components by area, each with its stylesheet beside it (Name.css next to Name.tsx)
     topbar/             app bar and the open project's name and status
     pieces-panel/       pieces list, grouped by sheet
-    canvas/             sheets, pieces, selection frame, piece toolbar
-    properties-panel/   piece, sheet, arrange and grid sections
+    canvas/             sheets, pieces, selection frame, piece toolbar, zoom, crop mode
+    properties-panel/   piece, sheet, arrange, cut lines and grid sections (sections.css: what they share)
     dialogs/            shortcuts, preferences, projects, the advice before printing, confirm
     palette/            the command palette and its recent commands
-    feedback/           notice pill, tooltip and live regions
-    ui/                 shared controls (buttons, fields, switches, dialog)
+    feedback/           notice pill, usage tips, tooltip, live regions and the summary after printing
+    ui/                 shared controls (buttons, fields, switches, segmented controls, tabs, sections, dialog, menu)
   hooks/                keyboard shortcuts, pointer gestures, focus rescue
   services/             files, PDF export, printing, projects and storage
-  styles/               stylesheet by area (index.css sets the order)
+  styles/               the shared stylesheets: tokens, base, buttons, form controls, layout, printing, system preferences; index.css declares the layers
 tests/                  Vitest tests by layer (core, properties, state, services, components, hooks, performance)
 e2e/                    browser tests (Playwright): specs/, their support/ helpers, fixtures and the ledger
 scripts/                the bundle size check (yarn size) and its budgets
