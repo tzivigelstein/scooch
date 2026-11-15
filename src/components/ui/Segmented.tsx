@@ -57,12 +57,23 @@ function useThumb(group: RefObject<HTMLDivElement | null>, index: number, keys: 
     if (!el || typeof ResizeObserver === 'undefined') return;
     const s = state.current;
     // The chosen label turns medium as the thumb sets off, a little wider: the slide takes it in.
+    // Measured in the next frame, not inside the observer's callback: a layout
+    // read there applies whatever changed meanwhile (a stylesheet or a font
+    // arriving), and an element observed higher up that resizes from it goes
+    // undelivered, which WebKit reports as an error («ResizeObserver loop…»).
+    let frame = 0;
     const observer = new ResizeObserver(() => {
-      if (s.index >= 0) s.placed = placeThumb(el, s.index, s.placed && performance.now() < s.slidingUntil);
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (s.index >= 0) s.placed = placeThumb(el, s.index, s.placed && performance.now() < s.slidingUntil);
+      });
     });
     observer.observe(el);
     for (const segment of el.querySelectorAll(':scope > .seg')) observer.observe(segment);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
   }, [group, keys]);
 }
 

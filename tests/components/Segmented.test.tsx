@@ -7,7 +7,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { afterEach, beforeAll, describe, expect, test } from 'vitest';
+import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import { Segmented, type SegmentOption } from '../../src/components/ui/Segmented.tsx';
 
 type Choice = 'one' | 'two' | 'three';
@@ -33,7 +33,11 @@ beforeAll(() => {
   window.CSS ??= { escape: (name: string) => name } as typeof CSS;
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe('the segmented control', () => {
   test('a named radio group with one thumb, hidden from assistive technology, before the segments', () => {
@@ -112,5 +116,36 @@ describe('the segmented control', () => {
   test('`fit` adds the class of segments as wide as their labels', () => {
     render(<Harness initial="one" fit />);
     expect(screen.getByRole('radiogroup').className).toBe('segmented fit');
+  });
+
+  test('after a resize the thumb is measured in the next frame, not inside the ResizeObserver’s callback (where WebKit reports a loop)', () => {
+    const resized: ResizeObserverCallback[] = [];
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: ResizeObserverCallback) {
+        resized.push(callback);
+      }
+      observe() {}
+      disconnect() {}
+    });
+    const frames = new Map<number, FrameRequestCallback>();
+    let ids = 0;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => (frames.set(++ids, callback), ids));
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => frames.delete(id));
+    // Three segments `width` px wide each, in a group as wide as they are.
+    let width = 90;
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(() => 3 * width);
+    const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const i = [...(this.parentElement?.querySelectorAll(':scope > .seg') ?? [])].indexOf(this);
+      return { left: Math.max(i, 0) * width, width: i < 0 ? 3 * width : width } as DOMRect;
+    });
+    render(<Harness initial="two" />);
+    expect(thumb().style.getPropertyValue('--thumb-x')).toBe('90px');
+
+    width = 100;
+    measure.mockClear();
+    for (const callback of resized) callback([], {} as ResizeObserver);
+    expect(measure, 'nothing measured inside the callback').not.toHaveBeenCalled();
+    for (const callback of [...frames.values()]) callback(0);
+    expect([thumb().style.getPropertyValue('--thumb-x'), thumb().style.getPropertyValue('--thumb-w')]).toEqual(['100px', '100px']);
   });
 });
