@@ -32,10 +32,15 @@
     "measured": 930.4,
     "what": "Every .js and .mjs file of the build: the editor's lazy chunks (dialogs, crop mode, each language's texts, of which only one loads), pdf.js and its worker (about 500 kB), pdf-lib (about 180 kB), the contour worker and the static pages' scripts. Catches a dependency that grows or gets in by accident."
   },
-  "css": {
-    "kB": 15.4,
-    "measured": 14.6,
-    "what": "Every .css file of the build: the editor's stylesheet, which blocks its first paint, and Hindi's font rule (devanagari-*.css, about 0.25 kB, loaded only with Hindi). The static pages carry their CSS inline (counted in each page)."
+  "initialCss": {
+    "kB": 13.1,
+    "measured": 12.4,
+    "what": "The CSS the editor's index.html links (read from the built HTML), which blocks its first paint: the tokens, the base, the shared buttons and form controls, the layout, printing and the system's preferences, and the stylesheets of every component that shows at start. The parts that load later bring their own (see «totalCss»)."
+  },
+  "totalCss": {
+    "kB": 18.5,
+    "measured": 17.5,
+    "what": "Every .css file of the build: the editor's stylesheet, the lazy parts' (the dialogs but «confirm», the menus, crop mode, the command palette: each compressed on its own, about 0.3 to 1.1 kB, loaded when the app is idle or the part opens) and Hindi's font rule (devanagari-*.css, about 0.25 kB, loaded only with Hindi). The static pages carry their CSS inline (counted in each page)."
   },
   "pageScripts": {
     "kB": 6.5,

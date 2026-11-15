@@ -53,6 +53,9 @@ export const eagerScripts = (html) =>
     return [];
   });
 
+/** The stylesheets a page links (what blocks its first paint), in order. */
+export const eagerStyles = (html) => parseTags(html).flatMap(({ tag, attrs }) => (tag === 'link' && attrs.get('href') && rels(attrs).includes('stylesheet') ? [attrs.get('href')] : []));
+
 /**
  * The file of each language's texts, from the data the editor's index.html
  * carries for its head script (`#boot-copy`, see src/copy/static.ts): only
@@ -149,7 +152,8 @@ export function measureBuild(dir) {
     { id: 'initialJs', label: 'editor: JS loaded at start', files: local(eagerScripts(editor)) },
     ...Object.entries(languageChunks(editor)).map(([language, url]) => ({ id: `language:${language}`, label: `editor: texts, ${language} (one loads at start)`, files: local([url]) })),
     { id: 'totalJs', label: 'JS, every file', files: all.filter((p) => /\.m?js$/.test(p)).map(file) },
-    { id: 'css', label: 'CSS, every file', files: all.filter((p) => p.endsWith('.css')).map(file) },
+    { id: 'initialCss', label: 'editor: CSS loaded at start', files: local(eagerStyles(editor)) },
+    { id: 'totalCss', label: 'CSS, every file', files: all.filter((p) => p.endsWith('.css')).map(file) },
     { id: 'pageScripts', label: 'static pages: their scripts', files: local(pages.flatMap((p) => scriptSources(readFileSync(join(dir, p), 'utf8')))) },
     ...pages.map((p) => ({ id: `page:${p}`, label: p, files: [file(p)] })),
   ];

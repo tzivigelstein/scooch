@@ -151,7 +151,9 @@ budget in `scripts/size-budgets.json`, with a table of every size, its budget
 and the difference. It checks the editor's `index.html` itself (its inline CSS
 and script and the skeleton), the JavaScript it loads at start (read from the
 built HTML), each language's texts (a chunk of its own: only the one shown
-loads at start), every JavaScript file, the CSS, each
+loads at start), every JavaScript file, the CSS it loads at start (the
+stylesheets the built HTML links, which block the first paint), every CSS file
+(with what the lazy parts bring), each
 static page (its HTML with the inline CSS) and the static pages' scripts (the
 calculator). Each budget says what it covers and the size measured when it
 was set; it is that size plus about 5 %, rounded up.
