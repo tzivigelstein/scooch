@@ -122,7 +122,7 @@ test.describe('the skeleton of the editor, before the app mounts', () => {
       test.describe(`${sizeTitle(size)}, ${scheme} theme`, () => {
         test.use({ viewport: size, colorScheme: scheme });
 
-        test('shows at once the top bar with the brand, the panels or the panel buttons, and a white sheet saying what the tool does, in the theme’s colors', async ({ page }) => {
+        test('shows at once the top bar with the brand, the panels or the panel buttons, and a white sheet saying what the tool does, in the theme’s colors', async ({ page, browserName }) => {
           const release = await holdApp(page);
           await page.goto('./', { waitUntil: 'commit' });
           await skeletonShown(page);
@@ -143,11 +143,15 @@ test.describe('the skeleton of the editor, before the app mounts', () => {
           expect(about.onSheet, 'on the sheet').toBe(true);
           expect(Math.abs(about.offCenter), 'its column centered across the sheet').toBeLessThanOrEqual(1);
 
-          // The theme from the first paint; the sheet white in both.
-          expect(closeTo(await colorAt(page), theme.bg), 'top bar').toBe(true);
-          expect(closeTo(await colorAt(page, drawn.canvas!.x + 4, drawn.canvas!.y + 4), theme.canvas), 'canvas').toBe(true);
-          expect(closeTo(await colorAt(page, sheet.x + 8, sheet.y + 8), WHITE), 'sheet').toBe(true);
-          if (drawn.left) expect(closeTo(await colorAt(page, drawn.left.x + 8, drawn.left.y + drawn.left.height - 12), theme.surface), 'pieces panel').toBe(true);
+          // The theme from the first paint; the sheet white in both. Not read in
+          // WebKit: a screenshot waits for document.fonts.ready, which WebKit
+          // resolves only once the document has loaded (never, with the script held).
+          if (browserName !== 'webkit') {
+            expect(closeTo(await colorAt(page), theme.bg), 'top bar').toBe(true);
+            expect(closeTo(await colorAt(page, drawn.canvas!.x + 4, drawn.canvas!.y + 4), theme.canvas), 'canvas').toBe(true);
+            expect(closeTo(await colorAt(page, sheet.x + 8, sheet.y + 8), WHITE), 'sheet').toBe(true);
+            if (drawn.left) expect(closeTo(await colorAt(page, drawn.left.x + 8, drawn.left.y + drawn.left.height - 12), theme.surface), 'pieces panel').toBe(true);
+          }
           expect((await page.evaluate(bootState)).color).toBe(theme.text);
           // Reduced motion (as every test runs): nothing moves.
           expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);

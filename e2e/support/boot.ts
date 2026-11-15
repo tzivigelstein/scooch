@@ -74,5 +74,8 @@ export const readAbout = () => {
 export async function skeletonShown(page: Page) {
   await page.locator('body > noscript').waitFor({ state: 'attached' });
   await page.waitForFunction(() => !!document.querySelector<HTMLLinkElement>('link[rel="stylesheet"]')?.sheet);
-  await page.evaluate(() => document.fonts.ready);
+  // Not document.fonts.ready: WebKit resolves it only once the document has
+  // loaded, which it doesn't while the app's script is held. Once a font the
+  // page asked for has loaded, none may be loading.
+  await page.waitForFunction(() => document.fonts.status === 'loaded' && [...document.fonts].some((face) => face.status === 'loaded'), undefined, { polling: 50 });
 }

@@ -639,7 +639,7 @@ test.describe('the skeleton before the app mounts', () => {
   for (const size of [DESKTOP, MEDIUM, PHONE])
     test.describe(() => {
       test.use({ viewport: size });
-      test(`${sizeTitle(size)}: axe finds nothing in light and dark, and no text is clipped or scrolls sideways`, async ({ page }, testInfo) => {
+      test(`${sizeTitle(size)}: axe finds nothing in light and dark, and no text is clipped or scrolls sideways`, async ({ page, browserName }, testInfo) => {
         const release = await holdApp(page);
         for (const scheme of SCHEMES) {
           await page.emulateMedia({ colorScheme: scheme });
@@ -650,7 +650,8 @@ test.describe('the skeleton before the app mounts', () => {
           expect.soft(axeSummary(violations), `axe violations, ${scheme}`).toEqual([]);
           const { clipped, overflowX } = await page.evaluate(readLayout);
           expect.soft({ clipped, overflowX }, `layout, ${scheme}`).toEqual({ clipped: [], overflowX: 0 });
-          await testInfo.attach(`skeleton · ${size.width} px · ${scheme}`, { body: await page.screenshot(), contentType: 'image/png' });
+          // Not in WebKit: a screenshot waits for document.fonts.ready, which WebKit resolves only once the document has loaded (never, with the script held).
+          if (browserName !== 'webkit') await testInfo.attach(`skeleton · ${size.width} px · ${scheme}`, { body: await page.screenshot(), contentType: 'image/png' });
         }
         release();
       });
