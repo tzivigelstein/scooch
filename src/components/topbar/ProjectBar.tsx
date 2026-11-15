@@ -39,6 +39,12 @@ export function ProjectBar() {
 
   useLayoutEffect(() => {
     if (!renaming || !input.current) return;
+    // While a stylesheet is loading (the lazy parts' CSS the app fetches when
+    // idle), WebKit doesn't restyle what has no box: the field, shown again,
+    // keeps the display: none it had while hidden. focus() doesn't check then,
+    // and at the next frame WebKit takes the focus back from a field it takes
+    // for hidden, which closes it. Asking for its box styles it first.
+    input.current.getBoundingClientRect();
     input.current.focus();
     input.current.select();
   }, [renaming]);

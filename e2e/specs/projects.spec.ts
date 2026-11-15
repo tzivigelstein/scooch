@@ -780,3 +780,38 @@ test('the top bar renames the project the same way: text selected, Esc cancels, 
   await app.heard(/Ahora se llama «Tarjetas de prueba»/);
   await saved(page);
 });
+
+test('the top bar’s name field, opened again while a stylesheet is loading, keeps the focus and the typing', async ({ page, app }) => {
+  await renameInBar(page, 'Hojas');
+  // A stylesheet that keeps loading until the end, as the CSS of the lazy
+  // parts does when the app fetches it while idle (without
+  // requestIdleCallback, as in WebKit, 1.5 s after it starts).
+  let arrive!: () => void;
+  const arrived = new Promise<void>((resolve) => (arrive = resolve));
+  await page.route('**/late.css', async (route) => {
+    await arrived;
+    await route.fulfill({ contentType: 'text/css', body: '' });
+  });
+  // It starts loading, the name is clicked and two frames go by in one step:
+  // a trace takes a snapshot of the page after each step, and reading every
+  // element's scroll position lays the page out, which styles the field
+  // before WebKit's next frame (with the click a step of its own, this passed
+  // without the fix in 7 runs out of 10).
+  await page.evaluate(
+    () =>
+      new Promise<void>((done) => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'late.css';
+        document.head.append(link);
+        document.getElementById('project-name')!.click();
+        requestAnimationFrame(() => requestAnimationFrame(() => done()));
+      })
+  );
+  await expect(page.locator('#project-name-input')).toBeFocused();
+  await page.keyboard.type('Tarjetas');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#project-name-text')).toHaveText('Tarjetas');
+  arrive();
+  await saved(page);
+});
