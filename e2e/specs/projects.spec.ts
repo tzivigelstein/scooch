@@ -399,6 +399,9 @@ test.describe('files shared between projects', () => {
     const both = await storedProjects(page);
     expect(both.files).toBe(single.files + 2);
     expect(both.blobs, 'the same original and preview, stored once').toBe(single.blobs);
+    // As bytes: WebKit can't store a Blob in an ephemeral session (Safari's private windows).
+    expect(both.asBlobs, 'binaries and thumbnails stored as Blobs').toBe(0);
+    expect(both.projects.every((p) => p.thumb)).toBe(true);
 
     await openProjects(page);
     await card(page, 'Con dos').locator('[data-act="delete"]').click();

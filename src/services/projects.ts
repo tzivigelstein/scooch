@@ -193,12 +193,13 @@ export async function initProjects(h: ProjectHooks, { start = null }: { start?: 
     hooks.notify = notify;
     for (const args of later) notify(...args);
   }
-  // Once open: the rest of the files saved before binaries were shared become
-  // shared (the open project's already did, see storage/idb.ts), then what
-  // nothing references goes.
+  // Once open: what earlier layouts stored is converted (the open project's
+  // files were shared already, see storage/idb.ts), then what nothing
+  // references goes (a row that couldn't be converted doesn't stop that).
   void Promise.resolve(idb.convertAll?.())
+    .catch((err: unknown) => console.warn('The saved files could not all be converted.', err))
     .then(() => idb.collectGarbage())
-    .catch((err: unknown) => console.warn('The saved files could not be tidied.', err));
+    .catch((err: unknown) => console.warn('Unused files could not be deleted.', err));
 }
 
 async function restoreLast(start: StartSettings | null) {

@@ -1,20 +1,24 @@
 // What the browser kept from other versions of the app, put in the real
 // IndexedDB before the app starts: a document of the oldest format opens and
 // is saved in the current one; one saved by a newer version and a damaged one
-// are reported, not opened; the database of the previous layout (each binary
-// inside its file row; recorded from that version) and an interrupted move to
-// the current one (binaries stored once per content) open whole; the data
-// saved under the app's former name («pliego») moves to «scooch», also where
-// indexedDB.databases() is missing.
+// are reported, not opened; the databases of the earlier layouts (each binary
+// inside its file row; binaries stored once per content as Blobs; both
+// recorded from those versions) and interrupted moves open whole and end up
+// with every binary stored as bytes; the data saved under the app's former
+// name («pliego») moves to «scooch», also where indexedDB.databases() is
+// missing. Every seed holds Blobs, so in WebKit these run in a browser profile
+// on disk (seedingTest).
 // Every format's migration, value by value: tests/core/documents.test.js and
-// tests/core/projectdoc.test.js; the key and project moves: tests/services/migrate.test.ts.
+// tests/core/projectdoc.test.js; the layouts, row by row: tests/services/idb-storage.test.ts;
+// the key and project moves: tests/services/migrate.test.ts.
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Page } from '@playwright/test';
 import { DOC_VERSION } from '../../src/core/projectdoc.js';
-import { App, expect, fixture, test } from '../support/test.ts';
-import { databases, hideDatabases, LAST_PROJECT, openProjects, saved, seedBlob, seedStorage, storedProjects, storedRecord, type Seed } from '../support/projects.ts';
+import { clipboardKey } from '../support/keyboard.ts';
+import { App, expect, fixture } from '../support/test.ts';
+import { cards, databases, hideDatabases, LAST_PROJECT, openProjects, saved, seedBlob, seedingTest as test, seedStorage, storedProjects, storedRecord, type Seed } from '../support/projects.ts';
 
 type Doc = Record<string, unknown> & { items: Record<string, unknown>[] };
 
@@ -111,8 +115,15 @@ const V1 = JSON.parse(readFileSync(fixture('scooch-v1-layout.json'), 'utf8')) as
   files: { project: string; key: string; blob: BlobSeed }[];
 };
 const sha256 = (seed: BlobSeed) => createHash('sha256').update(Buffer.from(seed.$blob, 'base64')).digest('hex');
-/** Every different content in the recording, by hash: what layout version 2 stores, once each. */
+/** Every different content in the recording, by hash: what layouts 2 and 3 store, once each. */
 const V1_HASHES = [...new Set(V1.files.map((row) => sha256(row.blob)))].sort();
+
+// e2e/fixtures/scooch-v2-layout.json: what the app stored with layout version 2
+// (recorded from that build): «Tarjetas» (card00.png and rotated.pdf, its saved
+// undo history keeping card01.png, deleted), «Segundo» (small.jpg) and «Tarjetas
+// (copia)»; the clipboard keeps square.webp, cut from «Tarjetas».
+const V2 = JSON.parse(readFileSync(fixture('scooch-v2-layout.json'), 'utf8')) as Omit<Required<Seed>, 'db' | 'blobs'> & { blobs: { hash: string; blob: BlobSeed }[] };
+const V2_HASHES = V2.blobs.map((row) => sha256(row.blob)).sort();
 
 /** The pieces of the open project by name, and whether their image loaded. */
 const loadedPieces = (page: Page) =>
@@ -137,18 +148,18 @@ async function openEachRecordedProject(page: Page) {
 }
 
 test.describe('the layout of the database', () => {
-  test('the projects stored by the previous layout open as they were, and every binary ends up stored once', async ({ page }, testInfo) => {
+  test('the projects stored by layout 1 open as they were, and every binary ends up stored once, as bytes', async ({ page }, testInfo) => {
     expect(V1.version).toBe(1);
     expect(V1_HASHES.length, 'the recording repeats binaries').toBeLessThan(V1.files.length);
     await seedStorage(page, { db: 'scooch', version: 1, projects: V1.projects, files: V1.files, storage: V1.storage });
     const app = new App(page, testInfo);
     await app.open();
     await expect(page.locator('#project-name-text')).toHaveText('Tarjetas');
-    await expect.poll(() => storedProjects(page)).toMatchObject({ files: V1.files.length, unconverted: 0, hashes: V1_HASHES });
+    await expect.poll(() => storedProjects(page)).toMatchObject({ files: V1.files.length, unconverted: 0, asBlobs: 0, hashes: V1_HASHES });
     await openEachRecordedProject(page);
   });
 
-  test('a move to the current layout interrupted halfway finishes on the next start, losing nothing', async ({ page }, testInfo) => {
+  test('a move to binaries stored once per content interrupted halfway finishes on the next start, losing nothing', async ({ page }, testInfo) => {
     // The database already has the current stores; the copy's rows and half of
     // «Tarjetas»'s were moved (their binary stored once by hash); the rest still
     // keep their binary inside, like the previous layout.
@@ -163,16 +174,44 @@ test.describe('the layout of the database', () => {
     const app = new App(page, testInfo);
     await app.open();
     await expect(page.locator('#project-name-text')).toHaveText('Tarjetas');
-    await expect.poll(() => storedProjects(page)).toMatchObject({ files: V1.files.length, unconverted: 0, hashes: V1_HASHES });
+    await expect.poll(() => storedProjects(page)).toMatchObject({ files: V1.files.length, unconverted: 0, asBlobs: 0, hashes: V1_HASHES });
     await openEachRecordedProject(page);
   });
 
-  test('a database upgraded to the current layout before any row moved opens whole', async ({ page }, testInfo) => {
+  test('a database upgraded to layout 2 before any row moved opens whole', async ({ page }, testInfo) => {
     await seedStorage(page, { db: 'scooch', version: 2, projects: V1.projects, files: V1.files, blobs: [], storage: V1.storage });
     const app = new App(page, testInfo);
     await app.open();
-    await expect.poll(() => storedProjects(page)).toMatchObject({ files: V1.files.length, unconverted: 0, hashes: V1_HASHES });
+    await expect.poll(() => storedProjects(page)).toMatchObject({ files: V1.files.length, unconverted: 0, asBlobs: 0, hashes: V1_HASHES });
     await openEachRecordedProject(page);
+  });
+
+  test('the projects stored by layout 2 (binaries and thumbnails as Blobs) open as they were, with their thumbnails, the saved undo steps and the cut piece, and end up stored as bytes', async ({ page }, testInfo) => {
+    expect(V2.version).toBe(2);
+    await seedStorage(page, { db: 'scooch', version: 2, projects: V2.projects, files: V2.files, blobs: V2.blobs, history: V2.history, clipboard: V2.clipboard, storage: V2.storage });
+    expect((await storedProjects(page)).asBlobs, 'the recording stores Blobs').toBe(V2.blobs.length + V2.projects.length);
+    const app = new App(page, testInfo);
+    await app.open();
+    await expect(page.locator('#project-name-text')).toHaveText('Segundo');
+    await expect.poll(() => loadedPieces(page)).toEqual(['small.jpg']);
+    // Every binary is still referenced (by a project, the saved history or the clipboard): none goes.
+    await expect.poll(() => storedProjects(page)).toMatchObject({ files: V2.files.length, unconverted: 0, asBlobs: 0, hashes: V2_HASHES });
+
+    await openProjects(page);
+    await expect.poll(async () => (await cards(page)).map((c) => `${c.name} ${c.thumb}`).sort()).toEqual(['Segundo true', 'Tarjetas (copia) true', 'Tarjetas true']);
+    await page.locator('#projects .project-card').filter({ has: page.locator('.project-title', { hasText: /^Tarjetas$/ }) }).locator('.project-open').click();
+    await expect(page.locator('#project-name-text')).toHaveText('Tarjetas');
+    await expect.poll(() => loadedPieces(page)).toEqual(['card00.png', 'rotated.pdf']);
+    // Its last step deleted card01.png, which only the saved history keeps.
+    await expect(page.locator('#undo')).toBeEnabled();
+    await app.pieces().first().focus();
+    await page.keyboard.press('Control+z');
+    await expect.poll(() => loadedPieces(page)).toEqual(['card00.png', 'card01.png', 'rotated.pdf']);
+    // square.webp was cut: only the clipboard keeps it.
+    await clipboardKey(page, 'paste');
+    await expect.poll(() => loadedPieces(page)).toEqual(['card00.png', 'card01.png', 'rotated.pdf', 'square.webp']);
+    await saved(page);
+    expect((await storedProjects(page)).asBlobs).toBe(0);
   });
 });
 

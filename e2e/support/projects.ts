@@ -3,7 +3,10 @@
 // «Proyectos» dialog, and reading or writing what IndexedDB holds.
 import type { Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { expect, fixture } from './test.ts';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { expect, fixture, test } from './test.ts';
 
 export const DB = 'scooch';
 export const LAST_PROJECT = 'scooch:last-project';
@@ -95,7 +98,7 @@ export const storedRecord = (page: Page, id?: string) =>
       db.close();
       if (!record) return null;
       const { thumb, ...rest } = record;
-      return { ...rest, thumb: thumb instanceof Blob };
+      return { ...rest, thumb: thumb != null };
     },
     { db: DB, last: LAST_PROJECT, id },
   ) as Promise<(StoredRecord & { thumb: boolean }) | null>;
@@ -149,14 +152,51 @@ export interface Seed {
   files: unknown[];
   /** Rows of the «blobs» store (version 2): {hash, blob}. */
   blobs?: unknown[];
+  /** Rows of the «history» and «clipboard» stores (version 2). */
+  history?: unknown[];
+  clipboard?: unknown[];
   /** localStorage, as is. */
   storage: Record<string, string>;
 }
 
 /**
+ * `test` for the specs that seed what earlier layouts stored, which holds
+ * Blobs. WebKit can't store a Blob in IndexedDB in an ephemeral session
+ * (Playwright's contexts, like Safari's private windows), so there the page
+ * lives in a browser profile on disk, as in a real Safari; the other engines
+ * keep their usual context.
+ */
+export const seedingTest = test.extend({
+  context: async ({ context, browserName, playwright, headless, launchOptions, contextOptions, viewport, locale, colorScheme, baseURL, acceptDownloads, userAgent, deviceScaleFactor, isMobile, hasTouch }, use) => {
+    if (browserName !== 'webkit') {
+      await use(context);
+      return;
+    }
+    const dir = await mkdtemp(join(tmpdir(), 'scooch-profile-'));
+    const profile = await playwright.webkit.launchPersistentContext(dir, {
+      ...launchOptions,
+      headless,
+      ...contextOptions,
+      viewport,
+      locale,
+      colorScheme,
+      baseURL,
+      acceptDownloads,
+      userAgent,
+      deviceScaleFactor,
+      isMobile,
+      hasTouch,
+    });
+    await use(profile);
+    await profile.close();
+    await rm(dir, { recursive: true, force: true });
+  },
+});
+
+/**
  * Writes a database and localStorage on the app's origin before the app ever
  * runs there: from a blank page of that origin (answered by the test, not by
- * the server).
+ * the server). With Blobs, only in `seedingTest`'s page.
  */
 export async function seedStorage(page: Page, seed: Seed) {
   await page.route('**/__seed', (route) => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>seed</title>' }));
@@ -189,13 +229,11 @@ export async function seedStorage(page: Page, seed: Seed) {
       request.onerror = () => reject(request.error);
     });
     await new Promise<void>((resolve, reject) => {
-      const stores = seed.version < 2 ? ['projects', 'files'] : ['projects', 'files', 'blobs'];
+      const stores = seed.version < 2 ? ['projects', 'files'] : ['projects', 'files', 'blobs', 'history', 'clipboard'];
       const tx = db.transaction(stores, 'readwrite');
-      for (const record of decode(seed.projects) as unknown[]) tx.objectStore('projects').put(record);
-      for (const row of decode(seed.files) as unknown[]) tx.objectStore('files').put(row);
-      for (const row of decode(seed.blobs ?? []) as unknown[]) tx.objectStore('blobs').put(row);
+      for (const store of stores) for (const row of decode((seed as unknown as Record<string, unknown[] | undefined>)[store] ?? []) as unknown[]) tx.objectStore(store).put(row);
       tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
     });
     db.close();
     for (const [key, value] of Object.entries(seed.storage)) localStorage.setItem(key, value);
@@ -223,7 +261,8 @@ export const databases = (page: Page) =>
 /**
  * What the «scooch» database holds: each project (id, name, has a
  * thumbnail), how many file rows (and how many still keep their binary
- * inside, as layout version 1 did), and how many binaries.
+ * inside, as layout version 1 did), how many binaries, and how many values
+ * are Blobs (what layouts 1 and 2 stored; the app now stores bytes).
  */
 export const storedProjects = (page: Page) =>
   page.evaluate(async (name) => {
@@ -232,21 +271,31 @@ export const storedProjects = (page: Page) =>
       r.onsuccess = () => resolve(r.result);
       r.onerror = () => reject(r.error);
     });
-    const out = { projects: [] as { id: string; name: string; thumb: boolean }[], files: 0, unconverted: 0, blobs: 0, hashes: [] as string[] };
+    const out = { projects: [] as { id: string; name: string; thumb: boolean }[], files: 0, unconverted: 0, blobs: 0, hashes: [] as string[], asBlobs: 0 };
     await new Promise<void>((resolve) => {
       const tx = db.transaction(['projects', 'files', 'blobs']);
-      tx.objectStore('projects').getAll().onsuccess = (e) =>
-        (out.projects = ((e.target as IDBRequest).result as { id: string; name: string; thumb: unknown }[]).map((r) => ({ id: r.id, name: r.name, thumb: r.thumb instanceof Blob })));
+      tx.objectStore('projects').getAll().onsuccess = (e) => {
+        const records = (e.target as IDBRequest).result as { id: string; name: string; thumb: unknown }[];
+        out.projects = records.map((r) => ({ id: r.id, name: r.name, thumb: r.thumb != null }));
+        out.asBlobs += records.filter((r) => r.thumb instanceof Blob).length;
+      };
       tx.objectStore('files').getAll().onsuccess = (e) => {
         const rows = (e.target as IDBRequest).result as { blob?: Blob; hash?: string }[];
         out.files = rows.length;
         out.unconverted = rows.filter((row) => row.blob || !row.hash).length;
+        out.asBlobs += rows.filter((row) => row.blob).length;
       };
-      tx.objectStore('blobs').getAllKeys().onsuccess = (e) => {
+      const blobs = tx.objectStore('blobs');
+      blobs.getAllKeys().onsuccess = (e) => {
         out.hashes = ((e.target as IDBRequest).result as string[]).sort();
         out.blobs = out.hashes.length;
       };
-      tx.oncomplete = () => resolve();
+      // Rows stored as bytes are the ones the index «type» lists (layout 3).
+      if (blobs.indexNames.contains('type')) blobs.index('type').count().onsuccess = (e) => (out.asBlobs -= (e.target as IDBRequest<number>).result);
+      tx.oncomplete = () => {
+        out.asBlobs += out.blobs;
+        resolve();
+      };
     });
     db.close();
     return out;

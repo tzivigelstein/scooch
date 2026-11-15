@@ -1,11 +1,13 @@
 // Project storage in IndexedDB, with the interface of core/projectstore.js.
 // Nothing leaves the browser.
 //
-// Database PROJECTS_DB (config), layout version 2:
-//   «projects»  records, by id ({id, name, created, modified, opened, …}).
+// Database PROJECTS_DB (config), layout version 3:
+//   «projects»  records, by id ({id, name, created, modified, opened, …});
+//               the thumbnail as bytes ({bytes, type}) or null.
 //   «files»     a project's files: {project, key, hash}, by [project, key],
 //               indexed by project and by hash.
-//   «blobs»     every binary once per content: {hash, blob}, by hash.
+//   «blobs»     every binary once per content: {hash, bytes, type}, by hash,
+//               indexed by type (which lists only the rows stored as bytes).
 //   «history»   each project's saved undo history, by project; its `hashes`
 //               (multiEntry) are the binaries it keeps.
 //   «clipboard» the pieces cut and not pasted yet (one record, 'cut'), with
@@ -16,28 +18,47 @@
 // save to a project that is no longer there fails: so no reference ever
 // points to a deleted binary, whatever other tabs do and whenever a tab dies.
 //
-// Version 1 kept each binary inside its «files» row ({project, key, blob}).
-// Opening the database at version 2 adds the new stores; the rows are
-// converted afterwards (hashing needs time, and an upgrade's transaction can't
-// wait for it): a project's rows before it opens (files()), the rest in the
-// background (convertAll). Each row is converted in a transaction that stores
-// its binary and rewrites the row together, so an interruption leaves every
-// row whole, old or new; reading takes both.
+// Binaries are stored as bytes (an ArrayBuffer and the media type), never as
+// Blobs: WebKit can't store a Blob in an ephemeral session (Safari's private
+// windows, Playwright's WebKit): the request fails with «UnknownError: Error
+// preparing Blob/File data to be stored in object store» and the transaction
+// aborts. A Blob's bytes can only be read asynchronously, so they are read
+// before the transaction opens: once it is open, only IndexedDB requests run
+// in it, chained from their callbacks (awaiting anything else lets it commit).
+// Writing only a record whose thumbnail came from here (a save of the
+// document alone, also when the tab is closing) opens it right away.
+//
+// Earlier layouts, read as they are and converted:
+//   1. each binary inside its «files» row ({project, key, blob}). Version 2
+//      added the other stores; a project's rows are converted before it opens
+//      (files()), the rest in the background (convertAll).
+//   2. «blobs» rows {hash, blob} and Blob thumbnails. Version 3 adds the index
+//      «type»; they are converted in the background (convertAll).
+// Converting needs time (hashing, reading a Blob), and an upgrade's
+// transaction can't wait for it. Each row is converted in a transaction of
+// its own that reads it again and rewrites it only if it is still in the old
+// shape, so an interruption leaves every row whole, old or new.
 
 import { PROJECTS_DB } from '../../config.ts';
 import { ProjectError } from '../../core/projectdoc.js';
 import type { ProjectRecord, ProjectStorage, StoredClip, StoredFile, StoredHistory, WriteChanges } from '../../core/types.ts';
-import { hashBlob } from './hash.ts';
+import { forgetBytes, hashBytes, knownBytes } from './hash.ts';
 
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export interface IdbStorage extends ProjectStorage {
   close(): void;
-  /** Converts every version 1 row left (see above). Returns how many rows. */
+  /** Converts every row of an earlier layout left (see above). Returns how many rows. */
   convertAll(): Promise<number>;
 }
 
-/** A row of «files»: a reference (version 2) or, before converting, the binary itself (version 1). */
+/** A binary as stored (layout 3). */
+interface Bytes {
+  bytes: ArrayBuffer;
+  type: string;
+}
+
+/** A row of «files»: a reference (layout 2 on) or, before converting, the binary itself (layout 1). */
 interface FileRow {
   project: string;
   key: string;
@@ -45,9 +66,65 @@ interface FileRow {
   blob?: Blob;
 }
 
-interface BlobRow {
-  hash: string;
-  blob: Blob;
+/** A row of «blobs»: bytes (layout 3) or, before converting, a Blob (layout 2). */
+type BlobRow = { hash: string } & (Bytes | { blob: Blob });
+
+/** A record as stored: its thumbnail as bytes, or a Blob before converting (layouts 1 and 2). */
+type RecordRow = Omit<ProjectRecord, 'thumb'> & { thumb: Bytes | Blob | null };
+
+const isBytes = (value: unknown): value is Bytes => !!value && typeof value === 'object' && (value as Bytes).bytes instanceof ArrayBuffer;
+
+const blobOf = (stored: Bytes) => new Blob([stored.bytes], { type: stored.type });
+
+/** A Blob's bytes as stored: right away when the app holds them (storage/hash.ts), else read. */
+function bytesOf(blob: Blob): Bytes | Promise<Bytes> {
+  const known = knownBytes(blob);
+  // A view may share a larger buffer: only its own bytes are stored.
+  if (known) return { bytes: (known.byteOffset === 0 && known.byteLength === known.buffer.byteLength ? known.buffer : known.slice().buffer) as ArrayBuffer, type: blob.type };
+  return blob.arrayBuffer().then((bytes) => ({ bytes, type: blob.type }));
+}
+
+/** The binary of a «blobs» row, whichever layout stored it. */
+const blobOfRow = (row: BlobRow) => ('blob' in row ? row.blob : isBytes(row) ? blobOf(row) : null);
+
+// The bytes of the thumbnails this tab read or wrote, by their Blob: writing a
+// record again doesn't have to read its thumbnail first (they are small).
+const thumbBytes = new WeakMap<Blob, Bytes>();
+
+function thumbOf(stored: RecordRow['thumb'] | undefined): Blob | null {
+  if (stored instanceof Blob) return stored;
+  if (!isBytes(stored)) return null;
+  const blob = blobOf(stored);
+  thumbBytes.set(blob, stored);
+  return blob;
+}
+
+const recordOf = (row: RecordRow): ProjectRecord => ({ ...row, thumb: thumbOf(row.thumb) });
+
+/** What a write stores: the record and the binaries by hash, as bytes. */
+interface Prepared {
+  row: RecordRow;
+  bytes: Map<string, Bytes>;
+}
+
+/**
+ * Turns the record's thumbnail and the binaries into bytes before a
+ * transaction opens: synchronously when all of them are known, so the
+ * transaction opens in the same task (see above).
+ */
+function prepare(record: ProjectRecord, binaries: ReadonlyMap<string, Blob> = new Map()): Prepared | Promise<Prepared> {
+  const { thumb } = record;
+  const thumbStored = thumb ? (thumbBytes.get(thumb) ?? bytesOf(thumb)) : null;
+  const entries = [...binaries].map(([hash, blob]) => [hash, bytesOf(blob)] as const);
+  if (!(thumbStored instanceof Promise) && entries.every(([, stored]) => !(stored instanceof Promise))) {
+    if (thumb && thumbStored) thumbBytes.set(thumb, thumbStored);
+    return { row: { ...record, thumb: thumbStored }, bytes: new Map(entries as (readonly [string, Bytes])[]) };
+  }
+  return (async () => {
+    const stored = await thumbStored;
+    if (thumb && stored) thumbBytes.set(thumb, stored);
+    return { row: { ...record, thumb: stored }, bytes: new Map(await Promise.all(entries.map(async ([hash, bytes]) => [hash, await bytes] as const))) };
+  })();
 }
 
 const promised = <T>(request: IDBRequest<T>) =>
@@ -86,13 +163,14 @@ export async function openExistingIdbStorage(name: string, { timeout = 4000 } = 
   return open(name, timeout, true);
 }
 
-/** Creates the stores and indexes version 2 has and the database doesn't yet. */
+/** Creates the stores and indexes layout 3 has and the database doesn't yet. */
 function upgrade(db: IDBDatabase, tx: IDBTransaction) {
   if (!db.objectStoreNames.contains('projects')) db.createObjectStore('projects', { keyPath: 'id' });
   const files = db.objectStoreNames.contains('files') ? tx.objectStore('files') : db.createObjectStore('files', { keyPath: ['project', 'key'] });
   if (!files.indexNames.contains('project')) files.createIndex('project', 'project');
   if (!files.indexNames.contains('hash')) files.createIndex('hash', 'hash');
-  if (!db.objectStoreNames.contains('blobs')) db.createObjectStore('blobs', { keyPath: 'hash' });
+  const blobs = db.objectStoreNames.contains('blobs') ? tx.objectStore('blobs') : db.createObjectStore('blobs', { keyPath: 'hash' });
+  if (!blobs.indexNames.contains('type')) blobs.createIndex('type', 'type');
   if (!db.objectStoreNames.contains('history')) db.createObjectStore('history', { keyPath: 'project' }).createIndex('hashes', 'hashes', { multiEntry: true });
   if (!db.objectStoreNames.contains('clipboard')) db.createObjectStore('clipboard', { keyPath: 'id' }).createIndex('hashes', 'hashes', { multiEntry: true });
 }
@@ -158,16 +236,19 @@ export function deleteIdb(name: string): Promise<void> {
   });
 }
 
+type Failure = { error: unknown };
+
 /**
  * Runs `work` inside a request's callback: if it throws (a request refused
- * right away, e.g. over quota), the transaction aborts and `fail` keeps the
- * error for whoever awaits it (an exception there would otherwise be lost).
+ * right away, e.g. over quota, or the transaction aborted by an earlier
+ * request), the transaction aborts and `fail` keeps the first error for
+ * whoever awaits it (an exception there would otherwise be lost).
  */
-function guarded(tx: IDBTransaction, fail: { error: unknown }, work: () => void) {
+function guarded(tx: IDBTransaction, fail: Failure, work: () => void) {
   try {
     work();
   } catch (err) {
-    fail.error ??= err;
+    fail.error ??= tx.error ?? err;
     try {
       tx.abort();
     } catch {
@@ -176,11 +257,21 @@ function guarded(tx: IDBTransaction, fail: { error: unknown }, work: () => void)
   }
 }
 
-/** Stores `blob` under `hash` in this transaction, unless a binary with that hash already is. */
-function keepBlob(blobs: IDBObjectStore, hash: string, blob: Blob) {
-  blobs.count(hash).onsuccess = (e) => {
-    if (!(e.target as IDBRequest<number>).result) blobs.put({ hash, blob } satisfies BlobRow);
-  };
+/** Waits for the transaction; its failure is the first error `fail` kept, if any. */
+async function settled(tx: Promise<void>, fail: Failure) {
+  try {
+    await tx;
+  } catch (err) {
+    throw fail.error ?? err;
+  }
+}
+
+/** Stores a binary under `hash` in this transaction, unless one with that hash already is. */
+function keepBytes(tx: IDBTransaction, fail: Failure, blobs: IDBObjectStore, hash: string, stored: Bytes) {
+  blobs.count(hash).onsuccess = (e) =>
+    guarded(tx, fail, () => {
+      if (!(e.target as IDBRequest<number>).result) blobs.put({ hash, bytes: stored.bytes, type: stored.type } satisfies BlobRow);
+    });
 }
 
 /** Deletes every row of an index's key (inside the transaction). */
@@ -194,63 +285,122 @@ function deleteAll(store: IDBObjectStore, index: string, key: IDBValidKey) {
 }
 
 function idbStorage(db: IDBDatabase): IdbStorage {
-  // A database opened as it is (the one under the former name) may have only the version 1 stores.
+  // A database opened as it is (the one under the former name) may have only the layout 1 stores.
   const has = (store: string) => db.objectStoreNames.contains(store);
   const layout2 = has('blobs');
 
   const readRows = async (id: string) => promised<FileRow[]>(db.transaction('files').objectStore('files').index('project').getAll(IDBKeyRange.only(id)));
 
-  // Version 1 rows of these: hashed, then each binary stored once and its row
-  // rewritten as a reference, in one transaction (a row converted meanwhile by
-  // another tab, or deleted, is left as it is).
+  // Layout 1 rows of these: read and hashed, then each binary stored once and
+  // its row rewritten as a reference, in one transaction (a row converted
+  // meanwhile by another tab, or deleted, is left as it is).
   async function convert(rows: readonly FileRow[]) {
     const legacy = rows.filter((row) => row.blob && !row.hash);
     if (!legacy.length || !layout2) return 0;
-    const hashed = await Promise.all(legacy.map(async (row) => ({ row, hash: await hashBlob(row.blob!) })));
+    const read = await Promise.all(
+      legacy.map(async (row) => {
+        const stored = await bytesOf(row.blob!);
+        return { row, stored, hash: await hashBytes(stored.bytes) };
+      })
+    );
     const tx = db.transaction(['files', 'blobs'], 'readwrite');
     const finished = done(tx);
     const files = tx.objectStore('files');
     const blobs = tx.objectStore('blobs');
-    const fail = { error: null as unknown };
-    for (const { row, hash } of hashed) {
+    const fail: Failure = { error: null };
+    for (const { row, stored, hash } of read) {
       files.get([row.project, row.key]).onsuccess = (e) =>
         guarded(tx, fail, () => {
           const current = (e.target as IDBRequest<FileRow | undefined>).result;
           if (!current?.blob || current.hash) return;
-          keepBlob(blobs, hash, current.blob);
+          keepBytes(tx, fail, blobs, hash, stored);
           files.put({ project: row.project, key: row.key, hash } satisfies FileRow);
         });
     }
-    try {
-      await finished;
-    } catch (err) {
-      throw fail.error ?? err;
-    }
+    await settled(finished, fail);
     return legacy.length;
+  }
+
+  // Layout 2 binaries, already read, as bytes: their rows rewritten in one
+  // transaction, each unless it was converted or deleted meanwhile.
+  async function storeAsBytes(read: ReadonlyMap<string, Bytes>) {
+    const tx = db.transaction('blobs', 'readwrite');
+    const finished = done(tx);
+    const fail: Failure = { error: null };
+    const blobs = tx.objectStore('blobs');
+    for (const [hash, stored] of read) {
+      blobs.get(hash).onsuccess = (e) =>
+        guarded(tx, fail, () => {
+          const current = (e.target as IDBRequest<BlobRow | undefined>).result;
+          if (current && 'blob' in current) blobs.put({ hash, bytes: stored.bytes, type: stored.type } satisfies BlobRow);
+        });
+    }
+    await settled(finished, fail);
   }
 
   async function readBlobs(hashes: readonly string[]) {
     const out = new Map<string, Blob>();
     if (!hashes.length || !layout2) return out;
-    const tx = db.transaction('blobs');
-    const store = tx.objectStore('blobs');
-    await Promise.all(
-      [...new Set(hashes)].map((hash) =>
-        promised<BlobRow | undefined>(store.get(hash)).then((row) => {
-          if (row) out.set(hash, row.blob);
-        })
-      )
-    );
+    const store = db.transaction('blobs').objectStore('blobs');
+    const rows = await Promise.all([...new Set(hashes)].map((hash) => promised<BlobRow | undefined>(store.get(hash))));
+    // A layout 2 binary is read into memory and converted right away: WebKit
+    // invalidates a Blob read from IndexedDB once its row is rewritten (by
+    // converting it, here, in the background or in another tab). One that
+    // can't be read is given as it is.
+    const read = new Map<string, Bytes>();
+    for (const row of rows) {
+      if (!row) continue;
+      if (!('blob' in row)) {
+        const blob = blobOfRow(row);
+        if (blob) out.set(row.hash, blob);
+        continue;
+      }
+      try {
+        const stored = await bytesOf(row.blob);
+        read.set(row.hash, stored);
+        out.set(row.hash, blobOf(stored));
+      } catch {
+        out.set(row.hash, row.blob);
+      }
+    }
+    if (read.size) await storeAsBytes(read).catch(() => {});
     return out;
+  }
+
+  // A layout 2 binary as bytes, unless it was converted or deleted meanwhile.
+  async function convertBlobRow(hash: string) {
+    const row = await promised<BlobRow | undefined>(db.transaction('blobs').objectStore('blobs').get(hash));
+    if (!row || !('blob' in row)) return 0;
+    await storeAsBytes(new Map([[hash, await bytesOf(row.blob)]]));
+    return 1;
+  }
+
+  // A record's Blob thumbnail as bytes, unless it changed meanwhile.
+  async function convertThumb(id: string) {
+    const row = await promised<RecordRow | undefined>(db.transaction('projects').objectStore('projects').get(id));
+    if (!(row?.thumb instanceof Blob)) return 0;
+    const stored = await bytesOf(row.thumb);
+    const tx = db.transaction('projects', 'readwrite');
+    const finished = done(tx);
+    const fail: Failure = { error: null };
+    const projects = tx.objectStore('projects');
+    projects.get(id).onsuccess = (e) =>
+      guarded(tx, fail, () => {
+        const current = (e.target as IDBRequest<RecordRow | undefined>).result;
+        if (current?.thumb instanceof Blob) projects.put({ ...current, thumb: stored } satisfies RecordRow);
+      });
+    await settled(finished, fail);
+    return 1;
   }
 
   return {
     close: () => db.close(),
     async list() {
-      return promised<ProjectRecord[]>(db.transaction('projects').objectStore('projects').getAll());
+      return (await promised<RecordRow[]>(db.transaction('projects').objectStore('projects').getAll())).map(recordOf);
     },
     async get(id) {
-      return (await promised<ProjectRecord | undefined>(db.transaction('projects').objectStore('projects').get(id))) ?? null;
+      const row = await promised<RecordRow | undefined>(db.transaction('projects').objectStore('projects').get(id));
+      return row ? recordOf(row) : null;
     },
     async files(id) {
       let rows = await readRows(id);
@@ -259,17 +409,20 @@ function idbStorage(db: IDBDatabase): IdbStorage {
       const out = new Map<string, StoredFile>();
       for (const row of rows) {
         const blob = row.hash ? blobs.get(row.hash) : row.blob;
-        // A version 1 row that couldn't be converted (the database under the
+        // A layout 1 row that couldn't be converted (the database under the
         // former name) still has its binary; its hash is found when it is copied.
         if (blob) out.set(row.key, { blob, hash: row.hash ?? '' });
       }
       return out;
     },
     async write(record, { put = new Map(), remove = [], history, blobs: extra = new Map(), create = false }: WriteChanges = {}) {
+      const binaries = new Map([...[...put.values()].map((file) => [file.hash, file.blob] as const), ...extra]);
+      const ready = prepare(record, binaries);
+      const { row, bytes } = ready instanceof Promise ? await ready : ready;
       const stores = ['projects', 'files', 'blobs', ...(history !== undefined ? ['history'] : [])];
       const tx = db.transaction(stores, 'readwrite');
       const finished = done(tx);
-      const fail = { error: null as unknown };
+      const fail: Failure = { error: null };
       const projects = tx.objectStore('projects');
       projects.getKey(record.id).onsuccess = (e) =>
         guarded(tx, fail, () => {
@@ -277,57 +430,54 @@ function idbStorage(db: IDBDatabase): IdbStorage {
           if ((e.target as IDBRequest).result === undefined && !create) throw new ProjectError('missing', record.id);
           const files = tx.objectStore('files');
           const blobs = tx.objectStore('blobs');
-          for (const [key, file] of put) {
-            keepBlob(blobs, file.hash, file.blob);
-            files.put({ project: record.id, key, hash: file.hash } satisfies FileRow);
-          }
+          for (const [key, file] of put) files.put({ project: record.id, key, hash: file.hash } satisfies FileRow);
           for (const key of remove) files.delete([record.id, key]);
-          for (const [hash, blob] of extra) keepBlob(blobs, hash, blob);
+          for (const [hash, stored] of bytes) keepBytes(tx, fail, blobs, hash, stored);
           if (history === null) tx.objectStore('history').delete(record.id);
           else if (history) tx.objectStore('history').put(history);
-          projects.put(record);
+          projects.put(row);
         });
-      try {
-        await finished;
-      } catch (err) {
-        throw fail.error ?? err;
-      }
+      await settled(finished, fail);
+      for (const blob of binaries.values()) forgetBytes(blob);
     },
     async update(id, patch) {
+      // A thumbnail still stored as a Blob becomes bytes first: WebKit loses a
+      // Blob read from IndexedDB and written back (the new copy of the record
+      // points to the old one's file, which goes). If it can't, the thumbnail
+      // goes (the next save draws another).
+      await convertThumb(id).catch(() => 0);
       const tx = db.transaction('projects', 'readwrite');
       const finished = done(tx);
       const store = tx.objectStore('projects');
-      let next: ProjectRecord | null = null;
+      let next: RecordRow | null = null;
       store.get(id).onsuccess = (e) => {
-        const record = (e.target as IDBRequest<ProjectRecord | undefined>).result;
-        if (!record) return;
-        next = { ...record, ...patch };
+        const row = (e.target as IDBRequest<RecordRow | undefined>).result;
+        if (!row) return;
+        next = { ...row, ...patch, ...(row.thumb instanceof Blob ? { thumb: null } : {}) };
         store.put(next);
       };
       await finished;
-      return next;
+      return next ? recordOf(next) : null;
     },
     async copy(id, record) {
-      // Version 1 rows become references first: a copy shares binaries, it never copies them.
+      // Layout 1 rows become references first: a copy shares binaries, it never copies them.
       await convert(await readRows(id));
+      const ready = prepare(record);
+      const { row } = ready instanceof Promise ? await ready : ready;
       const tx = db.transaction(['projects', 'files'], 'readwrite');
       const finished = done(tx);
-      const fail = { error: null as unknown };
+      const fail: Failure = { error: null };
       const files = tx.objectStore('files');
       tx.objectStore('projects').getKey(id).onsuccess = (e) =>
         guarded(tx, fail, () => {
           if ((e.target as IDBRequest).result === undefined) throw new ProjectError('missing', id);
           files.index('project').getAll(IDBKeyRange.only(id)).onsuccess = (r) =>
             guarded(tx, fail, () => {
-              for (const row of (r.target as IDBRequest<FileRow[]>).result) files.put({ ...row, project: record.id });
-              tx.objectStore('projects').put(record);
+              for (const fileRow of (r.target as IDBRequest<FileRow[]>).result) files.put({ ...fileRow, project: record.id });
+              tx.objectStore('projects').put(row);
             });
         });
-      try {
-        await finished;
-      } catch (err) {
-        throw fail.error ?? err;
-      }
+      await settled(finished, fail);
     },
     async remove(id) {
       const stores = ['projects', 'files', ...(has('history') ? ['history'] : [])];
@@ -347,19 +497,23 @@ function idbStorage(db: IDBDatabase): IdbStorage {
       return (await promised<StoredClip | undefined>(db.transaction('clipboard').objectStore('clipboard').get('cut'))) ?? null;
     },
     async setClip(clip, extra = new Map()) {
+      const bytes = new Map(await Promise.all([...extra].map(async ([hash, blob]) => [hash, await bytesOf(blob)] as const)));
       const tx = db.transaction(['clipboard', 'blobs'], 'readwrite');
       const finished = done(tx);
+      const fail: Failure = { error: null };
       const blobs = tx.objectStore('blobs');
-      for (const [hash, blob] of extra) keepBlob(blobs, hash, blob);
+      for (const [hash, stored] of bytes) keepBytes(tx, fail, blobs, hash, stored);
       if (clip) tx.objectStore('clipboard').put(clip);
       else tx.objectStore('clipboard').delete('cut');
-      return finished;
+      await settled(finished, fail);
+      for (const blob of extra.values()) forgetBytes(blob);
     },
     blobs: readBlobs,
     async collectGarbage() {
       if (!layout2) return 0;
       const tx = db.transaction(['blobs', 'files', 'history', 'clipboard'], 'readwrite');
       const finished = done(tx);
+      const fail: Failure = { error: null };
       const blobs = tx.objectStore('blobs');
       const counters = [tx.objectStore('files').index('hash'), tx.objectStore('history').index('hashes'), tx.objectStore('clipboard').index('hashes')];
       let deleted = 0;
@@ -368,26 +522,52 @@ function idbStorage(db: IDBDatabase): IdbStorage {
           let pending = counters.length;
           let used = false;
           for (const index of counters) {
-            index.count(hash).onsuccess = (c) => {
-              used ||= (c.target as IDBRequest<number>).result > 0;
-              if (--pending === 0 && !used) {
-                blobs.delete(hash);
-                deleted++;
-              }
-            };
+            index.count(hash).onsuccess = (c) =>
+              guarded(tx, fail, () => {
+                used ||= (c.target as IDBRequest<number>).result > 0;
+                if (--pending === 0 && !used) {
+                  blobs.delete(hash);
+                  deleted++;
+                }
+              });
           }
         }
       };
-      await finished;
+      await settled(finished, fail);
       return deleted;
     },
     async convertAll() {
       if (!layout2) return 0;
-      const rows = await promised<FileRow[]>(db.transaction('files').objectStore('files').getAll());
+      // A row that can't be converted (its Blob can't be read) stays as it is
+      // and doesn't stop the rest; the first such error is thrown at the end.
       let converted = 0;
+      const errors: unknown[] = [];
+      const attempt = async (work: () => Promise<number>) => {
+        try {
+          converted += await work();
+        } catch (error) {
+          errors.push(error);
+        }
+      };
+      // Layout 1: the binaries inside «files» rows, project by project.
+      const rows = await promised<FileRow[]>(db.transaction('files').objectStore('files').getAll());
       for (const project of new Set(rows.filter((row) => row.blob && !row.hash).map((row) => row.project))) {
-        converted += await convert(await readRows(project));
+        await attempt(async () => convert(await readRows(project)));
       }
+      // Layout 2: the binaries the index «type» doesn't list (they are Blobs), and the Blob thumbnails.
+      const tx = db.transaction(['blobs', 'projects']);
+      const blobs = tx.objectStore('blobs');
+      if (blobs.indexNames.contains('type')) {
+        const [hashes, typed, records] = await Promise.all([
+          promised(blobs.getAllKeys()),
+          promised(blobs.index('type').getAllKeys()),
+          promised<RecordRow[]>(tx.objectStore('projects').getAll()),
+        ]);
+        const asBytes = new Set(typed);
+        for (const hash of hashes) if (!asBytes.has(hash)) await attempt(() => convertBlobRow(hash as string));
+        for (const record of records) if (record.thumb instanceof Blob) await attempt(() => convertThumb(record.id));
+      }
+      if (errors.length) throw errors[0];
       return converted;
     },
   };

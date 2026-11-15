@@ -10,7 +10,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { AssetMeta, StoredFile } from '../core/types.ts';
 import { t } from '../copy/index.ts';
-import { hashBlob, hashBytes } from './storage/hash.ts';
+import { blobOfBytes, hashBlob, hashBytes } from './storage/hash.ts';
 
 export const MAX_FILE_BYTES = 40 * 1024 * 1024;
 export const DEFAULT_DPI = 300;
@@ -327,9 +327,9 @@ const MIME = { jpg: 'image/jpeg', png: 'image/png' } as const;
  */
 export function assetBlob(asset: AppAsset, kind: 'original' | 'bytes' | 'preview'): Blob {
   if (kind === 'preview') return asset.preview;
-  if (kind === 'bytes') return new Blob([asset.bytes as BlobPart], { type: asset.kind === 'image' ? MIME[asset.format] : 'application/pdf' });
+  if (kind === 'bytes') return blobOfBytes(asset.bytes, asset.kind === 'image' ? MIME[asset.format] : 'application/pdf');
   if (asset.kind === 'image' && asset.original) return asset.original;
-  return new Blob([asset.bytes as BlobPart], { type: asset.kind === 'pdf' ? 'application/pdf' : MIME[asset.format] });
+  return blobOfBytes(asset.bytes, asset.kind === 'pdf' ? 'application/pdf' : MIME[asset.format]);
 }
 
 /**
