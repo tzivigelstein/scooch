@@ -1,5 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 import { PDFDocument, PDFName, PDFRawStream, decodePDFRawStream, degrees, rgb } from 'pdf-lib';
 import { buildPdf } from '../../src/services/pdf.ts';
@@ -171,6 +172,18 @@ describe('buildPdf', () => {
       got.points.forEach((v, j) => assert.ok(Math.abs(v - want[j]) < 1e-3, `path ${i}: ${v} ≠ ${want[j]}`));
     });
     assert.match(drawn, /\nS\nQ\n?$/, 'one stroke for every path');
+  });
+
+  test('a JPEG given as a view into a larger buffer is embedded from its own bytes', async () => {
+    const file = readFileSync(new URL('../../e2e/fixtures/small.jpg', import.meta.url));
+    const padded = new Uint8Array(file.byteLength + 7);
+    padded.set(file, 7);
+    const jpg = { kind: 'image', src: 2, format: 'jpg', bytes: padded.subarray(7), w: 80, h: 60 };
+    const out = await buildPdf({ ...SHEET, pages: [{ pieces: [{ asset: jpg, x: 10, y: 10, scale: 100, r: 0, crop: null }] }], title: 't' });
+    const doc = await PDFDocument.load(out, { updateMetadata: false });
+    const streams = doc.context.enumerateIndirectObjects().map(([, object]) => object).filter((object) => object instanceof PDFRawStream && String(object.dict.get(PDFName.of('Subtype'))) === '/Image');
+    assert.equal(streams.length, 1);
+    assert.deepEqual(Buffer.from(streams[0].contents), Buffer.from(file));
   });
 
   test('varias páginas: cada una con lo suyo', async () => {

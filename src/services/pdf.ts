@@ -109,14 +109,22 @@ export async function buildPdf({
   return doc.save();
 }
 
+/**
+ * The same bytes as the only content of their buffer. pdf-lib's JPEG embedder
+ * reads `bytes.buffer` from its start, so a view into a larger buffer (a
+ * subarray, a pooled Node Buffer) would be read from the wrong place.
+ */
+const wholeBuffer = (bytes: Uint8Array) => (bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength ? bytes : bytes.slice());
+
 // Returns a function that embeds each source only once.
 function embedder(doc: PdfLibDocument, lib: PdfLib) {
   const cache = new Map<string, Promise<Embedded>>(); // source id → embedded page or image
   const sources = new Map<number, Promise<PdfLibDocument>>(); // src → the source PDF loaded with pdf-lib
 
-  const embedImage = async (asset: Extract<PdfSource, { kind: 'image' }>): Promise<Embedded> => ({
-    image: asset.format === 'jpg' ? await doc.embedJpg(asset.bytes) : await doc.embedPng(asset.bytes),
-  });
+  const embedImage = async (asset: Extract<PdfSource, { kind: 'image' }>): Promise<Embedded> => {
+    const bytes = wholeBuffer(asset.bytes);
+    return { image: asset.format === 'jpg' ? await doc.embedJpg(bytes) : await doc.embedPng(bytes) };
+  };
 
   // A vector page, cropped to its visible box.
   const embedPage = async (asset: Extract<PdfSource, { kind: 'pdf' }>): Promise<Embedded> => {
