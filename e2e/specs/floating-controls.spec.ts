@@ -92,13 +92,16 @@ for (const viewport of VIEWPORTS) {
 
     for (const level of ['fit', 200, 400] as const) {
       const name = level === 'fit' ? 'at the fitted zoom' : `at ${level} %`;
-      test(`${name}, the zoom control is off the scrollbars, the notice and the panel buttons`, async ({ app, page }, info) => {
+      test(`${name}, the zoom control is off the scrollbars, the notice and the panel buttons`, async ({ app, page, browserName }, info) => {
         await overlapping(app);
         await zoomTo(page, level);
         const c = await page.evaluate(readChrome);
         const problems = problemsOf(c);
-        expect(c.bars.right, 'classic scrollbars: the stage’s takes room').toBeGreaterThan(0);
-        if (level === 400 || c.wide) expect(c.bars.bottom, 'zoomed past the width: the bottom scrollbar takes room too').toBeGreaterThan(0);
+        // Playwright's WebKit only has overlay scrollbars (Safari's by default), which take no room.
+        if (browserName !== 'webkit') {
+          expect(c.bars.right, 'classic scrollbars: the stage’s takes room').toBeGreaterThan(0);
+          if (level === 400 || c.wide) expect(c.bars.bottom, 'zoomed past the width: the bottom scrollbar takes room too').toBeGreaterThan(0);
+        }
         if (level === 'fit') {
           const head = await page.evaluate(() => {
             document.getElementById('stage')!.scrollTop = 0;
