@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { EDGE_SPEED, EDGE_ZONE, edgeScroll, newSheetRoom } from '../../src/core/dragscroll.js';
+import { EDGE_SPEED, EDGE_ZONE, MAX_FRAMES, edgeScroll, newSheetRoom } from '../../src/core/dragscroll.js';
 
 // A stage from 100 to 900 px on the axis, scrolled to 500 of at most 1000.
 const at = (pointer, scroll = 500, max = 1000) => edgeScroll(pointer, 100, 900, scroll, max);
@@ -37,6 +37,16 @@ describe('edgeScroll', () => {
   test('a scroll already past the end comes back to it', () => {
     assert.equal(at(500, 1400), 1000);
     assert.equal(at(5000, 1400), 1000);
+  });
+
+  test('its speed goes by the time: half a step per frame of a 120 Hz screen, more steps for frames that come late, at most MAX_FRAMES of them', () => {
+    const step = (frames) => edgeScroll(5000, 100, 900, 500, 1000, frames) - 500;
+    assert.equal(step(1), EDGE_SPEED);
+    assert.equal(step(0.5), EDGE_SPEED / 2);
+    assert.equal(step(3), 3 * EDGE_SPEED);
+    assert.equal(step(60), MAX_FRAMES * EDGE_SPEED);
+    assert.equal(step(-1), 0);
+    assert.equal(edgeScroll(5000, 100, 900, 990, 1000, 4), 1000);
   });
 });
 

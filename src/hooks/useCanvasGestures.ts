@@ -599,14 +599,18 @@ function followNewSheet(g: MoveGesture | GroupMoveGesture, center: Point) {
 // stage's width; never past what the stage shows.
 function startAutoScroll() {
   cancelAnimationFrame(autoFrame);
-  const tick = () => {
+  let last = performance.now();
+  const tick = (now: number) => {
     const g = gesture;
     if (!g?.moved) return;
+    // Its speed goes by the time, not by the frames (a 120 Hz screen, frames that come late).
+    const frames = (now - last) / (1000 / 60);
+    last = now;
     const stage = el('stage');
     const r = stage.getBoundingClientRect();
     const max = scrollMax();
-    const top = edgeScroll(g.lastY, r.top, r.bottom, stage.scrollTop, max.top);
-    const left = max.left ? edgeScroll(g.lastX, r.left, r.right, stage.scrollLeft, max.left) : stage.scrollLeft;
+    const top = edgeScroll(g.lastY, r.top, r.bottom, stage.scrollTop, max.top, frames);
+    const left = max.left ? edgeScroll(g.lastX, r.left, r.right, stage.scrollLeft, max.left, frames) : stage.scrollLeft;
     if (top !== stage.scrollTop || left !== stage.scrollLeft) {
       const before = [stage.scrollTop, stage.scrollLeft];
       stage.scrollTop = top;
