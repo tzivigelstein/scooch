@@ -3,6 +3,7 @@
 
 import { cssParams } from '../core/crop.js';
 import type { AppAsset } from './assets.ts';
+import { blobOfBytes } from './storage/hash.ts';
 import type { Piece } from '../state/document.ts';
 
 const THUMB_WIDTH = 220;
@@ -12,7 +13,8 @@ export const thumbnailSignature = (W: number, H: number, items: readonly Piece[]
   JSON.stringify([W, H, items.map((item) => [item.asset, item.x, item.y, item.scale, item.r, item.crop ?? null])]);
 
 /**
- * Draws a W × H sheet with its pieces (in stacking order) into a WebP Blob.
+ * Draws a W × H sheet with its pieces (in stacking order) into a WebP Blob
+ * (PNG where the browser can't encode WebP).
  * `imageOf(item)`: the piece's loaded <img>, if any. The same math as the
  * screen (crop.cssParams): the whole image, rotated around its center,
  * clipped to the piece's rectangle.
@@ -45,5 +47,13 @@ export async function drawThumbnail(
     ctx.drawImage(img, -p.img.width / 2, -p.img.height / 2, p.img.width, p.img.height);
     ctx.restore();
   }
-  return new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.82));
+  // Encoded at once, into bytes the app keeps (storage/hash.ts), so storing it
+  // doesn't read a Blob: WebKit fails that read while the page is going away,
+  // and the save after a file added right before closing the tab failed.
+  // (Safari can't encode WebP: the data URL says what it got.)
+  const url = canvas.toDataURL('image/webp', 0.82);
+  const comma = url.indexOf(',');
+  const type = /^data:([^;,]+)/.exec(url.slice(0, comma))?.[1];
+  if (!type || comma === url.length - 1) return null;
+  return blobOfBytes(Uint8Array.from(atob(url.slice(comma + 1)), (c) => c.charCodeAt(0)), type);
 }
