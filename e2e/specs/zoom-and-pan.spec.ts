@@ -205,7 +205,7 @@ test.describe('panning', () => {
     expect(await app.snapshot(), 'nothing moved').toBe(shown);
   });
 
-  test('a pan ends when the page loses the pointer: the window losing the focus ends a Space pan and Space no longer counts as held; the middle button let go unseen ends its pan', async ({ app, page }) => {
+  test('a pan ends when the page loses the pointer: the window losing the focus ends a Space pan and Space no longer counts as held; the middle button let go unseen ends its pan', async ({ app, page, browserName }) => {
     await app.addFiles(cards(0, 2));
     await setZoom(page, 200);
     await page.keyboard.press('Escape');
@@ -230,6 +230,11 @@ test.describe('panning', () => {
     await page.mouse.up();
     await page.keyboard.up(' ');
 
+    if (browserName !== 'chromium') {
+      // The moves without a button go through the Chrome DevTools Protocol (Input.dispatchMouseEvent), which only Chromium has.
+      test.info().annotations.push({ type: 'only in Chromium', description: 'the middle button let go unseen' });
+      return;
+    }
     await page.mouse.move(mid.x, mid.y);
     await page.mouse.down({ button: 'middle' });
     await page.mouse.move(mid.x + 40, mid.y + 30, { steps: 4 });

@@ -227,7 +227,8 @@ test('«Permitir superposición» and the grid settings are still there after a 
 
 test.describe('a drag never outlives its button: when the page loses the pointer it is cancelled, not dropped where the pointer was', () => {
   type Lose = (page: Page, pointer: { id: number; x: number; y: number }) => Promise<unknown>;
-  const LOSSES: [string, Lose][] = [
+  // The third: the case needs the Chrome DevTools Protocol.
+  const LOSSES: [string, Lose, 'cdp'?][] = [
     ['the window loses the focus (another window or a screenshot tool takes it)', (page) => page.evaluate(() => window.dispatchEvent(new FocusEvent('blur')))],
     [
       'the page is hidden',
@@ -256,6 +257,7 @@ test.describe('a drag never outlives its button: when the page loses the pointer
         const cdp = await page.context().newCDPSession(page);
         for (let i = 1; i <= 3; i++) await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: x - i * 10, y: y - i * 5, button: 'none', buttons: 0 });
       },
+      'cdp',
     ],
   ];
 
@@ -273,8 +275,9 @@ test.describe('a drag never outlives its button: when the page loses the pointer
     return { id: await pressed, ...at };
   }
 
-  for (const [name, lose] of LOSSES) {
-    test(`${name}: the piece goes back, the placeholder goes, the scroll stops, moving on does nothing and there is no undo step`, async ({ app, page }) => {
+  for (const [name, lose, needs] of LOSSES) {
+    test(`${name}: the piece goes back, the placeholder goes, the scroll stops, moving on does nothing and there is no undo step`, async ({ app, page, browserName }) => {
+      test.skip(needs === 'cdp' && browserName !== 'chromium', 'the moves without a button go through the Chrome DevTools Protocol (Input.dispatchMouseEvent), which only Chromium has');
       await app.addFiles(['card00.png', 'card01.png']);
       const before = await app.sheets();
       const extent = (await scrollOf(page)).height;
