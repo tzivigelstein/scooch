@@ -1,24 +1,6 @@
 /* ---------- Command palette ---------- */
 
 @layer components {
-  /* The way in, in the top bar: the search icon and its keys. */
-  .tool.palette-open {
-    grid-auto-flow: column;
-    gap: 0.375rem;
-    width: auto;
-    padding: 0 0.5rem 0 0.4375rem;
-  }
-
-  .palette-open-keys {
-    min-width: 0;
-    padding: 0 0.3125rem;
-    border-color: var(--line-strong);
-    border-bottom-width: 1px;
-    background: transparent;
-    color: var(--muted);
-    font-size: 0.6875rem;
-  }
-
   /* Up top, so the list grows downward without the field moving. */
   .dialog.palette {
     width: min(40rem, calc(100vw - 1.5rem));
@@ -190,26 +172,8 @@
       min-height: 2.75rem;
     }
 
-    .palette-open-keys,
     .palette-end kbd {
       display: none;
-    }
-
-    .tool.palette-open {
-      width: 2.25rem;
-      padding: 0;
-    }
-  }
-
-  /* The compact top bar: just the icon (the keys stay in its tooltip). */
-  @media (max-width: 1099.98px) {
-    .palette-open-keys {
-      display: none;
-    }
-
-    .tool.palette-open {
-      width: 2.25rem;
-      padding: 0;
     }
   }
 
@@ -220,10 +184,6 @@
       max-width: none;
       max-height: calc(100dvh - 1rem);
       margin-top: 0.5rem;
-    }
-
-    .tool.palette-open {
-      width: 2.5rem;
     }
   }
 }

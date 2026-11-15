@@ -14,6 +14,7 @@ import { projectFailed, takeOverWithUi } from '../../state/actions/projects.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { announce } from '../feedback/announcer.ts';
+import './ProjectBar.css';
 
 /** The statuses that are a problem: the only ones shown. */
 type Problem = 'error' | 'off' | 'readonly';

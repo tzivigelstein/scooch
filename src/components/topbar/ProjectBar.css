@@ -1,66 +1,4 @@
-/* ---------- Top bar ---------- */
-
 @layer components {
-  .topbar {
-    flex: none;
-    height: var(--topbar-h);
-    display: flex;
-    align-items: center;
-    gap: 1.125rem;
-    padding: 0 0.625rem 0 1rem;
-    background: var(--bg);
-    border-bottom: 1px solid var(--line);
-    position: relative;
-    z-index: 30;
-    user-select: none;
-  }
-
-  .brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.375rem 0.25rem;
-    margin-left: -0.25rem;
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    text-decoration: none;
-    flex: none;
-  }
-
-  .brand-mark {
-    color: var(--accent);
-    flex: none;
-  }
-
-  .brand-name {
-    font-size: 1.25rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-  }
-
-  .bar-group {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    min-width: 0;
-  }
-
-  .bar-group.end {
-    margin-left: auto;
-  }
-
-  .bar-group.end .btn.primary {
-    margin-left: 0.375rem;
-  }
-
-  .tool-sep {
-    width: 1px;
-    height: 1.25rem;
-    margin: 0 0.375rem;
-    background: var(--line);
-    flex: none;
-  }
-
   /* Open project: editable name, save status and «Proyectos». */
   .project-group {
     display: flex;
@@ -131,5 +69,56 @@
     color: var(--accent-strong);
     font-size: 0.75rem;
     white-space: nowrap;
+  }
+
+  @media (max-width: 1099.98px) {
+    .project-status-text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .project-name {
+      max-width: 9.375rem;
+    }
+  }
+
+  @media (max-width: 799.98px) {
+    .project-group {
+      grid-row: 1;
+      grid-column: 2 / -1;
+      justify-content: space-between;
+      border-bottom: 0;
+    }
+
+    .project {
+      flex: 1 1 auto;
+    }
+
+    .project-name {
+      max-width: none;
+      flex: 0 1 auto;
+    }
+
+    input.project-name-input {
+      width: 100%;
+      flex: 1 1 auto;
+    }
+
+    .project-status-text {
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip-path: none;
+    }
+
+    .project-name,
+    input.project-name-input {
+      height: 2.5rem;
+    }
   }
 }

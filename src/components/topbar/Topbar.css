@@ -1,0 +1,214 @@
+@layer components {
+  .topbar {
+    flex: none;
+    height: var(--topbar-h);
+    display: flex;
+    align-items: center;
+    gap: 1.125rem;
+    padding: 0 0.625rem 0 1rem;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    position: relative;
+    z-index: 30;
+    user-select: none;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.25rem;
+    margin-left: -0.25rem;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    text-decoration: none;
+    flex: none;
+  }
+
+  .brand-mark {
+    color: var(--accent);
+    flex: none;
+  }
+
+  .brand-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .bar-group {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .bar-group.end {
+    margin-left: auto;
+  }
+
+  .bar-group.end .btn.primary {
+    margin-left: 0.375rem;
+  }
+
+  .tool-sep {
+    width: 1px;
+    height: 1.25rem;
+    margin: 0 0.375rem;
+    background: var(--line);
+    flex: none;
+  }
+
+  /* The way in, in the top bar: the search icon and its keys. */
+  .tool.palette-open {
+    grid-auto-flow: column;
+    gap: 0.375rem;
+    width: auto;
+    padding: 0 0.5rem 0 0.4375rem;
+  }
+
+  .palette-open-keys {
+    min-width: 0;
+    padding: 0 0.3125rem;
+    border-color: var(--line-strong);
+    border-bottom-width: 1px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.6875rem;
+  }
+
+  @media (pointer: coarse) {
+    .palette-open-keys {
+      display: none;
+    }
+
+    .tool.palette-open {
+      width: 2.25rem;
+      padding: 0;
+    }
+  }
+
+  /* The compact top bar: just the icon (the keys stay in its tooltip). */
+  @media (max-width: 1099.98px) {
+    .palette-open-keys {
+      display: none;
+    }
+
+    .tool.palette-open {
+      width: 2.25rem;
+      padding: 0;
+    }
+  }
+
+  @media (max-width: 799.98px) {
+    .tool.palette-open {
+      width: 2.5rem;
+    }
+  }
+
+  @media (max-width: 1099.98px) {
+    /* A more compact top bar: the brand without its name, a shorter project
+       name and a save problem with just its icon (the text stays for screen
+       readers and in the tooltip). */
+    .topbar {
+      gap: 0.75rem;
+    }
+
+    .brand-name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 799.98px) {
+    /* Two rows: the brand and the project on top; the actions below. */
+    .topbar {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-rows: 2.875rem 3rem;
+      align-items: center;
+      height: auto;
+      column-gap: 0.25rem;
+      row-gap: 0;
+    }
+
+    .brand {
+      grid-row: 1;
+      grid-column: 1;
+    }
+
+    .bar-group {
+      grid-row: 2;
+      grid-column: 1 / 3;
+    }
+
+    .bar-group.end {
+      grid-column: 3;
+      margin-left: 0;
+    }
+
+    .topbar {
+      gap: 0.5rem;
+      padding: 0 0.375rem 0 0.75rem;
+    }
+
+    .bar-group {
+      gap: 0;
+    }
+
+    .tool-sep {
+      display: none;
+    }
+
+    .bar-group .btn {
+      width: 2.5rem;
+      height: 2.5rem;
+      padding: 0;
+    }
+
+    .bar-group .btn .btn-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .bar-group .btn .icon {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    .bar-group.end .btn.primary {
+      margin-left: 0.125rem;
+    }
+
+    .brand {
+      min-width: 2.5rem;
+      min-height: 2.5rem;
+    }
+  }
+
+  @media (max-width: 479.98px) {
+    .brand-name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 399.98px) {
+    /* Phones: keyboard shortcuts don't apply without a keyboard (still reachable with «?»). */
+    #help {
+      display: none;
+    }
+  }
+}

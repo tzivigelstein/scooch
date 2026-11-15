@@ -2,27 +2,6 @@
 
 @layer components {
   @media (max-width: 1099.98px) {
-    /* A more compact top bar: the brand without its name, a shorter project
-       name and a save problem with just its icon (the text stays for screen
-       readers and in the tooltip). */
-    .topbar {
-      gap: 0.75rem;
-    }
-
-    .brand-name,
-    .project-status-text {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
-    }
-
-    .project-name {
-      max-width: 9.375rem;
-    }
-
     .rail {
       display: flex;
       flex-direction: column;

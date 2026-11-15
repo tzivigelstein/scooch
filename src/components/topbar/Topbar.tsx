@@ -13,6 +13,7 @@ import { exportPdf, printPdf } from '../../state/actions/output.ts';
 import { control } from '../../state/tips.ts';
 import { Button, IconButton } from '../ui/Button.tsx';
 import { ProjectBar } from './ProjectBar.tsx';
+import './Topbar.css';
 
 /**
  * While something loads, controls are disabled except the focused one
