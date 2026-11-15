@@ -202,7 +202,8 @@ function open(name: string, timeout: number, existing: boolean): Promise<IdbStor
       clearTimeout(timer);
       if (missing) {
         event.preventDefault();
-        resolve(null);
+        // WebKit keeps an empty database after an aborted upgrade; the others don't.
+        void deleteIdb(name).then(() => resolve(null));
       } else reject(request.error);
     };
     request.onsuccess = () => {
