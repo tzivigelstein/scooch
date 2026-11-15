@@ -95,14 +95,19 @@ export const sortTime = (record) => record.opened ?? record.modified ?? 0;
 /**
  * Copies a project: the same files (references: no binary is copied) and no
  * undo history. It sorts right after the original, so nothing else moves in
- * the list. Returns the new record.
+ * the list. `name`: the copy's, or made from the original's (read in the
+ * same operation, which starts at once: nothing is read before). Returns the
+ * new record.
  */
-export async function duplicateProject(storage, id, { newId, name, now }) {
-  const record = await storage.get(id);
-  if (!record) throw new ProjectError('missing', id);
-  const copy = { ...record, id: newId, name, created: now, modified: now, opened: sortTime(record) - 1 };
-  await storage.copy(id, copy);
-  return copy;
+export function duplicateProject(storage, id, { newId, name, now }) {
+  return storage.copy(id, (record) => ({
+    ...record,
+    id: newId,
+    name: typeof name === 'function' ? name(record.name) : name,
+    created: now,
+    modified: now,
+    opened: sortTime(record) - 1,
+  }));
 }
 
 /**
@@ -252,11 +257,13 @@ export function memoryStorage({ fail = () => null } = {}) {
       records.set(id, next);
       return structuredClone(next);
     },
-    async copy(id, record) {
+    async copy(id, make) {
       check('copy');
       if (!records.has(id)) throw new ProjectError('missing', id);
+      const record = make(structuredClone(records.get(id)));
       records.set(record.id, structuredClone(record));
       refs.set(record.id, new Map(refs.get(id)));
+      return structuredClone(record);
     },
     async remove(id) {
       check('remove');

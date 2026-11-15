@@ -203,7 +203,7 @@ describe('the guarantees the projects service relies on', () => {
 
   test('a binary is stored once per content, and garbage collection deletes only what no project, saved history or clipboard references', async () => {
     const { storage, record } = await projectWithImage();
-    await storage.copy('p1', { ...record, id: 'p2', name: 'Copia' });
+    await storage.copy('p1', (source) => ({ ...source, id: 'p2', name: 'Copia' }));
     const undo = fileOf('undo');
     const cut = fileOf('cut');
     const orphan = fileOf('orphan');
@@ -289,6 +289,16 @@ describe('the page going away right after a write (the tab closed or reloaded): 
     await leavePage();
     await renaming;
     expect((await (await open()).get('p1'))?.name).toBe('Otro');
+  });
+
+  test('a duplicate: the copy, named after the original, with its files (read and written in one transaction that opens at once)', async () => {
+    const { storage } = await projectWithImage();
+    const copying = storage.copy('p1', (source) => ({ ...source, id: 'p2', name: `${source.name} (copia)` })).catch(() => {});
+    await leavePage();
+    await copying;
+    const again = await open();
+    expect((await again.get('p2'))?.name).toBe('Uno (copia)');
+    expect([...(await again.files('p2')).keys()].sort()).toEqual(['preview:a1', 'src:1']);
   });
 
   test('a deleted project is gone with all its rows (one request a store, no cursor)', async () => {

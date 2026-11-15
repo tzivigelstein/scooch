@@ -457,6 +457,37 @@ describe('the cut pieces', () => {
   });
 });
 
+describe('renaming or duplicating another project (the tab may be closing)', () => {
+  async function twoProjects() {
+    const storage = memoryStorage();
+    await storedProject(storage, 'p1', 'Uno', 11, 1000);
+    await storedProject(storage, 'p2', 'Dos', 22, 2000);
+    localStorage.setItem('scooch:last-project', 'p1');
+    const app = await start(storage);
+    return { app, storage, get: vi.spyOn(storage, 'get') };
+  }
+
+  test('a rename writes the name at once, reading nothing first', async () => {
+    const { app, storage, get } = await twoProjects();
+    const update = vi.spyOn(storage, 'update');
+    const renaming = app.projects.rename('p2', 'Otro');
+    expect(update).toHaveBeenCalledWith('p2', { name: 'Otro' });
+    expect(get).not.toHaveBeenCalled();
+    await renaming;
+    expect((await storage.get('p2'))?.name).toBe('Otro');
+  });
+
+  test('a duplicate is written at once, named after the original as stored', async () => {
+    const { app, storage, get } = await twoProjects();
+    const copy = vi.spyOn(storage, 'copy');
+    const copying = app.projects.duplicate('p2');
+    expect(copy).toHaveBeenCalledTimes(1);
+    expect(get).not.toHaveBeenCalled();
+    const record = await copying;
+    expect((await storage.get(record.id))?.name).toBe('Dos (copia)');
+  });
+});
+
 describe('the order of «Proyectos»', () => {
   test('the last opened project comes first; renaming one doesn’t move it', async () => {
     const storage = memoryStorage();

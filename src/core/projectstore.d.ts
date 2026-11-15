@@ -31,7 +31,7 @@ export function saveProject(
 export function loadProject(storage: ProjectStorage, id: string, context?: MigrationContext): Promise<{ record: ProjectRecord; doc: ProjectDoc; files: Map<string, StoredFile> }>;
 /** When a project sorts in the list: when it was last opened (or saved, for records from before). */
 export function sortTime(record: Pick<ProjectRecord, 'opened' | 'modified'>): number;
-export function duplicateProject(storage: ProjectStorage, id: string, copy: { newId: string; name: string; now: number }): Promise<ProjectRecord>;
+export function duplicateProject(storage: ProjectStorage, id: string, copy: { newId: string; name: string | ((original: string) => string); now: number }): Promise<ProjectRecord>;
 export function renameProject(storage: ProjectStorage, id: string, name: string): Promise<ProjectRecord>;
 export function touchProject(storage: ProjectStorage, id: string, now: number): Promise<ProjectRecord | null>;
 export function deleteProject(storage: ProjectStorage, id: string): Promise<void>;

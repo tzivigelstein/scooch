@@ -508,26 +508,48 @@ function idbStorage(db: IDBDatabase): IdbStorage {
       }
       return result.next ? recordOf(result.next) : null;
     },
-    async copy(id, record) {
-      // Layout 1 rows become references first: a copy shares binaries, it never copies them.
-      await convert(await readRows(id));
-      const ready = prepare(record);
-      const { row } = ready instanceof Promise ? await ready : ready;
-      const tx = db.transaction(['projects', 'files'], 'readwrite');
-      const finished = done(tx);
-      const fail: Failure = { error: null };
-      const files = tx.objectStore('files');
-      tx.objectStore('projects').getKey(id).onsuccess = (e) =>
-        guarded(tx, fail, () => {
-          if ((e.target as IDBRequest).result === undefined) throw new ProjectError('missing', id);
-          files.index('project').getAll(IDBKeyRange.only(id)).onsuccess = (r) =>
-            guarded(tx, fail, () => {
-              for (const fileRow of (r.target as IDBRequest<FileRow[]>).result) files.put({ ...fileRow, project: record.id });
-              tx.objectStore('projects').put(row);
-              tx.commit?.(); // (see write)
-            });
-        });
-      await settled(finished, fail);
+    async copy(id, make) {
+      // The original read and the copy written in a transaction that opens
+      // right away and commits in its last callback (see write). Layout 1
+      // rows stop it: they become references first (a copy shares binaries,
+      // it never copies them), and then it is made.
+      const attempt = async () => {
+        const tx = db.transaction(['projects', 'files'], 'readwrite');
+        const finished = done(tx);
+        const fail: Failure = { error: null };
+        const files = tx.objectStore('files');
+        const projects = tx.objectStore('projects');
+        const out = { copy: null as ProjectRecord | null, legacy: false };
+        // Both read at once; their events come in order, so the record is there for the rows'.
+        let source: RecordRow | undefined;
+        projects.get(id).onsuccess = (e) => (source = (e.target as IDBRequest<RecordRow | undefined>).result);
+        files.index('project').getAll(IDBKeyRange.only(id)).onsuccess = (r) =>
+          guarded(tx, fail, () => {
+            if (!source) throw new ProjectError('missing', id);
+            const rows = (r.target as IDBRequest<FileRow[]>).result;
+            if (rows.some((row) => row.blob && !row.hash)) {
+              out.legacy = true;
+              return;
+            }
+            const copy = make(recordOf(source));
+            // The original's thumbnail as stored (one still a Blob goes:
+            // WebKit loses a Blob read from IndexedDB and written back).
+            const thumb = source.thumb instanceof Blob ? null : source.thumb;
+            for (const row of rows) files.put({ ...row, project: copy.id });
+            projects.put({ ...copy, thumb } satisfies RecordRow);
+            tx.commit?.();
+            out.copy = { ...copy, thumb: thumbOf(thumb) };
+          });
+        await settled(finished, fail);
+        return out;
+      };
+      let result = await attempt();
+      if (result.legacy) {
+        await convert(await readRows(id));
+        result = await attempt();
+      }
+      if (!result.copy) throw new Error('the project’s files could not be converted to be copied');
+      return result.copy;
     },
     async remove(id) {
       const stores = ['projects', 'files', ...(has('history') ? ['history'] : [])];

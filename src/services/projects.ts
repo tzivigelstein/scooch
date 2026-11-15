@@ -692,10 +692,9 @@ export async function newProject() {
 /** Duplicates a project (the open one with its latest changes). Returns the new record. */
 export async function duplicate(id: string) {
   if (id === session.record?.id) await flush();
-  const storage = session.storage!;
-  const source = await storage.get(id);
-  const name = cleanName(t('projects.copyName', { name: source?.name ?? untitled() }), untitled());
-  const record = await duplicateProject(storage, id, { newId: newProjectId(), name, now: now() });
+  // Named after the original as stored, read by the operation that writes the copy.
+  const name = (original: string) => cleanName(t('projects.copyName', { name: original || untitled() }), untitled());
+  const record = await duplicateProject(session.storage!, id, { newId: newProjectId(), name, now: now() });
   post({ type: 'changed' });
   return record;
 }
@@ -709,8 +708,10 @@ export async function duplicate(id: string) {
  */
 export async function rename(id: string, name: string) {
   const open = id === session.record?.id;
-  const current = open ? session.record : await session.storage?.get(id);
-  const clean = cleanName(name, current?.name ?? untitled());
+  // The name it had is needed only when the new one is empty (it stays): for
+  // another project it is read only then, so the new one is written at once
+  // (the tab may be closing, see storage/idb.ts).
+  const clean = cleanName(name, '') || (open ? session.record!.name : ((await session.storage?.get(id))?.name ?? untitled()));
   if (open) {
     session.record = { ...session.record!, name: clean };
     publish();

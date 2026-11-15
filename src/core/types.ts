@@ -250,8 +250,12 @@ export interface ProjectStorage {
   write(record: ProjectRecord, changes?: WriteChanges): Promise<void>;
   /** Changes some fields of a stored record (read and written in one operation); null if it isn't there. */
   update(id: string, patch: Partial<Pick<ProjectRecord, 'name' | 'opened'>>): Promise<ProjectRecord | null>;
-  /** Stores `record` (a new id) with the same files as project `id`: references, no binary is copied. */
-  copy(id: string, record: ProjectRecord): Promise<void>;
+  /**
+   * Stores a copy of project `id`, its record made by `make` from the stored
+   * one (with a new id), with the same files: references, no binary is
+   * copied. Read and written in one operation. Returns the copy's record.
+   */
+  copy(id: string, make: (source: ProjectRecord) => ProjectRecord): Promise<ProjectRecord>;
   /** The record, its file references and its undo history. */
   remove(id: string): Promise<void>;
   history(id: string): Promise<StoredHistory | null>;
