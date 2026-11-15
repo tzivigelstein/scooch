@@ -14,6 +14,8 @@ import { LengthField } from '../ui/LengthField.tsx';
 import { Section } from '../ui/Section.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
 import { Switch } from '../ui/Switch.tsx';
+import './sections.css';
+import './GridSection.css';
 
 export function GridSection() {
   const grid = usePrefs((s) => s.grid);

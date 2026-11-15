@@ -4,6 +4,7 @@ import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';
 import { setSectionOpen, usePrefs, type SectionName } from '../../state/prefs.ts';
 import type { PreviewKind } from '../../state/preview.ts';
 import { Icon } from './Icon.tsx';
+import './Section.css';
 
 /**
  * A collapsible section of the properties panel; it remembers whether it is

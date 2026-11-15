@@ -1,0 +1,28 @@
+@layer components {
+  .swatch {
+    flex: none;
+    width: 0.75rem;
+    height: 0.75rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+  }
+
+  .color-row {
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.25rem;
+  }
+
+  .hex-input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    text-transform: uppercase;
+  }
+
+  .gap-note {
+    flex-wrap: wrap;
+    column-gap: 0.5rem;
+    row-gap: 0.125rem;
+  }
+}

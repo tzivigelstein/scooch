@@ -11,6 +11,7 @@ import { t } from '../../copy/index.ts';
 import { cancelEdit } from '../../state/history.ts';
 import { setView } from '../../state/view.ts';
 import { announce } from '../feedback/announcer.ts';
+import './NumberField.css';
 
 export interface NumberFieldHandle {
   /** Shows a value unless the field is being typed in (e.g. live during a drag). */

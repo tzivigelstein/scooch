@@ -19,6 +19,7 @@ import { CutsSection } from './CutsSection.tsx';
 import { GridSection } from './GridSection.tsx';
 import { PieceSection } from './PieceSection.tsx';
 import { SheetSection } from './SheetSection.tsx';
+import './PropertiesPanel.css';
 
 export function PropertiesPanel() {
   const collapsible = useMediaQuery(NARROW_QUERY);

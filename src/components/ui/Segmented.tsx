@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, type CSSProperties, type InputHTMLAttributes, type ReactNode, type RefObject } from 'react';
+import './Segmented.css';
 
 export interface SegmentOption<T extends string> {
   value: T;

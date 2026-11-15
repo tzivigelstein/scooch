@@ -1,0 +1,198 @@
+/* What the panel's sections share: fields and their labels, notes and
+   errors, the compact number field, the grid of two fields and the
+   collapsible details («Rellenar con copias», the cut lines' options). Each
+   section imports it before its own stylesheet, so its rules come first. */
+
+@layer components {
+  /* Fields */
+  .field {
+    display: grid;
+    gap: 0.375rem;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .field.inline {
+    grid-template-columns: minmax(0, 1fr) 7rem;
+    align-items: start;
+    gap: 0.75rem;
+  }
+
+  /* Centered on the field even when its range message grows it. */
+  .field.inline > .field-label {
+    display: flex;
+    align-items: center;
+    min-height: var(--control-h);
+  }
+
+  .field-label {
+    padding: 0;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  fieldset.field > legend {
+    margin-bottom: 0.375rem;
+  }
+
+  .field-error {
+    display: flex;
+    gap: 0.375rem;
+    margin: 0;
+    color: var(--danger);
+    font-size: 0.78125rem;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  /* Compact number field: label/icon inside on the left, unit on the right
+     (all three in the same grid cell); the range message goes in a row below. */
+  .num-field {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    align-content: start;
+    min-width: 0;
+  }
+
+  .num-field > input,
+  .num-field > .num-prefix,
+  .num-field > .num-unit {
+    grid-area: 1 / 1;
+  }
+
+  .num-field input {
+    padding-right: 2rem;
+  }
+
+  .num-field.prefixed input {
+    padding-left: 1.75rem;
+  }
+
+  .num-prefix {
+    z-index: 1;
+    justify-self: start;
+    margin-left: 0.5625rem;
+    display: grid;
+    place-items: center;
+    width: 0.875rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 650;
+    pointer-events: none;
+  }
+
+  .num-prefix .icon {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .num-unit {
+    z-index: 1;
+    justify-self: end;
+    margin-right: 0.5625rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    pointer-events: none;
+  }
+
+  .prop-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 0.5rem;
+  }
+
+  .field-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.78125rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.4;
+  }
+
+  .field-note .icon {
+    width: 1rem;
+    height: 1rem;
+    margin-top: 1px;
+    color: var(--accent-strong);
+  }
+
+  .field-note strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* Fill with copies (collapsed) */
+  .fill-details {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+
+  .fill-details > summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: var(--radius);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    list-style: none;
+  }
+
+  .fill-details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .fill-details > summary::after {
+    content: "";
+    width: 0.4375rem;
+    height: 0.4375rem;
+    margin-left: auto;
+    border-right: 0.125rem solid var(--muted);
+    border-bottom: 0.125rem solid var(--muted);
+    transform: rotate(-45deg);
+    transition: transform var(--fast) var(--ease);
+  }
+
+  .fill-details[open] > summary::after {
+    transform: rotate(45deg);
+  }
+
+  .fill-details > summary:hover {
+    background: var(--hover);
+  }
+
+  .fill-details > summary .icon {
+    width: 1rem;
+    height: 1rem;
+    color: var(--muted);
+  }
+
+  .fill-body {
+    display: grid;
+    gap: 0.625rem;
+    padding: 0.25rem 0.625rem 0.75rem;
+  }
+
+  /* The cut lines' options (CutsSection) are a .fill-details too: their
+     summary's height comes before the narrow screens' one, which wins. */
+  .cut-details > summary {
+    min-height: 2.25rem;
+  }
+
+  @media (max-width: 799.98px) {
+    .fill-details > summary {
+      min-height: 2.75rem;
+    }
+  }
+}

@@ -1,0 +1,30 @@
+@layer components {
+  /* Margin and orientation: labels on one row, controls on the next (a label
+     that wraps in a longer language moves both controls), the margin's range
+     message below without moving the orientation. */
+  .paper-props {
+    align-items: start;
+  }
+
+  .paper-props > .field {
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    align-items: start;
+  }
+
+  .paper-props > .field > .field-label {
+    align-self: end;
+  }
+
+  .custom-paper {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  @media (pointer: coarse) {
+    /* As tall as the segmented control beside it (--seg-h). */
+    .panel .paper-props input[type="text"] {
+      height: var(--seg-h);
+    }
+  }
+}

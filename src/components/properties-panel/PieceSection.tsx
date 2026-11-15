@@ -82,6 +82,9 @@ import { NumberField } from '../ui/NumberField.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
 import { announce } from '../feedback/announcer.ts';
 import { startCrop } from '../canvas/cropMode.ts';
+import '../ui/Section.css';
+import './sections.css';
+import './PieceSection.css';
 
 /** While something loads, controls are disabled except the focused one. */
 const busyOff = (busy: boolean, selector: string) => busy && !document.activeElement?.matches(selector);

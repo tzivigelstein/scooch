@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import './Switch.css';
 
 /** A labeled on/off switch, with an optional hint (a checkbox with role="switch"). */
 export function Switch({

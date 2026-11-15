@@ -3,6 +3,7 @@
 // labelled by `tab-${value}` ids and hidden when not selected).
 
 import type { KeyboardEvent, ReactNode } from 'react';
+import './Tabs.css';
 
 export interface TabOption<T extends string> {
   value: T;

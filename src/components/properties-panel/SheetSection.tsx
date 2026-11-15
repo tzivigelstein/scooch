@@ -16,6 +16,8 @@ import { Icon } from '../ui/Icon.tsx';
 import { LengthField } from '../ui/LengthField.tsx';
 import { Section } from '../ui/Section.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
+import './sections.css';
+import './SheetSection.css';
 
 const busyOff = (busy: boolean, id: string) => busy && document.activeElement?.id !== id;
 

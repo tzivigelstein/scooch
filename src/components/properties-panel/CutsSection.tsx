@@ -19,6 +19,8 @@ import { Icon } from '../ui/Icon.tsx';
 import { LengthField } from '../ui/LengthField.tsx';
 import { Section } from '../ui/Section.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
+import './sections.css';
+import './CutsSection.css';
 
 const MODES: readonly { value: CutMode; icon: LucideIcon }[] = [
   { value: 'none', icon: Ban },

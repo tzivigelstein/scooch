@@ -1,0 +1,63 @@
+@layer ui {
+  /* Properties panel sections */
+  .prop-section {
+    padding: 0.875rem 1rem 1rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .prop-section.is-collapsed {
+    padding-bottom: 0.5rem;
+  }
+
+  .section-title {
+    margin: 0 0 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+  }
+
+  .prop-section.is-collapsed .section-title {
+    margin-bottom: 0;
+  }
+
+  .section-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: calc(100% + 0.75rem);
+    margin: -0.375rem -0.375rem;
+    padding: 0.375rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+  }
+
+  .section-toggle:hover {
+    background: var(--hover);
+  }
+
+  .section-toggle .chevron {
+    width: 1rem;
+    height: 1rem;
+    color: var(--muted);
+    transition: transform var(--fast) var(--ease);
+  }
+
+  .section-toggle[aria-expanded="false"] .chevron {
+    transform: rotate(-90deg);
+  }
+
+  .section-body {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 799.98px) {
+    .section-toggle {
+      min-height: 2.5rem;
+    }
+  }
+}
