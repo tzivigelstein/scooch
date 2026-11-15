@@ -542,21 +542,29 @@ test.describe('pieces taken off the sheet', () => {
   }
 });
 
-test('a zoom chosen by hand is kept after a reload, as a percentage, and the view starts at the top; a fit mode stays a fit mode', async ({ app, page }) => {
+test('a zoom chosen by hand is kept after a reload, as a percentage, and the view starts at the top; a fit mode stays a fit mode', async ({ app, page, browserName }) => {
+  // Written once the zoom stops changing (400 ms), or when leaving the page
+  // (pagehide), which these reloads do before that. In Playwright's Firefox
+  // the app's pagehide listener didn't run in about half of these reloads
+  // (one added to the window after it always did, and a plain page's never
+  // missed): there the reload waits until the zoom has been written.
+  const reload = async (written: Record<string, unknown>) => {
+    if (browserName === 'firefox') await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('scooch:view-preferences') ?? 'null'))).toMatchObject(written);
+    await page.reload();
+  };
   await app.addFiles(cards(0, 12));
   await page.locator('#zoom-level').click();
   await page.locator('#zoom-menu-level-200').click();
   await expect(page.locator('#zoom-level')).toHaveText(/^200/);
   await page.locator('#stage').evaluate((el) => (el.scrollTop = 600));
-  // Written once the zoom stops changing (or when leaving the page).
-  await page.reload();
+  await reload({ zoomMode: 'manual', zoomPct: 200 });
   await app.ready();
   await expect(page.locator('#zoom-level')).toHaveText(/^200/);
   expect(await page.locator('#stage').evaluate((el) => el.scrollTop)).toBe(0);
   await page.locator('#zoom-level').click();
   await page.locator('#zoom-menu-width').click();
   const width = await page.locator('#zoom-level').textContent();
-  await page.reload();
+  await reload({ zoomMode: 'width' });
   await app.ready();
   await expect(page.locator('#zoom-level')).toHaveText(width!);
 });
