@@ -85,6 +85,14 @@ export function Tooltip() {
     };
     // With the keyboard, the next focus is a keyboard one.
     const onKeyDown = () => (s.lastPointer = -Infinity);
+    // A scroll that moves the element (the page's, or a box it is in) would
+    // leave the tooltip behind, and one about to show for the pointer goes
+    // too; another scroll (the canvas scrolling to the selection while a
+    // field of the panel has the focus) leaves a tooltip showing.
+    const onScroll = (e: Event) => {
+      const scrolled = e.target;
+      if (!s.target || !(scrolled instanceof Element) || scrolled.contains(s.target)) hide();
+    };
     // Esc closes the tooltip without moving the focus and does nothing else. In
     // a panel or a dialog, Esc also does its own thing (back to the piece,
     // close), and the tooltip goes with it.
@@ -103,7 +111,7 @@ export function Tooltip() {
     document.addEventListener('pointerdown', onPointerDown, true);
     document.addEventListener('keydown', onKeyDown, true);
     document.addEventListener('keydown', onEscape, true);
-    window.addEventListener('scroll', hide, true);
+    window.addEventListener('scroll', onScroll, true);
     return () => {
       document.removeEventListener('pointerover', onPointerOver);
       document.removeEventListener('pointerout', onPointerOut);
@@ -112,7 +120,7 @@ export function Tooltip() {
       document.removeEventListener('pointerdown', onPointerDown, true);
       document.removeEventListener('keydown', onKeyDown, true);
       document.removeEventListener('keydown', onEscape, true);
-      window.removeEventListener('scroll', hide, true);
+      window.removeEventListener('scroll', onScroll, true);
       clearTimeout(s.showTimer);
       clearTimeout(s.hideTimer);
     };
