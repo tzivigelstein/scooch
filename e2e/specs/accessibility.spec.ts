@@ -650,8 +650,8 @@ test.describe('the skeleton before the app mounts', () => {
           expect.soft(axeSummary(violations), `axe violations, ${scheme}`).toEqual([]);
           const { clipped, overflowX } = await page.evaluate(readLayout);
           expect.soft({ clipped, overflowX }, `layout, ${scheme}`).toEqual({ clipped: [], overflowX: 0 });
-          // Not in WebKit: a screenshot waits for document.fonts.ready, which WebKit resolves only once the document has loaded (never, with the script held).
-          if (browserName !== 'webkit') await testInfo.attach(`skeleton · ${size.width} px · ${scheme}`, { body: await page.screenshot(), contentType: 'image/png' });
+          // In Chromium only: a screenshot waits for document.fonts.ready, which WebKit and Firefox resolve only once the document has loaded (never, with the script held).
+          if (browserName === 'chromium') await testInfo.attach(`skeleton · ${size.width} px · ${scheme}`, { body: await page.screenshot(), contentType: 'image/png' });
         }
         release();
       });

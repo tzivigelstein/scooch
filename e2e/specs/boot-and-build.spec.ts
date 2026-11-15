@@ -142,10 +142,11 @@ test.describe('the skeleton of the editor, before the app mounts', () => {
           expect(about.onSheet, 'on the sheet').toBe(true);
           expect(Math.abs(about.offCenter), 'its column centered across the sheet').toBeLessThanOrEqual(1);
 
-          // The theme from the first paint; the sheet white in both. Not read in
-          // WebKit: a screenshot waits for document.fonts.ready, which WebKit
-          // resolves only once the document has loaded (never, with the script held).
-          if (browserName !== 'webkit') {
+          // The theme from the first paint; the sheet white in both. Read in
+          // Chromium only: a screenshot waits for document.fonts.ready, which
+          // WebKit and Firefox resolve only once the document has loaded (never,
+          // with the script held).
+          if (browserName === 'chromium') {
             expect(closeTo(await colorAt(page), theme.bg), 'top bar').toBe(true);
             expect(closeTo(await colorAt(page, drawn.canvas!.x + 4, drawn.canvas!.y + 4), theme.canvas), 'canvas').toBe(true);
             expect(closeTo(await colorAt(page, sheet.x + 8, sheet.y + 8), WHITE), 'sheet').toBe(true);
