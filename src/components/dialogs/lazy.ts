@@ -1,7 +1,7 @@
 // The rarely used dialogs' contents load on first use (or when the app is
 // idle). Once loaded they render right away; until then, opening waits.
 
-import { lazyContent } from '../lazy.ts';
+import { lazyContent, prefetch } from '../lazy.ts';
 
 export { whenLoaded } from '../lazy.ts';
 
@@ -13,9 +13,5 @@ export const PaletteContent = lazyContent(() => import('../palette/CommandPalett
 
 /** Loads the dialogs most likely to be opened, without blocking anything. */
 export function preloadDialogs() {
-  void ShortcutsContent.preload();
-  void PrefsContent.preload();
-  void ProjectsContent.preload();
-  void PrintTipContent.preload();
-  void PaletteContent.preload();
+  for (const content of [ShortcutsContent, PrefsContent, ProjectsContent, PrintTipContent, PaletteContent]) prefetch(content);
 }

@@ -8,7 +8,7 @@ import { getView, setView } from '../../state/view.ts';
 import { singleOnly } from '../../state/actions/notify.ts';
 import { select } from '../../state/actions/selection.ts';
 import { announce } from '../feedback/announcer.ts';
-import { lazyContent, whenLoaded } from '../lazy.ts';
+import { lazyContent, prefetch, whenLoaded } from '../lazy.ts';
 
 export const CropContent = lazyContent(() => import('./crop/CropMode.tsx'));
 
@@ -51,4 +51,4 @@ export function startCrop(id?: number) {
 }
 
 /** Loads crop mode ahead of time (when the app is idle). */
-export const preloadCrop = () => void CropContent.preload();
+export const preloadCrop = () => prefetch(CropContent);

@@ -22,6 +22,15 @@ export function lazyContent(load: () => Promise<{ default: ComponentType }>) {
   return Object.assign(Content, { preload, loaded: () => loaded !== null });
 }
 
+/**
+ * Loads the content ahead of its first use, without blocking anything. If that
+ * fails (offline, or the page going away: WebKit then rejects the import), the
+ * first use loads it again.
+ */
+export function prefetch(content: { preload: () => Promise<unknown> }) {
+  content.preload().catch(() => {});
+}
+
 /** Runs `show` once the content is loaded: right away if it already is. */
 export function whenLoaded(content: { loaded: () => boolean; preload: () => Promise<unknown> }, show: () => void) {
   if (content.loaded()) show();

@@ -9,7 +9,7 @@ import { currentSheet, findItem, sheetIndex } from '../../state/selectors.ts';
 import { setView } from '../../state/view.ts';
 import { pieceNode, sheetNode } from '../../state/actions/focus.ts';
 import { select } from '../../state/actions/selection.ts';
-import { lazyContent, whenLoaded } from '../lazy.ts';
+import { lazyContent, prefetch, whenLoaded } from '../lazy.ts';
 
 export interface MenuRequest {
   kind: 'piece' | 'sheet';
@@ -76,4 +76,4 @@ export function openContextMenuFromKeyboard(target: Element) {
 }
 
 /** Loads the menu ahead of time (when the app is idle). */
-export const preloadContextMenu = () => void ContextMenuContent.preload();
+export const preloadContextMenu = () => prefetch(ContextMenuContent);
