@@ -189,6 +189,17 @@ export async function dragPx(page: Page, from: { x: number; y: number }, dx: num
   await settled(page);
 }
 
+/**
+ * A drag of (dx, dy) px from `from` as the engine delivers it. Playwright's
+ * WebKit and Firefox cut pointer positions down to whole pixels (100.7
+ * arrives as 100): 2.84 px across arrives as 3 px from 637.99 but as 2 from
+ * 638.01, and a few pixels can fall under the 3 px a press needs to become a
+ * drag. There it starts on a whole pixel and moves by the whole pixels
+ * nearest to (dx, dy); Chromium keeps the fractions.
+ */
+export const wholePixelDrag = (browserName: string, from: { x: number; y: number }, dx: number, dy: number) =>
+  browserName === 'chromium' ? { from, dx, dy } : { from: { x: Math.round(from.x), y: Math.round(from.y) }, dx: Math.round(dx), dy: Math.round(dy) };
+
 /** A piece as the page shows it (mm). */
 export async function shownPiece(app: App, id: number) {
   return (await app.geometry()).pieces.find((p) => p.id === id)!;

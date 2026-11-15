@@ -25,6 +25,7 @@ import {
   stageBox,
   stageState,
   wheelZoom,
+  wholePixelDrag,
 } from '../support/canvas.ts';
 import { cards, expect, test } from '../support/test.ts';
 
@@ -291,7 +292,7 @@ const chrome = (page: import('@playwright/test').Page, id: number) =>
 test.describe('geometry at several zooms', () => {
   for (const pct of ZOOMS) {
     test.describe(`at ${pct} %`, () => {
-      test('a piece dragged 3 × 2 mm on each sheet, high in the stage and panned, stays on its sheet, moves that much on the grid, keeps the scroll and says nothing', async ({ app, page }) => {
+      test('a piece dragged 3 × 2 mm on each sheet, high in the stage and panned, stays on its sheet, moves that much on the grid, keeps the scroll and says nothing', async ({ app, page, browserName }) => {
         const ids = await cardsOnThreeSheets(app);
         const z = ((await setZoom(page, pct)) / 100) * PX_PER_MM;
         const bad: string[] = [];
@@ -308,7 +309,9 @@ test.describe('geometry at several zooms', () => {
               bad.push(`${where}: not visible`);
               continue;
             }
-            await dragPx(page, from, 3 * z, 2 * z);
+            // At 25 % that is 2.8 × 1.9 px, near the 3 px a drag needs: in whole pixels where the engine delivers them.
+            const drag = wholePixelDrag(browserName, from, 3 * z, 2 * z);
+            await dragPx(page, drag.from, drag.dx, drag.dy);
             const b1 = await shownPiece(app, id);
             const s1 = await stageState(page);
             const tol = 0.5 + 1.5 / z;
@@ -353,7 +356,7 @@ test.describe('geometry at several zooms', () => {
         }
       });
 
-      test('a group dragged 3 × 2 mm moves together on its sheet, the scroll unchanged, no notice', async ({ app, page }) => {
+      test('a group dragged 3 × 2 mm moves together on its sheet, the scroll unchanged, no notice', async ({ app, page, browserName }) => {
         const ids = await cardsOnThreeSheets(app);
         const z = ((await setZoom(page, pct)) / 100) * PX_PER_MM;
         await app.selectIds([ids[1], ids[3]]);
@@ -363,7 +366,8 @@ test.describe('geometry at several zooms', () => {
         const s0 = await stageState(page);
         const from = await grabPoint(page, ids[1]);
         expect(from, 'the piece shows').not.toBeNull();
-        await dragPx(page, from!, 3 * z, 2 * z);
+        const drag = wholePixelDrag(browserName, from!, 3 * z, 2 * z);
+        await dragPx(page, drag.from, drag.dx, drag.dy);
         const g1 = [await shownPiece(app, ids[1]), await shownPiece(app, ids[3])];
         const s1 = await stageState(page);
         const moved = g1.map((p, i) => ({ x: p.x - g0[i].x, y: p.y - g0[i].y }));
