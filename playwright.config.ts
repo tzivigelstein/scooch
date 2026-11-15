@@ -14,9 +14,11 @@ const OUT = process.env.E2E_OUT ?? 'e2e/out';
 const BUILD_DIR = `${OUT}/build`;
 const VITE = 'node ./node_modules/vite/bin/vite.js';
 
-// WebKit (Safari, the iPhone) needs system libraries that only install with root
-// (`npx playwright install-deps webkit`); see docs/testing.md. Opt in with E2E_WEBKIT=1.
+// WebKit (Safari, the iPhone) and Firefox need system libraries that only
+// install with root (`npx playwright install-deps webkit`), or Playwright's
+// Docker image; see docs/testing.md. Opt in with E2E_WEBKIT=1 and E2E_FIREFOX=1.
 const WEBKIT = process.env.E2E_WEBKIT === '1';
+const FIREFOX = process.env.E2E_FIREFOX === '1';
 
 /**
  * What every page starts with: the desktop layout, light theme, no animations,
@@ -77,6 +79,15 @@ export default defineConfig({
             name: 'webkit',
             testIgnore: TIMING,
             use: { ...devices['Desktop Safari'], ...page },
+          },
+        ]
+      : []),
+    ...(FIREFOX
+      ? [
+          {
+            name: 'firefox',
+            testIgnore: TIMING,
+            use: { ...devices['Desktop Firefox'], ...page },
           },
         ]
       : []),
