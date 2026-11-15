@@ -163,3 +163,21 @@ for (const [width, height] of [
     });
   });
 }
+
+// WebKit didn't show a focus a key moved after a click (src/hooks/keyboardFocus.ts).
+test('after a click on the piece, Enter takes the focus visibly to its toolbar, with the tooltip, and an arrow keeps it visible', async ({ app, page }) => {
+  await app.addFiles(['small.jpg']);
+  const piece = app.pieces().first();
+  const box = (await piece.boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(piece).toBeFocused();
+  await page.keyboard.press('Enter');
+  const buttons = page.locator('#piecebar button');
+  await expect(buttons.first()).toBeFocused();
+  expect(await buttons.first().evaluate((el) => el.matches(':focus-visible')), 'the first button shows its focus').toBe(true);
+  await expect(page.locator('#tooltip')).toBeVisible();
+  await page.keyboard.press('ArrowRight');
+  await expect(buttons.nth(1)).toBeFocused();
+  expect(await buttons.nth(1).evaluate((el) => el.matches(':focus-visible')), 'the next one too').toBe(true);
+  await expect(page.locator('#tooltip')).toHaveText(new RegExp((await buttons.nth(1).getAttribute('data-tip'))!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+});
