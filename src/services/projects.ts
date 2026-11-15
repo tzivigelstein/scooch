@@ -75,6 +75,7 @@ const session = {
   historyHashes: new Set<string>(),
   historyReady: true,
   savedSig: '',
+  savedName: '', // the name the stored record has (renaming changes the record's first)
   failedSig: '', // what couldn't be saved: it isn't retried on its own until something changes
   thumbSig: '',
   status: 'loading' as SaveStatus,
@@ -120,6 +121,10 @@ function docState() {
 
 const serialized = () => serialize(docState(), allAssets());
 const docSignature = () => JSON.stringify(serialized());
+
+/** JSON with each object's keys in order: the same for equal documents, whatever order their fields were made in. */
+const canonical = (value: unknown) =>
+  JSON.stringify(value, (_key, v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : 1))) : v));
 
 /**
  * Replaces the whole document when opening or creating a project: releases
@@ -282,6 +287,7 @@ function adopt(record: ProjectRecord, stored: Map<string, string>, { remember = 
   session.historyHashes = new Set();
   session.historyReady = true;
   session.savedSig = docSignature();
+  session.savedName = record.name;
   session.thumbSig = '';
   if (remember) storageSet(LAST_PROJECT_STORAGE, record.id);
   setStatus('saved');
@@ -367,6 +373,7 @@ export function save({ quick = false } = {}): Promise<void> {
       // If the name changed while writing, the next save takes it.
       session.record = { ...result.record, name: session.record.name };
       session.savedSig = sig;
+      session.savedName = result.record.name;
       session.failedSig = '';
       setStatus(docSignature() === sig ? 'saved' : 'pending');
       if (session.status === 'pending') timer = setTimeout(() => void save(), SAVE_DELAY);
@@ -385,13 +392,14 @@ export function save({ quick = false } = {}): Promise<void> {
 }
 
 // Last-moment journal (see recoverJournal): the unsaved document is written
-// synchronously, because IndexedDB may not finish when the page goes away.
+// synchronously, because IndexedDB may not finish when the page goes away;
+// so is a name not saved yet (a rename right before closing).
 // `base`: the stored record this tab last read or wrote.
 function writeJournal() {
   if (!session.storage || !session.record || ['loading', 'readonly', 'off'].includes(session.status)) return;
   const doc = serialized();
-  if (JSON.stringify(doc) === session.savedSig) return;
   const { id, modified, name } = session.record;
+  if (JSON.stringify(doc) === session.savedSig && name === session.savedName) return;
   storageSet(JOURNAL_PREFIX + id, JSON.stringify({ v: 2, id, base: modified, name, doc } satisfies Journal));
 }
 
@@ -658,18 +666,22 @@ export async function openProject(id: string, { remember = true } = {}) {
     // What was journaled when the tab closed, if newer than what was saved.
     const recovered = recoverJournal(record, files, readJournal(id), migrationContext());
     const saved = parseHistory(savedSteps);
-    const history = recovered ? withSavedState(saved, doc, files) : saved;
+    const withSaved = recovered ? withSavedState(saved, doc, files) : saved;
     const use = recovered?.doc ?? doc;
     const loaded = await restoreAssets(use, files);
-    replaceDocument(use, loaded, history);
+    replaceDocument(use, loaded, withSaved);
+    // Only the name journaled (a rename right before closing): no undo step for that.
+    const history = recovered && canonical(serialized()) === canonical(doc) ? saved : withSaved;
     adopt(recovered ? { ...record, name: recovered.name } : record, new Map([...files].map(([key, file]) => [key, file.hash])), { remember });
     session.historyHashes = new Set(Array.isArray(savedSteps?.hashes) ? savedSteps.hashes : []);
     session.historyReady = !history;
     if (history) void restoreHistory(id, history);
     if (recovered) {
-      // It differs from what was saved: autosave writes it.
+      // It differs from what was saved (the document, or only the name): autosave writes it.
       session.savedSig = JSON.stringify(doc);
+      session.savedName = record.name;
       documentChanged();
+      if (recovered.name !== record.name) void save();
     } else clearJournal(id);
     const { asked, lost } = opening;
     opening.id = null;

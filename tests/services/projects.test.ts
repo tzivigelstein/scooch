@@ -189,6 +189,24 @@ describe('the last-moment journal', () => {
     expect(again.x()).toBe(29);
   });
 
+  test('a rename right before closing is kept (the journal has the name), and written when the project opens again', async () => {
+    const storage = closingStorage();
+    await storedProject(storage, 'p1', 'Uno', 11, 1000);
+    localStorage.setItem('scooch:last-project', 'p1');
+    const app = await start(storage);
+    storage.close();
+    void app.projects.rename('p1', 'Otro');
+    window.dispatchEvent(new Event('pagehide'));
+    storage.open();
+    expect((await storage.get('p1'))?.name, 'its save didn’t get there').toBe('Uno');
+
+    const again = await start(storage);
+    expect(again.projects.projectSession().record!.name).toBe('Otro');
+    await vi.advanceTimersByTimeAsync(0);
+    expect((await storage.get('p1'))?.name).toBe('Otro');
+    expect(again.historyDepth(), 'only the name changed: no undo step').toEqual({ undo: 0, redo: 0 });
+  });
+
   test('a move right before closing is kept even if the system clock went back since the last save', async () => {
     const storage = closingStorage();
     vi.setSystemTime(10_000);
