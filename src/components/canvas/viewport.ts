@@ -119,6 +119,15 @@ export function fitZoom(mode: 'fit' | 'width') {
 }
 
 /**
+ * The sheet point the last zoom kept under a window point, with the view it
+ * left: the next zoom at that point, while the view is still that one (the
+ * steps of one turn of the wheel), keeps the same sheet point instead of
+ * taking it again. Otherwise the scroll's rounding (whole pixels in WebKit)
+ * moved it a little at every step.
+ */
+let lastAnchor: { at: Point; anchor: NonNullable<ReturnType<typeof sheetPoint>>; zoom: number; scroll: Point } | null = null;
+
+/**
  * Sets the zoom keeping the sheet point under window point `at` (default: the
  * middle of the stage) where it was. `mode`: 'manual' (the person's, kept as
  * it is) unless it is a fit. Nothing changes during a drag.
@@ -133,7 +142,15 @@ export function zoomTo(next: number, { at = null as Point | null, mode = 'manual
   const s = stageEl.getBoundingClientRect();
   const point = at ?? { x: s.left + stageEl.clientWidth / 2, y: s.top + stageEl.clientHeight / 2 };
   measureBoxes();
-  const anchor = sheetPoint(point.x, point.y);
+  const same =
+    lastAnchor &&
+    lastAnchor.at.x === point.x &&
+    lastAnchor.at.y === point.y &&
+    lastAnchor.zoom === viewZoom() &&
+    lastAnchor.scroll.x === stageEl.scrollLeft &&
+    lastAnchor.scroll.y === stageEl.scrollTop;
+  const anchor = same ? lastAnchor!.anchor : sheetPoint(point.x, point.y);
+  lastAnchor = null;
   setView({ zoom, zoomMode: mode });
   flushUi();
   measureBoxes();
@@ -144,6 +161,7 @@ export function zoomTo(next: number, { at = null as Point | null, mode = 'manual
   const origin = sheets.getBoundingClientRect();
   stageEl.scrollLeft = stageEl.classList.contains('is-wide') ? stageEl.scrollLeft + origin.left + layer.left - point.x : 0;
   stageEl.scrollTop += origin.top + layer.top - point.y;
+  lastAnchor = { at: point, anchor, zoom: viewZoom(), scroll: { x: stageEl.scrollLeft, y: stageEl.scrollTop } };
 }
 
 /** Zooms by `factor` around window point `at` (the middle of the stage by default). */
