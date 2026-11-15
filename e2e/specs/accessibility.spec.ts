@@ -7,10 +7,9 @@
 // one-line control wrapped, no controls covering each other, no horizontal
 // scroll, enough contrast inside modal dialogs. Screenshots of each state (up
 // to 1440 px) are attached to the report. See e2e/support/accessibility.ts.
-import AxeBuilder from '@axe-core/playwright';
 import type { Locator, Page } from '@playwright/test';
 import { App, cards, expect, norm, test } from '../support/test.ts';
-import { AXE_TAGS, Catalogue, DESKTOP, MEDIUM, PHONE, SCHEMES, WIDE, axeSummary, readLayout, sizeTitle, type Size } from '../support/accessibility.ts';
+import { Catalogue, DESKTOP, MEDIUM, PHONE, SCHEMES, WIDE, axeSummary, readLayout, scan, sizeTitle, type Size } from '../support/accessibility.ts';
 import { holdApp, skeletonShown } from '../support/boot.ts';
 
 const LONG_NAME = 'Tarjetas de cumpleaños de la abuela Marta (versión final)';
@@ -647,7 +646,7 @@ test.describe('the skeleton before the app mounts', () => {
           await (scheme === SCHEMES[0] ? page.goto('./', { waitUntil: 'commit' }) : page.reload({ waitUntil: 'commit' }));
           await skeletonShown(page);
           await expect(page.locator('html')).toHaveAttribute('data-theme', scheme);
-          const { violations } = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+          const { violations } = await scan(page);
           expect.soft(axeSummary(violations), `axe violations, ${scheme}`).toEqual([]);
           const { clipped, overflowX } = await page.evaluate(readLayout);
           expect.soft({ clipped, overflowX }, `layout, ${scheme}`).toEqual({ clipped: [], overflowX: 0 });

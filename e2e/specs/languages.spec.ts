@@ -8,12 +8,11 @@
 // runs in Spanish (playwright.config.ts). How texts are chosen, switched and
 // kept, without a browser: tests/services/language.test.ts and
 // tests/components/language-switch.test.tsx.
-import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import { LANGUAGES, type Language } from '../../src/core/language.js';
 import { CATALOGUES } from '../../src/copy/all.ts';
 import { textsFor, type Catalogue } from '../../src/copy/index.ts';
-import { AXE_TAGS, readLayout } from '../support/accessibility.ts';
+import { readLayout, scan } from '../support/accessibility.ts';
 import { holdApp, layoutShift, readAbout, skeletonShown, watchHandOff } from '../support/boot.ts';
 import { horizontalOverflow } from '../support/layout.ts';
 import { App, expect, test } from '../support/test.ts';
@@ -181,7 +180,7 @@ for (const language of LANGUAGES.filter((l) => l !== 'es')) {
       await app.addFiles(['tile000.png', 'tile001.png']);
       await app.selectIds([2]);
       await app.openMeasures();
-      const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      const result = await scan(page);
       expect(result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
     });
   });

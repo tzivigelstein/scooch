@@ -12,6 +12,15 @@ import { expect, test, type App } from './test.ts';
 /** The rules axe checks: WCAG 2.0 and 2.1, A and AA, and best practices. */
 export const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'];
 
+/**
+ * axe on the page, with AXE_TAGS. In legacy mode: otherwise every scan
+ * finishes in a blank page it opens in the same context, which takes about a
+ * second in WebKit (several with the suite running) against tens of ms in
+ * Chromium, and the catalogue scans hundreds of states. Legacy mode only
+ * leaves out cross-origin frames, which the app has none of.
+ */
+export const scan = (page: Page) => new AxeBuilder({ page }).withTags(AXE_TAGS).setLegacyMode().analyze();
+
 export interface Size {
   width: number;
   height: number;
@@ -413,7 +422,7 @@ export class Catalogue {
         // On «Automático» the app follows the system from a media query listener.
         await expect(this.page.locator('html')).toHaveAttribute('data-theme', scheme);
         const where = `«${name}» at ${this.width} px, ${scheme}`;
-        const result = await new AxeBuilder({ page: this.page }).withTags(AXE_TAGS).analyze();
+        const result = await scan(this.page);
         this.scans++;
         expect.soft(axeSummary(result.violations), `axe violations in ${where}`).toEqual([]);
         const layout = await this.page.evaluate(readLayout);

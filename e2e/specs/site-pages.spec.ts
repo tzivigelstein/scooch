@@ -5,12 +5,11 @@
 // dark; nothing moves while loading; few, small, same-origin requests; no page
 // or table scrolls sideways at phone, tablet and desktop widths; the
 // calculator answers; the editor's page carries its metadata.
-import AxeBuilder from '@axe-core/playwright';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import type { Page } from '@playwright/test';
-import { AXE_TAGS } from '../support/accessibility.ts';
+import { scan } from '../support/accessibility.ts';
 import { expect, norm, test } from '../support/test.ts';
 
 // Where playwright.config.ts builds the app.
@@ -91,7 +90,7 @@ test.describe('in the browser', () => {
       expect(requests.filter((url) => /\.js$/.test(url)).every((url) => /\/assets\/calculator-[\w-]+\.js$/.test(url))).toBe(true);
       for (const scheme of ['light', 'dark'] as const) {
         await page.emulateMedia({ colorScheme: scheme });
-        const { violations } = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+        const { violations } = await scan(page);
         expect(violations.map((v) => `${scheme}: ${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
       }
     });
@@ -121,7 +120,7 @@ test.describe('in the browser', () => {
     await expect(table.getByRole('rowheader')).toHaveCount(4);
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });
-      const { violations } = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      const { violations } = await scan(page);
       expect(violations.map((v) => `${scheme}: ${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
     }
   });
