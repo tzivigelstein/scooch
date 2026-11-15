@@ -1,96 +1,114 @@
 /* ---------- System preferences ---------- */
 
-@media (prefers-reduced-motion: reduce) {
-  /* No motion: neither transitions (not even 0.01 ms ones, which would leave
-     everything a frame behind) nor animations. */
-  *,
-  *::before,
-  *::after {
-    animation: none !important;
-    transition: none !important;
-    scroll-behavior: auto !important;
+@layer overrides {
+  @media (prefers-reduced-motion: reduce) {
+    /* No motion: neither transitions (not even 0.01 ms ones, which would leave
+       everything a frame behind) nor animations. */
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .field-limit {
+      border: 1px solid CanvasText;
+    }
   }
 }
 
-@media (forced-colors: active) {
-  .field-limit {
-    border: 1px solid CanvasText;
+@layer components {
+  @media (forced-colors: active) {
+    .frame {
+      outline: 0.125rem solid Highlight;
+      outline-offset: 1px;
+    }
   }
+}
 
-  .frame {
-    outline: 0.125rem solid Highlight;
-    outline-offset: 1px;
+@layer overrides {
+  @media (forced-colors: active) {
+    .piece:focus-visible {
+      outline: 0.1875rem solid CanvasText;
+      outline-offset: 0.1875rem;
+    }
+
+    .piece.is-blocked {
+      outline: 0.125rem dashed CanvasText;
+    }
   }
+}
 
-  .piece:focus-visible {
-    outline: 0.1875rem solid CanvasText;
-    outline-offset: 0.1875rem;
+@layer components {
+  @media (forced-colors: active) {
+    .handle::before {
+      background: Canvas;
+      border-color: Highlight;
+    }
   }
+}
 
-  .piece.is-blocked {
-    outline: 0.125rem dashed CanvasText;
-  }
+@layer overrides {
+  @media (forced-colors: active) {
+    .piece-row[aria-selected="true"] {
+      outline: 0.125rem solid Highlight;
+    }
 
-  .handle::before {
-    background: Canvas;
-    border-color: Highlight;
-  }
+    .tab[aria-selected="true"]::after {
+      background: Highlight;
+    }
 
-  .piece-row[aria-selected="true"] {
-    outline: 0.125rem solid Highlight;
-  }
+    .tool[aria-pressed="true"],
+    .tool.is-open,
+    .icon-btn.is-open {
+      outline: 0.125rem solid Highlight;
+    }
 
-  .tab[aria-selected="true"]::after {
-    background: Highlight;
-  }
+    input[role="switch"] {
+      border: 1px solid CanvasText;
+    }
 
-  .tool[aria-pressed="true"],
-  .tool.is-open,
-  .icon-btn.is-open {
-    outline: 0.125rem solid Highlight;
-  }
+    input[role="switch"]::before {
+      background: CanvasText;
+    }
 
-  input[role="switch"] {
-    border: 1px solid CanvasText;
-  }
+    /* Segmented controls: the track outlined, the chosen segment highlighted. */
+    .segmented {
+      outline: 1px solid CanvasText;
+      outline-offset: -1px;
+    }
 
-  input[role="switch"]::before {
-    background: CanvasText;
-  }
+    .seg-thumb::before {
+      forced-color-adjust: none;
+      border-color: Highlight;
+      background: Highlight;
+      box-shadow: none;
+    }
 
-  /* Segmented controls: the track outlined, the chosen segment highlighted. */
-  .segmented {
-    outline: 1px solid CanvasText;
-    outline-offset: -1px;
-  }
+    .seg > input:checked + span {
+      forced-color-adjust: none;
+      color: HighlightText;
+    }
 
-  .seg-thumb::before {
-    forced-color-adjust: none;
-    border-color: Highlight;
-    background: Highlight;
-    box-shadow: none;
-  }
+    .segmented:has(> .seg > input:checked:focus-visible) > .seg-thumb::before {
+      outline-color: CanvasText;
+    }
 
-  .seg > input:checked + span {
-    forced-color-adjust: none;
-    color: HighlightText;
-  }
+    .seg > input:disabled + span {
+      color: GrayText;
+      opacity: 1;
+    }
 
-  .segmented:has(> .seg > input:checked:focus-visible) > .seg-thumb::before {
-    outline-color: CanvasText;
-  }
+    .segmented:has(> .seg > input:checked:disabled) > .seg-thumb::before {
+      border-color: GrayText;
+      background: GrayText;
+    }
 
-  .seg > input:disabled + span {
-    color: GrayText;
-    opacity: 1;
-  }
-
-  .segmented:has(> .seg > input:checked:disabled) > .seg-thumb::before {
-    border-color: GrayText;
-    background: GrayText;
-  }
-
-  .seg > input:checked:disabled + span {
-    color: Canvas;
+    .seg > input:checked:disabled + span {
+      color: Canvas;
+    }
   }
 }

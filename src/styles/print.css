@@ -1,36 +1,38 @@
 /* ---------- Printing ---------- */
 
-/* Hidden frame (off screen, not display:none) where the PDF loads to be printed. */
-.print-frame {
-  position: fixed;
-  left: -625rem;
-  top: 0;
-  width: 50rem;
-  height: 37.5rem;
-  border: 0;
-  pointer-events: none;
-}
-
-.print-only {
-  display: none;
-}
-
-/* If the page is printed from the browser's menu, the interface doesn't print. */
-@media print {
-  body {
-    display: block;
-    height: auto;
-    background: #fff;
-    color: #000;
-  }
-
-  body > *:not(.print-only) {
-    display: none !important;
+@layer overrides {
+  /* Hidden frame (off screen, not display:none) where the PDF loads to be printed. */
+  .print-frame {
+    position: fixed;
+    left: -625rem;
+    top: 0;
+    width: 50rem;
+    height: 37.5rem;
+    border: 0;
+    pointer-events: none;
   }
 
   .print-only {
-    display: block;
-    margin: 30mm 20mm;
-    font: 16pt/1.4 var(--font);
+    display: none;
+  }
+
+  /* If the page is printed from the browser's menu, the interface doesn't print. */
+  @media print {
+    body {
+      display: block;
+      height: auto;
+      background: #fff;
+      color: #000;
+    }
+
+    body > *:not(.print-only) {
+      display: none !important;
+    }
+
+    .print-only {
+      display: block;
+      margin: 30mm 20mm;
+      font: 16pt/1.4 var(--font);
+    }
   }
 }

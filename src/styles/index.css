@@ -1,5 +1,20 @@
-/* The stylesheet, by area. The order is the cascade order: the screen-size
-   overrides, printing and the system preferences go last. */
+/* The stylesheet the editor loads at start.
+
+   The cascade's order is the layers', declared once here: a rule in a later
+   layer wins over one in an earlier layer whatever their selectors, and only
+   inside one layer do specificity and source order decide. So the order the
+   stylesheets arrive in can't change who wins.
+     boot        index.html's inline critical styles: weaker than all of these
+     tokens      custom properties, per theme, language and screen size
+     base        the reset and the elements' defaults
+     primitives  the buttons and form controls every area shares
+     ui          the shared components of src/components/ui: dialogs, menus,
+                 segmented controls, switches, tabs, sections
+     layout      the app's shell: the workspace, the side panels, the canvas
+     components  what belongs to one component
+     overrides   printing and the system's preferences (reduced motion,
+                 forced colors), over everything else */
+@layer boot, tokens, base, primitives, ui, layout, components, overrides;
 
 /* Inter variable, self-hosted (with unicode-range: the browser downloads only the subsets it uses). */
 @import "@fontsource-variable/inter";

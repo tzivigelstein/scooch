@@ -1,56 +1,58 @@
 /* ---------- Preferences ---------- */
 
-.dialog.prefs {
-  width: min(28.75rem, calc(100vw - 1.5rem));
-}
+@layer components {
+  .dialog.prefs {
+    width: min(28.75rem, calc(100vw - 1.5rem));
+  }
 
-/* Each section: title and content, no card; a divider between sections. */
-.pref-section {
-  display: grid;
-  gap: 0.5rem;
-  min-width: 0;
-}
+  /* Each section: title and content, no card; a divider between sections. */
+  .pref-section {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 0;
+  }
 
-.pref-section + .pref-section {
-  padding-top: 1rem;
-  border-top: 1px solid var(--line);
-}
+  .pref-section + .pref-section {
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+  }
 
-.pref-section > p {
-  margin: 0;
-}
+  .pref-section > p {
+    margin: 0;
+  }
 
-.pref-title {
-  margin: 0 0 0.125rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
+  .pref-title {
+    margin: 0 0 0.125rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
 
-/* Units and theme: three short choices, not stretched across the dialog. */
-.pref-section > .segmented {
-  max-width: 17.5rem;
-}
+  /* Units and theme: three short choices, not stretched across the dialog. */
+  .pref-section > .segmented {
+    max-width: 17.5rem;
+  }
 
-/* The legal links wrap between them, never inside one (each name stays whole). */
-#prefs-legal a {
-  white-space: nowrap;
-}
+  /* The legal links wrap between them, never inside one (each name stays whole). */
+  #prefs-legal a {
+    white-space: nowrap;
+  }
 
-/* A list on its own (Idioma): its label beside it, like the switches' rows. */
-.select-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.875rem;
-}
+  /* A list on its own (Idioma): its label beside it, like the switches' rows. */
+  .select-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.875rem;
+  }
 
-.select-row label {
-  font-size: 0.84375rem;
-  font-weight: 500;
-}
+  .select-row label {
+    font-size: 0.84375rem;
+    font-weight: 500;
+  }
 
-.select-row select {
-  width: auto;
-  min-width: 0;
-  max-width: 14rem;
+  .select-row select {
+    width: auto;
+    min-width: 0;
+    max-width: 14rem;
+  }
 }

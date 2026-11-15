@@ -1,10 +1,10 @@
 // The skeleton of the editor that index.html shows until the app mounts
-// copies values of the app's stylesheet into its critical CSS, so that nothing
-// moves when the app takes its place. Each copy is compared here with its
-// source (src/styles, read in the order src/styles/index.css imports them),
-// and the breakpoints with src/config.ts. The boxes themselves, in a browser,
-// are in e2e/specs/boot-and-build.spec.ts.
-import { readFileSync } from 'node:fs';
+// copies values of the app's stylesheets into its critical CSS, so that
+// nothing moves when the app takes its place. Each copy is compared here with
+// its source (src/styles in the order src/styles/index.css imports them, then
+// each component's stylesheet), and the breakpoints with src/config.ts. The
+// boxes themselves, in a browser, are in e2e/specs/boot-and-build.spec.ts.
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { LEFT_DRAWER_QUERY, NARROW_QUERY } from '../../src/config.ts';
@@ -34,11 +34,10 @@ function addRules(into: Rules, css: string) {
   }
 }
 
-/** The rules of stylesheets, in order: at the top level and inside each @media (other at-rules are left out). */
+/** The rules of stylesheets, in order: at the top level and inside each @media, in or out of @layer blocks (other at-rules are left out). */
 function parse(...sources: string[]): Sheet {
   const sheet: Sheet = { rules: new Map(), media: new Map() };
-  for (const source of sources) {
-    const css = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@import[^;]*;/g, '');
+  const add = (css: string) => {
     let at = 0;
     while (at < css.length) {
       const open = css.indexOf('{', at);
@@ -54,14 +53,21 @@ function parse(...sources: string[]): Sheet {
         const query = prelude.slice('@media '.length);
         if (!sheet.media.has(query)) sheet.media.set(query, new Map());
         addRules(sheet.media.get(query)!, body);
-      } else if (!prelude.startsWith('@')) addRules(sheet.rules, `${prelude}{${body}}`);
+      } else if (prelude.startsWith('@layer ')) add(body);
+      else if (!prelude.startsWith('@')) addRules(sheet.rules, `${prelude}{${body}}`);
       at = close + 1;
     }
-  }
+  };
+  for (const source of sources) add(source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@(import|layer)[^;{]*;/g, ''));
   return sheet;
 }
 
-const STYLES = [...read('src/styles/index.css').matchAll(/@import "\.\/([\w-]+\.css)";/g)].map((m) => read(`src/styles/${m[1]}`));
+/** The stylesheets of a folder and its subfolders, by path. */
+const sheetsIn = (dir: string): string[] =>
+  readdirSync(join(ROOT, dir), { withFileTypes: true })
+    .flatMap((e) => (e.isDirectory() ? sheetsIn(`${dir}/${e.name}`) : e.name.endsWith('.css') ? [`${dir}/${e.name}`] : []))
+    .sort();
+const STYLES = [...[...read('src/styles/index.css').matchAll(/@import "\.\/([\w-]+\.css)";/g)].map((m) => `src/styles/${m[1]}`), ...sheetsIn('src/components')].map(read);
 const APP = parse(...STYLES);
 const CRITICAL = parse(read('index.html').match(/<style>([\s\S]*?)<\/style>/)![1]);
 

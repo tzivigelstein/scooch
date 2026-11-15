@@ -1,69 +1,75 @@
 /* ---------- Medium screens: the pieces panel collapses ---------- */
 
-@media (max-width: 1099.98px) {
-  .workspace {
-    grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--right-w);
-  }
-
-  /* A more compact top bar: the brand without its name, a shorter project
-     name and a save problem with just its icon (the text stays for screen
-     readers and in the tooltip). */
-  .topbar {
-    gap: 0.75rem;
-  }
-
-  .brand-name,
-  .project-status-text {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .project-name {
-    max-width: 9.375rem;
-  }
-
-  .rail {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 0.625rem;
-    background: var(--surface);
-    border-right: 1px solid var(--line);
-  }
-
-  .rail .tool {
-    width: 2.5rem;
-    height: 2.5rem;
-  }
-
-  .panel-left.is-drawer {
-    position: absolute;
-    left: var(--rail-w);
-    top: 0;
-    bottom: 0;
-    z-index: 40;
-    width: 16.5rem;
-    box-shadow: var(--shadow-lg);
-    animation: drawer-in 160ms var(--ease);
-  }
-
-  .stage-area {
-    padding: 1.75rem 1.75rem calc(4rem + var(--new-sheet-room));
-  }
-
-  /* With the list open over the canvas, the sheets sit beside it. */
-  .stage.beside-list .stage-area {
-    padding-left: calc(16.5rem + 1.75rem);
+@layer layout {
+  @media (max-width: 1099.98px) {
+    .workspace {
+      grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--right-w);
+    }
   }
 }
 
-@keyframes drawer-in {
-  from {
-    opacity: 0;
-    transform: translateX(-0.75rem);
+@layer components {
+  @media (max-width: 1099.98px) {
+    /* A more compact top bar: the brand without its name, a shorter project
+       name and a save problem with just its icon (the text stays for screen
+       readers and in the tooltip). */
+    .topbar {
+      gap: 0.75rem;
+    }
+
+    .brand-name,
+    .project-status-text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .project-name {
+      max-width: 9.375rem;
+    }
+
+    .rail {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 0.625rem;
+      background: var(--surface);
+      border-right: 1px solid var(--line);
+    }
+
+    .rail .tool {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+
+    .panel-left.is-drawer {
+      position: absolute;
+      left: var(--rail-w);
+      top: 0;
+      bottom: 0;
+      z-index: 40;
+      width: 16.5rem;
+      box-shadow: var(--shadow-lg);
+      animation: drawer-in 160ms var(--ease);
+    }
+
+    .stage-area {
+      padding: 1.75rem 1.75rem calc(4rem + var(--new-sheet-room));
+    }
+
+    /* With the list open over the canvas, the sheets sit beside it. */
+    .stage.beside-list .stage-area {
+      padding-left: calc(16.5rem + 1.75rem);
+    }
+  }
+
+  @keyframes drawer-in {
+    from {
+      opacity: 0;
+      transform: translateX(-0.75rem);
+    }
   }
 }
