@@ -129,3 +129,39 @@ jobs:
             e2e/out/report
             e2e/out/results
           retention-days: 14
+
+  firefox:
+    name: Browser tests (Firefox, allowed to fail)
+    # As WebKit's: it reports, but its failure doesn't fail the run (docs/testing.md).
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      E2E_FIREFOX: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - name: Read the Playwright version
+        id: playwright
+        run: echo "version=$(node -p 'require("@playwright/test/package.json").version')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-firefox
+      - run: npx playwright install --with-deps firefox
+      - run: yarn e2e --project=firefox --global-timeout=1800000
+      - name: Upload the report and traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-firefox
+          path: |
+            e2e/out/report
+            e2e/out/results
+          retention-days: 14
