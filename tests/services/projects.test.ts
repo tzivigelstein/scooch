@@ -369,6 +369,35 @@ describe('the undo history saved with the project', () => {
     await vi.waitFor(() => expect(third.historyDepth()).toEqual({ undo: 1, redo: 1 }));
   });
 
+  test('reopened from the last-moment journal (closed before saving), the first undo goes back to what was saved, the next ones go on from there', async () => {
+    const storage = memoryStorage();
+    const app = await start(storage);
+    await twoPieces(app);
+    app.nudge(5, 0);
+    app.endEdit();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(app.status()).toBe('saved');
+    // Piece 2 removed, and the page goes away before that is saved: only the journal has it.
+    app.setDocument({ selection: [2] });
+    app.remove();
+    const write = storage.write.bind(storage);
+    storage.write = () => new Promise<void>(() => {});
+    window.dispatchEvent(new Event('pagehide'));
+    storage.write = write;
+
+    const again = await start(storage);
+    expect(again.getDocument().items.map((item) => item.id)).toEqual([1]);
+    await vi.waitFor(() => expect(again.historyDepth()).toEqual({ undo: 2, redo: 0 }));
+    again.undoLast();
+    expect(again.getDocument().items.map((item) => item.id), 'piece 2 back, as saved').toEqual([1, 2]);
+    expect(again.x()).toBe(25);
+    again.undoLast();
+    expect(again.x()).toBe(20);
+    again.redoLast();
+    again.redoLast();
+    expect(again.getDocument().items.map((item) => item.id), 'what the journal kept').toEqual([1]);
+  });
+
   test('deleting the project deletes its saved history', async () => {
     const storage = memoryStorage();
     const app = await start(storage);

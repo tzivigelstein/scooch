@@ -472,6 +472,20 @@ function historyFor(id: string) {
   return { history, blobs };
 }
 
+/**
+ * The saved undo steps with the saved document on top, for a project opened
+ * from its last-moment journal: the steps saved lead to that document, not
+ * to the journal's, so Ctrl+Z first goes back to it (the changes the page
+ * didn't get to save, as one step) instead of to the state before the last
+ * saved step (which took a piece just added off the sheet).
+ */
+function withSavedState(saved: SavedHistory | null, doc: ProjectDoc, files: ReadonlyMap<string, StoredFile>): SavedHistory {
+  const { sheets, items, paper, landscape, margin, gap, cuts, allowOverlap } = doc;
+  const state = { sheets, items, selection: [], paper, landscape, margin, gap, cuts: cuts ?? DEFAULT_CUTS, allowOverlap };
+  const hashes = Object.fromEntries(fileKeys(doc).map((key) => [key, files.get(key)!.hash]));
+  return { undo: [...(saved?.undo ?? []), state], redo: [], assets: { ...saved?.assets, ...doc.assets }, files: { ...saved?.files, ...hashes } };
+}
+
 // Hashes the binaries of the undo steps' assets that don't have them yet.
 async function hashHistoryAssets() {
   const { undo, redo } = historyStacks();
@@ -639,11 +653,12 @@ export async function openProject(id: string, { remember = true } = {}) {
     await claim(id);
     const [stored, savedSteps] = await Promise.all([loadProject(session.storage!, id, migrationContext()), session.storage!.history(id).catch(() => null)]);
     const { doc, files } = stored;
-    const history = parseHistory(savedSteps);
     // Opened now: first in «Proyectos» (only that changes: it isn't saved as a change).
     const record = (await touchProject(session.storage!, id, now())) ?? stored.record;
     // What was journaled when the tab closed, if newer than what was saved.
     const recovered = recoverJournal(record, files, readJournal(id), migrationContext());
+    const saved = parseHistory(savedSteps);
+    const history = recovered ? withSavedState(saved, doc, files) : saved;
     const use = recovered?.doc ?? doc;
     const loaded = await restoreAssets(use, files);
     replaceDocument(use, loaded, history);

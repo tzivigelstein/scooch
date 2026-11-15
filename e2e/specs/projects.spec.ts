@@ -184,6 +184,26 @@ test.describe('saving and restoring', () => {
     await expect(app.pieces()).toHaveCount(2);
   });
 
+  test('after a reload that came before a move was saved, Ctrl+Z undoes that move, not the step before it (adding the piece)', async ({ page, app }) => {
+    await app.addFiles(['card10.png']);
+    await saved(page);
+    const piece = app.pieces().first();
+    const before = (await piece.getAttribute('aria-label'))!;
+    await piece.focus();
+    await page.keyboard.press('ArrowRight');
+    const moved = (await piece.getAttribute('aria-label'))!;
+    expect(moved).not.toBe(before);
+    await savePending(page);
+    await page.reload(); // right away: the ~1 s save hasn't gone out
+    await app.ready();
+    await expect(piece).toHaveAttribute('aria-label', moved);
+    await expect(page.locator('#undo')).toBeEnabled();
+    await piece.focus();
+    await page.keyboard.press('Control+z');
+    await expect(piece).toHaveAttribute('aria-label', before);
+    await expect(app.pieces()).toHaveCount(1);
+  });
+
   // The journal is used while the stored record is still the one it started
   // from (an equality, see recoverJournal), not by comparing two wall-clock
   // times: the clock can step back between the last save and closing the tab.
