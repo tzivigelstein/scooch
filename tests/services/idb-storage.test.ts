@@ -11,7 +11,7 @@ import { createProject, emptyDoc, loadProject, saveProject } from '../../src/cor
 import type { ProjectRecord, StoredClip, StoredFile, StoredHistory } from '../../src/core/types.ts';
 import { blobOfBytes, hashBlob, knownBytes } from '../../src/services/storage/hash.ts';
 import { DB_VERSION, openIdbStorage } from '../../src/services/storage/idb.ts';
-import { dump, openRaw, seedLayout, storesBlobs, withBlobs } from '../support/idb.ts';
+import { dump, leavePage, openRaw, seedLayout, storesBlobs, withBlobs } from '../support/idb.ts';
 import { oneImageDoc } from '../support/projects.ts';
 
 const NAME = 'scooch-test';
@@ -235,6 +235,70 @@ describe('the guarantees the projects service relies on', () => {
     const storage = await open();
     await createProject(storage, { id: 'p1', name: 'Nuevo', now: 1, doc: emptyDoc() });
     expect(await storesBlobs(NAME)).toBe(false);
+  });
+});
+
+describe('the page going away right after a write (the tab closed or reloaded): what the person did is there', () => {
+  test('the test IndexedDB drops a transaction that wasn’t committed explicitly, keeps one that was, and opens none once the page is gone', async () => {
+    (await open()).close();
+    const db = await openRaw(NAME);
+    const kept = db.transaction('projects', 'readwrite');
+    kept.objectStore('projects').put({ id: 'kept' });
+    kept.commit();
+    db.transaction('projects', 'readwrite').objectStore('projects').put({ id: 'dropped' });
+    const leaving = leavePage();
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(() => db.transaction('projects')).toThrow(expect.objectContaining({ name: 'InvalidStateError' }));
+    await leaving;
+    expect((await dump(NAME)).projects).toEqual([{ id: 'kept' }]);
+    db.close();
+  });
+
+  // A binary whose bytes the app holds (one added in this session): writing it reads nothing first.
+  const heldFile = (text: string): StoredFile => {
+    const bytes = new TextEncoder().encode(text);
+    return { blob: blobOfBytes(bytes, 'image/png'), hash: sha256(bytes) };
+  };
+
+  test('a save: the record, its undo steps and the binaries they need (committed in its callback)', async () => {
+    const { storage, record } = await projectWithImage();
+    const undo = heldFile('undo');
+    const saving = storage.write({ ...record, modified: 3 }, { history: history('p1', [undo.hash]), blobs: new Map([[undo.hash, undo.blob]]) }).catch(() => {});
+    await leavePage();
+    await saving;
+    const again = await open();
+    expect((await again.get('p1'))?.modified).toBe(3);
+    expect((await again.history('p1'))?.hashes).toEqual([undo.hash]);
+    expect(await storedHashes()).toContain(undo.hash);
+  });
+
+  test('the pieces just cut: the clipboard and the binary it needs that wasn’t stored', async () => {
+    (await open()).close();
+    const storage = await open();
+    const cut = heldFile('cut');
+    const cutting = storage.setClip(clip([cut.hash]), new Map([[cut.hash, cut.blob]])).catch(() => {});
+    await leavePage();
+    await cutting;
+    expect((await (await open()).clip())?.hashes).toEqual([cut.hash]);
+    expect(await storedHashes()).toEqual([cut.hash]);
+  });
+
+  test('a rename: the new name (the record written in a transaction that opens at once)', async () => {
+    const { storage } = await projectWithImage();
+    const renaming = storage.update('p1', { name: 'Otro' }).catch(() => {});
+    await leavePage();
+    await renaming;
+    expect((await (await open()).get('p1'))?.name).toBe('Otro');
+  });
+
+  test('a deleted project is gone with all its rows (one request a store, no cursor)', async () => {
+    const { storage } = await projectWithImage();
+    await storage.write((await storage.get('p1'))!, { history: history('p1', []) });
+    const deleting = storage.remove('p1').catch(() => {});
+    await leavePage();
+    await deleting;
+    const { projects, files, history: steps } = await dump(NAME);
+    expect([projects, files, steps]).toEqual([[], [], []]);
   });
 });
 

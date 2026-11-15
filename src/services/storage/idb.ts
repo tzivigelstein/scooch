@@ -28,6 +28,16 @@
 // Writing only a record whose thumbnail came from here (a save of the
 // document alone, also when the tab is closing) opens it right away.
 //
+// A transaction still open when the page goes away (the tab closed or
+// reloaded) is dropped whole: in WebKit unless it was committed explicitly
+// (or is small and done), in Chromium too when it is slow to finish (a big
+// write after a read, a cursor over many rows).
+// So every write of something the person did (saving, the clipboard,
+// renaming, duplicating, deleting) makes its last requests in one callback
+// and commits there; a cursor, a callback per row, is never part of one.
+// Housekeeping (converting earlier layouts, garbage collection) is redone at
+// the next start and isn't committed early.
+//
 // Earlier layouts, read as they are and converted:
 //   1. each binary inside its «files» row ({project, key, blob}). Version 2
 //      added the other stores; a project's rows are converted before it opens
@@ -275,16 +285,6 @@ function keepBytes(tx: IDBTransaction, fail: Failure, blobs: IDBObjectStore, has
     });
 }
 
-/** Deletes every row of an index's key (inside the transaction). */
-function deleteAll(store: IDBObjectStore, index: string, key: IDBValidKey) {
-  store.index(index).openKeyCursor(IDBKeyRange.only(key)).onsuccess = (e) => {
-    const cursor = (e.target as IDBRequest<IDBCursor | null>).result;
-    if (!cursor) return;
-    store.delete(cursor.primaryKey);
-    cursor.continue();
-  };
-}
-
 function idbStorage(db: IDBDatabase): IdbStorage {
   // A database opened as it is (the one under the former name) may have only the layout 1 stores.
   const has = (store: string) => db.objectStoreNames.contains(store);
@@ -460,33 +460,53 @@ function idbStorage(db: IDBDatabase): IdbStorage {
           const blobs = tx.objectStore('blobs');
           if (!early) for (const [key, file] of put) files.put({ project: record.id, key, hash: file.hash } satisfies FileRow);
           for (const key of remove) files.delete([record.id, key]);
-          for (const [hash, stored] of bytes) keepBytes(tx, fail, blobs, hash, stored);
+          // Every binary not written above goes out now too (one already
+          // stored is written again with the same content), so the
+          // transaction can be committed here: one still open when the page
+          // goes away is lost (in WebKit always; a big one in Chromium too).
+          const written = new Set(early ? [...put.values()].map((file) => file.hash) : []);
+          for (const [hash, stored] of bytes) if (!written.has(hash)) blobs.put({ hash, bytes: stored.bytes, type: stored.type } satisfies BlobRow);
           if (history === null) tx.objectStore('history').delete(record.id);
           else if (history) tx.objectStore('history').put(history);
           projects.put(row);
+          tx.commit?.();
         });
       await settled(finished, fail);
       if (fail.error) throw fail.error;
       for (const blob of binaries.values()) forgetBytes(blob);
     },
     async update(id, patch) {
-      // A thumbnail still stored as a Blob becomes bytes first: WebKit loses a
-      // Blob read from IndexedDB and written back (the new copy of the record
-      // points to the old one's file, which goes). If it can't, the thumbnail
-      // goes (the next save draws another).
-      await convertThumb(id).catch(() => 0);
-      const tx = db.transaction('projects', 'readwrite');
-      const finished = done(tx);
-      const store = tx.objectStore('projects');
-      let next: RecordRow | null = null;
-      store.get(id).onsuccess = (e) => {
-        const row = (e.target as IDBRequest<RecordRow | undefined>).result;
-        if (!row) return;
-        next = { ...row, ...patch, ...(row.thumb instanceof Blob ? { thumb: null } : {}) };
-        store.put(next);
+      // In a transaction that opens right away and commits in its callback
+      // (see write). A thumbnail still stored as a Blob stops it: WebKit
+      // loses a Blob read from IndexedDB and written back (the new copy of
+      // the record points to the old one's file, which goes), so it becomes
+      // bytes first and the record is written then; if it can't, the
+      // thumbnail goes (the next save draws another).
+      const attempt = async (dropBlob: boolean) => {
+        const tx = db.transaction('projects', 'readwrite');
+        const finished = done(tx);
+        const store = tx.objectStore('projects');
+        const out = { next: null as RecordRow | null, blobThumb: false };
+        store.get(id).onsuccess = (e) => {
+          const row = (e.target as IDBRequest<RecordRow | undefined>).result;
+          if (!row) return;
+          if (row.thumb instanceof Blob && !dropBlob) {
+            out.blobThumb = true;
+            return;
+          }
+          out.next = { ...row, ...patch, ...(row.thumb instanceof Blob ? { thumb: null } : {}) };
+          store.put(out.next);
+          tx.commit?.();
+        };
+        await finished;
+        return out;
       };
-      await finished;
-      return next ? recordOf(next) : null;
+      let result = await attempt(false);
+      if (result.blobThumb) {
+        await convertThumb(id).catch(() => 0);
+        result = await attempt(true);
+      }
+      return result.next ? recordOf(result.next) : null;
     },
     async copy(id, record) {
       // Layout 1 rows become references first: a copy shares binaries, it never copies them.
@@ -504,6 +524,7 @@ function idbStorage(db: IDBDatabase): IdbStorage {
             guarded(tx, fail, () => {
               for (const fileRow of (r.target as IDBRequest<FileRow[]>).result) files.put({ ...fileRow, project: record.id });
               tx.objectStore('projects').put(row);
+              tx.commit?.(); // (see write)
             });
         });
       await settled(finished, fail);
@@ -512,9 +533,13 @@ function idbStorage(db: IDBDatabase): IdbStorage {
       const stores = ['projects', 'files', ...(has('history') ? ['history'] : [])];
       const tx = db.transaction(stores, 'readwrite');
       const finished = done(tx);
+      // All at once (its rows by their keys, [id, key]) and committed: a
+      // cursor over them takes a callback per row, and the page going away
+      // meanwhile kept the whole project.
       tx.objectStore('projects').delete(id);
-      deleteAll(tx.objectStore('files'), 'project', id);
+      tx.objectStore('files').delete(IDBKeyRange.bound([id], [id, []]));
       if (has('history')) tx.objectStore('history').delete(id);
+      tx.commit?.();
       return finished;
     },
     async history(id) {
@@ -529,12 +554,14 @@ function idbStorage(db: IDBDatabase): IdbStorage {
       const bytes = new Map(await Promise.all([...extra].map(async ([hash, blob]) => [hash, await bytesOf(blob)] as const)));
       const tx = db.transaction(['clipboard', 'blobs'], 'readwrite');
       const finished = done(tx);
-      const fail: Failure = { error: null };
+      // All at once and committed (see write); the binaries given are written
+      // even if they are stored (the caller leaves out the ones it knows are).
       const blobs = tx.objectStore('blobs');
-      for (const [hash, stored] of bytes) keepBytes(tx, fail, blobs, hash, stored);
+      for (const [hash, stored] of bytes) blobs.put({ hash, bytes: stored.bytes, type: stored.type } satisfies BlobRow);
       if (clip) tx.objectStore('clipboard').put(clip);
       else tx.objectStore('clipboard').delete('cut');
-      await settled(finished, fail);
+      tx.commit?.();
+      await finished;
       for (const blob of extra.values()) forgetBytes(blob);
     },
     blobs: readBlobs,

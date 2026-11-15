@@ -17,14 +17,23 @@
 // «prevunique» cursor on an empty index fails with UnknownError («Unable to
 // open cursor») and the transaction aborts. Here too.
 //
+// And the page going away (the tab closed or reloaded, `leavePage`): once the
+// task that leaves ends (from the first IndexedDB work after it on), no
+// transaction opens any more, and one still open is dropped when it runs out
+// of requests unless it was committed explicitly (commit()), as in WebKit;
+// its callbacks still run until then. (In WebKit a small one that finishes
+// before the page is torn down is kept too: this is the case where it doesn't.)
+//
 // It relies on fake-indexeddb's internals (pinned in package.json): a
-// transaction's `_state` and `_execRequestAsync`, a cursor's `_iterate`,
-// `_position` and its index's `_rawIndex.records`.
-import { IDBCursor, IDBDatabase, IDBFactory, IDBKeyRange, IDBObjectStore } from 'fake-indexeddb';
+// transaction's `_state`, `_requests`, `_start` and `_execRequestAsync`, a
+// cursor's `_iterate`, `_position` and its index's `_rawIndex.records`.
+import { IDBCursor, IDBDatabase, IDBFactory, IDBKeyRange, IDBObjectStore, IDBTransaction } from 'fake-indexeddb';
 import { afterAll, beforeEach } from 'vitest';
 
 interface FakeTransaction extends IDBTransaction {
   _state: 'active' | 'inactive' | 'committing' | 'finished';
+  _requests: { request: IDBRequest }[];
+  _start(): void;
   _execRequestAsync(request: { source: IDBObjectStore; operation: () => unknown }): IDBRequest;
 }
 
@@ -35,6 +44,8 @@ interface FakeCursor extends IDBCursor {
 
 const live = new Set<FakeTransaction>();
 let blobsAllowed = false;
+let leaving = false;
+let gone = false;
 
 /** What browsers do when control returns to the event loop: no transaction stays active. */
 function returnToEventLoop() {
@@ -67,6 +78,15 @@ const originals = {
   arrayBuffer: Blob.prototype.arrayBuffer,
   digest: crypto.subtle.digest,
   iterate: (IDBCursor.prototype as FakeCursor)._iterate,
+  start: (IDBTransaction.prototype as unknown as FakeTransaction)._start,
+};
+
+(IDBTransaction.prototype as unknown as FakeTransaction)._start = function (this: FakeTransaction) {
+  // The fake does its work in tasks of its own: the task that left has ended.
+  if (leaving) gone = true;
+  const pending = this._requests.some((r) => r.request.readyState !== 'done');
+  if (gone && !pending && this._state !== 'committing' && this._state !== 'finished') return this.abort();
+  return originals.start.call(this);
 };
 
 (IDBCursor.prototype as FakeCursor)._iterate = function (this: FakeCursor, ...args: unknown[]) {
@@ -77,6 +97,7 @@ const originals = {
 };
 
 IDBDatabase.prototype.transaction = function (this: IDBDatabase, ...args: Parameters<IDBDatabase['transaction']>) {
+  if (gone) throw new DOMException('The page has gone away', 'InvalidStateError');
   const tx = originals.transaction.apply(this, args) as FakeTransaction;
   live.add(tx);
   return tx;
@@ -109,14 +130,32 @@ afterAll(() => {
   Blob.prototype.arrayBuffer = originals.arrayBuffer;
   crypto.subtle.digest = originals.digest;
   (IDBCursor.prototype as FakeCursor)._iterate = originals.iterate;
+  (IDBTransaction.prototype as unknown as FakeTransaction)._start = originals.start;
 });
 
 // A new, empty IndexedDB for every test.
 beforeEach(() => {
   live.clear();
   blobsAllowed = false;
+  leaving = gone = false;
   Object.assign(globalThis, { indexedDB: new IDBFactory(), IDBKeyRange });
 });
+
+/**
+ * The page goes away at the end of this task (see above). Resolves once
+ * every transaction it left is done, with the page back (as after a reload,
+ * the database as the dying page left it).
+ */
+export async function leavePage() {
+  // What this task's microtasks open still opens, as in a browser.
+  leaving = true;
+  const nextTask = () => new Promise((resolve) => setImmediate(resolve));
+  do await nextTask();
+  while ([...live].some((tx) => tx._state !== 'finished'));
+  await nextTask(); // their «abort» events
+  live.clear();
+  leaving = gone = false;
+}
 
 /** Runs `work` with Blobs storable, as every browser stored them for layouts 1 and 2. */
 export async function allowingBlobs<T>(work: () => Promise<T>): Promise<T> {
