@@ -86,12 +86,23 @@ export function Tooltip() {
     // With the keyboard, the next focus is a keyboard one.
     const onKeyDown = () => (s.lastPointer = -Infinity);
     // A scroll that moves the element (the page's, or a box it is in) would
-    // leave the tooltip behind, and one about to show for the pointer goes
-    // too; another scroll (the canvas scrolling to the selection while a
-    // field of the panel has the focus) leaves a tooltip showing.
+    // leave the tooltip behind. If the element has the focus and is still in
+    // view, the tooltip follows it: the browser scrolls a field into view
+    // right after the focus reaches it. Otherwise the tooltip goes, and one
+    // about to show for the pointer too. Another scroll (the canvas scrolling
+    // to the selection while a field of the panel has the focus) leaves a
+    // tooltip showing.
     const onScroll = (e: Event) => {
       const scrolled = e.target;
-      if (!s.target || !(scrolled instanceof Element) || scrolled.contains(s.target)) hide();
+      const el = s.target;
+      if (el && scrolled instanceof Element && !scrolled.contains(el)) return;
+      if (!el || !el.contains(document.activeElement)) return hide();
+      const r = el.getBoundingClientRect();
+      const box = scrolled instanceof Element ? scrolled.getBoundingClientRect() : null;
+      const inView = r.bottom >= Math.max(0, box?.top ?? 0) && r.top <= Math.min(window.innerHeight, box?.bottom || Infinity) && r.right >= 0 && r.left <= window.innerWidth;
+      if (!inView) return hide();
+      clearTimeout(s.showTimer);
+      setShown(tipOf(el));
     };
     // Esc closes the tooltip without moving the focus and does nothing else. In
     // a panel or a dialog, Esc also does its own thing (back to the piece,
