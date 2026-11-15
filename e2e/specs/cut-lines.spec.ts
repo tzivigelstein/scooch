@@ -16,7 +16,8 @@ const screenLines = (page: Page) =>
       width: svg.getAttribute('data-width'),
       color: svg.getAttribute('data-color'),
       dash: svg.getAttribute('data-dash'),
-      lines: [...svg.querySelectorAll('line')].map((l) => ['x1', 'y1', 'x2', 'y2'].map((k) => Number(l.getAttribute(k)))),
+      // The cut lines themselves, not their emphasis while a control of theirs has the pointer or the focus.
+      lines: [...svg.querySelectorAll(':scope > g:not(.cut-emphasis) line')].map((l) => ['x1', 'y1', 'x2', 'y2'].map((k) => Number(l.getAttribute(k)))),
     };
   });
 
@@ -139,7 +140,7 @@ test('the cut lines, their stroke and margin, and the crops are saved with the p
   await app.ready();
   await expect(app.pieces()).toHaveCount(3);
   await expect.poll(() => app.snapshot()).toBe(pieces);
-  expect(await screenLines(page)).toEqual(saved);
+  await expect.poll(() => screenLines(page)).toEqual(saved);
   await app.openSetting('#cut-mode');
   await expect(page.locator('#cut-mode input[value="outline"]')).toBeChecked();
   await moreOptions(app);
