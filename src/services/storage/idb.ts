@@ -420,6 +420,27 @@ function idbStorage(db: IDBDatabase): IdbStorage {
       const binaries = new Map([...[...put.values()].map((file) => [file.hash, file.blob] as const), ...extra]);
       const ready = prepare(record, binaries);
       const { row, bytes } = ready instanceof Promise ? await ready : ready;
+      // New files of a project that is there go first, each binary with its
+      // reference, in a transaction whose requests all go out at once and is
+      // committed right away: one that is still waiting for a callback when
+      // the page goes away is lost (always in WebKit), and with it a file
+      // added right before closing the tab (the last-moment journal keeps the
+      // document, not the files). The record follows, checked as below; a
+      // binary already stored is written again with the same content.
+      const early = put.size > 0 && !create;
+      if (early) {
+        const tx = db.transaction(['files', 'blobs'], 'readwrite');
+        const finished = done(tx);
+        const files = tx.objectStore('files');
+        const blobs = tx.objectStore('blobs');
+        for (const [key, file] of put) {
+          const stored = bytes.get(file.hash)!;
+          blobs.put({ hash: file.hash, bytes: stored.bytes, type: stored.type } satisfies BlobRow);
+          files.put({ project: record.id, key, hash: file.hash } satisfies FileRow);
+        }
+        tx.commit?.();
+        await finished;
+      }
       const stores = ['projects', 'files', 'blobs', ...(history !== undefined ? ['history'] : [])];
       const tx = db.transaction(stores, 'readwrite');
       const finished = done(tx);
@@ -427,11 +448,17 @@ function idbStorage(db: IDBDatabase): IdbStorage {
       const projects = tx.objectStore('projects');
       projects.getKey(record.id).onsuccess = (e) =>
         guarded(tx, fail, () => {
-          // Deleted (in another tab): its references are gone, and so may be the binaries they kept.
-          if ((e.target as IDBRequest).result === undefined && !create) throw new ProjectError('missing', record.id);
           const files = tx.objectStore('files');
+          // Deleted (in another tab): its references are gone, and so may be
+          // the binaries they kept. The ones just written go too (that is
+          // what this transaction commits), and the save fails.
+          if ((e.target as IDBRequest).result === undefined && !create) {
+            if (early) for (const key of put.keys()) files.delete([record.id, key]);
+            fail.error = new ProjectError('missing', record.id);
+            return;
+          }
           const blobs = tx.objectStore('blobs');
-          for (const [key, file] of put) files.put({ project: record.id, key, hash: file.hash } satisfies FileRow);
+          if (!early) for (const [key, file] of put) files.put({ project: record.id, key, hash: file.hash } satisfies FileRow);
           for (const key of remove) files.delete([record.id, key]);
           for (const [hash, stored] of bytes) keepBytes(tx, fail, blobs, hash, stored);
           if (history === null) tx.objectStore('history').delete(record.id);
@@ -439,6 +466,7 @@ function idbStorage(db: IDBDatabase): IdbStorage {
           projects.put(row);
         });
       await settled(finished, fail);
+      if (fail.error) throw fail.error;
       for (const blob of binaries.values()) forgetBytes(blob);
     },
     async update(id, patch) {
@@ -512,11 +540,27 @@ function idbStorage(db: IDBDatabase): IdbStorage {
     blobs: readBlobs,
     async collectGarbage() {
       if (!layout2) return 0;
-      const tx = db.transaction(['blobs', 'files', 'history', 'clipboard'], 'readwrite');
+      const tx = db.transaction(['blobs', 'files', 'history', 'clipboard', 'projects'], 'readwrite');
       const finished = done(tx);
       const fail: Failure = { error: null };
       const blobs = tx.objectStore('blobs');
-      const counters = [tx.objectStore('files').index('hash'), tx.objectStore('history').index('hashes'), tx.objectStore('clipboard').index('hashes')];
+      const files = tx.objectStore('files');
+      const projects = tx.objectStore('projects');
+      // References of a project that isn't there go (a tab stored a new file
+      // and went away before its record, while another deleted the project):
+      // their binaries, with the next collection.
+      files.index('project').openKeyCursor(null, 'nextunique').onsuccess = (e) =>
+        guarded(tx, fail, () => {
+          const cursor = (e.target as IDBRequest<IDBCursor | null>).result;
+          if (!cursor) return;
+          const project = cursor.key;
+          projects.getKey(project).onsuccess = (p) =>
+            guarded(tx, fail, () => {
+              if ((p.target as IDBRequest).result === undefined) deleteAll(files, 'project', project);
+            });
+          cursor.continue();
+        });
+      const counters = [files.index('hash'), tx.objectStore('history').index('hashes'), tx.objectStore('clipboard').index('hashes')];
       let deleted = 0;
       blobs.getAllKeys().onsuccess = (e) => {
         for (const hash of (e.target as IDBRequest<IDBValidKey[]>).result) {

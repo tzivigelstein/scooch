@@ -130,13 +130,54 @@ describe('what it stores', () => {
 });
 
 describe('the guarantees the projects service relies on', () => {
-  test('a save to a project deleted meanwhile (in another tab) fails with «missing» and stores nothing', async () => {
+  test('a save to a project deleted meanwhile (in another tab) fails with «missing» and leaves nothing it references: its new binary goes with the next collection', async () => {
     const { storage, record, stored } = await projectWithImage();
     await storage.remove('p1');
     await expect(storage.write(record, { put: new Map([['src:9', fileOf('new')]]) })).rejects.toMatchObject({ code: 'missing' });
     await expect(saveProject(storage, { record, doc: record.doc, files: new Map(), stored, now: 3 })).rejects.toBeInstanceOf(ProjectError);
-    expect(await storedHashes()).not.toContain(fileOf('new').hash);
     expect(await storage.get('p1')).toBeNull();
+    expect((await dump(NAME)).files).toEqual([]);
+    await storage.collectGarbage();
+    expect(await storedHashes()).toEqual([]);
+  });
+
+  test('new files go with their references in a transaction committed at once, before the record: if the page goes away before the record is written, the project still has them', async () => {
+    const { storage, record } = await projectWithImage();
+    const db = await openRaw(NAME);
+    const prototype = Object.getPrototypeOf(db) as IDBDatabase;
+    const tx = db.transaction('projects');
+    const commit = vi.spyOn(Object.getPrototypeOf(tx) as IDBTransaction, 'commit');
+    db.close();
+    const original = prototype.transaction;
+    let opened = 0;
+    // The page goes away before the second transaction (the record's) opens.
+    vi.spyOn(prototype, 'transaction').mockImplementation(function (this: IDBDatabase, ...args: Parameters<IDBDatabase['transaction']>) {
+      if (++opened === 2) throw new DOMException('The page went away', 'InvalidStateError');
+      return original.apply(this, args);
+    });
+    const added = fileOf('added right before closing');
+    await expect(storage.write({ ...record, modified: 9 }, { put: new Map([['src:2', added]]) })).rejects.toThrow('The page went away');
+    expect(commit).toHaveBeenCalledTimes(1);
+    vi.restoreAllMocks();
+    const files = await storage.files('p1');
+    expect(files.get('src:2')?.hash).toBe(added.hash);
+    expect(await textOf(files.get('src:2')?.blob)).toBe('added right before closing');
+    expect((await storage.get('p1'))?.modified, 'the record as it was: the journal has the rest').toBe(2);
+  });
+
+  test('garbage collection takes the references of a project that isn’t there (left by a tab that went away between them and the record), then their binaries', async () => {
+    const { storage } = await projectWithImage();
+    const db = await openRaw(NAME);
+    const tx = db.transaction(['files', 'blobs'], 'readwrite');
+    tx.objectStore('blobs').put({ hash: fileOf('orphan').hash, bytes: new TextEncoder().encode('orphan').buffer, type: 'image/png' });
+    tx.objectStore('files').put({ project: 'gone', key: 'src:1', hash: fileOf('orphan').hash });
+    await new Promise((resolve) => (tx.oncomplete = resolve));
+    db.close();
+    await storage.collectGarbage();
+    expect(((await dump(NAME)).files as { project: string }[]).map((row) => row.project)).toEqual(['p1', 'p1']);
+    await storage.collectGarbage();
+    expect(await storedHashes()).not.toContain(fileOf('orphan').hash);
+    expect((await storage.files('p1')).size).toBe(2);
   });
 
   test('a binary is stored once per content, and garbage collection deletes only what no project, saved history or clipboard references', async () => {
