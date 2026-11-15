@@ -57,6 +57,9 @@ export function Tooltip() {
       if (tip.current?.contains(target)) return clearTimeout(s.hideTimer);
       if (!el) return;
       clearTimeout(s.showTimer);
+      // With no tooltip showing there is nothing to hide: the hide that leaving
+      // another button scheduled would only cancel this one before it shows.
+      if (!s.target) clearTimeout(s.hideTimer);
       s.showTimer = setTimeout(() => show(el), s.target ? 0 : 300);
     };
     const onPointerOut = (e: PointerEvent) => {

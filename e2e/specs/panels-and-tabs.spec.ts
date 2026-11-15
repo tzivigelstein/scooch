@@ -319,3 +319,11 @@ test.describe('properties tabs', () => {
     });
   }
 });
+
+test('a tooltip shows on the button the pointer rests on, coming straight from another button', async ({ app }) => {
+  const { page } = app;
+  // Before the first one's tooltip shows: leaving it must not cancel the second's.
+  await page.locator('#projects-open').hover();
+  await page.locator('#prefs-open').hover();
+  await expect(page.locator('#tooltip')).toHaveText(/^Preferencias/);
+});
