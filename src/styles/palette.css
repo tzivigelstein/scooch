@@ -74,13 +74,16 @@ input.palette-input {
   font-size: 1rem;
 }
 
+/* Borderless, but it keeps the border colors the shared field rules give
+   every field on hover and focus. */
 input.palette-input:hover:not(:disabled) {
-  border-color: transparent;
+  border-color: var(--text);
 }
 
 /* The field's focus is the line under the head (above). */
 input.palette-input:focus-visible {
   outline: none;
+  border-color: var(--focus);
 }
 
 .palette-list {

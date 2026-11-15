@@ -311,7 +311,8 @@
   grid-template-columns: repeat(var(--slots), minmax(0, 1.375rem)) 2.5rem;
 }
 
-/* A sheet with its piece in the middle; with Scooch, full of pieces. */
+/* A sheet with its piece in the middle; with Scooch, full of pieces. Its
+   sheet-in is the one the properties bottom sheet slides in with. */
 .paper {
   --ink: var(--line-strong);
   aspect-ratio: 3 / 4;
@@ -340,13 +341,6 @@
   background: linear-gradient(to top right, transparent calc(50% - 0.0625rem), var(--ink) 50%, transparent calc(50% + 0.0625rem));
   opacity: 0.75;
   animation-name: ghost-in;
-}
-
-@keyframes sheet-in {
-  from {
-    opacity: 0;
-    transform: translateY(0.5rem) scale(0.85);
-  }
 }
 
 /* A saved sheet fades out of the row into its ghost. */
