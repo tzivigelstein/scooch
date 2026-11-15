@@ -63,6 +63,19 @@ export async function clipboardKey(page: Page, command: 'copy' | 'cut' | 'paste'
 }
 
 /**
+ * Pastes with nothing on the system clipboard, whatever it holds: the paste
+ * event is dispatched at what has the focus with an empty clipboard. For a
+ * test whose paste must not depend on what an earlier one copied (a browser's
+ * pages share its clipboard).
+ */
+export async function pasteFromEmptyClipboard(page: Page) {
+  await page.evaluate(() => {
+    const target = document.activeElement ?? document.body;
+    target.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, composed: true, clipboardData: new DataTransfer() }));
+  });
+}
+
+/**
  * Presses Tab (Shift+Tab with `back`) until `until` holds for what has the
  * focus, at most `max` times; returns whether it got there.
  */

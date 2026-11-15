@@ -16,7 +16,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Page } from '@playwright/test';
 import { DOC_VERSION } from '../../src/core/projectdoc.js';
-import { clipboardKey } from '../support/keyboard.ts';
+import { pasteFromEmptyClipboard } from '../support/keyboard.ts';
 import { App, expect, fixture } from '../support/test.ts';
 import { cards, databases, hideDatabases, LAST_PROJECT, openProjects, saved, seedBlob, seedingTest as test, seedStorage, storedProjects, storedRecord, type Seed } from '../support/projects.ts';
 
@@ -208,7 +208,7 @@ test.describe('the layout of the database', () => {
     await page.keyboard.press('Control+z');
     await expect.poll(() => loadedPieces(page)).toEqual(['card00.png', 'card01.png', 'rotated.pdf']);
     // square.webp was cut: only the clipboard keeps it.
-    await clipboardKey(page, 'paste');
+    await pasteFromEmptyClipboard(page);
     await expect.poll(() => loadedPieces(page)).toEqual(['card00.png', 'card01.png', 'rotated.pdf', 'square.webp']);
     await saved(page);
     expect((await storedProjects(page)).asBlobs).toBe(0);
