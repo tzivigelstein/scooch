@@ -28,6 +28,7 @@ import { used } from '../../state/tips.ts';
 import { revealPiece, revealPieces } from '../canvas/viewport.ts';
 import { thumbView } from '../canvas/pieceView.ts';
 import { Icon } from '../ui/Icon.tsx';
+import './PieceList.css';
 
 /** The side of a row's thumbnail, in rem (the box is 2.25rem with a border). */
 const THUMB_REM = 1.875;

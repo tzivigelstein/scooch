@@ -14,6 +14,7 @@ import { IconButton } from '../ui/Button.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { disabledUnlessFocused } from '../topbar/Topbar.tsx';
 import { PieceList } from './PieceList.tsx';
+import './PiecesPanel.css';
 
 /** If the focus goes somewhere else (Tab out), an open overlay panel closes without stealing it. */
 export function closeOnFocusOut(name: 'pieces' | 'props') {

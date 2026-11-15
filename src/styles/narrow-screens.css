@@ -16,11 +16,6 @@
       margin-top: 0.625rem;
     }
 
-    .panel-left.is-drawer {
-      left: 0;
-      width: min(20rem, 88vw);
-    }
-
     /* Properties as a bottom sheet */
     .panel-right.is-drawer {
       position: fixed;
@@ -80,10 +75,6 @@
     .tool-row .icon-btn {
       width: 2.5rem;
       height: 2.5rem;
-    }
-
-    .piece-row {
-      min-height: 3rem;
     }
 
     .remove-btn {
