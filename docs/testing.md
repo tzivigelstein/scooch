@@ -56,9 +56,9 @@ E2E_WEBKIT=1 yarn e2e --project=webkit
 CI runs the WebKit and Firefox projects too (see below). A test that can't
 work in an engine skips itself there, saying why: the ones that go through
 the Chrome DevTools Protocol (touch, a mouse move without its button)
-outside Chromium, and printing from a hidden frame in WebKit (Safari prints
+outside Chromium, printing from a hidden frame in WebKit (Safari prints
 the page instead, so the app opens the PDF in a tab) and in Firefox (no PDF
-viewer).
+viewer), and a drag released outside the window in Firefox (see below).
 
 ### Running WebKit (or Firefox) locally with Docker
 
@@ -95,6 +95,15 @@ docker run --rm --init --ipc=host --user "$(id -u):$(id -g)" -e HOME=/tmp \
   stays failed, even from a new page; and it focuses a button on click,
   which Safari on a Mac doesn't. Whatever depends on those still needs a
   real Safari.
+- Playwright's Firefox can't hold the mouse outside the window: a move there
+  arrives with no button held (the app cancels the drag, as when the button
+  is let go where it can't hear it) and a release there doesn't arrive, so
+  the page keeps the pointer captured (`movesOutsideWindow` in
+  `e2e/support/pointer.ts`). Pointer positions come in whole pixels, cut
+  down, as in WebKit (`wholePixelDrag`). And on a reload, the app's
+  `pagehide` listener didn't run in about half of the reloads, though one
+  added to the window later always did: a test that reloads right after a
+  change waits there for what the app writes on its own.
 
 ## Continuous integration
 
