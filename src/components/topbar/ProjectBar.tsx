@@ -12,6 +12,7 @@ import { useProject } from '../../state/project.ts';
 import { openProjects } from '../../state/actions/dialogs.ts';
 import { projectFailed, takeOverWithUi } from '../../state/actions/projects.ts';
 import { IconButton } from '../ui/Button.tsx';
+import { focusShown } from '../ui/focusShown.ts';
 import { Icon } from '../ui/Icon.tsx';
 import { announce } from '../feedback/announcer.ts';
 import './ProjectBar.css';
@@ -39,13 +40,9 @@ export function ProjectBar() {
 
   useLayoutEffect(() => {
     if (!renaming || !input.current) return;
-    // While a stylesheet is loading (the lazy parts' CSS the app fetches when
-    // idle), WebKit doesn't restyle what has no box: the field, shown again,
-    // keeps the display: none it had while hidden. focus() doesn't check then,
-    // and at the next frame WebKit takes the focus back from a field it takes
-    // for hidden, which closes it. Asking for its box styles it first.
-    input.current.getBoundingClientRect();
-    input.current.focus();
+    // Shown again: without styling it first, WebKit could take the focus back
+    // at the next frame, and the blur would close the field.
+    focusShown(input.current);
     input.current.select();
   }, [renaming]);
 
