@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
 import { keyLabel } from '../../copy/index.ts';
 import { announce } from '../feedback/announcer.ts';
 import { Icon } from './Icon.tsx';
+import { typeahead } from './typeahead.ts';
 import './Menu.css';
 
 export interface MenuEntry {
@@ -29,7 +30,6 @@ export interface MenuEntry {
 }
 
 const EDGE = 8;
-const fold = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /**
  * Where a menu opens: at window point (x, y), by default below it and to its
@@ -46,7 +46,7 @@ export interface MenuPlace {
 export function Menu({ id, label, entries, at, onClose }: { id: string; label: string; entries: readonly MenuEntry[]; at: MenuPlace; onClose: () => void }) {
   const menu = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(() => Math.max(0, entries.findIndex((entry) => !entry.disabled)));
-  const typed = useRef({ text: '', at: 0 });
+  const typed = useRef(typeahead());
   const close = useRef(onClose);
   useLayoutEffect(() => {
     close.current = onClose;
@@ -114,14 +114,12 @@ export function Menu({ id, label, entries, at, onClose }: { id: string; label: s
       return choose(entries[active]);
     }
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      // Typing the first letters: to the next item that starts with them.
-      const now = performance.now();
-      const text = now - typed.current.at > 600 ? e.key : typed.current.text + e.key;
-      typed.current = { text, at: now };
-      const query = fold(text);
-      const order = [...entries.keys()].map((i) => (active + (text.length > 1 ? 0 : 1) + i) % entries.length);
-      const found = order.find((i) => fold(entries[i].label).startsWith(query));
-      if (found !== undefined) setActive(found);
+      const found = typed.current.find(
+        e.key,
+        entries.map((entry) => entry.label),
+        active
+      );
+      if (found >= 0) setActive(found);
     }
   };
 
