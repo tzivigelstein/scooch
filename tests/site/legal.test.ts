@@ -64,6 +64,27 @@ const POLICY: Partial<Record<Lang, { section: string; noAnalytics: RegExp; terms
       [JOURNAL_PREFIX]: 'Copia temporal',
     },
   },
+  en: {
+    section: 'What is stored on your device',
+    noAnalytics: /doesn’t use cookies, advertising, trackers or analytics\s+tools/,
+    terms: {
+      [UNIT_STORAGE]: 'Units',
+      [THEME_STORAGE]: 'Theme',
+      [LANGUAGE_STORAGE]: 'Language',
+      [SINGLE_KEYS_STORAGE]: 'Single-key shortcuts',
+      [VIEW_STORAGE]: 'View',
+      [GRID_STORAGE]: 'Grid and snap',
+      [SECTIONS_STORAGE]: 'Properties sections',
+      [PRINT_STORAGE]: 'Printing notices',
+      [CUSTOM_PAPER_STORAGE]: 'Custom paper',
+      [PALETTE_STORAGE]: 'Recent actions',
+      [TIPS_STORAGE]: 'Usage tips',
+      [SAVINGS_STORAGE]: 'Sheets saved',
+      [DONATE_STORAGE]: 'Invitation to support',
+      [LAST_PROJECT_STORAGE]: 'Last project',
+      [JOURNAL_PREFIX]: 'Temporary copy',
+    },
+  },
 };
 
 /** The document with its placeholders filled in and its draft note gone, as the owner will leave it. */

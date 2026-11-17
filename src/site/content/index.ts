@@ -3,6 +3,7 @@
 // registered in this list; a page exists in it only if its folder has it.
 
 import type { SiteLanguage } from '../types.ts';
+import { en } from './en/index.ts';
 import { es } from './es/index.ts';
 
-export const SITE_LANGUAGES: readonly SiteLanguage[] = Object.freeze([es]);
+export const SITE_LANGUAGES: readonly SiteLanguage[] = Object.freeze([es, en]);

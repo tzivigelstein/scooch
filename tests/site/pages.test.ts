@@ -131,6 +131,7 @@ describe('links that open the editor', () => {
  */
 const NO_CLAIMS: Partial<Record<Lang, RegExp>> = {
   es: /habitual|usual|Argentina|México|España|Estados Unidos|EE\.\s?UU\.|India|Colombia|Chile|Perú|Schengen/i,
+  en: /\b(usual|typical|standard|common|United States|U\.S\.|USA?|American|India|Indian|UK|British|Canada|Mexico|Schengen|EU)\b/i,
 };
 
 describe('the photo ID guide', () => {
@@ -178,6 +179,14 @@ const COPY_RULES: Partial<Record<Lang, readonly (readonly [string, RegExp])[]>> 
     ['a number glued to its unit', /\d(mm|cm)\b/],
     ['a number and its unit that may break apart', /\d (mm|cm|ppp|%)(?![\w])/],
   ],
+  en: [
+    ['exclamations', /!/],
+    ['straight quotes or guillemets instead of curly ones', /['"«»]/],
+    ['a space before %', /\d\s%/],
+    ['a number glued to its unit', /\d(mm|cm|in|ppi)\b/],
+    ['a number and its unit that may break apart', /\d (mm|cm|in|ppi)\b/],
+    ['words the glossary replaces', /\b(simply|just|please|pieces?|uploads?)\b/i],
+  ],
 };
 
 describe('copy rules a machine can check', () => {
@@ -185,7 +194,9 @@ describe('copy rules a machine can check', () => {
     const rules = COPY_RULES[lang];
     expect(rules, `COPY_RULES needs ${lang}’s rules`).toBeDefined();
     for (const page of pages.filter((p) => p.lang === lang && p.kind !== 'legal')) {
-      const text = doc(page).body.textContent!;
+      const body = doc(page).body;
+      for (const script of body.querySelectorAll('script')) script.remove();
+      const text = body.textContent!;
       for (const [rule, pattern] of rules!) expect(text, `${page.path}: ${rule}`).not.toMatch(pattern);
     }
   });

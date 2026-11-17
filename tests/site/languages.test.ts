@@ -168,13 +168,23 @@ const decimalOf = (lang: Lang) => new Intl.NumberFormat(CATALOGUES[lang].meta.nu
  * the language's decimal separator. Interface names are words: left out.
  */
 function numbersOf(page: SitePage) {
-  const text = textOf([page.title, page.description, page.h1, page.crumb, page.body, ...(page.faq ?? []).flatMap(({ q, a }) => [q, a])].join(' \n '));
+  // A legal document's bold terms name the interface («Atajos de 1 tecla», «Single-key shortcuts»): words too.
+  let body = page.kind === 'legal' ? page.body.replace(/<strong>[\s\S]*?<\/strong>/g, ' ') : page.body;
+  // A text in another language (a license text, in English) is read as that language writes numbers.
+  const foreign = /<div class="doc-lang" lang="([\w-]+)">([\s\S]*)<\/div>$/.exec(body);
+  if (foreign) body = body.slice(0, foreign.index);
+  const text = textOf([page.title, page.description, page.h1, page.crumb, body, ...(page.faq ?? []).flatMap(({ q, a }) => [q, a])].join(' \n '));
   const facts = [...new Set((text.match(PROBE) ?? []).filter((mark) => !mark.startsWith('⟦ui:')))].sort();
-  const rest = text.replace(PROBE, ' ').replace(/\b\d+\.\d+\.\d+\b/g, (version) => ` v${version} `);
-  const decimal = decimalOf(page.lang);
-  const number = new RegExp(`(?<![A-Za-z\\d_.,v])\\d+(?:${decimal === '.' ? '\\.' : decimal}\\d+)?`, 'g');
-  const typed = [...new Set([...(rest.match(number) ?? []), ...(rest.match(/v\d+\.\d+\.\d+/g) ?? [])].map((n) => (n.startsWith('v') ? n : String(Number(n.replace(decimal, '.'))))))].sort();
+  const typed = [...new Set([...typedNumbers(text.replace(PROBE, ' '), page.lang), ...(foreign ? typedNumbers(textOf(foreign[2]), foreign[1] as Lang) : [])])].sort();
   return { facts, typed };
+}
+
+/** The numbers typed in a text, read with the decimal separator of `lang`; versions («1.0.0») as they are. */
+function typedNumbers(text: string, lang: Lang) {
+  const rest = text.replace(/\b\d+\.\d+\.\d+\b/g, (version) => ` v${version} `);
+  const decimal = decimalOf(lang);
+  const number = new RegExp(`(?<![A-Za-z\\d_.,v])\\d+(?:${decimal === '.' ? '\\.' : decimal}\\d+)?`, 'g');
+  return [...(rest.match(number) ?? []).map((n) => String(Number(n.replace(decimal, '.')))), ...(rest.match(/v\d+\.\d+\.\d+/g) ?? [])];
 }
 
 /** A number in a table cell, whatever the language writes it with. */
