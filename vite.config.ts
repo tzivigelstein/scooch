@@ -71,6 +71,17 @@ export default defineConfig({
       { extends: true, test: { name: 'performance', include: ['tests/performance/**/*.test.{js,ts}'], environment: 'node', fileParallelism: false, sequence: { groupOrder: 1 } } },
     ],
   },
+  worker: {
+    // ES modules (module workers: Safari 15, Firefox 114), so the export
+    // worker imports pdf-lib from a chunk of its own, «pdf-lib-[hash].js» like
+    // the page's: it stays cached while the worker's own code changes.
+    format: 'es',
+    rolldownOptions: {
+      output: {
+        manualChunks: (id) => (packageOf(id) === 'pdf-lib' ? 'pdf-lib' : undefined),
+      },
+    },
+  },
   build: {
     rolldownOptions: {
       output: {

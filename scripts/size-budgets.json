@@ -28,9 +28,9 @@
     }
   },
   "totalJs": {
-    "kB": 977,
-    "measured": 930.4,
-    "what": "Every .js and .mjs file of the build: the editor's lazy chunks (dialogs, crop mode, each language's texts, of which only one loads), pdf.js and its worker (about 500 kB), pdf-lib (about 180 kB), the contour worker and the static pages' scripts. Catches a dependency that grows or gets in by accident."
+    "kB": 1184,
+    "measured": 1126.9,
+    "what": "Every .js and .mjs file of the build: the editor's lazy chunks (dialogs, crop mode, each language's texts, of which only one loads), pdf.js and its worker (about 500 kB), pdf-lib twice (about 180 kB each: the export worker's, which builds the PDF, and the page's, which loads only when the worker can't), the contour and export workers and the static pages' scripts. Catches a dependency that grows or gets in by accident."
   },
   "initialCss": {
     "kB": 13.1,

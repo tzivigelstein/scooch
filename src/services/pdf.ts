@@ -1,8 +1,9 @@
 // Export: one PDF page the size of the sheet for each sheet with pieces, in
 // order, built with pdf-lib. Where each piece goes (cropped and rotated) comes
 // from crop.drawParams; without a crop the numbers and operators are the same
-// as always. drawPdf takes pdf-lib from its caller; buildPdf loads it in the
-// page, in a chunk of its own.
+// as always. The export worker (export.worker.ts) builds it with pdfReply and
+// a pdf-lib of its own; buildPdf loads pdf-lib in the page (a chunk of its
+// own), where the worker can't build it (export.ts).
 
 import type { PDFDocument as PdfLibDocument, PDFEmbeddedPage, PDFImage } from 'pdf-lib';
 import type { CutPath } from '../core/contour.js';
@@ -43,6 +44,9 @@ export interface PdfJob {
   cutStyle?: CutStyle;
 }
 
+/** From the export worker: the PDF, or why pdf-lib couldn't build it. */
+export type PdfReply = { pdf: Blob; error?: undefined } | { error: string; pdf?: undefined };
+
 export type PdfLib = typeof import('pdf-lib');
 type Embedded = { page: PDFEmbeddedPage; image?: undefined } | { image: PDFImage; page?: undefined };
 
@@ -59,6 +63,15 @@ function loadPdfLib() {
 
 /** The PDF's bytes as the file that is downloaded or printed. */
 export const pdfFile = (bytes: Uint8Array) => new Blob([bytes as BlobPart], { type: 'application/pdf' });
+
+/** Builds the PDF in the export worker. The reply's file goes to the page by reference: its bytes aren't copied there. */
+export async function pdfReply(lib: PdfLib, job: PdfJob): Promise<PdfReply> {
+  try {
+    return { pdf: pdfFile(await drawPdf(lib, job)) };
+  } catch (err) {
+    return { error: err instanceof Error ? `${err.name}: ${err.message}` : String(err) };
+  }
+}
 
 /** Builds the PDF in the page, loading pdf-lib first (see drawPdf). */
 export async function buildPdf(job: PdfJob) {
