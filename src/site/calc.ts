@@ -71,7 +71,8 @@ export function validState(state: CalcState): CalcState {
 
 export function calc(input: CalcState, texts: CalcTexts): CalcResult {
   const state = validState(input);
-  const number = new Intl.NumberFormat(texts.locale, { maximumFractionDigits: 1 });
+  // As the kit writes them (kit.ts): no thousands separator in a measure.
+  const number = new Intl.NumberFormat(texts.locale, { maximumFractionDigits: 1, useGrouping: false, numberingSystem: 'latn' });
   const n = (v: number) => number.format(Math.round(v * 10) / 10 || 0);
   const mm = (v: number) => `${n(v)} mm`;
   const size = (w: number, h: number) => `${n(w)} × ${n(h)} mm`;

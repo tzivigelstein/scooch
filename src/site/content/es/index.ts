@@ -1,20 +1,23 @@
-// Every Spanish page, in the order the footer lists the guides.
+// The Spanish pages, in the order the footer lists the guides. Spanish is the
+// site's first language: its pages are the reference for the others
+// (tests/site/languages.test.ts), and it also has the error page and the
+// texts of the editor's page and of llms.txt.
 
 import { ctaLinks } from '../../guide.ts';
 import { app } from '../../kit.ts';
-import type { LegalDoc } from '../../legal.ts';
-import type { SitePage } from '../../types.ts';
+import type { SiteLanguage, SitePage } from '../../types.ts';
+import { actualSize } from './actual-size.ts';
+import { chrome, llmsSections } from './chrome.ts';
+import { faqPage } from './faq.ts';
 import { howMany } from './how-many.ts';
 import { idPhotos } from './id-photos.ts';
-import { tenByFifteen } from './photos-10x15.ts';
-import { legalPage } from './legal.ts';
-import { samePhoto } from './same-photo.ts';
+import { LEGAL_MARKERS, legalPage } from './legal.ts';
 import { PATHS } from './paths.ts';
-import { faqPage } from './faq.ts';
-import { actualSize } from './actual-size.ts';
+import { tenByFifteen } from './photos-10x15.ts';
+import { samePhoto } from './same-photo.ts';
 import { severalPhotos } from './several-photos.ts';
 
-export { chrome, appFacts, llms } from './chrome.ts';
+export { appFacts, llmsIntro } from './chrome.ts';
 
 /** What a missing address shows (404.html; never indexed). */
 function notFound(): SitePage {
@@ -35,6 +38,12 @@ function notFound(): SitePage {
   };
 }
 
-export function pages(legal: readonly LegalDoc[]): SitePage[] {
-  return [severalPhotos(), howMany(), tenByFifteen(), idPhotos(), samePhoto(), actualSize(), faqPage(), ...legal.map(legalPage), notFound()];
-}
+export const es: SiteLanguage = {
+  lang: 'es',
+  units: { mm: 'mm', cm: 'cm', in: 'pulgadas' },
+  paths: PATHS,
+  legalMarkers: LEGAL_MARKERS,
+  chrome,
+  llms: llmsSections,
+  pages: (k, legal) => [severalPhotos(k), howMany(k), tenByFifteen(k), idPhotos(k), samePhoto(k), actualSize(k), faqPage(k), ...legal.map((doc) => legalPage(k, doc)), notFound()],
+};

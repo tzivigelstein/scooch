@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 // Every page of the site as the build writes it (siteFiles), parsed: what
 // search engines read, the links that open the editor, and the copy rules
-// that can be checked by machine. The build's own output is checked in
-// e2e/specs/site-pages.spec.ts.
+// that can be checked by machine, in every language. What differs between
+// languages is checked in tests/site/languages.test.ts, and the build's own
+// output in e2e/specs/site-pages.spec.ts.
 import { describe, expect, test } from 'vitest';
 import { PHOTO_SIZES } from '../../src/core/crop.js';
 import { deepLinkSearch, parseDeepLink, setsUp } from '../../src/core/deeplink.js';
-import { photoName } from '../../src/site/kit.ts';
-import { alternates } from '../../src/site/seo.ts';
+import { SITE_LANGUAGES } from '../../src/site/content/index.ts';
+import { createKit } from '../../src/site/kit.ts';
+import type { Lang } from '../../src/site/langs.ts';
 import { pageFile, readLegal, sitePages, siteFiles } from '../../src/site/site.ts';
 import type { SitePage } from '../../src/site/types.ts';
 
@@ -19,6 +21,7 @@ const pages = sitePages(legal);
 const files = siteFiles({ url: URL_ }, legal, { calculator: '/assets/calculator-test.js' });
 const doc = (page: SitePage) => new DOMParser().parseFromString(files.get(pageFile(page))!, 'text/html');
 const addressed = pages.filter((p) => p.kind !== 'error');
+const language = (lang: Lang) => SITE_LANGUAGES.find((l) => l.lang === lang)!;
 
 describe('every page', () => {
   test.each(addressed.map((p) => [p.path, p]))('%s: one h1, a title, a description, a canonical URL and valid structured data', (_, page) => {
@@ -83,23 +86,26 @@ describe('every page', () => {
     for (const page of pages) expect(doc(page).querySelector('meta[name="robots"]')?.getAttribute('content') ?? 'index').toBe(page.indexable ? 'index' : 'noindex');
   });
 
-  test('every guide is in every page’s footer, and the legal pages are linked from every page', () => {
-    const guides = pages.filter((p) => p.kind === 'guide' || p.kind === 'faq').map((p) => p.path);
+  test('every guide of a language is in the footer of each of its pages, and so are its legal pages', () => {
     for (const page of pages) {
-      const d = doc(page);
-      const links = [...d.querySelectorAll('footer a')].map((a) => a.getAttribute('href'));
-      expect(links).toEqual(expect.arrayContaining([...guides, '/es/terminos', '/es/privacidad', '/es/licencias-de-terceros', '/es/licencia']));
+      const { paths } = language(page.lang);
+      const guides = pages.filter((p) => p.lang === page.lang && (p.kind === 'guide' || p.kind === 'faq')).map((p) => p.path);
+      const links = [...doc(page).querySelectorAll('footer a')].map((a) => a.getAttribute('href'));
+      expect(links, page.path).toEqual(expect.arrayContaining([...guides, paths['legal-terms'], paths['legal-privacy'], paths['legal-notices'], paths['legal-license']]));
     }
   });
 
-  test('every link to another page of the site goes to one that exists', () => {
+  test('every link to another page of the site goes to one that exists, and every link within a page to a heading it has', () => {
     const paths = new Set(['/', ...pages.map((p) => p.path)]);
-    for (const page of pages)
-      for (const a of doc(page).querySelectorAll('a[href^="/"]')) {
+    for (const page of pages) {
+      const d = doc(page);
+      for (const a of d.querySelectorAll('a[href^="/"]')) {
         const href = a.getAttribute('href')!;
         if (href.startsWith('/?')) continue;
         expect(paths, `${page.path} links to ${href}`).toContain(href.split('#')[0]);
       }
+      for (const a of d.querySelectorAll('a[href^="#"]')) expect(d.getElementById(decodeURIComponent(a.getAttribute('href')!.slice(1))), `${page.path} links to ${a.getAttribute('href')}`).not.toBeNull();
+    }
   });
 });
 
@@ -118,19 +124,31 @@ describe('links that open the editor', () => {
   });
 });
 
+/**
+ * Words that would call a document photo size the usual one, or name a
+ * country, in each language: the photo ID guide makes no such claim (the
+ * office that asks for the photo says which size). A new language adds its own.
+ */
+const NO_CLAIMS: Partial<Record<Lang, RegExp>> = {
+  es: /habitual|usual|Argentina|México|España|Estados Unidos|EE\.\s?UU\.|India|Colombia|Chile|Perú|Schengen/i,
+};
+
 describe('the photo ID guide', () => {
-  test('its table lists exactly the app’s document photo sizes, and no size is called the usual one anywhere', () => {
-    const d = doc(pages.find((p) => p.id === 'id-photos')!);
+  test.each(SITE_LANGUAGES.map((l) => [l.lang]))('%s: its table lists exactly the app’s document photo sizes, and no size is called the usual one or tied to a country', (lang) => {
+    const page = pages.find((p) => p.id === 'id-photos' && p.lang === lang)!;
+    const { photoName } = createKit(language(lang));
+    const d = doc(page);
     expect([...d.querySelectorAll('tbody th')].map((th) => th.textContent)).toEqual(PHOTO_SIZES.filter((s) => s.group === 'id').map((s) => photoName(s.id)));
-    expect(d.body.textContent).not.toMatch(/habitual|usual/i);
+    expect(NO_CLAIMS[lang], `NO_CLAIMS needs ${lang}’s words`).toBeDefined();
+    expect(`${page.title} ${page.description} ${d.querySelector('main')!.textContent}`).not.toMatch(NO_CLAIMS[lang]!);
   });
 });
 
 describe('the files for crawlers', () => {
-  test('the sitemap lists the editor and exactly the indexable pages', () => {
+  test('the sitemap lists the editor and exactly the indexable pages, and no legal draft', () => {
     const locs = [...files.get('sitemap.xml')!.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
     expect(locs).toEqual([`${URL_}/`, ...pages.filter((p) => p.indexable).map((p) => `${URL_}${p.path}`)]);
-    expect(locs).not.toContain(`${URL_}/es/terminos`);
+    for (const { paths } of SITE_LANGUAGES) expect(locs).not.toContain(`${URL_}${paths['legal-terms']}`);
   });
 
   test('robots.txt lets every crawler read everything and points to the sitemap', () => {
@@ -140,47 +158,35 @@ describe('the files for crawlers', () => {
     expect(robots).toContain(`Sitemap: ${URL_}/sitemap.xml`);
   });
 
-  test('llms.txt says what the tool is and links every indexable guide and the questions', () => {
+  test('llms.txt says what the tool is and links every indexable guide and the questions, in every language', () => {
     const llms = files.get('llms.txt')!;
     expect(llms).toMatch(/^# Scooch\n\n> .+herramienta web gratuita/);
     for (const page of pages.filter((p) => p.indexable && p.kind !== 'legal')) expect(llms).toContain(`](${URL_}${page.path})`);
-    expect(llms).not.toContain('/es/terminos');
+    for (const { paths } of SITE_LANGUAGES) expect(llms).not.toContain(paths['legal-terms']);
   });
 });
 
-describe('hreflang', () => {
-  test('a page in one language gets no hreflang links', () => {
-    for (const page of pages) expect(alternates(page, pages)).toEqual([]);
-    expect(files.get(pageFile(pages[0]))).not.toContain('hreflang');
-    expect(files.get('sitemap.xml')).not.toContain('xhtml');
-  });
-
-  test('once a page exists in another language, every version links to every other, plus x-default', () => {
-    const es = pages[0];
-    const en: SitePage = { ...es, lang: 'en', path: '/en/print-multiple-pictures-on-one-page' };
-    const fr: SitePage = { ...es, lang: 'fr', path: '/fr/imprimer-plusieurs-photos', indexable: false };
-    expect(alternates(es, [es, en, fr])).toEqual([
-      { hreflang: 'es', path: es.path },
-      { hreflang: 'en', path: en.path },
-      { hreflang: 'x-default', path: en.path },
-    ]);
-    expect(alternates(fr, [es, en, fr])).toEqual([]);
-  });
-});
-
-describe('copy rules a machine can check (docs/copy.md)', () => {
-  const texts = pages.filter((p) => p.lang === 'es' && p.kind !== 'legal').map((p) => ({ path: p.path, text: doc(p).body.textContent! }));
-
-  test.each([
+/**
+ * The copy rules of each language's guide (docs/copy.md, docs/copy/<lang>.md)
+ * that a machine can check, on what its pages say. A new language adds its own.
+ */
+const COPY_RULES: Partial<Record<Lang, readonly (readonly [string, RegExp])[]>> = {
+  es: [
     ['exclamations', /[!¡]/],
     ['voseo', /\b(podés|tenés|elegí|apretá|soltá|usás|hacé|mirá)\b/i],
     ['words the guide replaces', /\b(acá|achic\w*|apretar|clickea\w*|simplemente)\b/i],
     ['a number glued to its unit', /\d(mm|cm)\b/],
-  ])('no %s', (_, pattern) => {
-    for (const { path, text } of texts) expect(text, path).not.toMatch(pattern);
-  });
+    ['a number and its unit that may break apart', /\d (mm|cm|ppp|%)(?![\w])/],
+  ],
+};
 
-  test('a number and its unit never break apart', () => {
-    for (const { path, text } of texts) expect(text, path).not.toMatch(/\d (mm|cm|ppp|%)(?![\w])/);
+describe('copy rules a machine can check', () => {
+  test.each(SITE_LANGUAGES.map((l) => [l.lang]))('%s: every guide and the questions follow them', (lang) => {
+    const rules = COPY_RULES[lang];
+    expect(rules, `COPY_RULES needs ${lang}’s rules`).toBeDefined();
+    for (const page of pages.filter((p) => p.lang === lang && p.kind !== 'legal')) {
+      const text = doc(page).body.textContent!;
+      for (const [rule, pattern] of rules!) expect(text, `${page.path}: ${rule}`).not.toMatch(pattern);
+    }
   });
 });

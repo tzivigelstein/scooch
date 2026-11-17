@@ -1,36 +1,27 @@
 // «Imprimir varias fotos en una hoja»: the main guide.
 
-import { LEGAL_PATHS } from '../../paths.ts';
+import { severalPhotosFacts } from '../../facts/several-photos.ts';
 import { guide } from '../../guide.ts';
-import { app, capacity, editorHref, link, MAX_ITEMS, mm, num, paperName, paragraphs, photo, photoName, sheetFigure, size, steps, table, ui, type Layout } from '../../kit.ts';
-import type { PaperId } from '../../../core/types.ts';
+import { app, link, paragraphs, sheetFigure, steps, table, MAX_ITEMS, type Kit } from '../../kit.ts';
+import type { SitePage } from '../../types.ts';
 import { PATHS } from './paths.ts';
 
-export function severalPhotos() {
-  const layout = { margin: 5, gap: 3 };
-  const papers: PaperId[] = ['A4', 'letter', 'legal'];
-  const figureLayout: Layout = { paper: 'A4', ...layout };
-  const shown = photo('9x13');
-  const shownCount = capacity(shown, figureLayout).count;
-  const rows = ['10x15', '13x18', '9x13', '10x10'].map((id) => {
-    const p = photo(id);
-    return [`${photoName(id)} <span class="muted">(${size(p.w, p.h)})</span>`, ...papers.map((paper) => num(capacity(p, { paper, ...layout }).count))];
-  });
-
+export function severalPhotos({ ui, num, mm, size, photoName, paperName }: Kit): SitePage {
+  const f = severalPhotosFacts();
   return guide({
     id: 'several-photos',
     lang: 'es',
-    path: PATHS.severalPhotos,
+    path: PATHS['several-photos'],
     title: `Imprimir varias fotos en una hoja a tamaño real · ${app}`,
     description: `Acomoda varias fotos en una hoja A4, Carta u Oficio a su tamaño real y descarga el PDF o imprímelo. Gratis, sin cuenta y sin subir tus fotos.`,
     h1: 'Imprimir varias fotos en una hoja',
     crumb: 'Varias fotos en una hoja',
     lead: `Con ${app} pones varias fotos en una misma hoja, cada una con su medida real, y las imprimes juntas desde el navegador de la computadora o del celular. Es gratis, no pide cuenta y tus fotos no salen de tu dispositivo.`,
     ctas: [
-      { label: `Abrir ${app} con hoja A4`, href: editorHref({ paper: 'A4', ...layout }) },
-      { label: 'Abrir con hoja Carta', href: editorHref({ paper: 'letter', ...layout }) },
+      { label: `Abrir ${app} con hoja A4`, href: f.open.a4 },
+      { label: 'Abrir con hoja Carta', href: f.open.letter },
     ],
-    feature: sheetFigure(shown, figureLayout, `${num(shownCount)} fotos ${photoName('9x13')} en una hoja A4, con márgenes de ${mm(layout.margin)}`),
+    feature: sheetFigure(f.figure, `${num(f.figure.count)} fotos ${photoName(f.figure.photo)} en una hoja A4, con márgenes de ${mm(f.layout.margin)}`),
     sections: [
       {
         h2: 'Cómo hacerlo',
@@ -47,17 +38,17 @@ export function severalPhotos() {
         html:
           paragraphs(`Depende de la medida de las fotos, del papel y del margen que deja tu impresora. Estas son las fotos iguales que pone ${ui('bar.arrange')} en cada hoja:`) +
           table(
-            [{ head: 'Foto' }, ...papers.map((p) => ({ head: paperName(p), num: true }))],
-            rows,
-            `Con márgenes de ${mm(layout.margin)}, ${mm(layout.gap)} de separación entre fotos y ${ui('props.rotate')}.`
+            [{ head: 'Foto' }, ...f.papers.map((p) => ({ head: paperName(p), num: true }))],
+            f.rows.map((r) => [`${photoName(r.id)} <span class="muted">(${size(r.w, r.h)})</span>`, ...r.counts.map((n) => num(n))]),
+            `Con márgenes de ${mm(f.layout.margin)}, ${mm(f.layout.gap)} de separación entre fotos y ${ui('props.rotate')}.`
           ) +
-          paragraphs(`Para otras medidas y otros márgenes, usa la ${link(PATHS.howMany, 'calculadora de cuántas fotos caben en una hoja')}.`),
+          paragraphs(`Para otras medidas y otros márgenes, usa la ${link(PATHS['how-many'], 'calculadora de cuántas fotos caben en una hoja')}.`),
       },
       {
         h2: 'A tamaño real, sin ajustes',
         html: paragraphs(
           `${app} crea un PDF con la medida exacta de la hoja, y cada foto queda con su medida en milímetros, no en píxeles. Lo que puede cambiar el tamaño es el diálogo de impresión: con «Ajustar a la página» o una opción parecida, la impresora reduce todo un poco. Por eso conviene elegir «Tamaño real» o «100 %» e imprimir una prueba antes de imprimir muchas copias.`,
-          `Hay más detalles en la guía para ${link(PATHS.actualSize, 'imprimir una imagen a tamaño real')}.`
+          `Hay más detalles en la guía para ${link(PATHS['actual-size'], 'imprimir una imagen a tamaño real')}.`
         ),
       },
       {
@@ -76,7 +67,7 @@ export function severalPhotos() {
       },
       {
         q: '¿Se suben mis fotos a algún servidor?',
-        a: `No. Las fotos se abren y se procesan en tu navegador, y el PDF también se crea ahí. Lo explica la ${link(LEGAL_PATHS.privacy, ui('legal.privacy'))}.`,
+        a: `No. Las fotos se abren y se procesan en tu navegador, y el PDF también se crea ahí. Lo explica la ${link(PATHS['legal-privacy'], ui('legal.privacy'))}.`,
       },
       { q: '¿Puedo mezclar fotos de distintos tamaños, o fotos y páginas de PDF?', a: `Sí. ${ui('bar.arrange')} ubica juntas piezas de cualquier tamaño, y cada página de un PDF es una pieza más.` },
       { q: '¿Hay marca de agua o un límite de fotos?', a: `No hay marca de agua. Un proyecto admite hasta ${num(MAX_ITEMS)} piezas.` },

@@ -9,6 +9,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { build, loadEnv, type Plugin, type ResolvedConfig } from 'vite';
 import { ENV_PREFIXES, publishVerdict, siteFromEnv, type Site } from './config.ts';
+import { SITE_LANGUAGES } from './content/index.ts';
+import { pathPrefix } from './langs.ts';
 import { editorHead, publishProblems, readLegal, siteFiles } from './site.ts';
 
 const CALCULATOR = 'src/site/calculator.ts';
@@ -47,6 +49,9 @@ async function buildCalculator(config: ResolvedConfig) {
   return { fileName: chunks[0].fileName, code: chunks[0].code };
 }
 
+/** What the dev server renders: a page of a language with content, or a file for crawlers. */
+const SITE_FILE = new RegExp(`^((${SITE_LANGUAGES.map((l) => pathPrefix(l.lang).slice(1)).join('|')})/[\\w-]+|sitemap\\.xml|robots\\.txt|llms\\.txt)$`);
+
 const TYPES: Record<string, string> = { html: 'text/html; charset=utf-8', xml: 'application/xml; charset=utf-8', txt: 'text/plain; charset=utf-8', png: 'image/png' };
 
 export function sitePages(): Plugin {
@@ -79,7 +84,7 @@ export function sitePages(): Plugin {
           return res.end(readFileSync(resolve(config.root, SHARE_IMAGE)));
         }
         const name = path.slice(1).replace(/\.html$/, '');
-        if (!/^(es\/[\w-]+|sitemap\.xml|robots\.txt|llms\.txt)$/.test(name)) return next();
+        if (!SITE_FILE.test(name)) return next();
         const files = siteFiles(site, readLegal(config.root), { calculator: `/${CALCULATOR}` });
         const file = name.includes('.') ? name : `${name}.html`;
         const body = files.get(file);

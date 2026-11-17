@@ -79,6 +79,11 @@ describe('inline', () => {
       '<p>La <a href="/es/privacidad">Política de privacidad</a> y <a href="#lo-que-no-hacemos">lo que no</a>.</p>'
     );
   });
+
+  test('a link to a page in another language says that language', () => {
+    const link = () => ({ href: '/es/terminos', hreflang: 'es' });
+    expect(md('The [Spanish version](../terminos.md) is the reference.', { link })).toBe('<p>The <a href="/es/terminos" hreflang="es">Spanish version</a> is the reference.</p>');
+  });
 });
 
 describe('placeholders', () => {

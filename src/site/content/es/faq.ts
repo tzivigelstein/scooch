@@ -1,12 +1,12 @@
 // «Preguntas frecuentes»: about the tool itself (each guide has its own).
 
-import { LEGAL_PATHS } from '../../paths.ts';
-import { app, link, MAX_ITEMS, num, ui } from '../../kit.ts';
+import { app, link, MAX_ITEMS, type Kit } from '../../kit.ts';
 import type { SitePage } from '../../types.ts';
 import { papersSentence, photoSizesSentence } from './chrome.ts';
 import { PATHS } from './paths.ts';
 
-export function faqPage(): SitePage {
+export function faqPage(k: Kit): SitePage {
+  const { ui, num } = k;
   return {
     id: 'faq',
     lang: 'es',
@@ -26,7 +26,7 @@ export function faqPage(): SitePage {
       { q: '¿Cuánto cuesta?', a: `Nada. ${app} es gratis, no pide cuenta y no agrega marcas de agua ni anuncios.` },
       {
         q: '¿Mis archivos se suben a algún servidor?',
-        a: `No. Las imágenes y los PDF se abren y se procesan en tu navegador, y el PDF también se crea ahí. Más detalles en la ${link(LEGAL_PATHS.privacy, ui('legal.privacy'))}.`,
+        a: `No. Las imágenes y los PDF se abren y se procesan en tu navegador, y el PDF también se crea ahí. Más detalles en la ${link(PATHS['legal-privacy'], ui('legal.privacy'))}.`,
       },
       {
         q: '¿Dónde se guardan mis proyectos?',
@@ -36,17 +36,17 @@ export function faqPage(): SitePage {
         q: '¿Qué archivos puedo agregar?',
         a: 'Imágenes que tu navegador pueda abrir (JPG, PNG, WebP…) y PDF. Cada página de un PDF es una pieza.',
       },
-      { q: '¿Qué papeles trae?', a: `${papersSentence()}.` },
-      { q: '¿Qué tamaños de foto trae?', a: `${photoSizesSentence()}. También puedes escribir cualquier ancho y alto.` },
+      { q: '¿Qué papeles trae?', a: `${papersSentence(k)}.` },
+      { q: '¿Qué tamaños de foto trae?', a: `${photoSizesSentence(k)}. También puedes escribir cualquier ancho y alto.` },
       {
         q: '¿Cómo imprimo a tamaño real?',
-        a: `Presiona ${ui('bar.print')} o ${ui('bar.download')} y, en el diálogo de impresión, elige «Tamaño real» o «100 %». Hay más detalles en la guía para ${link(PATHS.actualSize, 'imprimir una imagen a tamaño real')}.`,
+        a: `Presiona ${ui('bar.print')} o ${ui('bar.download')} y, en el diálogo de impresión, elige «Tamaño real» o «100 %». Hay más detalles en la guía para ${link(PATHS['actual-size'], 'imprimir una imagen a tamaño real')}.`,
       },
       { q: '¿Funciona en el celular?', a: 'Sí, en el navegador del celular o de la tableta, sin instalar nada.' },
       { q: '¿Cuántas piezas puedo poner?', a: `Hasta ${num(MAX_ITEMS)} piezas por proyecto, en las hojas que hagan falta.` },
       {
         q: '¿Sirve para fotos de trámites?',
-        a: `Sí, para recortarlas e imprimirlas a la medida. Pero cada trámite define sus requisitos (medida, fondo, encuadre) y ${app} no los revisa: consulta siempre a la entidad que pide la foto. Mira la guía de ${link(PATHS.idPhotos, 'foto carnet para imprimir')}.`,
+        a: `Sí, para recortarlas e imprimirlas a la medida. Pero cada trámite define sus requisitos (medida, fondo, encuadre) y ${app} no los revisa: consulta siempre a la entidad que pide la foto. Mira la guía de ${link(PATHS['id-photos'], 'foto carnet para imprimir')}.`,
       },
       {
         q: `¿Puedo abrir ${app} ya configurado desde un enlace?`,
@@ -54,7 +54,7 @@ export function faqPage(): SitePage {
       },
       {
         q: '¿El código es abierto?',
-        a: `El código fuente se publica bajo la licencia PolyForm Noncommercial 1.0.0: puedes usarlo, estudiarlo y modificarlo con fines no comerciales. El texto completo está en la ${link(LEGAL_PATHS.license, 'licencia del código')}.`,
+        a: `El código fuente se publica bajo la licencia PolyForm Noncommercial 1.0.0: puedes usarlo, estudiarlo y modificarlo con fines no comerciales. El texto completo está en la ${link(PATHS['legal-license'], 'licencia del código')}.`,
       },
     ],
   };

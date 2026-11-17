@@ -6,9 +6,12 @@
 
 import { esc, plainText, tableHtml } from './html.ts';
 
+/** Where a link goes, and the language of the page there when it isn't this page's. */
+export type MarkdownLink = string | { href: string; hreflang?: string };
+
 export interface MarkdownOptions {
   /** Where a link goes (a relative link to another document becomes its page). */
-  link?: (href: string) => string;
+  link?: (href: string) => MarkdownLink;
   /** Levels added to every heading (1: «#» becomes <h2>). */
   shift?: number;
 }
@@ -32,14 +35,19 @@ const emphasis = (html: string) =>
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[\s(«])_([^_]+)_(?=$|[\s).,;:!?»])/g, '$1<em>$2</em>');
 
-function inline(text: string, link: (href: string) => string) {
+function anchor(target: MarkdownLink, html: string) {
+  const { href, hreflang } = typeof target === 'string' ? { href: target, hreflang: undefined } : target;
+  return `<a href="${esc(href)}"${hreflang ? ` hreflang="${esc(hreflang)}"` : ''}>${html}</a>`;
+}
+
+function inline(text: string, link: (href: string) => MarkdownLink) {
   // Code spans, links and autolinks wait aside as numbered marks, so escaping
   // and emphasis don't touch their contents.
   const held: string[] = [];
   const hold = (html: string) => `\u0000${held.push(html) - 1}\u0000`;
   let s = text.replace(/`([^`]+)`/g, (_, code: string) => hold(`<code>${esc(code)}</code>`));
-  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label: string, href: string) => hold(`<a href="${esc(link(href))}">${emphasis(esc(label))}</a>`));
-  s = s.replace(/<(https?:\/\/[^>\s]+)>/g, (_, href: string) => hold(`<a href="${esc(link(href))}">${esc(href)}</a>`));
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label: string, href: string) => hold(anchor(link(href), emphasis(esc(label)))));
+  s = s.replace(/<(https?:\/\/[^>\s]+)>/g, (_, href: string) => hold(anchor(link(href), esc(href))));
   s = emphasis(esc(s));
   // A link's label may hold code: put marks back until none is left.
   while (s.includes('\u0000')) s = s.replace(/\u0000(\d+)\u0000/g, (_, i: string) => held[Number(i)]);

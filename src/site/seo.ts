@@ -4,7 +4,7 @@
 
 import { APP_NAME } from '../config.ts';
 import { esc, plainText } from './html.ts';
-import { DEFAULT_LANGS, LANGS } from './langs.ts';
+import { DEFAULT_LANGS, hreflangOf } from './langs.ts';
 import type { FaqItem, SitePage } from './types.ts';
 
 /** The image shown when a page is shared (src/site/share.png). */
@@ -25,7 +25,7 @@ export function alternates(page: Pick<SitePage, 'id' | 'indexable'>, pages: read
   if (!page.indexable) return [];
   const versions = pages.filter((p) => p.id === page.id && p.indexable);
   if (versions.length < 2) return [];
-  const links = versions.map((p) => ({ hreflang: LANGS[p.lang].hreflang, path: p.path }));
+  const links: Alternate[] = versions.map((p) => ({ hreflang: hreflangOf(p.lang), path: p.path }));
   const fallback = DEFAULT_LANGS.map((lang) => versions.find((p) => p.lang === lang)).find((p) => p !== undefined);
   if (fallback) links.push({ hreflang: 'x-default', path: fallback.path });
   return links;

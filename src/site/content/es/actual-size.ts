@@ -1,25 +1,25 @@
 // «Imprimir una imagen a tamaño real»: exact measures, and why printers change them.
 
+import { actualSizeFacts } from '../../facts/actual-size.ts';
 import { guide } from '../../guide.ts';
-import { app, editorHref, mm, paragraphs, size, steps, ui } from '../../kit.ts';
+import { app, paragraphs, steps, type Kit } from '../../kit.ts';
+import type { SitePage } from '../../types.ts';
 import { PATHS } from './paths.ts';
 
-export function actualSize() {
-  const layout = { margin: 5 };
-  const px = [1200, 1800];
-  const ppp = 300;
+export function actualSize({ ui, num, mm, size }: Kit): SitePage {
+  const f = actualSizeFacts();
   return guide({
     id: 'actual-size',
     lang: 'es',
-    path: PATHS.actualSize,
+    path: PATHS['actual-size'],
     title: `Imprimir una imagen a tamaño real, en cm o mm · ${app}`,
     description: 'Escribe el ancho y el alto que quieres en el papel y obtén un PDF con esa medida exacta. Gratis y en el navegador, sin instalar nada ni crear una cuenta.',
     h1: 'Imprimir una imagen a tamaño real',
     crumb: 'Imagen a tamaño real',
     lead: `Escribe la medida que quieres en el papel, en milímetros, centímetros o pulgadas, y ${app} crea un PDF con esa medida exacta. Al imprimirlo con «Tamaño real» o «100 %», la imagen sale como la definiste.`,
     ctas: [
-      { label: `Abrir ${app} con hoja A4`, href: editorHref({ paper: 'A4', ...layout }) },
-      { label: 'Abrir con hoja Carta', href: editorHref({ paper: 'letter', ...layout }) },
+      { label: `Abrir ${app} con hoja A4`, href: f.open.a4 },
+      { label: 'Abrir con hoja Carta', href: f.open.letter },
     ],
     sections: [
       {
@@ -42,7 +42,7 @@ export function actualSize() {
       {
         h2: `El botón ${ui('props.actual')}`,
         html: paragraphs(
-          `En ${ui('props.title')}, el botón ${ui('props.actual')} lleva la imagen a la medida que indica su propia resolución. Por ejemplo, una foto de ${px[0]} × ${px[1]} píxeles a ${ppp} ppp mide ${size((px[0] / ppp) * 25.4, (px[1] / ppp) * 25.4)}. Úsalo si la imagen ya trae la medida correcta, como un plano o un patrón escaneado.`
+          `En ${ui('props.title')}, el botón ${ui('props.actual')} lleva la imagen a la medida que indica su propia resolución. Por ejemplo, una foto de ${num(f.px.w)} × ${num(f.px.h)} píxeles a ${num(f.ppi)} ppp mide ${size(f.printed.w, f.printed.h)}. Úsalo si la imagen ya trae la medida correcta, como un plano o un patrón escaneado.`
         ),
       },
       {
@@ -65,7 +65,7 @@ export function actualSize() {
       { q: '¿Qué es ppp?', a: `Puntos por pulgada: cuántos píxeles de la imagen caben en cada pulgada impresa. Con pocos ppp, la imagen puede verse pixelada; ${app} avisa cuando la resolución es baja para la medida elegida.` },
       {
         q: '¿Por qué conviene dejar un margen?',
-        a: `Porque muchas impresoras no imprimen hasta el borde del papel, y lo que queda fuera de su área de impresión se corta. Cuánto margen hace falta depende de cada impresora: ${app} empieza con ${mm(layout.margin)} cuando lo abres desde esta página.`,
+        a: `Porque muchas impresoras no imprimen hasta el borde del papel, y lo que queda fuera de su área de impresión se corta. Cuánto margen hace falta depende de cada impresora: ${app} empieza con ${mm(f.layout.margin)} cuando lo abres desde esta página.`,
       },
     ],
   });
