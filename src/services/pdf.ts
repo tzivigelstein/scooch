@@ -12,10 +12,10 @@ import type { ImageAsset, PdfAsset } from './assets.ts';
 
 const PT_PER_MM = 72 / 25.4;
 
-/** What the PDF needs of an asset. */
+/** What the PDF needs of an asset (a PDF page's preview is embedded when the page can't be). */
 export type PdfSource =
   | Pick<ImageAsset, 'kind' | 'src' | 'format' | 'bytes' | 'w' | 'h'>
-  | Pick<PdfAsset, 'kind' | 'src' | 'page' | 'view' | 'pageRotation' | 'bytes' | 'url' | 'w' | 'h'>;
+  | Pick<PdfAsset, 'kind' | 'src' | 'page' | 'view' | 'pageRotation' | 'bytes' | 'preview' | 'w' | 'h'>;
 
 export interface PdfPiece {
   asset: PdfSource;
@@ -137,9 +137,9 @@ function embedder(doc: PdfLibDocument, lib: PdfLib) {
     return { page };
   };
 
-  // The preview already comes rotated as it should.
+  // The preview (a PNG) already comes rotated as it should.
   const embedPreview = async (asset: Extract<PdfSource, { kind: 'pdf' }>): Promise<Embedded> => {
-    const png = new Uint8Array(await (await fetch(asset.url)).arrayBuffer());
+    const png = new Uint8Array(await asset.preview.arrayBuffer());
     return { image: await doc.embedPng(png) };
   };
 

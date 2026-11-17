@@ -38,26 +38,22 @@ describe('exporting a page of an encrypted PDF', () => {
 
   test('falls back to the page’s preview image, drawn at the piece’s place, and says why in the console', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const url = URL.createObjectURL(new Blob([PREVIEW], { type: 'image/png' }));
-    const asset: PdfSource = { kind: 'pdf', src: 1, page: 1, pageRotation: 0, view: [0, 0, 200, 200], bytes: ENCRYPTED_PDF, url, w: 200 * MM, h: 200 * MM };
-    try {
-      const out = await buildPdf({ ...SHEET, pages: [{ pieces: [{ asset, x: 20, y: 30, scale: 50, r: 0, crop: null }] }], title: 't' });
-      const { kinds, text } = await firstPage(out);
-      expect(kinds).toEqual(['/Image']);
-      // 200 pt at 50 %: a 100 × 100 pt image whose top left corner is 20 mm from the left and 30 mm from the top.
-      // pdf-lib's drawImage: translate to the corner, (rotate), scale to the size, then draw.
-      const draw = /^q\n1 0 0 1 (\S+) (\S+) cm\n1 0 0 1 0 0 cm\n(\S+) 0 0 (\S+) 0 0 cm\n1 0 0 1 0 0 cm\n\/Image-\d+ Do\nQ$/.exec(text.trim());
-      expect(draw, text).not.toBeNull();
-      const [x, y, w, h] = draw!.slice(1).map(Number);
-      expect(w).toBeCloseTo(100, 3);
-      expect(h).toBeCloseTo(100, 3);
-      expect(x).toBeCloseTo(20 / MM, 3);
-      expect(y).toBeCloseTo((297 - 30) / MM - 100, 3);
-      expect(warn).toHaveBeenCalledOnce();
-      expect(String(warn.mock.calls[0][0])).toMatch(/could not be embedded as a vector/);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
+    const preview = new Blob([PREVIEW], { type: 'image/png' });
+    const asset: PdfSource = { kind: 'pdf', src: 1, page: 1, pageRotation: 0, view: [0, 0, 200, 200], bytes: ENCRYPTED_PDF, preview, w: 200 * MM, h: 200 * MM };
+    const out = await buildPdf({ ...SHEET, pages: [{ pieces: [{ asset, x: 20, y: 30, scale: 50, r: 0, crop: null }] }], title: 't' });
+    const { kinds, text } = await firstPage(out);
+    expect(kinds).toEqual(['/Image']);
+    // 200 pt at 50 %: a 100 × 100 pt image whose top left corner is 20 mm from the left and 30 mm from the top.
+    // pdf-lib's drawImage: translate to the corner, (rotate), scale to the size, then draw.
+    const draw = /^q\n1 0 0 1 (\S+) (\S+) cm\n1 0 0 1 0 0 cm\n(\S+) 0 0 (\S+) 0 0 cm\n1 0 0 1 0 0 cm\n\/Image-\d+ Do\nQ$/.exec(text.trim());
+    expect(draw, text).not.toBeNull();
+    const [x, y, w, h] = draw!.slice(1).map(Number);
+    expect(w).toBeCloseTo(100, 3);
+    expect(h).toBeCloseTo(100, 3);
+    expect(x).toBeCloseTo(20 / MM, 3);
+    expect(y).toBeCloseTo((297 - 30) / MM - 100, 3);
+    expect(warn).toHaveBeenCalledOnce();
+    expect(String(warn.mock.calls[0][0])).toMatch(/could not be embedded as a vector/);
   });
 
   test('the same page unencrypted stays a vector (no fallback)', async () => {
@@ -65,7 +61,7 @@ describe('exporting a page of an encrypted PDF', () => {
     const source = await PDFDocument.create();
     source.addPage([200, 200]).drawRectangle({ x: 10, y: 10, width: 50, height: 50 });
     const bytes = await source.save();
-    const asset: PdfSource = { kind: 'pdf', src: 2, page: 1, pageRotation: 0, view: [0, 0, 200, 200], bytes, url: 'blob:unused', w: 200 * MM, h: 200 * MM };
+    const asset: PdfSource = { kind: 'pdf', src: 2, page: 1, pageRotation: 0, view: [0, 0, 200, 200], bytes, preview: new Blob(), w: 200 * MM, h: 200 * MM };
     const out = await buildPdf({ ...SHEET, pages: [{ pieces: [{ asset, x: 20, y: 30, scale: 50, r: 0, crop: null }] }], title: 't' });
     expect((await firstPage(out)).kinds).toEqual(['/Form']);
     expect(warn).not.toHaveBeenCalled();
