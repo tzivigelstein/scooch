@@ -26,6 +26,7 @@ yarn playwright install chromium   # once, for the browser suites
 | `yarn typecheck` | TypeScript (src, tests and e2e), no emit |
 | `yarn build` | Production build in `dist/` |
 | `yarn size` | Gzip sizes of `dist/` against their budgets (`scripts/size-budgets.json`) |
+| `yarn ledger` | Checks that every row of `e2e/ledger.csv` has a destination and names a test that exists |
 | `yarn preview` | Serves `dist/` to try the build |
 
 [docs/testing.md](docs/testing.md) explains which layer a test belongs to,
