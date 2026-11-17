@@ -372,10 +372,30 @@ test.describe('the build', () => {
     });
     expect(thumb[0], 'the PDF was drawn by the worker').toBeGreaterThan(100);
     expect(thumb[1]).toBeGreaterThan(100);
-    expect(requests.filter((u) => /pdf-lib/.test(u)), 'pdf-lib not yet').toEqual([]);
+    // pdf-lib is loaded by the page (only when the export worker can't run)
+    // or by that worker, which nothing has started yet.
+    expect(requests.filter((u) => /pdf-lib|export\.worker/.test(u)), 'pdf-lib not yet, nor the export worker').toEqual([]);
 
+    // Firefox doesn't tell Playwright what a worker fetches itself (no request
+    // event, no route), only the worker's script. So the export worker says
+    // what it fetched, from a line added to its script: it runs once the
+    // worker's imports have loaded.
+    await page.context().route(/\/export\.worker-[\w-]+\.js$/, async (route) => {
+      const response = await route.fetch();
+      const report = "new BroadcastChannel('e2e:worker-fetched').postMessage(performance.getEntriesByType('resource').map((e) => e.name));";
+      await route.fulfill({ response, body: `${await response.text()}\n${report}` });
+    });
+    await page.evaluate(() => {
+      const w = window as unknown as { workerFetched: string[] };
+      w.workerFetched = [];
+      new BroadcastChannel('e2e:worker-fetched').onmessage = ({ data }) => w.workerFetched.push(...data);
+    });
     const { file } = await app.download();
-    expect(requests.some((u) => /pdf-lib-[\w-]+\.js$/.test(u)), 'exporting loads pdf-lib').toBe(true);
+    expect(requests.some((u) => /export\.worker-[\w-]+\.js$/.test(u)), 'exporting starts the export worker').toBe(true);
+    // Chromium and WebKit see the worker's request; Firefox and WebKit list it in the worker's resource timing.
+    await expect
+      .poll(async () => [...requests, ...(await page.evaluate(() => (window as unknown as { workerFetched: string[] }).workerFetched))].some((u) => /pdf-lib-[\w-]+\.js$/.test(u)), { message: 'exporting loads pdf-lib' })
+      .toBe(true);
     expect(readFileSync(file).subarray(0, 5).toString()).toBe('%PDF-');
   });
 
