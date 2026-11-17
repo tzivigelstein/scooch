@@ -2,7 +2,7 @@
 // what the control measures (a highlight: the margin, the gaps, a measure, the
 // cut lines, the grid, a piece or the ones a notice is about) or what
 // activating it would leave (a preview: ghosts of the pieces aligned,
-// distributed or copied). Worked out with the same functions the actions
+// distributed, copied or brought to a photo size). Worked out with the same functions the actions
 // apply, and never part of the document, the undo history or what is stored:
 // it goes when the control is left or activated, or with Esc
 // (hooks/usePreviewTriggers.ts).
@@ -16,11 +16,12 @@ import { getDocument, useDocument, type Piece } from './document.ts';
 import { getPrefs, usePrefs } from './prefs.ts';
 import { boxes, currentSheet, findItem, imageBoxOf, itemsOn, primaryItem, problemsById, selectedItem, selectedItems } from './selectors.ts';
 import { getView, useView } from './view.ts';
+import { photoSizePlan } from './actions/crop.ts';
 import { fillCopies, type NewIds } from './actions/layout.ts';
 import { alignPlan, distributePlan, duplicatePlan, lengthFieldValue, planPatches, primaryBox, type LengthField } from './actions/pieces.ts';
 
-/** What a control shows on the canvas (its `data-preview`; `data-preview-arg` says which piece, mode, axis…). */
-export type PreviewKind = 'margin' | 'gap' | 'x' | 'y' | 'width' | 'height' | 'cuts' | 'grid' | 'piece' | 'problems' | 'align' | 'distribute' | 'fill' | 'duplicate';
+/** What a control shows on the canvas (its `data-preview`; `data-preview-arg` says which piece, mode, axis, size…). */
+export type PreviewKind = 'margin' | 'gap' | 'x' | 'y' | 'width' | 'height' | 'cuts' | 'grid' | 'piece' | 'problems' | 'align' | 'distribute' | 'fill' | 'duplicate' | 'photoSize';
 
 export interface PreviewTrigger {
   kind: PreviewKind;
@@ -30,7 +31,11 @@ export interface PreviewTrigger {
 /** The previews of an action: activating it takes them away (a highlight stays while the control is used). */
 export const ACTION_PREVIEWS: ReadonlySet<PreviewKind> = new Set(['align', 'distribute', 'fill', 'duplicate']);
 
-/** A piece where an action would leave it. `blocked`: the action wouldn't apply (it would overlap or leave the sheet). */
+/**
+ * A piece where an action would leave it. `blocked`: the action wouldn't
+ * apply (it would overlap or leave the sheet), or a photo size would leave
+ * it off the sheet or on another piece.
+ */
 export interface Ghost {
   item: Piece;
   blocked: boolean;
@@ -55,13 +60,13 @@ export interface SheetPreview {
   gaps?: Rect[];
   /** Pieces pointed out (see Overlay.tone). */
   outlines?: Rect[];
-  /** Pieces an action would replace. */
+  /** Pieces an action would replace (or a photo size would change). */
   dimmed?: Rect[];
   /** What aligning goes against: its box and the line the pieces go to. */
   reference?: { box: Rect; line: Line };
   ghosts?: Ghost[];
   dimension?: Dimension;
-  /** Copies that would go to other sheets (or to sheets still to add). */
+  /** Copies (or pieces a photo size moves) that would go to other sheets, or to sheets still to add. */
   more?: number;
 }
 
@@ -203,6 +208,29 @@ function duplicateOverlay(times: number): Overlay | null {
   return { sheets };
 }
 
+/**
+ * An option of «Tamaño de foto» ('original' or a standard size): the pieces
+ * it changes dimmed, their ghosts with the new size where they would go
+ * (blocked when they would end up off the sheet or on another piece, or when
+ * the size is refused for them) and how many would move to other sheets.
+ */
+function photoSizeOverlay(id: string): Overlay | null {
+  const plan = photoSizePlan(id, madeUpIds().sheet);
+  if (!plan) return null;
+  const sheets = new Map<number, SheetPreview>();
+  const fresh = new Set(plan.sheets);
+  const blocked = new Set(plan.problems);
+  for (const item of plan.changed) {
+    const before = findItem(item.id)!;
+    const home = partOf(sheets, before.sheet);
+    (home.dimmed ??= []).push(rectOf(before));
+    if (item.sheet !== before.sheet) home.more = (home.more ?? 0) + 1;
+    if (!fresh.has(item.sheet)) (partOf(sheets, item.sheet).ghosts ??= []).push({ item, blocked: blocked.has(item.id) });
+  }
+  for (const item of plan.refused) (partOf(sheets, item.sheet).ghosts ??= []).push({ item, blocked: true });
+  return sheets.size ? { sheets } : null;
+}
+
 const PROBLEMS = new Set(['cut', 'pastMargin', 'overlap']);
 
 /** What `trigger` shows now, worked out from the stores (null: nothing to show). */
@@ -246,6 +274,8 @@ export function overlayFor({ kind, arg }: PreviewTrigger): Overlay | null {
       return fillOverlay();
     case 'duplicate':
       return duplicateOverlay(Math.floor(Number(arg) || 1));
+    case 'photoSize':
+      return arg ? photoSizeOverlay(arg) : null;
   }
   return null;
 }

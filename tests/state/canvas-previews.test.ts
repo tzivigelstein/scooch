@@ -9,8 +9,9 @@ import { getDocument, newItemId, resetIds, setDocument } from '../../src/state/d
 import { historyDepth } from '../../src/state/history.ts';
 import { setGrid, setUnit } from '../../src/state/prefs.ts';
 import { dims } from '../../src/state/selectors.ts';
-import { setView } from '../../src/state/view.ts';
+import { getView, setView } from '../../src/state/view.ts';
 import { COPIES_BUDGET, overlayFor, showPreview, usePreview, type Ghost, type Overlay, type SheetPreview } from '../../src/state/preview.ts';
+import { applyPhotoSize } from '../../src/state/actions/crop.ts';
 import { fillWithCopies } from '../../src/state/actions/layout.ts';
 import { alignSelection, distributeSelection, duplicate } from '../../src/state/actions/pieces.ts';
 import { fakeImage, fakeImageMm, piece, resetState } from '../support/state.ts';
@@ -220,10 +221,60 @@ describe('previews of actions: the ghosts are where activating puts the pieces',
     expect(overlayFor({ kind: 'duplicate', arg: String(fits + 1) })).toBeNull();
   });
 
+  test('«Tamaño de foto»: the piece dimmed and, with its new size, a ghost exactly where choosing that size puts it', () => {
+    const key = fakeImageMm(50, 50, { dpi: 254 });
+    resetState({ items: [piece(1, key, 80, 120), piece(2, key, 20, 20)], selection: [1] });
+    const before = getDocument().items[0];
+    const { dimmed, ghosts, more } = part(overlayFor({ kind: 'photoSize', arg: '10x15' }));
+    expect(dimmed).toEqual([{ x: 80, y: 120, w: 50, h: 50 }]);
+    expect(ghosts!.map((g) => g.blocked)).toEqual([false]);
+    expect(more).toBeUndefined();
+    applyPhotoSize('10x15');
+    const after = getDocument().items[0];
+    expect(after).not.toEqual(before);
+    expect(ghosts![0].item).toEqual(after);
+  });
+
+  test('«Tamaño de foto» that would leave the piece off the sheet, or that is refused for it: a blocked ghost; choosing does what it always did', () => {
+    const key = fakeImageMm(50, 50);
+    const tiny = fakeImageMm(5, 5, { src: 2, name: 'tiny.png' });
+    resetState({ items: [piece(1, key, 5, 120), piece(2, tiny, 150, 250)], selection: [1, 2] });
+    const { ghosts, dimmed } = part(overlayFor({ kind: 'photoSize', arg: '13x18' }));
+    expect(ghosts!.map((g) => [g.item.id, g.blocked])).toEqual([
+      [1, true],
+      [2, true],
+    ]);
+    expect(dimmed).toHaveLength(1); // the refused one doesn’t change
+    applyPhotoSize('13x18');
+    expect(getDocument().items[0]).toEqual(ghosts![0].item);
+    expect(getDocument().items[1].scale).toBe(100);
+    expect(getView().flash).toMatchObject({ warn: true });
+  });
+
+  test('«Tamaño de foto» with no room left on its sheet: no ghost for a sheet still to add, but a count of the pieces going to other sheets', () => {
+    const key = fakeImageMm(50, 50, { dpi: 254 });
+    resetState({ items: [piece(1, key, 20, 20), piece(2, key, 80, 120)], selection: [1] });
+    const overlay = overlayFor({ kind: 'photoSize', arg: '15x20' })!;
+    expect([...overlay.sheets.keys()]).toEqual([1]);
+    expect(part(overlay)).toEqual({ dimmed: [{ x: 20, y: 20, w: 50, h: 50 }], more: 1 });
+  });
+
+  test('«Tamaño de foto» without an option, with the size the pieces already have or with no selection: nothing', () => {
+    const key = fakeImageMm(50, 50);
+    resetState({ items: [piece(1, key, 80, 120)], selection: [1] });
+    expect(overlayFor({ kind: 'photoSize' })).toBeNull();
+    expect(overlayFor({ kind: 'photoSize', arg: 'original' })).toBeNull();
+    applyPhotoSize('10x15');
+    expect(overlayFor({ kind: 'photoSize', arg: '10x15' })).toBeNull();
+    setDocument({ selection: [] });
+    expect(overlayFor({ kind: 'photoSize', arg: '9x13' })).toBeNull();
+  });
+
   test('while something loads, no action shows what it would do (it wouldn’t run); highlights still show', () => {
     three([1, 2]);
     setDocument({ busy: true });
     for (const kind of ['align', 'distribute', 'fill', 'duplicate'] as const) expect(overlayFor({ kind, arg: kind === 'align' ? 'left' : kind === 'distribute' ? 'x' : '1' }), kind).toBeNull();
+    expect(overlayFor({ kind: 'photoSize', arg: '10x15' })).toBeNull();
     expect(overlayFor({ kind: 'margin' })).not.toBeNull();
   });
 
@@ -236,6 +287,7 @@ describe('previews of actions: the ghosts are where activating puts the pieces',
     for (const kind of ['margin', 'gap', 'x', 'cuts', 'grid', 'piece', 'problems', 'fill', 'duplicate'] as const) overlayFor({ kind, arg: kind === 'piece' ? '1' : kind === 'problems' ? 'cut' : '3' });
     overlayFor({ kind: 'align', arg: 'left' });
     overlayFor({ kind: 'distribute', arg: 'x' });
+    overlayFor({ kind: 'photoSize', arg: '20x30' });
     expect(getDocument()).toMatchObject({ items, sheets, selection });
     expect(newItemId()).toBe(next);
     expect(historyDepth()).toEqual(history);
