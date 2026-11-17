@@ -195,10 +195,12 @@ A few rules shape the code:
   `Stage.tsx`). Cascade layers, declared once in `src/styles/index.css`, fix
   the order, so the order stylesheets load in can't change the result. Parts
   that load later bring their own stylesheet.
-- Stored formats are frozen: the project document is at version 6, and any
-  change to it, or to what IndexedDB and localStorage keep, comes with a new
-  version and a migration. [CONTRIBUTING.md](CONTRIBUTING.md#stored-formats-are-frozen)
-  has the details.
+- Stored formats are frozen: every version of the project document ever
+  saved keeps opening (`DOC_VERSION` in `src/core/projectdoc.js`, with a test
+  fixture per version), and any change to it, or to what IndexedDB and
+  localStorage keep, comes with a new version and a migration.
+  [CONTRIBUTING.md](CONTRIBUTING.md#stored-formats-are-frozen) has the
+  details.
 
 ### Tests
 
