@@ -205,6 +205,16 @@ export class App {
     await expect(this.page.locator('#pos-x')).toBeVisible();
   }
 
+  /** Chooses a size in «Tamaño de foto» for the selected pieces with the pointer, and waits until the control shows it. */
+  async choosePhotoSize(size: string) {
+    await this.openMeasures();
+    const control = this.page.locator('#photo-size');
+    await control.click();
+    await this.page.locator(`#photo-size-list [role="option"]#photo-size-${size}`).click();
+    await expect(control).toHaveAttribute('data-value', size);
+    await expect(control).toHaveAttribute('aria-expanded', 'false');
+  }
+
   /** Shows a document setting (paper, gap, overlap, grid…): the Proyecto tab, with its section open. */
   async openSetting(selector: string) {
     const field = this.page.locator(selector);

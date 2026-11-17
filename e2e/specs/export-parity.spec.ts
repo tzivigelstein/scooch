@@ -39,8 +39,7 @@ test.describe('the PDF matches the sheet on screen', () => {
     await app.addFiles(['big.png']);
     const [id] = await app.ids();
     await app.piece(id).focus();
-    await app.openMeasures();
-    await page.locator('#photo-size').selectOption('10x15');
+    await app.choosePhotoSize('10x15');
     await app.piece(id).focus();
     await page.keyboard.press('r');
     await cropWithKeys(app, id, ['+', '+', 'Shift+ArrowLeft']);

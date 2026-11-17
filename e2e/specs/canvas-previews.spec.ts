@@ -1,7 +1,8 @@
 // What a hovered or focused control shows on the sheets, in a real browser: the
 // overlay comes with the hover or the keyboard focus and goes when the control
 // is left, it never takes the pointer, activating applies exactly what it
-// previewed, a touch shows nothing, and «Imán» shows its grid while dragging.
+// previewed (also an option of «Tamaño de foto», hovered or reached with the
+// arrows), a touch shows nothing, and «Imán» shows its grid while dragging.
 // What each control shows, exactly, is tested on the stores
 // (tests/state/canvas-previews.test.ts), how it is drawn in
 // tests/components/preview-layer.test.tsx and which control shows it in
@@ -75,6 +76,70 @@ test.describe('the canvas shows what a control does', () => {
     expect(copies).toEqual(ghosts);
   });
 
+  test('hovering an option of «Tamaño de foto» shows the piece at that size; moving away clears it; clicking it puts the piece exactly there', async ({ app, page }) => {
+    await app.addFiles(tiles(0, 2));
+    const [id] = await app.ids();
+    await app.setPosition(id, 60, 80);
+    const control = page.locator('#photo-size');
+    await control.click();
+    await expect(page.locator('#photo-size-list')).toBeVisible();
+    await expect(page.locator('.preview')).toHaveCount(0);
+    const option = page.locator('#photo-size-10x15');
+    await option.hover();
+    const ghost = page.locator('.preview-ghost');
+    await expect(ghost).toHaveCount(1);
+    await expect(ghost).not.toHaveClass(/is-blocked/);
+    await expect(page.locator('.preview-dimmed')).toHaveCount(1);
+    const where = await boxOf(ghost);
+    expect(where).not.toEqual(await boxOf(app.piece(id)));
+    await away(page);
+    await expect(page.locator('.preview')).toHaveCount(0);
+    await expect(control).toHaveAttribute('aria-expanded', 'true');
+    await option.hover();
+    await expect(ghost).toHaveCount(1);
+    await option.click();
+    // The pointer now rests on what the list covered, which may show its own preview: not this one.
+    await expect(page.locator('.preview-dimmed')).toHaveCount(0);
+    await expect(control).toHaveAttribute('data-value', '10x15');
+    await expect.poll(() => boxOf(app.piece(id))).toEqual(where);
+  });
+
+  test('from the keyboard: the option of «Tamaño de foto» reached with the arrows shows its ghost; Esc takes it away and keeps the focus; opened again, Enter puts the piece exactly there', async ({ app, page }) => {
+    await app.addFiles(tiles(0, 2));
+    const [id] = await app.ids();
+    await app.setPosition(id, 60, 80);
+    const before = await boxOf(app.piece(id));
+    const control = page.locator('#photo-size');
+    const ghost = page.locator('.preview-ghost');
+    await away(page);
+    await control.focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(control).toHaveAttribute('aria-expanded', 'true');
+    await expect(control).toHaveAttribute('aria-activedescendant', 'photo-size-original');
+    await expect(page.locator('.preview')).toHaveCount(0);
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await expect(control).toHaveAttribute('aria-activedescendant', 'photo-size-10x15');
+    await expect(ghost).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(control).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('.preview')).toHaveCount(0);
+    await expect(control).toBeFocused();
+    expect(await boxOf(app.piece(id))).toEqual(before);
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('End');
+    await page.keyboard.press('Home');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await expect(ghost).toHaveCount(1);
+    const where = await boxOf(ghost);
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.preview')).toHaveCount(0);
+    await expect(control).toBeFocused();
+    await expect(control).toHaveAttribute('data-value', '10x15');
+    await expect.poll(() => boxOf(app.piece(id))).toEqual(where);
+  });
+
   test('hovering a row of the list outlines its piece, without selecting it or scrolling', async ({ app, page }) => {
     await app.addFiles(tiles(0, 3));
     const [a, b] = await app.ids();
@@ -125,6 +190,26 @@ test.describe('the canvas shows what a control does', () => {
       await fingers.press({ 1: { x: r.x + r.width / 2, y: r.y + r.height / 2 } });
       await fingers.lift();
       await expect(page.locator('#margin')).toBeFocused();
+      await frames(page);
+      await expect(page.locator('.preview')).toHaveCount(0);
+    });
+
+    test('tapping «Tamaño de foto» and then an option chooses it, with nothing shown on the canvas', async ({ app, page, browserName }) => {
+      test.skip(browserName !== 'chromium', 'the touch goes through the Chrome DevTools Protocol (Input.dispatchTouchEvent), which only Chromium has');
+      await app.addFiles(tiles(0, 1));
+      const [id] = await app.ids();
+      await app.setPosition(id, 60, 80);
+      const fingers = await Fingers.on(page);
+      const tap = async (target: Locator) => {
+        const r = (await target.boundingBox())!;
+        await fingers.press({ 1: { x: r.x + r.width / 2, y: r.y + r.height / 2 } });
+        await fingers.lift();
+      };
+      await tap(page.locator('#photo-size'));
+      await expect(page.locator('#photo-size-list')).toBeVisible();
+      await tap(page.locator('#photo-size-10x15'));
+      await expect(page.locator('#photo-size')).toHaveAttribute('data-value', '10x15');
+      await expect(page.locator('#photo-size-list')).toBeHidden();
       await frames(page);
       await expect(page.locator('.preview')).toHaveCount(0);
     });

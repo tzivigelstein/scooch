@@ -36,9 +36,7 @@ const pieceOf = async (app: App, id: number) => (await app.geometry()).pieces.fi
 
 async function photoSize(app: App, id: number, size: string) {
   await app.piece(id).focus();
-  await app.openMeasures();
-  await app.page.locator('#photo-size').selectOption(size);
-  await expect(app.page.locator('#photo-size')).toHaveValue(size);
+  await app.choosePhotoSize(size);
 }
 
 test.describe('crop mode', () => {
@@ -163,7 +161,7 @@ test.describe('crop mode', () => {
     expect(Math.abs(piece.h - 101.6)).toBeLessThanOrEqual(TOL);
     // A tighter crop: the whole image is now clearly wider than the piece.
     expect((await cropRatio(page, id))[0]).toBeGreaterThan(1.05);
-    await expect(page.locator('#photo-size')).toHaveValue('10x15');
+    await expect(page.locator('#photo-size')).toHaveAttribute('data-value', '10x15');
   });
 
   test('Ctrl+E while cropping applies the crop first: that PDF has it, the same as downloading again afterwards', async ({ app, page }) => {
@@ -228,5 +226,5 @@ test('a photo size from the select on a rotated piece: the size and the select a
   expect(piece.r).toBe(r);
   expect(Math.abs(piece.w - 101.6)).toBeLessThanOrEqual(TOL);
   expect(Math.abs(piece.h - 152.4)).toBeLessThanOrEqual(TOL);
-  await expect(page.locator('#photo-size')).toHaveValue('10x15');
+  await expect(page.locator('#photo-size')).toHaveAttribute('data-value', '10x15');
 });

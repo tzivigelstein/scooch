@@ -12,7 +12,7 @@
      base        the reset and the elements' defaults
      primitives  the buttons and form controls every area shares
      ui          the shared components of src/components/ui: dialogs, menus,
-                 segmented controls, switches, tabs, sections
+                 selects, segmented controls, switches, tabs, sections
      layout      the app's shell: the workspace, the side panels, the canvas
      components  what belongs to one component
      overrides   printing and the system's preferences (reduced motion,

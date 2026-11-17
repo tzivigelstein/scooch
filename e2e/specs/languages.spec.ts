@@ -1,7 +1,7 @@
 // Each language other than Spanish, in a real browser that speaks it
 // (navigator.languages, so «Automático» picks it): the page is in it before
 // the app's script runs, only its texts download, and the key screens (the
-// top bar, both tabs, Preferences, the shortcuts, the palette, the summary
+// top bar, both tabs, the list of photo sizes, Preferences, the shortcuts, the palette, the summary
 // after downloading and a usage tip) show no Spanish, scroll nothing sideways and cut no
 // control's text, at 1440 and 390 px; axe finds nothing in one state. And
 // choosing a language in Preferences, once, end to end. The rest of the suite
@@ -60,7 +60,7 @@ const readWords = (words: string[]) => {
 const readCutOff = () => {
   const out: string[] = [];
   const name = (el: Element) => `${el.id ? `#${el.id}` : el.tagName.toLowerCase()}${[...el.classList].map((c) => `.${c}`).join('')} «${(el.textContent ?? '').trim().slice(0, 40)}»`;
-  const controls = document.querySelectorAll('.topbar button, .panel button, .panel select, .panel input, .panel .seg > span, dialog[open] button, dialog[open] select, dialog[open] input, dialog[open] .seg > span, [role="menu"] [role^="menuitem"]');
+  const controls = document.querySelectorAll('.topbar button, .panel button, .panel select, .panel [role="combobox"], .panel input, .panel .seg > span, dialog[open] button, dialog[open] select, dialog[open] input, dialog[open] .seg > span, [role="menu"] [role^="menuitem"], .select-list [role="option"]');
   for (const el of controls) {
     const r = el.getBoundingClientRect();
     if (r.width < 2 || r.height < 2 || el.closest('[hidden], dialog:not([open])')) continue;
@@ -94,6 +94,11 @@ async function walkScreens(app: App, language: Language) {
   await app.selectIds([1]);
   await app.openMeasures();
   await checkScreen(page, language, 'the item tab');
+  await page.locator('#photo-size').click();
+  await expect(page.locator('#photo-size-list')).toBeVisible();
+  await checkScreen(page, language, 'the photo size list');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#photo-size-list')).toBeHidden();
   await app.closePopover();
   await app.showTab('project');
   await checkScreen(page, language, 'the project tab');

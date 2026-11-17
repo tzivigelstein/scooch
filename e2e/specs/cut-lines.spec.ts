@@ -120,9 +120,7 @@ test('the cut lines, their stroke and margin, and the crops are saved with the p
   const [image, pdf] = await app.ids();
   for (const [id, size] of [[image, 'id-4x4'], [pdf, '9x13']] as const) {
     await app.piece(id).focus();
-    await app.openMeasures();
-    await page.locator('#photo-size').selectOption(size);
-    await expect(page.locator('#photo-size')).toHaveValue(size);
+    await app.choosePhotoSize(size);
   }
   await page.locator('#arrange').click();
   await chooseCuts(app, 'outline');

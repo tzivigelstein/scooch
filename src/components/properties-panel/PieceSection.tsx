@@ -80,6 +80,7 @@ import { Icon } from '../ui/Icon.tsx';
 import { LengthField, type LengthFieldHandle } from '../ui/LengthField.tsx';
 import { NumberField } from '../ui/NumberField.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
+import { Select, type SelectOption } from '../ui/Select.tsx';
 import { announce } from '../feedback/announcer.ts';
 import { startCrop } from '../canvas/cropMode.ts';
 import '../ui/Section.css';
@@ -107,6 +108,18 @@ function resolution(item: Piece) {
 }
 
 const PHOTO_GROUPS = ['print', 'id', 'instant'] as const;
+
+/** «Tamaño de foto»: «Original», then the standard sizes in their groups, in the chosen unit. */
+const photoOptions = (): SelectOption[] => [
+  { value: 'original', label: t('crop.original') },
+  ...PHOTO_GROUPS.flatMap((group) =>
+    PHOTO_SIZES.filter((size) => size.group === group).map((size) => ({
+      value: size.id,
+      label: t('crop.option', { name: photoSizeName(size.id), size: sizeText(size.w, size.h) }),
+      group: t(`crop.groups.${group}`),
+    }))
+  ),
+];
 
 const ALIGN_COMMANDS = { left: 'alignLeft', centerX: 'alignCenterX', right: 'alignRight', top: 'alignTop', centerY: 'alignCenterY', bottom: 'alignBottom' } as const satisfies Record<AlignMode, UsageId>;
 
@@ -374,32 +387,21 @@ export function PieceSection() {
           <strong id="rotation-angle">{t('props.rotated', { deg: single?.r ?? 90 })}</strong>
         </p>
         <div className="photo-row">
-          <label className="field">
-            <span className="field-label">{t('crop.size')}</span>
-            <select
+          <div className="field">
+            <span id="photo-size-label" className="field-label">
+              {t('crop.size')}
+            </span>
+            <Select
               id="photo-size"
+              labelledBy="photo-size-label"
               value={photoValue}
+              valueLabel={photoValue === 'mixed' ? t('crop.mixed') : photoValue === 'custom' ? t('crop.custom') : undefined}
+              options={photoOptions()}
+              onChange={applyPhotoSize}
+              looking={(size) => previewAttrs('photoSize', size)}
               disabled={busyOff(busy, '#photo-size')}
-              onChange={(e) => applyPhotoSize(e.target.value)}
-            >
-              <option value="mixed" hidden disabled>
-                {t('crop.mixed')}
-              </option>
-              <option value="original">{t('crop.original')}</option>
-              <option value="custom" hidden disabled>
-                {t('crop.custom')}
-              </option>
-              {PHOTO_GROUPS.map((groupId) => (
-                <optgroup key={groupId} label={t(`crop.groups.${groupId}`)}>
-                  {PHOTO_SIZES.filter((size) => size.group === groupId).map((size) => (
-                    <option key={size.id} value={size.id}>
-                      {t('crop.option', { name: photoSizeName(size.id), size: sizeText(size.w, size.h) })}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </label>
+            />
+          </div>
           <Button
             id="crop-start"
             className="chip-btn icon-chip"

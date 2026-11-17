@@ -595,9 +595,18 @@ flow('canvas tools in the properties panel', [DESKTOP, MEDIUM, PHONE, WIDE], asy
   await app.selectIds([ids[4]]);
   await focusPiece(app.piece(ids[4]));
   await tab('piece');
-  await page.locator('#photo-size').focus();
+  const photoSize = page.locator('#photo-size');
+  await photoSize.focus();
   await c.state('photo size select');
-  await page.locator('#photo-size').selectOption('10x15');
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('#photo-size-list')).toBeVisible();
+  await c.state('photo size list open');
+  await page.keyboard.press('c');
+  await expect(photoSize).toHaveAttribute('aria-activedescendant', 'photo-size-id-4x4');
+  await expect(page.locator('.preview-ghost')).toHaveCount(1);
+  await c.state('photo size list previewing an option');
+  await page.keyboard.press('Enter');
+  await expect(photoSize).toHaveAttribute('data-value', 'id-4x4');
   await closeSheet();
 
   await focusPiece(app.piece(ids[4]));

@@ -129,10 +129,10 @@ export const readLayout = (): Layout => {
   //      1 the app's chrome (top bar, columns, the zoom control, the dock);
   //      2 the notice and the selection's toolbar, floating over the canvas;
   //      3 a panel sliding over everything (the drawer, the bottom sheet);
-  //      4 menus and tooltips.
+  //      4 menus, the lists of selects and tooltips.
   //    A higher layer may cover a lower one, except: the notice or the toolbar
   //    over the chrome (they must stay clear of the zoom control and the dock),
-  //    a menu over the control that opened it, and the chrome over canvas
+  //    a menu or a list over the control that opened it, and the chrome over canvas
   //    content that can't be scrolled out from under it. In one layer, two
   //    controls may only meet when one is pinned (sticky/fixed) over content
   //    that scrolls beneath it and can be scrolled clear.
@@ -146,7 +146,7 @@ export const readLayout = (): Layout => {
   const modal = [...document.querySelectorAll('dialog')].filter((d) => d.matches(':modal')).at(-1) ?? null;
   type Box = { el: Element; x0: number; y0: number; x1: number; y1: number; layer: number; group: Element | null };
   const layerOf = (el: Element): [number, Element | null] => {
-    const popup = el.closest('[role="menu"], [role="tooltip"]');
+    const popup = el.closest('[role="menu"], [role="tooltip"], .select-list');
     if (popup) return [4, popup];
     const panel = el.closest('.panel');
     if (panel && ['fixed', 'absolute'].includes(style(panel).position)) return [3, panel];
@@ -169,6 +169,8 @@ export const readLayout = (): Layout => {
       y0 = Math.max(y0, c.top);
       x1 = Math.min(x1, c.right);
       y1 = Math.min(y1, c.bottom);
+      // A popover in the top layer isn't clipped by what holds it.
+      if (a.matches(':popover-open')) break;
     }
     const [layer, group] = layerOf(el);
     return x1 - x0 > 1 && y1 - y0 > 1 ? { el, x0, y0, x1, y1, layer, group } : null;
@@ -214,7 +216,7 @@ export const readLayout = (): Layout => {
     if (low.layer === high.layer && low.group === high.group) return scrollsClear(low.el, high.el) || scrollsClear(high.el, low.el);
     if (low.layer === high.layer) return false; // two different popups, or the notice and the toolbar
     if (high.layer === 4) {
-      const id = high.group?.getAttribute('role') === 'menu' ? high.group.id : '';
+      const id = ['menu', 'listbox'].includes(high.group?.getAttribute('role') ?? '') ? high.group!.id : '';
       return !id || !(low.el.getAttribute('aria-controls') === id || low.el.querySelector(`[aria-controls="${id}"]`));
     }
     if (high.layer === 3) return true;
