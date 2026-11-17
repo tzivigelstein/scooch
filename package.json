@@ -20,6 +20,7 @@
     "e2e": "playwright test",
     "ledger": "node e2e/scripts/check-ledger.mjs",
     "size": "node scripts/check-size.mjs",
+    "screenshots": "node scripts/screenshots.mjs",
     "typecheck": "tsc && tsc -p e2e",
     "verify": "yarn typecheck && yarn test && yarn build && yarn size && yarn e2e && yarn ledger"
   },
