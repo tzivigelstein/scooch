@@ -6,7 +6,8 @@
 // The gestures are dispatched inside the page, so each move's handler time is
 // measured on its own; frames are the gaps between animation frames, and long
 // tasks come from the browser's PerformanceObserver.
-// And tracing a large image's contour cut line, which must not block the page.
+// And tracing a large image's contour cut line, and building the PDF of the
+// 150 pieces, neither of which may block the page.
 // The titles give the budgets as they apply locally; CI scales every clock
 // budget, the long-task threshold too, by E2E_TIME_FACTOR (support/timing.ts).
 import { expect, test, tiles, type App } from '../support/test.ts';
@@ -324,6 +325,41 @@ test.describe('with 150 pieces on 10 sheets', () => {
     expect(hover.left, 'gone once the pointer is elsewhere').toBe(0);
     expect(hover.frameP95).toBeLessThan(budget(34));
     expect(long(hover.longs)).toEqual([]);
+  });
+
+  test('downloading the PDF of the 150 pieces (150 PNGs to embed), from the click until it downloads: no long tasks', async ({ app, page }, info) => {
+    await page.evaluate(() => {
+      const w = window as unknown as { longs: number[]; gaps: number[]; observer: PerformanceObserver; measuring: boolean };
+      w.longs = [];
+      w.gaps = [];
+      w.measuring = true;
+      w.observer = new PerformanceObserver((l) => w.longs.push(...l.getEntries().map((e) => e.duration)));
+      w.observer.observe({ entryTypes: ['longtask'] });
+      let last = performance.now();
+      const frame = () => {
+        const now = performance.now();
+        w.gaps.push(now - last);
+        last = now;
+        if (w.measuring) requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    });
+    const started = Date.now();
+    const { info: pdf } = await app.downloadPdf();
+    const ms = Date.now() - started;
+    const exported = await page.evaluate(async () => {
+      const w = window as unknown as { longs: number[]; gaps: number[]; observer: PerformanceObserver; measuring: boolean };
+      // A long task is reported when it ends, before the next frames: after two,
+      // its entry is in the observer's buffer, and takeRecords() collects it.
+      await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+      w.measuring = false;
+      w.longs.push(...w.observer.takeRecords().map((e) => e.duration));
+      w.observer.disconnect();
+      return { longs: w.longs, frames: w.gaps.length, frameMax: Math.max(...w.gaps) };
+    });
+    await attach(info, { ...exported, ms, pages: pdf.pages.length });
+    expect(pdf.pages.map((p) => p.xobjects), 'a page per sheet, its 15 pieces on it').toEqual(Array(10).fill(15));
+    expect(long(exported.longs)).toEqual([]);
   });
 
   test('dragging at 200 % and out of the sheets (where the new-sheet placeholders show): each move < 1 ms (p95), no long tasks', async ({ page }, info) => {
