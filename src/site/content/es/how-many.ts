@@ -50,7 +50,7 @@ export function howMany(k: Kit): SitePage {
     lang: 'es',
     path: PATHS['how-many'],
     title: `¿Cuántas fotos caben en una hoja? Calculadora · ${app}`,
-    description: `Calcula cuántas fotos de 10 × 15, carnet, pasaporte u otra medida caben en una hoja A4, Carta u Oficio con tus márgenes, y abre la hoja en el editor.`,
+    description: `Calcula cuántas fotos de ${photoName('10x15')}, carnet, pasaporte u otra medida caben en una hoja A4, Carta u Oficio con tus márgenes, y abre la hoja en el editor.`,
     h1: '¿Cuántas fotos caben en una hoja?',
     crumb: 'Cuántas fotos caben en una hoja',
     lead: `Elige el papel, la medida de las fotos, el margen y la separación. La calculadora usa el mismo método que el botón ${ui('bar.arrange')} de ${app}, así que el número es el que vas a obtener en el editor.`,
