@@ -150,9 +150,9 @@ on. Projects saved in someone's browser must keep opening.
   lives under `STORAGE_NAMESPACE` (`src/config.ts`).
   - IndexedDB: a change to the stores or to the shape of their rows needs a
     new `DB_VERSION` in `src/services/storage/idb.ts`, which reads the earlier
-    layouts and converts them (its header describes each one). The layout is
-    at version 3: every binary is stored once, as bytes and a media type,
-    never as a Blob, which WebKit can't store in a private window.
+    layouts and converts them (its header describes each one). Since layout
+    3, every binary is stored once, as bytes and a media type, never as a
+    Blob, which WebKit can't store in a private window.
   - localStorage: renaming a key or changing what it holds needs a migration.
     The stored preferences are versioned and read in `src/core/storedprefs.js`
     (`{v: 1, …}`), and `src/services/storage/migrate.ts` moves the keys the
