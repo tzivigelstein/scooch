@@ -283,4 +283,21 @@ test.describe('downloading', () => {
     const info = await pdfInfo((await download.path())!);
     expect(info.pages.map(({ w, h, xobjects }) => ({ w, h, xobjects }))).toEqual([{ w: 210, h: 297, xobjects: 3 }]);
   });
+
+  test.describe('when the worker that builds the PDF can’t load', () => {
+    // One pattern: Playwright reads an array whose second item is an object (a RegExp is) as [value, options].
+    test.use({ allowErrors: [/^The PDF worker stopped; building the PDF in the page\.|^requestfailed: .*\/assets\/export\.worker-[\w-]+\.js |^Failed to load resource/] });
+
+    test('the page builds it instead: «Descargar» downloads it, every piece on its page', async ({ app, page, consoleErrors }) => {
+      await page.context().route(/\/export\.worker-[\w-]+\.js$/, (route) => route.abort());
+      await app.addFiles(['small.jpg', 'twopage.pdf', 'rotated.pdf']);
+      await page.locator('#export').click();
+      await expect(advice(page)).toHaveAttribute('open', '');
+      const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#print-tip-go').click()]);
+      expect(download.suggestedFilename()).toBe('scooch-a4.pdf');
+      const info = await pdfInfo((await download.path())!);
+      expect(info.pages.map(({ w, h, xobjects }) => ({ w, h, xobjects }))).toEqual([{ w: 210, h: 297, xobjects: 3 }]);
+      expect(consoleErrors, 'the page built it: the worker didn’t load').toContainEqual(expect.stringMatching(/^The PDF worker stopped; building the PDF in the page\. /));
+    });
+  });
 });
