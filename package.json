@@ -1,7 +1,12 @@
 {
   "name": "scooch",
   "private": true,
-  "license": "SEE LICENSE IN LICENSE",
+  "description": "Arrange images and PDF pages on sheets of paper at real size, and print or download the PDF. Runs in the browser; nothing is uploaded.",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tzivigelstein/scooch.git"
+  },
   "type": "module",
   "packageManager": "yarn@1.22.22",
   "engines": {
