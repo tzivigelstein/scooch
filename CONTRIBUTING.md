@@ -147,9 +147,16 @@ on. Projects saved in someone's browser must keep opening.
   `tests/core/documents.test.js` opens every fixture and fails when a shape
   changes without a new version.
 - The same goes for what is kept in IndexedDB and localStorage: everything
-  lives under `STORAGE_NAMESPACE` (`src/config.ts`), and renaming a key or
-  changing what it holds needs a migration (see
-  `src/services/storage/migrate.ts`).
+  lives under `STORAGE_NAMESPACE` (`src/config.ts`).
+  - IndexedDB: a change to the stores or to the shape of their rows needs a
+    new `DB_VERSION` in `src/services/storage/idb.ts`, which reads the earlier
+    layouts and converts them (its header describes each one). The layout is
+    at version 3: every binary is stored once, as bytes and a media type,
+    never as a Blob, which WebKit can't store in a private window.
+  - localStorage: renaming a key or changing what it holds needs a migration.
+    The stored preferences are versioned and read in `src/core/storedprefs.js`
+    (`{v: 1, …}`), and `src/services/storage/migrate.ts` moves the keys the
+    app wrote under its former name.
 - Reading is tolerant: an optional setting that is missing or can't be read
   takes its default and out-of-range numbers are clamped (`repair`). Only a
   document that can't be interpreted is shown as damaged.
