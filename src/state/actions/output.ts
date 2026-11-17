@@ -1,6 +1,7 @@
 // Download and print the PDF. The PDF starts right away; meanwhile the advice
 // on printing at real size shows (unless turned off), and its button is the
-// gesture that prints or downloads. Once the person is back (the print dialog
+// gesture that prints or downloads; closed any other way, the PDF stops being
+// made. Once the person is back (the print dialog
 // closed, the download started), the summary of what the PDF saves shows
 // (unless turned off), with the request for a donation folded in, and the
 // focus goes back to whoever started it when it closes. Before all that, a
@@ -107,9 +108,14 @@ async function sendOut(kind: OutputKind) {
   closeSummary();
   const fileName = pdfFileName();
   const key = pdfContentKey();
-  const job = makePdf();
+  const unwanted = new AbortController();
+  const job = makePdf(unwanted.signal);
   job.catch(() => {}); // handled once it is needed
-  if (shouldShowTip() && !(await askTip(kind))) return;
+  if (shouldShowTip() && !(await askTip(kind))) {
+    // Closed without printing or downloading: the PDF stops being made.
+    unwanted.abort();
+    return;
+  }
   const pdf = await finished(job, t(kind === 'print' ? 'busy.print' : 'busy.pdf'));
   if (!pdf) return;
   setBusy(false);

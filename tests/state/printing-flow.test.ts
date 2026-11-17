@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // Printing and downloading (output.ts), with the PDF, the browser and the
 // advice dialog faked: the PDF starts before the advice shows and goes out in
-// the click of its button; closing it otherwise sends nothing; turned off, it
+// the click of its button; closing it otherwise sends nothing and stops the
+// PDF; turned off, it
 // goes straight out; nothing else exports meanwhile; a crop in progress is
 // applied before the PDF starts. What each way of printing says (no tip any
 // more: the advice gave it), and the summary once the person is back, with
@@ -94,6 +95,24 @@ describe('the advice before printing', () => {
     expect(downloadFile).not.toHaveBeenCalled();
     expect(getView().flash).toBeNull();
     expect(usePrintSummary.getState().summary).toBeNull();
+  });
+
+  test('closed any other way, the PDF being made stops; printing or downloading lets it finish', async () => {
+    const signal = (call: number) => vi.mocked(makePdf).mock.calls[call][0]!;
+    for (const [run, go] of [
+      [printPdf, false],
+      [exportPdf, false],
+      [printPdf, true],
+      [exportPdf, true],
+    ] as const) {
+      const going = run();
+      await settle();
+      const asked = vi.mocked(makePdf).mock.calls.length - 1;
+      expect(signal(asked).aborted).toBe(false);
+      tip.answer!(go);
+      await going;
+      expect(signal(asked).aborted).toBe(!go);
+    }
   });
 
   test('downloading shows it too, and downloads in the click of «Descargar»', async () => {

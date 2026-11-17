@@ -18,8 +18,8 @@ import { piece, resetState } from '../support/state.ts';
 const fixture = (name: string) => new Uint8Array(readFileSync(resolve(import.meta.dirname, '../../e2e/fixtures', name)));
 const MM_PER_PT = 25.4 / 72;
 
-/** How the stand-in answers: as the worker does, by failing to run, or with a reply that can't be read. */
-type Answer = 'build' | 'crash' | 'unreadable';
+/** How the stand-in answers: as the worker does, by failing to run, with a reply that can't be read, or not yet. */
+type Answer = 'build' | 'crash' | 'unreadable' | 'hold';
 
 class FakeWorker {
   onmessage: ((event: MessageEvent<PdfReply>) => void) | null = null;
@@ -40,6 +40,7 @@ class FakeWorker {
     await Promise.resolve();
     if (this.answer === 'crash') return this.onerror?.({ message: 'Uncaught RangeError: out of memory', preventDefault() {} } as ErrorEvent);
     if (this.answer === 'unreadable') return this.onmessageerror?.({} as MessageEvent);
+    if (this.answer === 'hold') return;
     const reply = await pdfReply(lib, job);
     if (!this.terminated) this.onmessage?.({ data: structuredClone(reply) } as MessageEvent<PdfReply>);
   }
@@ -184,6 +185,19 @@ describe('the PDF built in the worker', () => {
       [1, true],
       [1, true],
     ]);
+  });
+});
+
+describe('a PDF no longer wanted', () => {
+  test('ends its worker and rejects with the reason, building nothing in the page', async () => {
+    useWorkers('hold');
+    const unwanted = new AbortController();
+    const job = makePdf(unwanted.signal);
+    await vi.waitFor(() => expect(workers[0]?.sent).toHaveLength(1));
+    unwanted.abort();
+    await expect(job).rejects.toMatchObject({ name: 'AbortError' });
+    expect(workers[0].terminated).toBe(true);
+    expect(warn).not.toHaveBeenCalled();
   });
 });
 

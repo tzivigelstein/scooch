@@ -27,8 +27,12 @@ const pdfSource = (asset: AppAsset): PdfSource =>
     ? { kind: 'pdf', src: asset.src, page: asset.page, view: asset.view, pageRotation: asset.pageRotation, bytes: asset.bytes, preview: asset.preview, w: asset.w, h: asset.h }
     : { kind: 'image', src: asset.src, format: asset.format, bytes: asset.bytes, w: asset.w, h: asset.h };
 
-/** The document's PDF, as the file (application/pdf) that is downloaded or printed. */
-export async function makePdf(): Promise<Blob> {
+/**
+ * The document's PDF, as the file (application/pdf) that is downloaded or
+ * printed. `signal` says it is no longer wanted: its worker ends, and it
+ * rejects with the signal's reason (built in the page, it just finishes).
+ */
+export async function makePdf(signal?: AbortSignal): Promise<Blob> {
   const [W, H] = sheetSize();
   const { sheets, cuts } = getDocument();
   const title = outputText(OUTPUT_TEXTS.title, { app: APP_NAME, paper: writtenPaperName() });
@@ -39,8 +43,9 @@ export async function makePdf(): Promise<Blob> {
   const sources = new Map([...assets].map(([key, asset]) => [key, pdfSource(asset)]));
   const piece = (item: Piece) => ({ asset: sources.get(item.asset)!, x: item.x, y: item.y, scale: item.scale, r: item.r, crop: item.crop ?? null });
   if (cuts.mode === 'contour') await shapesReady(filled.flat(), cuts.margin, assetOf);
+  signal?.throwIfAborted();
   const pages = filled.map((items) => ({ pieces: items.map(piece), ...sheetCuts(items, cuts, W, H, assetOf) }));
-  return build({ width: W, height: H, pages, title, creator: APP_NAME, cutStyle: cutStyle(cuts) });
+  return build({ width: W, height: H, pages, title, creator: APP_NAME, cutStyle: cutStyle(cuts) }, signal);
 }
 
 /**
@@ -79,7 +84,7 @@ export function setPdfWorker(make: (() => PdfWorker) | null | undefined) {
 
 const buildInPage = async (job: PdfJob) => pdfFile(await buildPdf(job));
 
-function build(job: PdfJob): Promise<Blob> {
+function build(job: PdfJob, signal?: AbortSignal): Promise<Blob> {
   const make = makeWorker === undefined ? (typeof Worker === 'function' ? startWorker : null) : makeWorker;
   if (!make) return buildInPage(job);
   let worker: PdfWorker;
@@ -94,6 +99,12 @@ function build(job: PdfJob): Promise<Blob> {
     const end = () => {
       done = true;
       worker.terminate();
+      signal?.removeEventListener('abort', stop);
+    };
+    const stop = () => {
+      if (done) return;
+      end();
+      reject(signal!.reason);
     };
     const inPage = (why: unknown) => {
       if (done) return;
@@ -112,6 +123,7 @@ function build(job: PdfJob): Promise<Blob> {
       inPage(event.message);
     };
     worker.onmessageerror = () => inPage('its reply could not be read');
+    signal?.addEventListener('abort', stop, { once: true });
     forWorker(job, () => done)
       .then((sent) => sent && !done && worker.postMessage(sent.message, { transfer: sent.transfer }))
       .catch(inPage);
