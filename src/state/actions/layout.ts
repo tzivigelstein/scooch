@@ -1,12 +1,12 @@
 // Arrange (on as many sheets as needed), shrink to use one sheet, place what
-// is new and fill a sheet with copies. The geometry is in core/pack.js and
-// core/sheets.js.
+// is new, fill a sheet with copies and settle pieces that changed size. The
+// geometry is in core/pack.js, core/sheets.js and core/resize.js.
 
 import { CROWD_LIMIT, MAX_ITEMS } from '../../config.ts';
-import { overlapsAny } from '../../core/collide.js';
 import { isIdentity, pieceSize } from '../../core/crop.js';
 import { fitScale, pack, packedRotation, packSheets } from '../../core/pack.js';
-import { arrangeSheets, freeSpotNear, keepCenterInside, placeIntoSheets, samePlan, type ArrangePlan } from '../../core/sheets.js';
+import { settleResized } from '../../core/resize.js';
+import { arrangeSheets, placeIntoSheets, samePlan, type ArrangePlan } from '../../core/sheets.js';
 import type { Item } from '../../core/types.ts';
 import { clamp, tidy } from '../../core/util.ts';
 import { formatList, sentences, t } from '../../copy/index.ts';
@@ -368,49 +368,42 @@ export function duplicatePieces(items: readonly Piece[], times = 1, from = sheet
 // ---------- Pieces that changed size ----------
 
 /**
+ * What core/resize needs to know of the document to settle pieces that
+ * changed size: the asset sizes, the sheet, the gap, the cut margin and
+ * whether overlaps are allowed. `newSheet`: the ids of the sheets it adds.
+ */
+export function resizeOptions(newSheet: () => number = newSheetId) {
+  const { W, H, m } = area();
+  const { gap, allowOverlap } = getDocument();
+  return { assetOf: (item: Item) => getAsset(item.asset), W, H, margin: m, gap, pad: layoutPad(), allowOverlap, newSheet };
+}
+
+/**
+ * Puts the pieces of a resize plan where it says (core/resize: center kept
+ * on the sheet, moved off the others unless overlaps are allowed), adding the
+ * sheets it needs. Changes the document: commit before.
+ */
+export function applySettled(changed: readonly Item[], sheets: readonly number[]) {
+  addSheets(sheets);
+  const byId = new Map(changed.map((item) => [item.id, item]));
+  setDocument({ items: getDocument().items.map((item) => byId.get(item.id) ?? item) });
+}
+
+/**
  * Applies pieces that changed size (same ids, already with their new values)
- * so they stay valid: each center stays on its sheet and, unless overlaps are
- * allowed, a piece that would land on another moves to the closest free spot
- * of its sheet or, without room there, to the free gaps of the next sheets
- * (adding one if needed). One that doesn't fit even alone stays where it is.
- * Returns the ids that moved aside. Changes the document: commit before.
+ * so they stay valid (core/resize.settleResized). Returns the ids that moved
+ * aside. Changes the document: commit before.
  */
 export function settle(changed: readonly Item[]): number[] {
-  const { W, H, m } = area();
-  const next = new Map(changed.map((item) => [item.id, { ...item }]));
-  for (const item of next.values()) {
-    const [w, h] = dims(item);
-    Object.assign(item, keepCenterInside({ x: item.x, y: item.y, w, h }, W, H));
-  }
-  let items = getDocument().items.map((item) => next.get(item.id) ?? item);
-  const moved: number[] = [];
-  const homeless = new Set<number>();
-  const pad = layoutPad();
-  if (!getDocument().allowOverlap) {
-    for (const item of next.values()) {
-      const rect = boxWith(item, pad);
-      const others = items.filter((other) => other.sheet === item.sheet && other.id !== item.id && !homeless.has(other.id)).map((other) => boxWith(other, pad));
-      if (!overlapsAny(rect, others)) continue;
-      const spot = freeSpotNear(rect, others, { W, H, margin: m });
-      if (spot) {
-        item.x = tidy(spot.x + pad);
-        item.y = tidy(spot.y + pad);
-        moved.push(item.id);
-      } else homeless.add(item.id);
-      items = items.map((other) => (other.id === item.id ? item : other));
-    }
-  }
-  if (!homeless.size) {
-    setDocument({ items });
-    return moved;
-  }
-  // Without room on their sheet: placed like new pieces from that sheet on.
-  setDocument({ items: items.filter((item) => !homeless.has(item.id)) });
-  const away = items.filter((item) => homeless.has(item.id)).map((item) => ({ ...item }));
-  const unplaced = new Set(placeInto(away, sheetIndex(away[0].sheet), { rotate: false }));
-  const placed = new Map(away.filter((item) => !unplaced.has(item.id)).map((item) => [item.id, item]));
-  setDocument({ items: items.map((item) => placed.get(item.id) ?? item) });
-  return [...moved, ...placed.keys()];
+  const { items, sheets } = getDocument();
+  const plan = settleResized(
+    changed,
+    items,
+    sheets.map((sheet) => sheet.id),
+    resizeOptions()
+  );
+  applySettled(plan.items, plan.sheets);
+  return plan.moved;
 }
 
 // ---------- Print resolution ----------

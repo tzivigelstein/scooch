@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// Align, distribute, «Duplicar ×N» and «Rellenar con copias» can be worked out
-// without applying them (what the canvas previews): working them out changes
+// Align, distribute, «Duplicar ×N», «Rellenar con copias» and «Tamaño de foto»
+// can be worked out without applying them (what the canvas previews): working them out changes
 // nothing (the document, the ids handed out, the undo history) and applying
 // them afterwards leaves exactly what was worked out.
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -11,6 +11,7 @@ import { historyDepth } from '../../src/state/history.ts';
 import { setGrid } from '../../src/state/prefs.ts';
 import { setView } from '../../src/state/view.ts';
 import { selectedItem } from '../../src/state/selectors.ts';
+import { applyPhotoSize, photoSizePlan } from '../../src/state/actions/crop.ts';
 import { fillCopies, fillWithCopies } from '../../src/state/actions/layout.ts';
 import { alignPlan, alignSelection, distributePlan, distributeSelection, duplicate, duplicatePlan, planPatches } from '../../src/state/actions/pieces.ts';
 import { fakeImage, fakeImageMm, piece, resetState } from '../support/state.ts';
@@ -153,5 +154,37 @@ describe('copies, worked out first', () => {
     const key = fakeImageMm(400, 30);
     resetState({ items: [piece(1, key, 0, 20)], selection: [1] });
     expect(fillCopies(selectedItem()!)).toBeNull();
+  });
+});
+
+describe('photo sizes, worked out first', () => {
+  test('a size with no room left on its sheet: the plan changes nothing and sends the piece to a sheet still to add; applying leaves exactly that, in one undo step', () => {
+    const key = fakeImageMm(50, 50);
+    resetState({ items: [piece(1, key, 20, 20), piece(2, key, 80, 120)], selection: [1] });
+    const before = untouched();
+    const plan = photoSizePlan('15x20', madeUp().sheet)!;
+    expect(untouched()).toEqual(before);
+    expect(plan).toMatchObject({ sheets: [FAR + 1], moved: [1], refused: [] });
+    applyPhotoSize('15x20');
+    const newSheet = getDocument().sheets[1].id;
+    expect(places(getDocument().items.slice(0, 1))).toEqual(places(plan.changed).map((item) => ({ ...item, sheet: newSheet })));
+    expect(historyDepth().undo).toBe(1);
+  });
+
+  test('a size that moves a piece aside on its sheet: applying leaves exactly the plan’s place', () => {
+    const key = fakeImageMm(50, 50);
+    resetState({ items: [piece(1, key, 20, 20), piece(2, key, 75, 20)], selection: [1] });
+    const plan = photoSizePlan('13x18')!;
+    expect(plan.moved).toEqual([1]);
+    applyPhotoSize('13x18');
+    expect(places(getDocument().items.slice(0, 1))).toEqual(places(plan.changed));
+  });
+
+  test('«Original» on pieces without a crop, an id that is no option, or no selection: nothing to apply', () => {
+    three();
+    expect(photoSizePlan('original')).toMatchObject({ changed: [], refused: [] });
+    expect(photoSizePlan('11x17')).toBeNull();
+    setDocument({ selection: [] });
+    expect(photoSizePlan('10x15')).toBeNull();
   });
 });

@@ -1,17 +1,17 @@
 // Crop: standard photo sizes for the selection and committing a crop session
 // (the session itself is the lazily loaded crop mode, components/canvas/crop).
 
-import { fitToSize, matchPhotoSize, photoSize } from '../../core/crop.js';
+import { matchPhotoSize, photoSize } from '../../core/crop.js';
+import { planPhotoSize } from '../../core/resize.js';
 import type { Item } from '../../core/types.ts';
 import { formatList, sentences, t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
 import { sizeText } from '../../services/measure.ts';
-import { getAsset } from '../assets.ts';
 import { getDocument, type Piece } from '../document.ts';
 import { commit } from '../history.ts';
 import { dims, findItem, pieceName, selectedItems, sheetIndex } from '../selectors.ts';
 import { animateNext } from '../view.ts';
-import { settle, withCenterKept } from './layout.ts';
+import { applySettled, resizeOptions, settle } from './layout.ts';
 import { say } from './notify.ts';
 
 const same = (a: number, b: number) => Math.abs(a - b) < 1e-9;
@@ -33,32 +33,37 @@ export function selectionPhotoSize(list: readonly Piece[]): string {
 export const photoSizeName = (id: string) => t(`crop.names.${id}` as Parameters<typeof t>[0]);
 
 /**
+ * What choosing `id` in «Tamaño de foto» ('original' or a standard size)
+ * would do to the selection, without changing anything (core/resize.planPhotoSize):
+ * what the canvas previews and what applyPhotoSize applies. `newSheet`: the
+ * ids of the sheets it would add. null without a selection or with an id that
+ * is no option.
+ */
+export function photoSizePlan(id: string, newSheet?: () => number) {
+  const { items, sheets } = getDocument();
+  const list = selectedItems();
+  const size = id === 'original' ? null : photoSize(id);
+  if (!list.length || (id !== 'original' && !size)) return null;
+  return planPhotoSize(list, size, {
+    ...resizeOptions(newSheet),
+    items,
+    sheetIds: sheets.map((sheet) => sheet.id),
+  });
+}
+
+/**
  * Brings every selected piece to a standard photo size (EXACTLY that size on
  * the sheet, cropping the overflow centered, never distorting, turned to the
  * image's orientation), or with 'original' removes their crop. Each keeps its
- * center; one that would overlap moves to a free spot (see settle). One undo step.
+ * center; one that would overlap moves to a free spot (see photoSizePlan). One undo step.
  */
 export function applyPhotoSize(id: string) {
+  if (getDocument().busy) return;
   const list = selectedItems();
-  if (!list.length || getDocument().busy) return;
-  const size = id === 'original' ? null : photoSize(id);
-  if (id !== 'original' && !size) return;
-  const changed: Item[] = [];
-  const refused: number[] = [];
-  for (const item of list) {
-    if (!size) {
-      if (item.crop) changed.push(withCenterKept(item, { crop: null }));
-      continue;
-    }
-    const fit = fitToSize(getAsset(item.asset), item.r, size);
-    if (fit.scale < 1 || fit.scale > 1000) {
-      refused.push(item.id);
-      continue;
-    }
-    const next = withCenterKept(item, { crop: fit.crop, scale: fit.scale });
-    if (!sameCrop(next.crop, item.crop) || !same(next.scale, item.scale)) changed.push(next);
-  }
-  const outOfRange = refused.length ? t('notices.sizeOutOfRange', { n: refused.length, names: formatList(refused.map(pieceName)) }) : '';
+  const plan = photoSizePlan(id);
+  if (!plan) return;
+  const { changed, refused } = plan;
+  const outOfRange = refused.length ? t('notices.sizeOutOfRange', { n: refused.length, names: formatList(refused.map((item) => pieceName(item.id))) }) : '';
   if (!changed.length) {
     if (outOfRange) say(outOfRange, { warn: true });
     else announce(t(id === 'original' ? 'announce.uncroppedAlready' : 'announce.sizedAlready', { n: list.length }));
@@ -66,7 +71,9 @@ export function applyPhotoSize(id: string) {
   }
   commit();
   animateNext();
-  const { near, away } = movedBy(changed, settle(changed));
+  const before = new Map(list.map((item) => [item.id, item.sheet]));
+  applySettled(changed, plan.sheets);
+  const { near, away } = movedBy(before, plan.moved);
   const result = resultText(
     id,
     changed.map((item) => findItem(item.id)!)
@@ -79,11 +86,11 @@ export function applyPhotoSize(id: string) {
 }
 
 /**
- * What settle did with the pieces that changed size, as texts: how many moved
- * to a free spot of their sheet and where the ones that went to other sheets are.
+ * What settling did with the pieces that changed size (`before`: the sheet
+ * each was on), as texts: how many moved to a free spot of their sheet and
+ * where the ones that went to other sheets are.
  */
-function movedBy(changed: readonly Item[], moved: readonly number[]) {
-  const before = new Map(changed.map((item) => [item.id, item.sheet]));
+function movedBy(before: ReadonlyMap<number, number>, moved: readonly number[]) {
   const awaySheets = new Set<number>();
   let near = 0;
   let away = 0;
@@ -124,7 +131,7 @@ export function commitCrop(id: number, patch: Pick<Item, 'x' | 'y' | 'scale' | '
   }
   commit();
   const changed = { ...item, ...patch };
-  const { near, away } = movedBy([changed], settle([changed]));
+  const { near, away } = movedBy(new Map([[id, item.sheet]]), settle([changed]));
   const next = findItem(id)!;
   const [w, h] = dims(next);
   const text = sentences([t('crop.applied', { name: pieceName(id), size: sizeText(w, h) }), near, away]);
