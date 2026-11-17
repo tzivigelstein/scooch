@@ -1,7 +1,8 @@
 // Export: one PDF page the size of the sheet for each sheet with pieces, in
 // order, built with pdf-lib. Where each piece goes (cropped and rotated) comes
 // from crop.drawParams; without a crop the numbers and operators are the same
-// as always.
+// as always. drawPdf takes pdf-lib from its caller; buildPdf loads it in the
+// page, in a chunk of its own.
 
 import type { PDFDocument as PdfLibDocument, PDFEmbeddedPage, PDFImage } from 'pdf-lib';
 import type { CutPath } from '../core/contour.js';
@@ -32,7 +33,17 @@ export interface PdfPage {
   paths?: readonly CutPath[];
 }
 
-type PdfLib = typeof import('pdf-lib');
+/** What to build: the sheet's size (mm), the pages, the document's title and creator, and how cut lines are drawn. */
+export interface PdfJob {
+  width: number;
+  height: number;
+  pages: readonly PdfPage[];
+  title: string;
+  creator?: string;
+  cutStyle?: CutStyle;
+}
+
+export type PdfLib = typeof import('pdf-lib');
 type Embedded = { page: PDFEmbeddedPage; image?: undefined } | { image: PDFImage; page?: undefined };
 
 let pdfLibPromise: Promise<PdfLib> | null = null;
@@ -46,32 +57,23 @@ function loadPdfLib() {
   return pdfLibPromise;
 }
 
+/** Builds the PDF in the page, loading pdf-lib first (see drawPdf). */
+export async function buildPdf(job: PdfJob) {
+  return drawPdf(await loadPdfLib(), job);
+}
+
 /**
- * Builds the PDF and returns its bytes. `pages`: [{pieces, lines}] per page;
- * each piece {asset, x, y, scale, r, crop} (x/y in mm from the sheet's top
- * left corner; crop as in crop.js) and each cut line {x1, y1, x2, y2} in mm
- * (cutmarks.cutLines), drawn with `cutStyle` (cutmarks.cutStyle: the same
- * weight, color and dash as on screen). A cropped piece is drawn whole with a
- * clipping path (PDF pages stay vector). Each source (image or PDF page) is
- * embedded once even if it shows up on several pages. `paths` are the contour
- * cut lines (contour.contourCuts), drawn as vector paths with the same stroke.
+ * Builds the PDF with `lib` (pdf-lib) and returns its bytes. `pages`:
+ * [{pieces, lines}] per page; each piece {asset, x, y, scale, r, crop} (x/y in
+ * mm from the sheet's top left corner; crop as in crop.js) and each cut line
+ * {x1, y1, x2, y2} in mm (cutmarks.cutLines), drawn with `cutStyle`
+ * (cutmarks.cutStyle: the same weight, color and dash as on screen). A cropped
+ * piece is drawn whole with a clipping path (PDF pages stay vector). Each
+ * source (image or PDF page) is embedded once even if it shows up on several
+ * pages. `paths` are the contour cut lines (contour.contourCuts), drawn as
+ * vector paths with the same stroke.
  */
-export async function buildPdf({
-  width,
-  height,
-  pages,
-  title,
-  creator = title,
-  cutStyle = styleOf(),
-}: {
-  width: number;
-  height: number;
-  pages: readonly PdfPage[];
-  title: string;
-  creator?: string;
-  cutStyle?: CutStyle;
-}) {
-  const lib = await loadPdfLib();
+export async function drawPdf(lib: PdfLib, { width, height, pages, title, creator = title, cutStyle = styleOf() }: PdfJob) {
   const { PDFDocument, degrees, rgb } = lib;
   const doc = await PDFDocument.create();
   doc.setTitle(title);
