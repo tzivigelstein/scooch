@@ -51,13 +51,17 @@ src/
   components/     React components, by area, each with its stylesheet beside it
   hooks/          keyboard shortcuts, pointer gestures, focus rescue
   services/       files, PDF export, printing, projects and storage
+  site/           the static pages built with the app: guides, questions, legal pages, sitemap
   styles/         the shared stylesheets; index.css declares the cascade layers
 tests/            Vitest tests by layer (see docs/testing.md)
   fixtures/documents/   one stored project document per format version
 e2e/              browser tests (Playwright): specs/, support/, fixtures/ and the ledger
 scripts/          the bundle size check (yarn size) and its budgets
-docs/copy.md      copy guide for the interface texts (in Spanish)
+docs/copy.md      copy guide for the interface texts (in Spanish), with a glossary per language in docs/copy/
 docs/testing.md   test layers, running them and adding one
+docs/site.md      the static pages and what a release needs
+docs/deep-links.md links that open the editor with a new project set up
+docs/legal/       drafts of the terms and the privacy policy
 ```
 
 The [README](README.md) explains how the parts fit together.
