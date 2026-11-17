@@ -24,8 +24,14 @@ export interface CalcState {
   rotate: boolean;
 }
 
-/** The texts the result is written with; `{n}`-style parameters. */
+/**
+ * The texts the result is written with; `{n}`-style parameters. `count` and
+ * `figure` take the language's plural form for the count (Intl.PluralRules
+ * of `locale`: French and Hindi say «one» for 0 too; a language with one
+ * form gives both the same text).
+ */
 export interface CalcTexts {
+  /** The language's number locale (its catalogue's meta.numberLocale). */
   locale: string;
   max: number;
   papers: Record<string, string>;
@@ -36,6 +42,7 @@ export interface CalcTexts {
   summary: string;
   noRotate: string;
   noteNone: string;
+  /** When exactly one copy fits, and when several do: not a plural form. */
   noteSame: { one: string; other: string };
   noteMore: string;
   noteCapped: string;
@@ -82,7 +89,8 @@ export function calc(input: CalcState, texts: CalcTexts): CalcResult {
   const sheet = sizeOf(state.paper, state.landscape) ?? { w: 210, h: 297 };
   const result = sheetCapacity(piece, { aw: sheet.w - 2 * state.margin, ah: sheet.h - 2 * state.margin }, { gap: state.gap, rotate: state.rotate, limit: texts.max });
 
-  const plural = (forms: { one: string; other: string }, count: number) => (count === 1 ? forms.one : forms.other);
+  const rules = new Intl.PluralRules(texts.locale);
+  const plural = (forms: { one: string; other: string }, count: number) => (rules.select(count) === 'one' ? forms.one : forms.other);
   const photoText = preset ? fill(texts.photoPreset, { name: texts.photos[preset.id], size: size(preset.w, preset.h) }) : size(piece.w, piece.h);
   const paperText = `${texts.papers[state.paper]} ${state.landscape ? texts.orientation.landscape : texts.orientation.portrait}`;
   const count = result.capped ? fill(texts.count.capped, { n: n(texts.max) }) : n(result.count);
@@ -91,7 +99,7 @@ export function calc(input: CalcState, texts: CalcTexts): CalcResult {
 
   let note = texts.noteNone;
   if (result.count > 0) {
-    note = result.grid.count < result.count ? fill(texts.noteMore, { grid: n(result.grid.count), n: n(result.count) }) : fill(plural(texts.noteSame, result.count), { n: n(result.count) });
+    note = result.grid.count < result.count ? fill(texts.noteMore, { grid: n(result.grid.count), n: n(result.count) }) : fill(result.count === 1 ? texts.noteSame.one : texts.noteSame.other, { n: n(result.count) });
     if (result.capped) note += ` ${fill(texts.noteCapped, { max: n(texts.max) })}`;
   }
 
