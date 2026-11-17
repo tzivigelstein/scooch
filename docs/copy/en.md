@@ -22,6 +22,21 @@ Spanish guide ([../copy.md](../copy.md)), adapted to English conventions.
   Backspace, Esc, Page Up, Page Down; ⌘ ⌥ ⇧ ⌃ on Apple devices, said
   Command, Option, Shift, Control.
 
+## Site pages
+
+The guides in `src/site/content/en` follow the same conventions, with the
+app’s names from `en.ts` (but the legal pages are “Terms of use” and
+“Privacy policy” there: the app’s labels say “(in Spanish)” because it links
+to the Spanish pages).
+
+- The print dialog’s options as browsers name them: “Actual size” or
+  “100%”, “Fit to page”, “Fit to printable area”.
+- A photo size before “photos” goes without its unit, as people search for
+  it: “4 × 6 photos”; elsewhere, the app’s name: “cropped to 4 × 6 in”.
+  When a count would touch it, the size goes after: “3 photos of 4 × 6 in”.
+- Margins and spacing in millimeters, as the editor shows them; resolution
+  in ppi.
+
 ## Glossary
 
 | Spanish | English | Avoid |

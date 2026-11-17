@@ -35,6 +35,9 @@ values.
   it open; opening another project ends it.
 - Without storage (some private windows), the link sets up the project the
   tab works on.
+- A link carries no language: the editor shows the one chosen in
+  «Preferencias» or, on «Automático», the browser's. The site's pages use
+  the same links in every language ([site.md](site.md)).
 
 The entry point is `src/state/actions/deeplink.ts`; the new project is
 created by `initProjects({ start })` in `src/services/projects.ts`. Tests:

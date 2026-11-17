@@ -78,8 +78,10 @@ revisión de hablantes nativos.
 - Lo que la app escribe en archivos no cambia con el idioma: el título del PDF
   y el nombre del archivo están en `src/copy/output.ts`, en español, como
   siempre. Las URL y el documento guardado tampoco dependen del idioma.
-- Las páginas del sitio (`src/site`) son solo en español y usan `es.ts`
-  directamente (`src/site/copy.ts`).
+- Las páginas del sitio (`src/site`) tienen su propia versión en cada idioma
+  que las tiene (hoy español e inglés), con los nombres de los botones, los
+  papeles y los tamaños de foto del catálogo de ese idioma (`createKit`, en
+  `src/site/kit.ts`). [site.md](site.md) explica cómo se suma un idioma.
 - Para sumar un idioma: su archivo en `src/copy/`, su nombre propio en
   `src/copy/languages.ts`, su entrada en `LANGUAGES` (`src/core/language.js`),
   en `src/copy/load.ts` y en `src/copy/all.ts`, y su glosario en
