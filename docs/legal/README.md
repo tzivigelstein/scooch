@@ -5,8 +5,12 @@ Drafts of the site's legal pages, in Spanish:
 - [terminos.md](terminos.md): terms of use and disclaimer.
 - [privacidad.md](privacidad.md): privacy policy.
 
-They will become pages of the site and be translated later. **Spanish is the
-reference version**: translations follow it.
+**Spanish is the reference version**: translations follow it. Each language
+of the site has its translation in a folder of its own, with the same file
+names in every language: [en/terms.md](en/terms.md) and
+[en/privacy.md](en/privacy.md). A translation keeps the Spanish
+placeholders, translates the draft note and says the Spanish version is the
+reference until a lawyer reviews it.
 
 They are drafts, not legal advice. A lawyer has to review them before they are
 published or relied on.
@@ -34,9 +38,11 @@ Before publishing, also remove the draft note. `LICENSE`'s
 
 ## Publishing
 
-The site publishes both texts as pages (`/es/terminos` and `/es/privacidad`),
-with `LICENSE` and `THIRD_PARTY_NOTICES.md` (`/es/licencia` and
-`/es/licencias-de-terceros`); [docs/site.md](../site.md) explains how. The
+The site publishes both texts as pages (`/es/terminos` and `/es/privacidad`;
+in English, `/en/terms` and `/en/privacy`), with `LICENSE` and
+`THIRD_PARTY_NOTICES.md` (`/es/licencia` and `/es/licencias-de-terceros`;
+`/en/license` and `/en/third-party-licenses`), which stay in English in every
+language; [docs/site.md](../site.md) explains how. The
 HTML comment is left out of the pages, and links between the documents point
 to their pages. While a placeholder or the draft note is there, the page is
 kept out of search engines, and a production deployment stops (unless
@@ -45,7 +51,8 @@ kept out of search engines, and a production deployment stops (unless
 ## Keep them true
 
 The privacy policy describes what the code does today. Check it again, and
-update the effective date, whenever one of these changes:
+update the effective date, whenever one of these changes; then make the same
+change in every translation:
 
 | What changes | Where to look | What to update |
 | --- | --- | --- |
@@ -60,8 +67,9 @@ update the effective date, whenever one of these changes:
 
 `tests/site/legal.test.ts` fails when a localStorage key of the settings
 registry (`src/state/settings.ts`) has no item in Qué se guarda en tu
-dispositivo: a new key needs its item there, and its term in the test's
-`POLICY_TERMS`. What lives in IndexedDB isn't checked that way.
+dispositivo, or in the same section of a translation: a new key needs its
+item in every policy, and its term in the test's `POLICY`, for each
+language. What lives in IndexedDB isn't checked that way.
 
 The links to Vercel's and Patreon's privacy policies were checked on
 2026-11-13.
