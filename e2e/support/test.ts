@@ -359,8 +359,12 @@ export const test = base.extend<Fixtures>({
       const errors: string[] = [];
       // With E2E_CONSOLE=strict (against the dev server), warnings count too.
       const strict = process.env.E2E_CONSOLE === 'strict';
+      // The PDF worker failing is a bug even though the page then builds the
+      // PDF, saying so with a warning; in Firefox that warning is the only
+      // sign of a request the worker made failing (Playwright sees none there).
+      const workerFailed = /^The PDF worker (stopped|could not start)/;
       page.on('console', (m) => {
-        if (m.type() === 'error' || (strict && m.type() === 'warning')) errors.push(m.text());
+        if (m.type() === 'error' || (m.type() === 'warning' && (strict || workerFailed.test(m.text())))) errors.push(m.text());
       });
       page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
       page.on('requestfailed', (r) => {
