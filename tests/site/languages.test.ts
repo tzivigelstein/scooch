@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
 // The same page in every language. What ties the versions together for
 // search engines (lang, hreflang and x-default, the sitemap) and for people
-// (the links between languages), and that each language's links stay in it.
+// (the links between languages), that each language's links stay in it, and
+// that a translation is the Spanish page in other words: the same sections,
+// tables, figures, calculator and links that open the editor, and the same
+// numbers and measures. Spanish is the reference.
 import { describe, expect, test } from 'vitest';
+import { CATALOGUES } from '../../src/copy/all.ts';
+import { calc, type CalcState, type CalcTexts } from '../../src/site/calc.ts';
 import { SITE_LANGUAGES } from '../../src/site/content/index.ts';
+import { CALC_START } from '../../src/site/facts/how-many.ts';
+import { PROBE } from '../../src/site/kit.ts';
 import { LANGUAGES, pathPrefix, type Lang } from '../../src/site/langs.ts';
 import { renderPage, type Chrome } from '../../src/site/layout.ts';
 import { alternates, sitemapXml } from '../../src/site/seo.ts';
@@ -14,6 +21,7 @@ const ROOT = process.cwd();
 const URL_ = 'https://example.com';
 const legal = readLegal(ROOT);
 const pages = sitePages(legal);
+const probes = sitePages(legal, { probe: true });
 const files = siteFiles({ url: URL_ }, legal, { calculator: '/assets/calculator-test.js' });
 const parse = (html: string) => new DOMParser().parseFromString(html, 'text/html');
 const doc = (page: SitePage) => parse(files.get(pageFile(page))!);
@@ -146,5 +154,169 @@ describe('the links between languages', () => {
         const target = byPath.get(href.split('#')[0])!;
         expect(target.lang === page.lang || a.getAttribute('hreflang') === target.lang, `${page.path} links to ${href}`).toBe(true);
       }
+  });
+});
+
+/** The text of some HTML, without scripts. */
+const textOf = (html: string) => parse(`<body>${html.replace(/<script[\s\S]*?<\/script>/g, '')}</body>`).body.textContent!.replace(/\s+/g, ' ');
+
+const decimalOf = (lang: Lang) => new Intl.NumberFormat(CATALOGUES[lang].meta.numberLocale).formatToParts(1.5).find((p) => p.type === 'decimal')!.value;
+
+/**
+ * The facts a page writes with its kit (in probe mode, createKit: numbers,
+ * measures, paper and photo names) and the numbers typed by hand, read with
+ * the language's decimal separator. Interface names are words: left out.
+ */
+function numbersOf(page: SitePage) {
+  const text = textOf([page.title, page.description, page.h1, page.crumb, page.body, ...(page.faq ?? []).flatMap(({ q, a }) => [q, a])].join(' \n '));
+  const facts = [...new Set((text.match(PROBE) ?? []).filter((mark) => !mark.startsWith('⟦ui:')))].sort();
+  const rest = text.replace(PROBE, ' ').replace(/\b\d+\.\d+\.\d+\b/g, (version) => ` v${version} `);
+  const decimal = decimalOf(page.lang);
+  const number = new RegExp(`(?<![A-Za-z\\d_.,v])\\d+(?:${decimal === '.' ? '\\.' : decimal}\\d+)?`, 'g');
+  const typed = [...new Set([...(rest.match(number) ?? []), ...(rest.match(/v\d+\.\d+\.\d+/g) ?? [])].map((n) => (n.startsWith('v') ? n : String(Number(n.replace(decimal, '.'))))))].sort();
+  return { facts, typed };
+}
+
+/** A number in a table cell, whatever the language writes it with. */
+const cellNumber = (text: string, lang: Lang) => Number(text.replace(/\s/g, '').replace(decimalOf(lang), '.'));
+
+/**
+ * What must be the same in every language's version of a page: its kind,
+ * scripts and whether it is indexed; the order of its blocks (headings, steps
+ * and their count, tables and their size, notes, figures, the calculator, the
+ * buttons, the questions); the numbers of its tables; what its figures draw;
+ * where its links go (the editor's set up the same way, the site's to the
+ * same page); and its external links and placeholders.
+ */
+function structureOf(page: SitePage, html: string) {
+  const d = parse(html);
+  const main = d.querySelector('main')!;
+  const blocks: string[] = [];
+  const walk = (parent: Element) => {
+    for (const el of parent.children) {
+      const tag = el.tagName.toLowerCase();
+      let block: string | null = tag;
+      if (el.matches('nav.crumbs, h1, script')) block = null;
+      else if (el.matches('div.doc-lang')) {
+        walk(el);
+        block = null;
+      } else if (el.matches('p.lead')) block = 'lead';
+      else if (el.matches('p.note')) block = 'note';
+      else if (el.matches('div.ctas')) block = `buttons(${el.children.length})`;
+      else if (el.matches('div.table-wrap')) block = `table(${el.querySelectorAll('tr').length}×${el.querySelector('tr')!.children.length})`;
+      else if (el.matches('ol.steps')) block = `steps(${el.children.length})`;
+      else if (el.matches('ol, ul')) block = `${tag}(${el.children.length})`;
+      else if (el.matches('section.calc')) block = 'calculator';
+      else if (el.matches('section.faq')) block = `questions(${el.querySelectorAll('h3').length})`;
+      if (block && !(block === 'p' && blocks.at(-1) === 'p')) blocks.push(block);
+    }
+  };
+  walk(main);
+  const target = (href: string) => {
+    if (href === '/' || href.startsWith('/?')) return href;
+    const to = byPath.get(href.split('#')[0]);
+    return to ? `${to.id} (${to.lang === page.lang ? 'same language' : to.lang})` : `missing ${href}`;
+  };
+  return {
+    kind: page.kind,
+    indexable: page.indexable,
+    scripts: page.scripts ?? [],
+    blocks,
+    tables: [...main.querySelectorAll('table')].map((t) => [...t.querySelectorAll('tbody tr')].map((tr) => [...tr.querySelectorAll('td.num')].map((td) => cellNumber(td.textContent!, page.lang)))),
+    figures: [...main.querySelectorAll('svg')].map((svg) => svg.outerHTML.replace(/ aria-label="[^"]*"/, '')),
+    editorLinks: [...main.querySelectorAll('a[href^="/?"]')].map((a) => a.getAttribute('href')),
+    // A link that says another language (a translation's link to the Spanish reference) is the translation's own.
+    siteLinks: [...main.querySelectorAll('a[href^="/"]:not([href^="/?"]):not([hreflang])')].map((a) => target(a.getAttribute('href')!)).sort(),
+    externalLinks: [...main.querySelectorAll('a[href^="http"], a[href^="mailto:"]')].map((a) => a.getAttribute('href')).sort(),
+    placeholders: [...new Set(main.textContent!.match(/<[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ /]*[A-ZÁÉÍÓÚÑ]>/g) ?? [])].sort(),
+  };
+}
+
+const calcTextsOf = (page: SitePage) => JSON.parse(doc(page).getElementById('calc-texts')!.textContent!) as CalcTexts;
+
+/** The calculator's form: every field with its name, type, limits and first value, and every option. */
+const formOf = (page: SitePage) =>
+  [...doc(page).querySelectorAll('#calc :is(input, select)')].map((el) => ({
+    id: el.id,
+    name: el.getAttribute('name'),
+    type: el.getAttribute('type'),
+    limits: ['min', 'max', 'step', 'value'].map((a) => el.getAttribute(a)),
+    checked: el.hasAttribute('checked'),
+    hidden: el.closest('[hidden]') !== null,
+    options: [...el.querySelectorAll('option')].map((o) => [o.getAttribute('value'), o.hasAttribute('selected')]),
+  }));
+
+/** The parameters a calculator text takes («{n}», «{paper}»), by text. */
+const placeholdersOf = (texts: CalcTexts) =>
+  Object.fromEntries(
+    Object.entries(texts)
+      .filter(([key]) => !['locale', 'max', 'papers', 'photos'].includes(key))
+      .flatMap(([key, value]) => (typeof value === 'string' ? [[key, value]] : Object.entries(value as Record<string, string>).map(([form, text]) => [`${key}.${form}`, text])))
+      .map(([key, text]) => [key, [...new Set(text.match(/\{\w+\}/g) ?? [])].sort()])
+  );
+
+/** Forms that put the packer's limits to work: other papers and orientations, custom sizes, none fitting, the cap. */
+const CALC_CASES: CalcState[] = [
+  CALC_START,
+  { ...CALC_START, paper: 'letter', photo: 'passport-35x45' },
+  { ...CALC_START, paper: 'A3', landscape: true, photo: 'instant', rotate: false },
+  { ...CALC_START, photo: 'custom', w: 25, h: 30, margin: 0, gap: 0 },
+  { ...CALC_START, photo: 'custom', w: 300, h: 400 },
+  { ...CALC_START, photo: 'custom', w: 5, h: 5, margin: 0, gap: 0 },
+  { ...CALC_START, paper: 'photo-10x15', photo: 'visa-5x5', margin: 2.5, gap: 1.5 },
+];
+
+const behaviourOf = (texts: CalcTexts) =>
+  CALC_CASES.map((state) => {
+    const { count, capped, grid, href, svg } = calc(state, texts);
+    return { count, capped, grid, href, svg: svg.replace(/ aria-label="[^"]*"/, '') };
+  });
+
+describe('a translation is the Spanish page in other words', () => {
+  test('every page of another language has a Spanish version', () => {
+    for (const { page, es } of translated) expect(es, page.path).toBeDefined();
+  });
+
+  test.each(translated.map((t) => [t.page.path, t]))('%s: the same blocks, tables, figures and links as the Spanish page', (_, { page, es }) => {
+    expect(structureOf(page, files.get(pageFile(page))!)).toEqual(structureOf(es, files.get(pageFile(es))!));
+  });
+
+  test.each(translated.map((t) => [t.page.path, t]))('%s: the same facts and the same numbers typed by hand as the Spanish page', (_, { id, lang }) => {
+    expect(numbersOf(versionOf(probes, id, lang)!)).toEqual(numbersOf(versionOf(probes, id, 'es')!));
+  });
+
+  test.each(translated.filter((t) => t.id === 'how-many').map((t) => [t.page.path, t]))('%s: the calculator has the same form, texts with the same parameters, and the same answers', (_, { page, es }) => {
+    expect(formOf(page)).toEqual(formOf(es));
+    const [texts, spanish] = [calcTextsOf(page), calcTextsOf(es)];
+    expect({ max: texts.max, papers: Object.keys(texts.papers), photos: Object.keys(texts.photos) }).toEqual({ max: spanish.max, papers: Object.keys(spanish.papers), photos: Object.keys(spanish.photos) });
+    expect(texts.locale).toBe(CATALOGUES[page.lang].meta.numberLocale);
+    expect(placeholdersOf(texts)).toEqual(placeholdersOf(spanish));
+    expect(behaviourOf(texts)).toEqual(behaviourOf(spanish));
+  });
+});
+
+describe('the comparison of a translation with the Spanish page', () => {
+  // A copy of a Spanish page with one thing changed must not compare equal.
+  const page = versionOf(pages, 'photos-10x15', 'es')!;
+  const probe = versionOf(probes, 'photos-10x15', 'es')!;
+  const html = files.get(pageFile(page))!;
+  const same = structureOf(page, html);
+
+  test('finds a section that is missing', () => {
+    expect(structureOf(page, html.replace(/<h2 id="cuántas-entran[\s\S]*?(?=<h2)/, ''))).not.toEqual(same);
+  });
+
+  test('finds a number of a table that changed', () => {
+    expect(structureOf(page, html.replace(/(<td role="cell" data-label="[^"]*" class="num"><span>)3</, '$14<'))).not.toEqual(same);
+  });
+
+  test('finds a button that opens the editor set up otherwise', () => {
+    expect(structureOf(page, html.replace('margin=3', 'margin=4'))).not.toEqual(same);
+  });
+
+  test('finds a fact left out, and a number typed by hand that changed', () => {
+    const numbers = numbersOf(probe);
+    expect(numbersOf({ ...probe, body: probe.body.replaceAll('⟦mm:10⟧', '') })).not.toEqual(numbers);
+    expect(numbersOf({ ...probe, faq: probe.faq!.map((q) => ({ ...q, q: q.q.replace('4 ', '5 ') })) })).not.toEqual(numbers);
   });
 });
