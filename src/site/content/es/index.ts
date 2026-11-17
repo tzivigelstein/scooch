@@ -4,15 +4,15 @@ import { ctaLinks } from '../../guide.ts';
 import { app } from '../../kit.ts';
 import type { LegalDoc } from '../../legal.ts';
 import type { SitePage } from '../../types.ts';
-import { howMany } from './cuantas-fotos.ts';
-import { idPhotos } from './foto-carnet.ts';
-import { tenByFifteen } from './fotos-10x15.ts';
+import { howMany } from './how-many.ts';
+import { idPhotos } from './id-photos.ts';
+import { tenByFifteen } from './photos-10x15.ts';
 import { legalPage } from './legal.ts';
-import { samePhoto } from './misma-foto.ts';
+import { samePhoto } from './same-photo.ts';
 import { PATHS } from './paths.ts';
-import { faqPage } from './preguntas.ts';
-import { actualSize } from './tamano-real.ts';
-import { severalPhotos } from './varias-fotos.ts';
+import { faqPage } from './faq.ts';
+import { actualSize } from './actual-size.ts';
+import { severalPhotos } from './several-photos.ts';
 
 export { chrome, appFacts, llms } from './chrome.ts';
 
