@@ -3,8 +3,9 @@
 // previewAttrs): this hook, listening on the document, tells the preview store
 // (state/preview.ts) which one that is. The pointer wins over the focus. An
 // action's preview goes away when the action is activated, and anything with
-// Esc, until the control is left. A touch has no hover: only the keyboard
-// focus shows one.
+// Esc, until the control is left or gets an argument again (a list opened
+// again). A touch has no hover: only the keyboard focus shows one, also on a
+// control focused with a click and then gone through with the arrows (a list).
 
 import { useEffect } from 'react';
 import { ACTION_PREVIEWS, showPreview, type PreviewKind, type PreviewTrigger } from '../state/preview.ts';
@@ -18,6 +19,9 @@ export const previewAttrs = (kind: PreviewKind, arg?: string | number) => ({
 const SOURCE = '[data-preview]';
 /** A focus this soon after a touch came from the finger, not the keyboard (ms). */
 const AFTER_TOUCH = 800;
+/** The keys that go through a control's options. */
+const NAVIGATION = new Set(['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageDown', 'PageUp']);
+const WATCHED = { attributes: true, attributeFilter: ['data-preview', 'data-preview-arg'], attributeOldValue: true };
 
 const sourceOf = (target: EventTarget | null) => (target instanceof Element ? target.closest<HTMLElement>(SOURCE) : null);
 
@@ -41,14 +45,19 @@ export function usePreviewTriggers() {
     // Activated (or Esc): shows nothing until neither the pointer nor the focus is on it.
     const dismissed = new Set<HTMLElement>();
     let touchedAt = -Infinity;
-    // A control whose argument changes while it shows («Duplicar ×N» as N is typed) shows the new one.
-    const observer = new MutationObserver(() => update());
+    // A control whose argument changes while it shows («Duplicar ×N» as N is
+    // typed) shows the new one; one that gets an argument again after Esc (a
+    // list opened again) shows again.
+    const observer = new MutationObserver((records) => {
+      for (const { target, attributeName, oldValue } of records) if (attributeName === 'data-preview-arg' && oldValue === null) dismissed.delete(target as HTMLElement);
+      update();
+    });
 
     function update() {
       for (const source of dismissed) if (source !== hovered && source !== focused) dismissed.delete(source);
       const el = [hovered, focused].find((source) => source && !dismissed.has(source) && source.isConnected) ?? null;
       observer.disconnect();
-      if (el) observer.observe(el, { attributes: true, attributeFilter: ['data-preview', 'data-preview-arg'] });
+      for (const source of new Set([hovered, focused])) if (source?.isConnected) observer.observe(source, WATCHED);
       showPreview(el && triggerOf(el));
     }
 
@@ -88,6 +97,11 @@ export function usePreviewTriggers() {
       update();
     };
     const onKeyDown = (e: KeyboardEvent) => {
+      if (NAVIGATION.has(e.key) && !focused) {
+        focused = sourceOf(document.activeElement);
+        if (focused) update();
+        return;
+      }
       if (e.key !== 'Escape') return;
       for (const source of [hovered, focused]) if (source) dismissed.add(source);
       update();

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 // Which control the canvas shows something for (usePreviewTriggers): the one
 // under a mouse or with the keyboard focus (the pointer wins), never from a
-// touch; gone when it is left, when an action is activated or with Esc, until
-// the control is left; and following its argument while it shows.
+// touch unless the arrows are used then; gone when it is left, when an action
+// is activated or with Esc, until the control is left or a list opens again;
+// and following its argument while it shows.
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
@@ -10,11 +11,14 @@ import { previewAttrs, usePreviewTriggers } from '../../src/hooks/usePreviewTrig
 import { previewTrigger, showPreview } from '../../src/state/preview.ts';
 
 let setTimes: (n: number) => void = () => {};
+let setLooking: (size: string | undefined) => void = () => {};
 
 function Harness() {
   usePreviewTriggers();
   const [times, set] = useState(2);
+  const [looking, look] = useState<string | undefined>(undefined);
   setTimes = set;
+  setLooking = look;
   return (
     <>
       <label id="margin-field" {...previewAttrs('margin')}>
@@ -29,6 +33,11 @@ function Harness() {
           Duplicar
         </button>
         <input id="dup-count" />
+      </div>
+      <div id="photo" {...previewAttrs('photoSize', looking)}>
+        <button type="button" id="photo-button" role="combobox" aria-expanded={looking !== undefined}>
+          Tamaño de foto
+        </button>
       </div>
       <p id="elsewhere">Nada</p>
     </>
@@ -135,5 +144,30 @@ describe('which control shows something on the canvas', () => {
     expect(now()).toEqual({ kind: 'duplicate', arg: '2' });
     await act(async () => setTimes(5));
     expect(now()).toEqual({ kind: 'duplicate', arg: '5' });
+  });
+
+  test('a list taken away with Esc shows again when it is opened again (it gets an argument again), without leaving it', async () => {
+    // Reached with Tab (jsdom's :focus-visible follows the last kind of input).
+    fireEvent.keyDown(document, { key: 'Tab' });
+    act(() => el('photo-button').focus());
+    await act(async () => setLooking('10x15'));
+    expect(now()).toEqual({ kind: 'photoSize', arg: '10x15' });
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(now()).toBeNull();
+    await act(async () => setLooking(undefined));
+    expect(now()).toBeNull();
+    await act(async () => setLooking('9x13'));
+    expect(now()).toEqual({ kind: 'photoSize', arg: '9x13' });
+  });
+
+  test('a control focused by a touch and then gone through with the arrows has the keyboard focus; other keys don’t give it', async () => {
+    fireEvent.pointerDown(el('photo-button'), { pointerType: 'touch' });
+    act(() => el('photo-button').focus());
+    await act(async () => setLooking('10x15'));
+    expect(now()).toBeNull();
+    fireEvent.keyDown(el('photo-button'), { key: 'a' });
+    expect(now()).toBeNull();
+    fireEvent.keyDown(el('photo-button'), { key: 'ArrowDown' });
+    expect(now()).toEqual({ kind: 'photoSize', arg: '10x15' });
   });
 });
