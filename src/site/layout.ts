@@ -1,8 +1,10 @@
 // The frame of every content page: <head> with its metadata, the header with
-// a way back to the editor, the breadcrumb, the page and the footer.
+// a way back to the editor, the breadcrumb, the page and the footer, with the
+// links to the same page in the other languages.
 
 import { APP_NAME } from '../config.ts';
 import { esc, scriptJson } from './html.ts';
+import { hreflangOf, LANGUAGES, languageName } from './langs.ts';
 import { alternates, breadcrumbLd, faqLd, shareTags } from './seo.ts';
 import { SITE_CSS, STACKED_CSS } from './styles.ts';
 import type { SiteContext, SitePage } from './types.ts';
@@ -14,6 +16,8 @@ export interface Chrome {
   crumbs: string;
   guides: string;
   legal: string;
+  /** The heading of the links to the page in other languages. */
+  languages: string;
   about: string;
   faq: string;
   imageAlt: string;
@@ -39,6 +43,21 @@ function faqSection(page: SitePage, chrome: Chrome) {
   if (!page.faq?.length) return '';
   const items = page.faq.map(({ q, a }) => `<h3>${esc(q)}</h3><p>${a}</p>`).join('');
   return `<section class="faq" aria-labelledby="faq"><h2 id="faq">${esc(chrome.faq)}</h2>${items}</section>`;
+}
+
+/**
+ * Plain links to the page's versions in every language, each named in its
+ * own language; none while it has only one. Unlike hreflang, a version that
+ * isn't indexed (a legal draft) is listed too: it is still the same page.
+ */
+function languageLinks(page: SitePage, ctx: SiteContext, chrome: Chrome) {
+  if (page.kind === 'error') return '';
+  const versions = LANGUAGES.flatMap((lang) => ctx.pages.filter((p) => p.id === page.id && p.lang === lang));
+  if (versions.length < 2) return '';
+  const items = versions
+    .map((p) => `<li><a href="${esc(p.path)}" hreflang="${esc(hreflangOf(p.lang))}" lang="${esc(hreflangOf(p.lang))}"${p.lang === page.lang ? ' aria-current="page"' : ''}>${esc(languageName(p.lang))}</a></li>`)
+    .join('');
+  return `\n<nav aria-labelledby="footer-languages"><h2 id="footer-languages">${esc(chrome.languages)}</h2><ul>${items}</ul></nav>`;
 }
 
 export function renderPage(page: SitePage, ctx: SiteContext, chrome: Chrome) {
@@ -88,7 +107,7 @@ ${faqSection(page, chrome)}
 </main>
 <footer class="site-footer"><div class="wrap">
 <nav aria-labelledby="footer-guides"><h2 id="footer-guides">${esc(chrome.guides)}</h2><ul>${footerLinks}</ul></nav>
-<nav aria-labelledby="footer-legal"><h2 id="footer-legal">${esc(chrome.legal)}</h2><ul>${legalLinks}</ul></nav>
+<nav aria-labelledby="footer-legal"><h2 id="footer-legal">${esc(chrome.legal)}</h2><ul>${legalLinks}</ul></nav>${languageLinks(page, ctx, chrome)}
 <p>${esc(chrome.about)}</p>
 </div></footer>
 ${scripts}

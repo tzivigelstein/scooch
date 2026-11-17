@@ -14,6 +14,7 @@ export const chrome = ({ ui }: Kit): Chrome => ({
   crumbs: 'Ruta de navegación',
   guides: 'Guías',
   legal: 'Información legal',
+  languages: 'Idioma',
   about: `${app} es gratis, no pide cuenta y tus archivos no salen del navegador.`,
   faq: 'Preguntas frecuentes',
   imageAlt: `${app}: fotos acomodadas en una hoja a tamaño real`,
