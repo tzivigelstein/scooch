@@ -2,188 +2,252 @@
 
 [![CI](https://github.com/tzivigelstein/scooch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tzivigelstein/scooch/actions/workflows/ci.yml)
 
-A web app to arrange images and PDF pages on sheets of paper at real size and
-download or print an exact PDF. Everything happens in the browser: files are
-never uploaded anywhere.
+Scooch is a web app for printing images and PDF pages at their real size. You
+place them on sheets of paper, let it arrange them so they take as few sheets
+as possible, and print or download a PDF with one page per sheet. Everything
+happens in your browser: files are never uploaded, and there are no accounts
+and no analytics. It is free to use.
 
-The editor is in Spanish, English, Simplified Chinese, Hindi and French: the
-browser's language, or the one chosen in Preferences. The site's guides and
-legal pages are in Spanish. React 19 and TypeScript, with Zustand for state
-and [Vite](https://vite.dev) for development and the build. pdf.js (reading
-PDFs) and pdf-lib (writing them) load only when first needed.
+<!-- Once the public address is decided, add it as one line here, e.g. "Use it at https://…". -->
+
+![The Scooch editor: on the left, six items listed by sheet; in the middle, an A4 sheet with four illustrations and a PDF page arranged in two columns with corner cut marks, and the top of a second sheet below it; on the right, the Project tab with the paper, layout and cut line settings](docs/images/editor.webp)
+
+## What it does
+
+- **Real size.** Every item has a physical size: images start at their size
+  at 300 ppi and PDF pages at their page size (both reduced if they would take
+  too much of the sheet), and you can set any size in mm, cm or inches. The
+  PDF has one page per sheet at the paper's exact size: A0 to A6, B4, B5,
+  Letter, Legal, Folio, Tabloid, photo papers or a custom size. Printed at
+  100%, the items measure on paper what they measure on screen; a short note
+  before printing says which print settings to choose.
+- **Arrange.** One button (or the A key) places every item on as few sheets
+  as it can, without overlaps, keeping the spacing you set and rotating items
+  when that fits more (Auto-rotate). When the items no longer fit on one
+  sheet, it offers to shrink them just enough to fit.
+- **Several sheets.** What doesn't fit goes on the next sheet. Sheets can be
+  added and removed, and items moved between them.
+- **Cut lines.** Corner marks, an outline around each item, or **Contour**:
+  for an image with transparency, such as a sticker, the line follows its
+  shape at the cut margin you choose. Weight, color and solid or dotted lines
+  are options. The lines are part of the PDF.
+- **Crop.** Crop an image by hand, or to a standard photo size (4 × 6 in,
+  5 × 7 in, passport 3.5 × 4.5 cm, visa 2 × 2 in and others).
+- **Editing.** Move, resize and rotate; align and distribute; duplicate,
+  fill a sheet with copies, copy and paste (including images pasted from other
+  apps); a grid with snapping. Items that go off the sheet, cross the margin,
+  overlap or may print pixelated are flagged.
+- **Projects saved in this browser.** Work is saved as you go, as projects
+  you can open, rename, duplicate and delete. The undo history (the last 50
+  steps) is saved with each project, so Undo still works after a reload. A
+  project opened in a second tab is saved by that tab only, and the first one
+  says so: changes are never overwritten silently.
+- **Keyboard first.** Ctrl+K (⌘K on a Mac) opens a command palette that finds
+  any action by name. Everything can be done with the keyboard alone, most
+  actions have shortcuts, and the shortcuts dialog lists them all.
+  Single-key shortcuts such as A or R can be turned off.
+- **Five languages, light and dark.** The interface is in English, Spanish,
+  Simplified Chinese, Hindi and French: the browser's language, or the one
+  chosen in Preferences. The theme follows the system or is set by hand.
+- **Phones and tablets.** On narrow screens the panels move behind buttons;
+  two fingers zoom and pan the sheets.
+- **Paper saved.** After printing or downloading, a summary says how many
+  sheets the arrangement saved compared with printing one item per sheet, with
+  a running total kept on this device. It can be turned off.
+
+## A closer look
+
+Contour cut lines on a sheet of stickers, 2 mm from each shape, with the cut
+line options open:
+
+![An A4 sheet with twelve stickers (leaves, stars, lemon slices and hearts) arranged in four rows, each surrounded by a black cut line that follows its shape; the Cut lines section on the right has Contour selected, a cut margin of 2 mm and a medium weight](docs/images/cut-lines.webp)
+
+The projects saved in this browser, with the space they use:
+
+![The Projects dialog with three project cards, Postcards (open), Stickers and Photo prints, each with a thumbnail of its first sheet, when it was last changed and how many sheets and items it has; a bar at the bottom reads 4.2 MB of 2 GB used](docs/images/projects.webp)
+
+The command palette, here finding the rotate commands for the selected item,
+with their keys:
+
+![The command palette with the search "rot" listing Rotate left (Shift+R), Rotate right (R) and Change sheet orientation (L)](docs/images/command-palette.webp)
+
+The summary after downloading the PDF:
+
+![A dialog titled "You saved 4 sheets" with "66% less paper", a row of six sheets for one item per sheet against two sheets with Scooch, "51% of the sheets used" and "4 sheets saved so far: about 20 g of paper"](docs/images/savings-summary.webp)
+
+The dark theme, with an item selected (its toolbar on the sheet, its
+measurements in the Item tab):
+
+![The editor in the dark theme with the meadow illustration selected: a floating toolbar above it with its size and buttons to rotate, crop, duplicate and remove, and the Item tab on the right with its position, size, scale, photo size, alignment and duplicate controls](docs/images/editor-dark.webp)
+
+On a phone:
+
+<img src="docs/images/phone.webp" width="320" alt="Scooch on a 390-pixel-wide phone screen: the project name and tool buttons in two rows at the top, the arranged sheet filling the width, and Items and Properties buttons floating at the bottom">
+
+## Privacy
+
+- **Nothing leaves the browser.** Images and PDFs are read, and the PDF is
+  made, on your device. There is no server side: the host only serves the
+  app's static files (and, like any web host, sees the visits). Fonts and
+  libraries are part of the build and come from the same address as the app;
+  there are no third-party scripts, cookies or analytics.
+- **Projects stay in this browser.** Projects, their files, their undo
+  history and the preferences are kept in the browser's storage (IndexedDB and
+  localStorage, under the `scooch` prefix). They don't sync to other
+  browsers or devices, and clearing the site's data in the browser deletes
+  them. Where the browser allows no storage (some private windows), the app
+  still works, says that it can't save, and the work is gone when the tab
+  closes.
+- **How this is checked.** The static pages are tested to make no request
+  outside their own origin (`e2e/specs/site-pages.spec.ts`). Every setting
+  declares where it is kept (`src/state/settings.ts`, checked by
+  `tests/state/settings-registry.test.ts`), and a test fails when a key the
+  app keeps in localStorage is missing from the privacy policy draft
+  (`tests/site/legal.test.ts`). The editor has no code that sends data
+  anywhere, but no test yet checks that it never contacts another origin: a
+  change that adds any request elsewhere also has to update the privacy
+  policy ([docs/legal/README.md](docs/legal/README.md) lists what to check).
+
+## Limits
+
+- There is no offline mode: the app needs the network to load, and the PDF
+  reader and writer load the first time they are needed.
+- Up to 200 items per project; each file up to 40 MB and 60 megapixels.
+  Images open if the browser can decode them: JPEG, PNG and WebP in every
+  browser below; other formats, such as HEIC, depend on the browser.
+  Password-protected PDFs are refused.
+- The translations other than Spanish still await review by native speakers.
+  The site's guides and legal pages are in Spanish only.
+
+## Browsers
+
+The browser test suite runs on every push to `main` and every pull request,
+in GitHub Actions, on Playwright's Chromium, WebKit and Firefox (on Linux),
+and all three have to pass. A few tests skip themselves where Playwright can't
+drive an engine, saying why: touch gestures run only in Chromium, and so does
+printing from a hidden frame (Safari opens the PDF in a new tab instead, and
+Playwright's Firefox has no PDF viewer). Playwright's WebKit is close to
+Safari but is not Safari, and the app has not been tested on every real
+device; reports from Safari, iOS and Android are welcome.
 
 ## Development
 
-Requires Node.js 24 (`.nvmrc` pins the major: `nvm use`) and Yarn 1.
+Requires Node.js 24 (`.nvmrc` pins the major: `nvm use`) and Yarn 1.22.
 
 ```sh
-yarn install      # dependencies
-yarn dev          # development server with hot reload
-yarn build        # production build in dist/
-yarn preview      # serves dist/ to try the build
-yarn typecheck    # TypeScript (src, tests and e2e), no emit
-yarn test         # every Vitest project: unit, properties, state, ui, performance
-yarn e2e          # browser tests (Playwright), see below
-yarn size         # gzip sizes of dist/ against their budgets
-yarn verify       # typecheck + test + build + size + e2e + the ledger check
+yarn install                       # dependencies (CI uses --frozen-lockfile)
+yarn playwright install chromium   # once, for the browser tests and the screenshots
+yarn dev                           # development server with hot reload
+yarn build                         # production build in dist/
+yarn preview                       # serves dist/
+yarn typecheck                     # TypeScript: src, tests and e2e
+yarn test                          # every Vitest project
+yarn e2e                           # browser tests (Playwright) against a production build
+yarn size                          # gzip sizes of dist/ against their budgets (after a build)
+yarn ledger                        # checks e2e/ledger.csv against the existing tests
+yarn verify                        # typecheck, test, build, size, e2e and ledger, in that order
+yarn screenshots                   # regenerates the images in docs/images/
 ```
+
+React 19 and TypeScript, Zustand for state and Vite for the build. pdf.js
+reads PDFs and pdf-lib writes them; both load only when first needed.
+`yarn e2e` serves its build on 127.0.0.1:4319 and `yarn screenshots` on
+127.0.0.1:4800, so neither touches the development server (5173). The
+screenshots are taken by `scripts/screenshots.mjs` from a production build in
+Chromium, with sample pictures it draws itself; run `yarn screenshots` after a
+change that shows in them.
+
+### Project layout
+
+```
+index.html          the single page: critical CSS, the editor's skeleton, theme and language chosen before the first paint
+src/
+  main.tsx, App.tsx start and layout
+  config.ts         app name, limits and storage keys
+  core/             pure logic, no DOM: packing, alignment, crop, cut lines and contours, units, zoom, the project format and its migrations
+  state/            Zustand stores, selectors, the undo history and the commands registry
+    actions/        everything that changes the document, one undo step per operation
+  services/         reading files, writing the PDF, printing, projects and their storage (storage/: IndexedDB and localStorage)
+  components/       React components by area, each with its stylesheet beside it
+  hooks/            keyboard shortcuts, pointer and touch gestures, focus rescue
+  copy/             every interface text: one catalogue per language (es.ts is the source), used through t()
+  site/             the static pages rendered at build time: guides, questions, legal pages, sitemap
+  styles/           shared stylesheets; index.css declares the cascade layers
+tests/              Vitest tests by layer
+e2e/                Playwright specs, their helpers, fixtures and the ledger
+scripts/            the size check and its budgets, the screenshot script
+docs/               the guides below and the README's images
+```
+
+A few rules shape the code:
+
+- Lengths in the document are millimeters. Every conversion between screen
+  pixels and millimeters goes through `src/components/canvas/viewport.ts`;
+  the sheets' zoom is view state and never changes the printed size.
+- The interface is sized in rem from the browser's own font size, so it
+  follows the browser's zoom and text size, never the screen's width.
+- Components subscribe to the slices of state they show. Everything that
+  changes the document goes through `src/state/actions/`, so each operation
+  is one undo step.
+- Every action is listed once in `src/state/commands.ts`; the command
+  palette, the shortcuts dialog and the context menus read it.
+- Styles are plain CSS next to their component (`Stage.css` beside
+  `Stage.tsx`). Cascade layers, declared once in `src/styles/index.css`, fix
+  the order, so the order stylesheets load in can't change the result. Parts
+  that load later bring their own stylesheet.
+- Stored formats are frozen: the project document is at version 6, and any
+  change to it, or to what IndexedDB and localStorage keep, comes with a new
+  version and a migration. [CONTRIBUTING.md](CONTRIBUTING.md#stored-formats-are-frozen)
+  has the details.
 
 ### Tests
 
-[docs/testing.md](docs/testing.md) explains the layers (what goes in Vitest
-and what only a real browser can check), how to run part of them and how to
-add a test. `yarn e2e` builds the app into `e2e/out/build`, serves it with
-`vite preview` on 127.0.0.1:4319 (`E2E_PORT`) and runs every spec in
-`e2e/specs/`; everything a run writes goes under `e2e/out/` (`E2E_OUT`),
-which is ignored. While working on something, run only what it touches:
+Each check lives in the lowest layer that can make it: pure functions in unit
+and property tests, document rules by calling the actions on the real stores,
+single controls with Testing Library, and only what needs a real browser
+(pointer and touch, focus, geometry on screen, storage across reloads,
+printing, the exported PDF, accessibility scans with axe in both themes) in
+Playwright against the production build. There are no retries and no quick
+mode. [docs/testing.md](docs/testing.md) explains the layers, how to run part
+of them, how CI is organized and how to reproduce a failure.
 
-```sh
-node_modules/.bin/vitest run tests/state/sheets.test.ts
-node_modules/.bin/playwright test e2e/specs/paper.spec.ts -g 'landscape'
-```
+### Deploying
 
-The browser tests include axe checks of every state in light and dark mode,
-keyboard-only flows, the exported PDF's contents, the projects' storage and
-performance budgets for dragging, scrolling and zooming with 150 pieces.
-There is no quick mode and no retries.
+The build is static files in `dist/`. On Vercel, importing the repository
+needs no configuration; `vercel.json` adds clean URLs and long cache headers
+for the hashed assets. A production release needs `SITE_URL` and the legal
+texts completed: [docs/site.md](docs/site.md) explains what stops it.
 
-CI (GitHub Actions, `.github/workflows/ci.yml`) runs the same checks on every
-push to `main` and every pull request, plus the browser tests on WebKit and
-Firefox. [docs/testing.md](docs/testing.md#continuous-integration)
-explains the jobs and the size budgets.
+## Documentation
 
-## Projects and privacy
-
-Each piece of work is a project saved only in this browser (IndexedDB): the
-document, its original files and the already rasterized previews. Nothing is
-uploaded. If the browser doesn't allow IndexedDB (some private windows), the
-app works the same but doesn't save, and says so.
-
-Everything the app stores lives under one namespace, `STORAGE_NAMESPACE` in
-`src/config.ts` (`scooch`): the `scooch` database, the `scooch-projects`
-channel and the `scooch:*` localStorage keys (preferences, the last open
-project, the last-moment journal). The namespace is separate from the app's
-name (`APP_NAME`) so a rename can't lose anyone's projects. Data saved before
-the app was renamed (database `pliego`, unprefixed keys) moves over once, on
-the first start (`src/services/storage/migrate.ts`): the copy is written
-before the old data is removed, so an interruption loses nothing.
-
-With the app open in several tabs, each project is saved by one tab only: the
-one that opens it asks the others through a `BroadcastChannel`, and the one
-that had it saves what is pending, stops saving and says so («Editar aquí»
-takes it back, reloading it). Changes are never overwritten silently.
-
-## Large screens
-
-The interface keeps its size at every width: everything is in rem, and the
-root font size (`html` in `src/styles/base.css`) is the browser's 100 %, so
-it follows the browser's zoom and the chosen font size, never the screen.
-Only the side panels get wider on wide screens, up to a cap (in
-`src/styles/tokens.css`: `--left-w: clamp(14.25rem, 15vw, 20rem)` and
-`--right-w: clamp(18rem, 19vw, 24rem)`). The sheets have their own zoom (see
-below).
-
-## Zoom
-
-The sheets' zoom is a view measure: 100 % draws 1 mm as 96 / 25.4 CSS px and
-never changes the printed size. It starts fitted to the sheet and follows the
-window until the person zooms (Ctrl/⌘ + wheel or pinch, Ctrl/⌘ + / −, the
-control in the canvas corner; Shift+1 and Shift+2 fit again), from 10 % to
-800 %. It is view state: not in the document or the undo history. Every
-conversion between screen pixels and millimetres goes through
-`src/components/canvas/viewport.ts`; the pure part (levels, steps, the wheel,
-a pinch step) is `src/core/zoom.js`. On a touch screen two fingers zoom around
-their midpoint and pan, in crop mode too; lifted while panning, the view
-glides on and slows down to a stop (`src/core/glide.js`; not with reduced
-motion). The browser's page zoom stays off the canvas (`touch-action` on the
-stage) and keeps working over the panels and dialogs.
-
-## Deploying to Vercel
-
-Import the repository in Vercel: it detects Vite and needs no configuration
-(it installs with `yarn install`, builds with `vite build` and publishes
-`dist/`). `vercel.json` only adds long cache headers for the hashed files in
-`dist/assets/`.
-
-## How it's built
-
-- **State** lives in small Zustand stores in `src/state/`: the document
-  (sheets, pieces, paper and selection), the undo history, the view, the
-  preferences and the open project's status. Assets (binaries) and live
-  gesture values stay outside React. Components subscribe to the slices they
-  show; everything that changes the document goes through the actions in
-  `src/state/actions/`, which record one undo step per operation.
-- **Pure logic** (packing, alignment, groups, crop, cut marks, units, the
-  project format) is in `src/core/`, plain JavaScript with `.d.ts` types and
-  no DOM, tested in `tests/core/`.
-- **Texts** all come from `src/copy/` through `t()`: one file per language
-  (`es.ts` is the source of the keys), and the app downloads only the one it
-  shows; `docs/copy.md` is the copy guide. `index.html` only carries the few
-  texts needed before the app starts, filled in at build time, and a script
-  that picks the language before the first paint.
-- **Dialogs** keep their `<dialog>` shells in the page; the contents of the
-  rarely used ones load on first use or when the app is idle.
-- **Styles** are plain CSS with global class names. A component's styles
-  live next to it (`Stage.css` beside `Stage.tsx`) and its module imports
-  them; `src/styles/` keeps only what is shared: the tokens (colors, sizes,
-  per theme and screen size), the base, the buttons and form controls, the
-  app's layout, printing and the system's preferences. Cascade layers fix the
-  order, declared once in `src/styles/index.css` (`boot`, `tokens`, `base`,
-  `primitives`, `ui`, `layout`, `components`, `overrides`; `boot` is
-  `index.html`'s inline critical CSS): a later layer wins whatever the
-  selectors, so the order the files arrive in can't change the result. The
-  parts that load later (the dialogs but «confirm», the menus, crop mode,
-  the command palette) bring their own stylesheet with their chunk, and
-  Vite loads it before the chunk runs, so they open already styled; the rest
-  is in the stylesheet the editor loads at start.
-- **Commands**: every action the app has is listed once in
-  `src/state/commands.ts` (name, other words that find it, keys from the
-  shortcut table in `src/hooks/shortcuts.ts`, why it can't run now, and the
-  action it calls). The command palette (Ctrl/⌘ + K) lists them, the
-  shortcuts dialog shows their keys, and the context and zoom menus take
-  their entries from there.
+- [docs/testing.md](docs/testing.md): test layers, running them, CI and size
+  budgets.
+- [docs/copy.md](docs/copy.md): the copy guide (in Spanish), with a glossary
+  per language in [docs/copy/](docs/copy).
+- [docs/site.md](docs/site.md): the static pages and what a release needs.
+- [docs/deep-links.md](docs/deep-links.md): links that open the editor with a
+  new project set up.
+- [docs/legal/README.md](docs/legal/README.md): the drafts of the terms and the
+  privacy policy, and how to keep them true.
 
 ## Contributing
 
-- **Stored formats are frozen.** The shape of a project document version that
-  has ever been written to storage never changes: any format change, even a
-  new optional field and even during development, gets a new `DOC_VERSION`
-  with its migration in `src/core/projectdoc.js` and a fixture in
-  `tests/fixtures/documents/` (the app is used, and deployed from `main`,
-  while it is being worked on). `tests/core/documents.test.js` opens every
-  fixture and fails when a shape changes without a new version. The same goes
-  for what is kept in IndexedDB and localStorage.
-- Reading is tolerant: an optional setting that is missing or can't be read
-  takes its default and out-of-range numbers are clamped (`repair`); only a
-  document that can't be interpreted is shown as damaged.
+Bug reports, ideas and pull requests are welcome. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) first: it covers the setup, the
+conventions and the contribution terms. For anything bigger than a small fix,
+open an issue first. Security problems go privately, as
+[SECURITY.md](SECURITY.md) explains. Everyone taking part follows the
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
-## Structure
+## License
 
-```
-index.html              the single page (Vite's entry): critical styles and the editor's skeleton, shown while it loads
-src/
-  main.tsx, App.tsx     start and layout
-  config.ts             app name, limits and storage keys
-  copy/                 every interface text, one file per language, and t(key, params)
-  core/                 pure modules (no DOM), with tests in tests/core/
-  state/                Zustand stores, selectors, the undo history and the commands
-    actions/            everything that changes the document, by area
-  components/           React components by area, each with its stylesheet beside it (Name.css next to Name.tsx)
-    topbar/             app bar and the open project's name and status
-    pieces-panel/       pieces list, grouped by sheet
-    canvas/             sheets, pieces, selection frame, piece toolbar, zoom, crop mode
-    properties-panel/   piece, sheet, arrange, cut lines and grid sections (sections.css: what they share)
-    dialogs/            shortcuts, preferences, projects, the advice before printing, confirm
-    palette/            the command palette and its recent commands
-    feedback/           notice pill, usage tips, tooltip, live regions and the summary after printing
-    ui/                 shared controls (buttons, fields, switches, segmented controls, tabs, sections, dialog, menu)
-  hooks/                keyboard shortcuts, pointer gestures, focus rescue
-  services/             files, PDF export, printing, projects and storage
-  styles/               the shared stylesheets: tokens, base, buttons, form controls, layout, printing, system preferences; index.css declares the layers
-tests/                  Vitest tests by layer (core, properties, state, services, components, hooks, performance)
-e2e/                    browser tests (Playwright): specs/, their support/ helpers, fixtures and the ledger
-scripts/                the bundle size check (yarn size) and its budgets
-docs/testing.md         test layers, how to run them and how to add a test
-docs/copy.md            copy guide: rules, glossary and examples
-vite.config.ts          React, the static texts of index.html and chunk names
-```
+Scooch is source-available under the
+[PolyForm Noncommercial License 1.0.0](LICENSE). In plain words: anyone may
+use, read, change and share it for any noncommercial purpose, including
+personal use and use by charities, schools, public research organizations and
+government institutions. Commercial use is not allowed. It is not an
+open-source license. The license text is what applies; this summary is not a
+substitute for it.
+
+The third-party software in the build, each under its own license, is listed
+in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
