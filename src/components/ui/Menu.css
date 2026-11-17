@@ -65,6 +65,13 @@
     font-size: 0.6875rem;
   }
 
+  /* Touch: no keys to show. */
+  @media (pointer: coarse) {
+    .menu-keys {
+      display: none;
+    }
+  }
+
   /* Disabled: muted, with why below its name (not just color: the reason says it). */
   .menu-item[aria-disabled="true"] {
     color: var(--muted);

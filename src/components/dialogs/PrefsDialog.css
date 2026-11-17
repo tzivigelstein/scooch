@@ -21,6 +21,13 @@
     font-weight: 600;
   }
 
+  /* Touch: single-key shortcuts need a keyboard, so their switch has nothing to offer. */
+  @media (pointer: coarse) {
+    .switch-row:has(#single-keys) {
+      display: none;
+    }
+  }
+
   /* Units and theme: three short choices, not stretched across the dialog. */
   .pref-section > .segmented {
     max-width: 17.5rem;

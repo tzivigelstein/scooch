@@ -327,3 +327,27 @@ test('a tooltip shows on the button the pointer rests on, coming straight from a
   await page.locator('#prefs-open').hover();
   await expect(page.locator('#tooltip')).toHaveText(/^Preferencias/);
 });
+
+test.describe('on a touch screen wider than a small phone', () => {
+  test.use({ viewport: { width: 412, height: 915 }, hasTouch: true });
+
+  test('nothing shows a keyboard shortcut: no shortcuts button, no keys in the menus or the command list, no single-key preference', async ({ app }) => {
+    const { page } = app;
+    test.skip(!(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)), 'this engine doesn’t report a touch screen as a coarse pointer');
+    await expect(page.locator('#help')).toBeHidden();
+
+    await page.locator('#zoom-level').tap();
+    await expect(page.locator('[role="menu"] [role="menuitem"]').first()).toBeVisible();
+    await expect(page.locator('[role="menu"] kbd:visible')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
+    await page.locator('#palette-open').tap();
+    await expect(page.locator('#palette-list [role="option"]').first()).toBeVisible();
+    await expect(page.locator('#palette-list kbd:visible')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
+    await page.locator('#prefs-open').tap();
+    await expect(page.locator('#prefs[open] #tips-pref')).toBeVisible();
+    await expect(page.locator('#single-keys')).toBeHidden();
+  });
+});

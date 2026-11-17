@@ -205,8 +205,9 @@
     }
   }
 
-  @media (max-width: 399.98px) {
-    /* Phones: keyboard shortcuts don't apply without a keyboard (still reachable with «?»). */
+  /* Touch screens, and windows too narrow for it: keyboard shortcuts don't
+     apply without a keyboard (the list is still reachable with «?»). */
+  @media (pointer: coarse), (max-width: 399.98px) {
     #help {
       display: none;
     }
