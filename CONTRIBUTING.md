@@ -28,6 +28,7 @@ yarn playwright install chromium   # once, for the browser suites
 | `yarn size` | Gzip sizes of `dist/` against their budgets (`scripts/size-budgets.json`) |
 | `yarn ledger` | Checks that every row of `e2e/ledger.csv` has a destination and names a test that exists |
 | `yarn preview` | Serves `dist/` to try the build |
+| `yarn screenshots` | Regenerates the README's screenshots in `docs/images/` from a production build (port 4800) |
 
 [docs/testing.md](docs/testing.md) explains which layer a test belongs to,
 how to run only the tests a change touches (`node_modules/.bin/vitest run
@@ -56,12 +57,13 @@ src/
 tests/            Vitest tests by layer (see docs/testing.md)
   fixtures/documents/   one stored project document per format version
 e2e/              browser tests (Playwright): specs/, support/, fixtures/ and the ledger
-scripts/          the bundle size check (yarn size) and its budgets
+scripts/          the bundle size check (yarn size) and its budgets, the README's screenshots
 docs/copy.md      copy guide for the interface texts (in Spanish), with a glossary per language in docs/copy/
 docs/testing.md   test layers, running them and adding one
 docs/site.md      the static pages and what a release needs
 docs/deep-links.md links that open the editor with a new project set up
 docs/legal/       drafts of the terms and the privacy policy
+docs/images/      the README's screenshots (yarn screenshots)
 ```
 
 The [README](README.md) explains how the parts fit together.
@@ -205,7 +207,8 @@ Every change keeps this bar:
 
 - Keep each pull request to one topic, and fill in the template.
 - Include screenshots or a short recording for visible changes, in light and
-  dark mode if colors are involved.
+  dark mode if colors are involved. If the change shows in the README's
+  screenshots, run `yarn screenshots` and commit the new images.
 - Don't commit `dist/` or `e2e/out/`.
 
 ## Reporting bugs
