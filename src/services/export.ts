@@ -120,7 +120,8 @@ function build(job: PdfJob, signal?: AbortSignal): Promise<Blob> {
     };
     worker.onerror = (event) => {
       event.preventDefault();
-      inPage(event.message);
+      // A script or import that didn't load comes without a message (Chromium, WebKit).
+      inPage(event.message || 'its script did not load');
     };
     worker.onmessageerror = () => inPage('its reply could not be read');
     signal?.addEventListener('abort', stop, { once: true });

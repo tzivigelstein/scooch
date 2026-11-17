@@ -18,8 +18,8 @@ import { piece, resetState } from '../support/state.ts';
 const fixture = (name: string) => new Uint8Array(readFileSync(resolve(import.meta.dirname, '../../e2e/fixtures', name)));
 const MM_PER_PT = 25.4 / 72;
 
-/** How the stand-in answers: as the worker does, by failing to run, with a reply that can't be read, or not yet. */
-type Answer = 'build' | 'crash' | 'unreadable' | 'hold';
+/** How the stand-in answers: as the worker does, by failing to run or to load, with a reply that can't be read, or not yet. */
+type Answer = 'build' | 'crash' | 'unloaded' | 'unreadable' | 'hold';
 
 class FakeWorker {
   onmessage: ((event: MessageEvent<PdfReply>) => void) | null = null;
@@ -39,6 +39,7 @@ class FakeWorker {
   private async run(job: PdfJob) {
     await Promise.resolve();
     if (this.answer === 'crash') return this.onerror?.({ message: 'Uncaught RangeError: out of memory', preventDefault() {} } as ErrorEvent);
+    if (this.answer === 'unloaded') return this.onerror?.({ message: '', preventDefault() {} } as ErrorEvent);
     if (this.answer === 'unreadable') return this.onmessageerror?.({} as MessageEvent);
     if (this.answer === 'hold') return;
     const reply = await pdfReply(lib, job);
@@ -214,6 +215,7 @@ describe('where the worker can’t build it', () => {
 
   test.each<[Answer, string]>([
     ['crash', 'Uncaught RangeError: out of memory'],
+    ['unloaded', 'its script did not load'],
     ['unreadable', 'its reply could not be read'],
   ])('a worker that stops (%s): the page builds the same PDF, the worker is ended, and the console says why', async (answer, why) => {
     const page = await inThePage();
