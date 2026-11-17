@@ -45,23 +45,33 @@
   "pageScripts": {
     "kB": 6.5,
     "measured": 6.2,
-    "what": "The scripts the static pages load, built apart from the editor: today only the calculator (cuantas-fotos-caben-en-una-hoja). Grows a lot if it ever pulls in editor code."
+    "what": "The scripts the static pages load, built apart from the editor: today only the calculator, one file for the calculator page of every language. Grows a lot if it ever pulls in editor code."
   },
   "pages": {
     "*": {
-      "kB": 7.4,
-      "measured": 7.0,
-      "what": "Each static page (every .html of the build but the editor's index.html), its HTML with its inline CSS; it applies to new pages too. Set on the largest one, cuantas-fotos-caben-en-una-hoja; the other guides are 5.3 to 5.8 kB and the legal pages 5.7 to 6.4 kB."
+      "kB": 7.8,
+      "measured": 7.4,
+      "what": "Each static page (every .html of the build but the editor's index.html), its HTML with its inline CSS, in every language; it applies to new pages too. Set on the largest one, the calculator (es/cuantas-fotos-caben-en-una-hoja; 7.2 kB in English); the other guides are 5.5 to 6.1 kB and the legal pages 6.0 to 6.6 kB. Each carries its hreflang links and the links to its other languages (about 0.3 kB)."
     },
     "es/privacidad.html": {
-      "kB": 8.1,
-      "measured": 7.7,
+      "kB": 8.4,
+      "measured": 8.0,
       "what": "The privacy policy, from docs/legal/privacidad.md: it lists every key the app stores in the browser, so it grows with each new setting."
+    },
+    "en/privacy.html": {
+      "kB": 8.2,
+      "measured": 7.8,
+      "what": "The privacy policy in English, from docs/legal/en/privacy.md: like the Spanish one, it grows with each new setting."
     },
     "es/licencias-de-terceros.html": {
       "kB": 15,
-      "measured": 14.2,
+      "measured": 14.4,
       "what": "The third-party licenses page, from THIRD_PARTY_NOTICES.md: it grows with each dependency the build ships."
+    },
+    "en/third-party-licenses.html": {
+      "kB": 15,
+      "measured": 14.3,
+      "what": "The third-party licenses page in English, the same THIRD_PARTY_NOTICES.md: it grows with each dependency the build ships."
     }
   }
 }
