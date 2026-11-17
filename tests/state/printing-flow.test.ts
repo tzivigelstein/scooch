@@ -2,12 +2,11 @@
 // Printing and downloading (output.ts), with the PDF, the browser and the
 // advice dialog faked: the PDF starts before the advice shows and goes out in
 // the click of its button; closing it otherwise sends nothing and stops the
-// PDF; turned off, it
-// goes straight out; nothing else exports meanwhile; a crop in progress is
-// applied before the PDF starts. What each way of printing says (no tip any
-// more: the advice gave it), and the summary once the person is back, with
-// what it counts on this device: each PDF once, a print only once it settles
-// (a page load, another PDF, its download).
+// PDF; turned off, it goes straight out; nothing else exports meanwhile; a
+// crop in progress is applied before the PDF starts. What each way of
+// printing says (no tip any more: the advice gave it), and the summary once
+// the person is back, with what it counts on this device: each PDF once, a
+// print only once it settles (a page load, another PDF, its download).
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { createElement } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
