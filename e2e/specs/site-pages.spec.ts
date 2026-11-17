@@ -1,5 +1,5 @@
-// The site's static pages as the build writes them and a browser shows them
-// (what each page says is checked in tests/site/pages.test.ts): every page is
+// The site's static pages as the build writes them and a browser shows them,
+// in every language (what each page says is checked in tests/site): every page is
 // a file of its own with what search engines read and nothing of the editor;
 // the sitemap lists exactly the indexable ones; axe finds nothing in light or
 // dark; nothing moves while loading; few, small, same-origin requests; no page
@@ -15,14 +15,18 @@ import { expect, norm, test } from '../support/test.ts';
 // Where playwright.config.ts builds the app.
 const BUILD = join(process.env.E2E_OUT ?? 'e2e/out', 'build');
 const html = (file: string) => readFileSync(join(BUILD, file), 'utf8');
-const pageFiles = () => readdirSync(join(BUILD, 'es')).map((f) => `es/${f}`);
+/** Every page of every language: a folder of the build per language, besides the editor's assets. */
+const pageFiles = () =>
+  readdirSync(BUILD, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && d.name !== 'assets')
+    .flatMap((d) => readdirSync(join(BUILD, d.name)).map((f) => `${d.name}/${f}`));
 const pathOf = (file: string) => `/${file.replace(/\.html$/, '')}`;
 const indexable = (file: string) => !/<meta name="robots" content="noindex">/.test(html(file));
 
 test.describe('the build', () => {
   test('every page is a static file with one h1, a title, a description, a canonical URL, valid structured data and nothing of the editor', () => {
     const files = pageFiles();
-    expect(files.length).toBeGreaterThanOrEqual(11);
+    expect(files.length).toBeGreaterThanOrEqual(22);
     for (const file of [...files, '404.html']) {
       const text = html(file);
       expect(text.match(/<h1[\s>]/g), file).toHaveLength(1);
@@ -50,7 +54,8 @@ test.describe('the build', () => {
   });
 
   test('a content page weighs little: its HTML and its script together, gzipped', () => {
-    for (const file of pageFiles().filter((f) => !/licencia/.test(f))) {
+    // The license texts are as long as they are.
+    for (const file of pageFiles().filter((f) => !/licen[cs]/.test(f))) {
       const text = html(file);
       const scripts = [...text.matchAll(/<script type="module" src="\/([^"]+)"/g)].map((m) => readFileSync(join(BUILD, m[1])));
       const bytes = [Buffer.from(text), ...scripts].reduce((sum, b) => sum + gzipSync(b, { level: 9 }).length, 0);
@@ -78,7 +83,11 @@ async function load(page: Page, path: string) {
   return { shift, requests };
 }
 
-const SHOWN = ['es/imprimir-varias-fotos-en-una-hoja.html', 'es/cuantas-fotos-caben-en-una-hoja.html', 'es/fotos-10x15-en-hoja-a4.html', 'es/foto-carnet-para-imprimir.html', 'es/imprimir-misma-foto-varias-veces.html', 'es/imprimir-imagen-tamano-real.html', 'es/preguntas-frecuentes.html', 'es/terminos.html', 'es/privacidad.html', 'es/licencias-de-terceros.html', 'es/licencia.html'];
+// Listed by hand: tests are collected before the build is written.
+const SHOWN = [
+  ...['imprimir-varias-fotos-en-una-hoja', 'cuantas-fotos-caben-en-una-hoja', 'fotos-10x15-en-hoja-a4', 'foto-carnet-para-imprimir', 'imprimir-misma-foto-varias-veces', 'imprimir-imagen-tamano-real', 'preguntas-frecuentes', 'terminos', 'privacidad', 'licencias-de-terceros', 'licencia'].map((name) => `es/${name}.html`),
+  ...['print-multiple-pictures-on-one-page', 'how-many-photos-fit-on-a-page', 'print-4x6-photos-on-a4', 'print-passport-photos-at-home', 'print-same-picture-multiple-times', 'print-image-actual-size', 'faq', 'terms', 'privacy', 'third-party-licenses', 'license'].map((name) => `en/${name}.html`),
+];
 
 test.describe('in the browser', () => {
   for (const file of SHOWN) {
@@ -149,6 +158,15 @@ test.describe('in the browser', () => {
     await page.locator('#calc-margin').blur();
     await expect(page.locator('#calc-open')).toHaveAttribute('href', /photo=25x30mm/);
     await expect(page.locator('#calc-open')).toHaveAttribute('href', /margin=0/);
+  });
+
+  test('the English calculator gives the same answer in English, and opens the editor set up the same way', async ({ page }) => {
+    await page.goto('./en/how-many-photos-fit-on-a-page');
+    await page.locator('#calc-paper').selectOption('letter');
+    await page.locator('#calc-photo').selectOption('passport-35x45');
+    await expect(page.locator('#calc-count strong')).toHaveText('30');
+    expect(norm(await page.locator('#calc-summary').textContent())).toBe('Passport 3.5 × 4.5 cm (35 × 45 mm) on Letter portrait, with a 5 mm margin and 2 mm spacing');
+    await expect(page.locator('#calc-open')).toHaveAttribute('href', '/?paper=letter&orientation=portrait&margin=5&gap=2&photo=passport-35x45&rotate=on');
   });
 
   test('the editor’s page carries its canonical URL, share tags and structured data, and says what it does before it loads', async ({ page }) => {
