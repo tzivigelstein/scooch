@@ -116,8 +116,8 @@ every push to `main` and on every pull request, in jobs side by side, after
 | Typecheck, unit tests and ledger | `yarn typecheck`, `yarn test`, `yarn ledger` |
 | Build and size budgets | `yarn build`, `yarn size` |
 | Browser tests (Chromium) | `yarn e2e` (chromium, then performance) with `E2E_TIME_FACTOR=2` |
-| Browser tests (WebKit, `<group>`, allowed to fail) | `E2E_WEBKIT=1 E2E_GROUP=<group> yarn e2e --project=webkit`, one job a group |
-| Browser tests (Firefox, `<group>`, allowed to fail) | `E2E_FIREFOX=1 E2E_GROUP=<group> yarn e2e --project=firefox`, one job a group |
+| Browser tests (WebKit, `<group>`) | `E2E_WEBKIT=1 E2E_GROUP=<group> yarn e2e --project=webkit`, one job a group |
+| Browser tests (Firefox, `<group>`) | `E2E_FIREFOX=1 E2E_GROUP=<group> yarn e2e --project=firefox`, one job a group |
 
 - **CI builds as `yarn build` does locally.** `VERCEL_ENV` isn't set, so the
   missing `SITE_URL` and the legal placeholders only warn; only a Vercel
@@ -139,11 +139,10 @@ every push to `main` and on every pull request, in jobs side by side, after
   of the app broke, and no job comes near its time limit (the whole suite on
   WebKit takes over half an hour on a runner). A new spec has to be added to
   a group: no run starts while a spec is in none.
-- **WebKit and Firefox are allowed to fail for now** (`continue-on-error`):
-  their jobs can end red without failing the run, and stop after 30 minutes
-  (`--global-timeout`) so they always write their report. Read the report
-  (or reproduce it with Docker, above), fix what is a real bug, and remove a
-  job's `continue-on-error` once it passes reliably.
+- **WebKit and Firefox fail the run like Chromium.** Their jobs stop after
+  30 minutes (`--global-timeout`) so they always write their report. Read
+  the report, or reproduce the failure with Docker (above): a failure there
+  is a bug for the people using Safari or Firefox, or a flaky test to fix.
 - A newer push to the same pull request or branch cancels the run in progress.
 
 **Reproducing a failure.** Each step of a job is a command you can run the

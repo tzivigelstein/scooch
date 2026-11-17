@@ -92,10 +92,7 @@ jobs:
           retention-days: 14
 
   webkit:
-    name: Browser tests (WebKit, ${{ matrix.group }}, allowed to fail)
-    # Nobody has seen the suite pass on WebKit yet: this job reports, but its
-    # failure doesn't fail the run (docs/testing.md).
-    continue-on-error: true
+    name: Browser tests (WebKit, ${{ matrix.group }})
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     # One job for each group of specs (e2e/groups.ts): a failure says which
@@ -138,9 +135,7 @@ jobs:
           retention-days: 14
 
   firefox:
-    name: Browser tests (Firefox, ${{ matrix.group }}, allowed to fail)
-    # As WebKit's: it reports, but its failure doesn't fail the run (docs/testing.md).
-    continue-on-error: true
+    name: Browser tests (Firefox, ${{ matrix.group }})
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     # One job for each group of specs (e2e/groups.ts): a failure says which
