@@ -52,7 +52,7 @@ update the effective date, whenever one of these changes:
 | Anything saved in the browser | `src/state/settings.ts` (every setting and where it lives), `src/config.ts` (storage keys), `src/services/storage/` (the IndexedDB stores), `src/services/projects.ts`, `src/state/prefs.ts`, `src/state/view.ts`, `src/state/savings.ts` | privacy: Qué se guarda en tu dispositivo, Cómo borrar estos datos |
 | Any request to another server (fonts, CDNs, error reporting) | `index.html`, `src/` | privacy: Lo que no hacemos, Otros servicios |
 | Analytics | | privacy: Analítica, Lo que no hacemos |
-| The donation link | `DONATE_URL` in `src/config.ts` (empty today, so the donation dialog never shows) | privacy: Aportes; terms: sections 7 and 9 |
+| The donation link | `DONATE_URL` in `src/config.ts` (empty today, so the summary after printing never asks for a donation) | privacy: Aportes; terms: sections 7 and 9 |
 | Hosting, or hosting features that add scripts, cookies or logs (analytics, toolbars, firewall challenges, log drains) | the hosting provider's dashboard: not visible in the repository | privacy: Alojamiento, Lo que no hacemos |
 | Photo size presets | `src/core/crop.js`, `src/copy/es.ts` | terms: section 5 |
 | The license | `LICENSE` | terms: section 8 |
