@@ -30,6 +30,7 @@ export const SPEC_GROUPS = {
     'boot-and-build',
     'command-palette',
     'deep-links',
+    'dialogs',
     'donation',
     'export-parity',
     'files',

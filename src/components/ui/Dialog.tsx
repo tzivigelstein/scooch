@@ -3,6 +3,7 @@
 // focus goes back to whoever opened them.
 
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { focusShown } from './focusShown.ts';
 import './Dialog.css';
 
 export interface DialogProps {
@@ -45,7 +46,9 @@ export function Dialog({ id, className, labelledBy, describedBy, open, onClose, 
       before.current = document.activeElement;
       back.current = props.current.returnTo;
       el.showModal();
-      props.current.initialFocus?.()?.focus();
+      // Its own first element or the browser's choice, styled first (focusShown).
+      const first = props.current.initialFocus?.() ?? (el.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null);
+      if (first) focusShown(first);
     } else if (!open && shown.current) {
       shown.current = false;
       if (el.open) el.close();
@@ -54,7 +57,9 @@ export function Dialog({ id, className, labelledBy, describedBy, open, onClose, 
       const active = document.activeElement;
       if (active && active !== document.body && active !== before.current && !el.contains(active)) return;
       if (taken?.()) return;
-      [back.current, other?.()].find(usable)?.focus({ preventScroll: true });
+      // The page behind has just stopped being inert: styled first (focusShown).
+      const target = [back.current, other?.()].find(usable);
+      if (target) focusShown(target, { preventScroll: true });
     }
   }, [open]);
 
