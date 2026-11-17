@@ -34,8 +34,10 @@ how to run only the tests a change touches (`node_modules/.bin/vitest run
 `yarn e2e` runs at the same time need different `E2E_PORT` and `E2E_OUT`.
 
 Before opening a pull request, run `yarn verify`. CI runs the same checks on
-every pull request and every push to `main`; [docs/testing.md](docs/testing.md#continuous-integration)
-says what each job does and how to reproduce a failure locally.
+every pull request and every push to `main`, and the browser tests in WebKit
+and Firefox as well, which have to pass too;
+[docs/testing.md](docs/testing.md#continuous-integration) says what each job
+does and how to run WebKit and Firefox locally to reproduce a failure.
 
 ## Project structure
 
