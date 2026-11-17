@@ -189,10 +189,10 @@ Every change keeps this bar:
 - Types in use: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `build`,
   `ci` and `chore`.
 - Scopes in use: `a11y`, `canvas`, `copy`, `core`, `crop`, `cutmarks`,
-  `deps`, `e2e`, `export`, `fonts`, `group`, `icons`, `layout`, `pack`,
-  `papers`, `piece-list`, `piecebar`, `prefs`, `projects`, `props`,
-  `selection`, `sheets`, `shortcuts`, `state`, `storage`, `styles`, `ui` and
-  `units`. Reuse one of these when it fits.
+  `deps`, `e2e`, `export`, `fonts`, `group`, `icons`, `layout`, `legal`,
+  `pack`, `papers`, `piece-list`, `piecebar`, `prefs`, `print`, `projects`,
+  `props`, `selection`, `sheets`, `shortcuts`, `site`, `state`, `storage`,
+  `styles`, `testing`, `ui` and `units`. Reuse one of these when it fits.
 - The subject is imperative, lowercase and without a final period, says what
   changes for the person using the app when it can, and stays at 72
   characters or fewer. For example:
