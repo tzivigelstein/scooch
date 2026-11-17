@@ -11,7 +11,7 @@ pages use them for their buttons; anyone can write one.
 | `margin` | mm, `5` or `2.5` (or `2,5`), clamped to 0–50 | the margin; ignored if it leaves no printable area on the paper |
 | `gap` | mm, clamped to 0–50 | the gap between pieces |
 | `photo` | a photo size id of `src/core/crop.js` (`10x15`, `id-4x4`, `passport-35x45`, `visa-5x5`…), or a custom size `25x30mm` (5–1000 mm a side) | the size the images added to that project get (cropped to fill it, turned like each image); PDF pages keep theirs |
-| `cuts` | `none`, `corners` or `outline` | the cut lines |
+| `cuts` | `none`, `corners`, `outline` or `contour` | the cut lines |
 | `rotate` | `on` or `off` (also `1`/`0`, `true`/`false`) | «Rotación automática» |
 
 The parser is `parseDeepLink` in `src/core/deeplink.js` (tested in
