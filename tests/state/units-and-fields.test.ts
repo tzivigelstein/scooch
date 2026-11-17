@@ -85,7 +85,7 @@ describe('the unit lives in the preferences, not in the document', () => {
   };
   /** Each page of the PDF: its size and its content streams (dates in the metadata differ, the pages must not). */
   const pdfPages = async () => {
-    const doc = await PDFDocument.load(await makePdf(), { updateMetadata: false });
+    const doc = await PDFDocument.load(await (await makePdf()).arrayBuffer(), { updateMetadata: false });
     const content = (page: PDFPage) => {
       const contents = page.node.Contents();
       const refs = !contents ? [] : contents instanceof PDFArray ? contents.asArray() : [contents];

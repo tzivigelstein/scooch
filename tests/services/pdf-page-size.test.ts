@@ -25,7 +25,7 @@ const PNG = new Uint8Array(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAf
 async function pdfOf(paper: Paper, landscape: boolean) {
   const asset = addAsset({ kind: 'image', name: 'dot.png', src: 1, px: [1, 1], w: 10, h: 10, bytes: PNG, preview: new Blob(), url: 'blob:test', format: 'png', dpi: 300, derived: false });
   resetState({ paper, landscape, items: [piece(1, asset, 30, 30)] });
-  const doc = await PDFDocument.load(await makePdf(), { updateMetadata: false });
+  const doc = await PDFDocument.load(await (await makePdf()).arrayBuffer(), { updateMetadata: false });
   return { pages: doc.getPages().map((page) => page.getSize()), title: doc.getTitle() };
 }
 
@@ -91,7 +91,7 @@ describe('custom papers', () => {
 test('every sheet with pieces is a page of the same size (two sheets, landscape)', async () => {
   const asset = addAsset({ kind: 'image', name: 'dot.png', src: 1, px: [1, 1], w: 10, h: 10, bytes: PNG, preview: new Blob(), url: 'blob:test', format: 'png', dpi: 300, derived: false });
   setDocument({ paper: 'A5', landscape: true, sheets: [{ id: 1 }, { id: 2 }], items: [piece(1, asset, 20, 20), piece(2, asset, 20, 20, { sheet: 2 })] });
-  const doc = await PDFDocument.load(await makePdf(), { updateMetadata: false });
+  const doc = await PDFDocument.load(await (await makePdf()).arrayBuffer(), { updateMetadata: false });
   const pages = doc.getPages().map((page) => page.getSize());
   expect(pages).toHaveLength(2);
   for (const page of pages) {

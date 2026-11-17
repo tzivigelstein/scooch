@@ -57,6 +57,9 @@ function loadPdfLib() {
   return pdfLibPromise;
 }
 
+/** The PDF's bytes as the file that is downloaded or printed. */
+export const pdfFile = (bytes: Uint8Array) => new Blob([bytes as BlobPart], { type: 'application/pdf' });
+
 /** Builds the PDF in the page, loading pdf-lib first (see drawPdf). */
 export async function buildPdf(job: PdfJob) {
   return drawPdf(await loadPdfLib(), job);

@@ -13,13 +13,13 @@ import { getDocument, type Piece } from '../state/document.ts';
 import { itemsOn, sheetSize } from '../state/selectors.ts';
 import { shapesReady, sheetCuts } from './contours.ts';
 import { paperSlug, writtenPaperName } from './measure.ts';
-import { buildPdf } from './pdf.ts';
+import { buildPdf, pdfFile } from './pdf.ts';
 
 /** «scooch-a4.pdf»: the same in every language, like the PDF's title (copy/output.ts). */
 export const pdfFileName = () => `${slug(APP_NAME, OUTPUT_TEXTS.fallbackName)}-${paperSlug()}.pdf`;
 
-/** The bytes of the document's PDF. */
-export async function makePdf() {
+/** The document's PDF, as the file (application/pdf) that is downloaded or printed. */
+export async function makePdf(): Promise<Blob> {
   const [W, H] = sheetSize();
   const { sheets, cuts } = getDocument();
   const title = outputText(OUTPUT_TEXTS.title, { app: APP_NAME, paper: writtenPaperName() });
@@ -30,7 +30,7 @@ export async function makePdf() {
   const piece = (item: Piece) => ({ asset: assetOf(item.asset), x: item.x, y: item.y, scale: item.scale, r: item.r, crop: item.crop ?? null });
   if (cuts.mode === 'contour') await shapesReady(filled.flat(), cuts.margin, assetOf);
   const pages = filled.map((items) => ({ pieces: items.map(piece), ...sheetCuts(items, cuts, W, H, assetOf) }));
-  return buildPdf({ width: W, height: H, pages, title, creator: APP_NAME, cutStyle: cutStyle(cuts) });
+  return pdfFile(await buildPdf({ width: W, height: H, pages, title, creator: APP_NAME, cutStyle: cutStyle(cuts) }));
 }
 
 /**

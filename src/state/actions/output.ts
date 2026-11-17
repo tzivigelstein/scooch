@@ -13,7 +13,7 @@ import { takeDonationAsk } from '../../components/dialogs/donate.ts';
 import { closeSummary, showSummary, usePrintSummary, type PrintSummary } from '../../components/feedback/printSummary.ts';
 import { equivalent, sheetSavings, sheetUsage, suggestArrange, tangibleFacts, LOW_USAGE } from '../../core/savings.js';
 import { makePdf, pdfContentKey, pdfFileName } from '../../services/export.ts';
-import { downloadBytes, printBytes } from '../../services/print.ts';
+import { downloadFile, printFile } from '../../services/print.ts';
 import { getDocument } from '../document.ts';
 import { getPrefs } from '../prefs.ts';
 import { setView } from '../view.ts';
@@ -28,8 +28,8 @@ let outputting = false;
 
 const canExport = () => getDocument().items.length > 0 && !getDocument().busy && !isTipOpen() && !outputting;
 
-/** The PDF's bytes once made (or null, saying it couldn't be), with the pill saying it meanwhile. */
-async function finished(job: Promise<Uint8Array>, busyText: string) {
+/** The PDF once made (or null, saying it couldn't be), with the pill saying it meanwhile. */
+async function finished(job: Promise<Blob>, busyText: string) {
   setBusy(true, busyText);
   try {
     return await job;
@@ -110,15 +110,15 @@ async function sendOut(kind: OutputKind) {
   const job = makePdf();
   job.catch(() => {}); // handled once it is needed
   if (shouldShowTip() && !(await askTip(kind))) return;
-  const bytes = await finished(job, t(kind === 'print' ? 'busy.print' : 'busy.pdf'));
-  if (!bytes) return;
+  const pdf = await finished(job, t(kind === 'print' ? 'busy.print' : 'busy.pdf'));
+  if (!pdf) return;
   setBusy(false);
   if (kind === 'download') {
-    downloadBytes(bytes, fileName);
+    downloadFile(pdf, fileName);
     summaryAfter(kind, key, opener, t('notices.downloaded', { file: fileName }));
     return;
   }
-  const { how, back } = await printBytes(bytes, fileName);
+  const { how, back } = await printFile(pdf, fileName);
   // In the print dialog the advice was already given; elsewhere, where the PDF went (said now, and in the summary).
   const note = how === 'tab' ? t('notices.printTab') : how === 'download' ? t('notices.printDownload', { file: fileName }) : undefined;
   if (note) say(note, { persist: true, info: true });

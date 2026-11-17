@@ -49,8 +49,8 @@ const image = (w: number) =>
   addAsset({ kind: 'image', name: `img${w}.png`, src: w, px: [w, 2], w: 30, h: 20, bytes: png(w), preview: new Blob(), url: 'blob:test', format: 'png', dpi: 300, derived: false });
 
 /** Each page: its size in mm (rounded to 0.1) and the pixel widths of its images, sorted. */
-async function pagesOf(bytes: Uint8Array) {
-  const doc = await PDFDocument.load(bytes, { updateMetadata: false });
+async function pagesOf(pdf: Blob) {
+  const doc = await PDFDocument.load(await pdf.arrayBuffer(), { updateMetadata: false });
   return doc.getPages().map((page) => {
     const { width, height } = page.getSize();
     const xobjects = page.node.Resources()?.lookup(PDFName.of('XObject')) as PDFDict | undefined;

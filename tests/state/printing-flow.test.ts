@@ -15,7 +15,7 @@ import { usePrintSummary } from '../../src/components/feedback/printSummary.ts';
 import { askTip } from '../../src/components/dialogs/printTip.ts';
 import { Topbar } from '../../src/components/topbar/Topbar.tsx';
 import { makePdf } from '../../src/services/export.ts';
-import { downloadBytes, printBytes } from '../../src/services/print.ts';
+import { downloadFile, printFile } from '../../src/services/print.ts';
 import { getDocument, setDocument } from '../../src/state/document.ts';
 import { historyDepth } from '../../src/state/history.ts';
 import { setPrinting } from '../../src/state/prefs.ts';
@@ -24,7 +24,7 @@ import { getView, setView } from '../../src/state/view.ts';
 import { exportPdf, printPdf } from '../../src/state/actions/output.ts';
 import { fakeImageMm, piece, resetState } from '../support/state.ts';
 
-const PDF = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]); // %PDF-
+const PDF = new Blob(['%PDF-'], { type: 'application/pdf' });
 
 const tip = vi.hoisted(() => ({ answer: null as ((go: boolean) => void) | null }));
 vi.mock('../../src/components/dialogs/printTip.ts', async (importOriginal) => ({
@@ -44,7 +44,7 @@ vi.mock('../../src/services/export.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../src/services/export.ts')>()),
   makePdf: vi.fn(async () => PDF),
 }));
-vi.mock('../../src/services/print.ts', () => ({ printBytes: vi.fn(), downloadBytes: vi.fn() }));
+vi.mock('../../src/services/print.ts', () => ({ printFile: vi.fn(), downloadFile: vi.fn() }));
 
 /** The copy puts non-breaking spaces between numbers and units. */
 const norm = (s: string | undefined) => String(s ?? '').replace(/ /g, ' ');
@@ -64,7 +64,7 @@ beforeEach(() => {
   tip.answer = null;
   localStorage.clear();
   usePrintSummary.setState({ summary: null });
-  vi.mocked(printBytes).mockResolvedValue({ how: 'dialog', back: Promise.resolve() });
+  vi.mocked(printFile).mockResolvedValue({ how: 'dialog', back: Promise.resolve() });
   // Seven 60 × 60 mm pieces: 6 fit on the first A4 sheet (3 × 3 would need 190 mm), the 7th on a second.
   const key = fakeImageMm(60, 60, { name: 'foto.png' });
   const items = Array.from({ length: 7 }, (_, i) => piece(i + 1, key, 10 + (i % 3) * 62, 10 + Math.floor(i / 3) * 62, { sheet: i < 6 ? 1 : 2 }));
@@ -77,10 +77,10 @@ describe('the advice before printing', () => {
     await settle();
     expect(askTip).toHaveBeenCalledWith('print');
     expect(vi.mocked(makePdf).mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(askTip).mock.invocationCallOrder[0]);
-    expect(printBytes).not.toHaveBeenCalled();
+    expect(printFile).not.toHaveBeenCalled();
     tip.answer!(true);
     await printing;
-    expect(printBytes).toHaveBeenCalledWith(PDF, 'scooch-a4.pdf');
+    expect(printFile).toHaveBeenCalledWith(PDF, 'scooch-a4.pdf');
   });
 
   test('closed any other way (Cancelar, Esc), nothing prints or downloads, and nothing is said', async () => {
@@ -90,8 +90,8 @@ describe('the advice before printing', () => {
       tip.answer!(false);
       await going;
     }
-    expect(printBytes).not.toHaveBeenCalled();
-    expect(downloadBytes).not.toHaveBeenCalled();
+    expect(printFile).not.toHaveBeenCalled();
+    expect(downloadFile).not.toHaveBeenCalled();
     expect(getView().flash).toBeNull();
     expect(usePrintSummary.getState().summary).toBeNull();
   });
@@ -102,7 +102,7 @@ describe('the advice before printing', () => {
     expect(askTip).toHaveBeenCalledWith('download');
     tip.answer!(true);
     await downloading;
-    expect(downloadBytes).toHaveBeenCalledWith(PDF, 'scooch-a4.pdf');
+    expect(downloadFile).toHaveBeenCalledWith(PDF, 'scooch-a4.pdf');
     // The summary says where it went (no notice besides it).
     expect(usePrintSummary.getState().summary?.note).toBe('Se descargó scooch-a4.pdf');
     expect(getView().flash).toBeNull();
@@ -118,7 +118,7 @@ describe('the advice before printing', () => {
     setPrinting({ tip: false });
     await printPdf();
     expect(askTip).not.toHaveBeenCalled();
-    expect(printBytes).toHaveBeenCalled();
+    expect(printFile).toHaveBeenCalled();
   });
 
   test('while it shows, Imprimir and Descargar PDF do nothing more', async () => {
@@ -130,7 +130,7 @@ describe('the advice before printing', () => {
     expect(askTip).toHaveBeenCalledTimes(1);
     tip.answer!(true);
     await printing;
-    expect(printBytes).toHaveBeenCalledTimes(1);
+    expect(printFile).toHaveBeenCalledTimes(1);
   });
 
   test('with no pieces nothing happens', async () => {
@@ -144,9 +144,9 @@ describe('the advice before printing', () => {
 describe('one at a time', () => {
   test('until the person is back, Imprimir and Descargar PDF don’t start another one (advice turned off)', async () => {
     setPrinting({ tip: false });
-    let sent!: (printed: Awaited<ReturnType<typeof printBytes>>) => void;
+    let sent!: (printed: Awaited<ReturnType<typeof printFile>>) => void;
     let back!: () => void;
-    vi.mocked(printBytes).mockReturnValue(new Promise((resolve) => (sent = resolve)));
+    vi.mocked(printFile).mockReturnValue(new Promise((resolve) => (sent = resolve)));
     const tryAgain = () => {
       void printPdf();
       void exportPdf();
@@ -161,12 +161,12 @@ describe('one at a time', () => {
     // In the print dialog.
     await tryAgain();
     expect(makePdf).toHaveBeenCalledTimes(1);
-    expect(printBytes).toHaveBeenCalledTimes(1);
-    expect(downloadBytes).not.toHaveBeenCalled();
+    expect(printFile).toHaveBeenCalledTimes(1);
+    expect(downloadFile).not.toHaveBeenCalled();
     back();
     await printing;
     await exportPdf();
-    expect(downloadBytes).toHaveBeenCalledTimes(1);
+    expect(downloadFile).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -235,14 +235,14 @@ describe('what printing says', () => {
   });
 
   test('in another tab: where it went, persisted', async () => {
-    vi.mocked(printBytes).mockResolvedValue({ how: 'tab', back: Promise.resolve() });
+    vi.mocked(printFile).mockResolvedValue({ how: 'tab', back: Promise.resolve() });
     await printPdf();
     expect(flash()).toEqual({ text: 'Se abrió el PDF en otra pestaña. Imprímelo desde ahí.', persist: true, info: true });
   });
 
   test('with the summary, where it went shows in the summary once the person is back (the notice goes)', async () => {
     setPrinting({ summary: true });
-    vi.mocked(printBytes).mockResolvedValue({ how: 'tab', back: Promise.resolve() });
+    vi.mocked(printFile).mockResolvedValue({ how: 'tab', back: Promise.resolve() });
     await printPdf();
     expect(getView().flash).toBeNull();
     expect(usePrintSummary.getState().summary?.note).toBe('Se abrió el PDF en otra pestaña. Imprímelo desde ahí.');
@@ -250,9 +250,9 @@ describe('what printing says', () => {
 
   test('downloaded instead: the file’s name, persisted', async () => {
     setDocument({ paper: 'A3' });
-    vi.mocked(printBytes).mockResolvedValue({ how: 'download', back: Promise.resolve() });
+    vi.mocked(printFile).mockResolvedValue({ how: 'download', back: Promise.resolve() });
     await printPdf();
-    expect(printBytes).toHaveBeenCalledWith(PDF, 'scooch-a3.pdf');
+    expect(printFile).toHaveBeenCalledWith(PDF, 'scooch-a3.pdf');
     expect(flash()).toEqual({ text: 'Se descargó scooch-a3.pdf. Ábrelo para imprimirlo.', persist: true, info: true });
   });
 });
@@ -262,7 +262,7 @@ describe('the summary after', () => {
 
   test('once the person is back from the print dialog: usage, 2 sheets instead of 7 and an equivalent; its sheets wait to join the total', async () => {
     let back!: () => void;
-    vi.mocked(printBytes).mockResolvedValue({ how: 'dialog', back: new Promise<void>((resolve) => (back = resolve)) });
+    vi.mocked(printFile).mockResolvedValue({ how: 'dialog', back: new Promise<void>((resolve) => (back = resolve)) });
     const printing = printPdf();
     await settle();
     expect(usePrintSummary.getState().summary, 'not while the print dialog is open').toBeNull();
@@ -379,14 +379,14 @@ describe('the summary after', () => {
     });
 
     test('printing that ends in a download (no way to print it here) counts at once, like downloading', async () => {
-      vi.mocked(printBytes).mockResolvedValue({ how: 'download', back: Promise.resolve() });
+      vi.mocked(printFile).mockResolvedValue({ how: 'download', back: Promise.resolve() });
       await printPdf();
       expect(shown()).toMatchObject({ kind: 'print', total: 13, milestone: 10, added: 5 });
       expect(saved().pending).toBeNull();
     });
 
     test('printing to another tab waits, like the print dialog', async () => {
-      vi.mocked(printBytes).mockResolvedValue({ how: 'tab', back: Promise.resolve() });
+      vi.mocked(printFile).mockResolvedValue({ how: 'tab', back: Promise.resolve() });
       await printPdf();
       expect(shown()).toMatchObject({ total: 8, milestone: null });
       expect(saved().pending).toMatchObject({ sheets: 5 });

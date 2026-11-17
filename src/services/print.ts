@@ -5,8 +5,6 @@
 
 import { t } from '../copy/index.ts';
 
-const pdfUrl = (bytes: Uint8Array) => URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
-
 function downloadUrl(url: string, fileName: string) {
   const link = document.createElement('a');
   link.href = url;
@@ -17,8 +15,9 @@ function downloadUrl(url: string, fileName: string) {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-export function downloadBytes(bytes: Uint8Array, fileName: string) {
-  downloadUrl(pdfUrl(bytes), fileName);
+/** Downloads the PDF (a Blob of type application/pdf, as makePdf gives it). */
+export function downloadFile(pdf: Blob, fileName: string) {
+  downloadUrl(URL.createObjectURL(pdf), fileName);
 }
 
 // ---------- Print ----------
@@ -146,16 +145,16 @@ const backFrom = (how: 'tab' | 'download') =>
         [document, 'visibilitychange'],
       ]);
 
-/** Sends the bytes to print (see Printed). */
-export async function printBytes(bytes: Uint8Array, fileName: string): Promise<Printed> {
-  const url = pdfUrl(bytes);
+/** Sends the PDF (a Blob of type application/pdf) to print (see Printed). */
+export async function printFile(pdf: Blob, fileName: string): Promise<Printed> {
+  const url = URL.createObjectURL(pdf);
   if (canPrintInFrame()) {
     try {
       return { how: 'dialog', back: (await printInFrame(url)).closed };
     } catch (err) {
       console.warn('Could not print directly; opening the PDF.', err);
       releaseFrame();
-      const how = openOrDownload(pdfUrl(bytes), fileName);
+      const how = openOrDownload(URL.createObjectURL(pdf), fileName);
       return { how, back: backFrom(how) };
     }
   }

@@ -166,8 +166,8 @@ describe('the PDF', () => {
     return addAsset(asset);
   }
 
-  async function contentOf(bytes: Uint8Array) {
-    const doc = await PDFDocument.load(bytes, { updateMetadata: false });
+  async function contentOf(pdf: Blob) {
+    const doc = await PDFDocument.load(await pdf.arrayBuffer(), { updateMetadata: false });
     const stream = doc.getPages()[0].node.Contents();
     const list = stream && 'asArray' in stream ? stream.asArray().map((ref) => doc.context.lookup(ref)) : [stream];
     return list.map((s) => (s instanceof PDFRawStream ? Buffer.from(decodePDFRawStream(s).decode()).toString('latin1') : '')).join('\n');

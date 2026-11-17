@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Where printBytes sends the PDF, decided from what the browser says: the
+// Where printFile sends the PDF, decided from what the browser says: the
 // hidden iframe's print() when it has a PDF viewer and isn't Safari or iOS
 // (which print the page instead of the iframe's PDF); otherwise another tab;
 // if popups are blocked, a download. The three real paths in a real browser
@@ -11,7 +11,7 @@ const SAFARI = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.
 // Chrome on iOS is WebKit too: it prints the page like Safari, though its user agent isn't Safari's.
 const IPHONE_CHROME = 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/142.0.0.0 Mobile/15E148 Safari/604.1';
 const IPAD_CHROME_AS_MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/142.0.0.0 Safari/604.1';
-const PDF = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]);
+const PDF = new Blob(['%PDF-'], { type: 'application/pdf' });
 
 let urls = 0;
 let downloads: { href: string; download: string }[] = [];
@@ -27,13 +27,13 @@ function browser({ ua = CHROME, viewer = true, touch = 0, popups = true } = {}) 
   vi.stubGlobal('open', open);
 }
 
-/** printBytes from a fresh module (no iframe yet). */
-async function printBytes() {
+/** printFile from a fresh module (no iframe yet). */
+async function printFile() {
   vi.resetModules();
-  return (await import('../../src/services/print.ts')).printBytes;
+  return (await import('../../src/services/print.ts')).printFile;
 }
 
-/** The print iframe once printBytes made it, with print() replaced; `load` is the PDF finishing loading. */
+/** The print iframe once printFile made it, with print() replaced; `load` is the PDF finishing loading. */
 async function frameLoaded(print: () => void) {
   await vi.waitFor(() => expect(document.querySelector('iframe.print-frame')).not.toBeNull());
   const frame = document.querySelector<HTMLIFrameElement>('iframe.print-frame')!;
@@ -59,11 +59,11 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-describe('printBytes', () => {
+describe('printFile', () => {
   test('Chrome with a PDF viewer: the PDF loads in the hidden iframe and its print() is called', async () => {
     browser();
     const print = vi.fn();
-    const sent = (await printBytes())(PDF, 'scooch-a4.pdf');
+    const sent = (await printFile())(PDF, 'scooch-a4.pdf');
     const frame = await frameLoaded(print);
     expect((await sent).how).toBe('dialog');
     expect(print).toHaveBeenCalledTimes(1);
@@ -74,7 +74,7 @@ describe('printBytes', () => {
   test('if print() fails: another tab with the PDF', async () => {
     browser();
     vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const sent = (await printBytes())(PDF, 'scooch-a4.pdf');
+    const sent = (await printFile())(PDF, 'scooch-a4.pdf');
     await frameLoaded(() => {
       throw new Error('cannot print');
     });
@@ -89,21 +89,21 @@ describe('printBytes', () => {
     { name: 'Chrome on an iPad that says it is a Mac', ua: IPAD_CHROME_AS_MAC, viewer: true, touch: 5 },
   ])('$name: another tab, no iframe', async ({ ua, viewer, touch }) => {
     browser({ ua, viewer, touch });
-    expect((await (await printBytes())(PDF, 'scooch-a4.pdf')).how).toBe('tab');
+    expect((await (await printFile())(PDF, 'scooch-a4.pdf')).how).toBe('tab');
     expect(open).toHaveBeenCalledWith('blob:test/1', '_blank');
     expect(document.querySelector('iframe')).toBeNull();
   });
 
   test('with popups blocked too: it downloads with the file’s name', async () => {
     browser({ viewer: false, popups: false });
-    expect((await (await printBytes())(PDF, 'scooch-a4.pdf')).how).toBe('download');
+    expect((await (await printFile())(PDF, 'scooch-a4.pdf')).how).toBe('download');
     expect(downloads).toEqual([{ href: 'blob:test/1', download: 'scooch-a4.pdf' }]);
   });
 
   test('a second print reuses the iframe', async () => {
     browser();
     const print = vi.fn();
-    const send = await printBytes();
+    const send = await printFile();
     const first = send(PDF, 'scooch-a4.pdf');
     await frameLoaded(print);
     await first;
@@ -118,7 +118,7 @@ describe('printBytes', () => {
     browser();
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
-      const send = await printBytes();
+      const send = await printFile();
       const sent = send(PDF, 'scooch-a4.pdf');
       const frame = await frameLoaded(() => {});
       let back = false;
@@ -143,7 +143,7 @@ describe('printBytes', () => {
   test('downloaded instead: back right away', async () => {
     browser({ viewer: false, popups: false });
     let back = false;
-    void (await (await printBytes())(PDF, 'scooch-a4.pdf')).back.then(() => (back = true));
+    void (await (await printFile())(PDF, 'scooch-a4.pdf')).back.then(() => (back = true));
     await Promise.resolve();
     expect(back).toBe(true);
   });
