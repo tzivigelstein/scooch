@@ -1,10 +1,10 @@
-// Varias hojas: repartir, ubicar lo nuevo, a qué hoja pertenece una pieza
-// soltada y problemas por hoja. Módulo puro (sin DOM ni textos).
+// Several sheets: sharing pieces out, placing new ones, which sheet a dropped
+// piece belongs to, and problems per sheet. No DOM, no texts.
 //
-// Modelo: el documento tiene una lista ordenada de hojas (ids) y cada pieza
-// pertenece a una (`sheet`), con x/y relativas a SU hoja, en mm. Todas las
-// hojas tienen el mismo papel, orientación y margen. Aquí las piezas llegan
-// como cajas {id, sheet, x, y, w, h} (w/h ya con la orientación aplicada).
+// Model: the document has an ordered list of sheets (ids) and each piece
+// belongs to one (`sheet`), with x/y relative to ITS sheet, in mm. Every
+// sheet has the same paper, orientation and margin. Pieces come here as
+// boxes {id, sheet, x, y, w, h} (w/h with the orientation applied).
 
 import { packSheets, packInto } from './pack.js';
 import { overlaps, EPS, nearestFree } from './collide.js';
@@ -12,19 +12,21 @@ import { overlaps, EPS, nearestFree } from './collide.js';
 const sameNumber = (a, b) => Math.abs(a - b) < 1e-9;
 
 /**
- * Acomoda TODAS las piezas en las hojas que hagan falta (`packSheets`).
- * `boxes`: piezas; `sheetIds`: hojas actuales en orden; `area`: {w, h} útil
- * (hoja menos margen) y `margin`; `newId()`: id para cada hoja nueva.
+ * Arranges ALL the pieces on as many sheets as needed (`packSheets`).
+ * `boxes`: the pieces; `sheetIds`: the current sheets in order; `area`: the
+ * printable {w, h} (the sheet minus the margin) and `margin`; `newId()`: an
+ * id for each new sheet.
  *
- * Las hojas que salen se reusan en orden (la primera repartida es la primera
- * hoja de antes, etc.) y se crean las que falten; las que sobran se quitan.
- * Las piezas que no entran ni solas en una hoja vacía (`unplaced`) quedan con
- * su x/y, en hojas propias al final (las que compartían hoja, juntas).
+ * The resulting sheets reuse the current ones in order (the first shared out
+ * is the first sheet from before, and so on) and the missing ones are
+ * created; the ones left over are removed. Pieces that don't fit even alone
+ * on an empty sheet (`unplaced`) keep their x/y, on sheets of their own at
+ * the end (those that shared a sheet, together).
  *
- * Devuelve {sheets, placements, unplaced, packed}: `sheets`, los ids finales
- * en orden; `placements`, Map id → {sheet, x, y, rotated} con x/y en la hoja
- * (margen incluido); `unplaced`, ids que no entraron; `packed`, cuántas hojas
- * se usaron para las que sí.
+ * Gives {sheets, placements, unplaced, packed}: `sheets`, the final ids in
+ * order; `placements`, Map id → {sheet, x, y, rotated} with x/y on the sheet
+ * (margin included); `unplaced`, the ids that didn't fit; `packed`, how many
+ * sheets the others took.
  */
 export function arrangeSheets(boxes, sheetIds, { area, margin = 0, gap = 0, rotate = true, newId }) {
   const result = packSheets(
@@ -42,9 +44,9 @@ export function arrangeSheets(boxes, sheetIds, { area, margin = 0, gap = 0, rota
   });
   const packed = result.sheets.length;
 
-  // Las que no entran: con su posición, en hojas propias al final.
+  // Those that don't fit: in their position, on sheets of their own at the end.
   const byId = new Map(boxes.map((b) => [b.id, b]));
-  const groups = new Map(); // hoja de antes → hoja nueva
+  const groups = new Map(); // sheet before → new sheet
   const sheets = ids.slice(0, packed);
   for (const id of result.unplaced) {
     const box = byId.get(id);
@@ -60,9 +62,10 @@ export function arrangeSheets(boxes, sheetIds, { area, margin = 0, gap = 0, rota
 }
 
 /**
- * ¿Aplicar `plan` (de arrangeSheets) dejaría todo como está? Compara la
- * lista de hojas y, por pieza, hoja y posición (a `tolerance` mm), sin giros.
- * `round(v)`: el mismo redondeo con que se aplicaría la posición.
+ * Would applying `plan` (from arrangeSheets) leave everything as it is?
+ * Compares the list of sheets and, for each piece, its sheet and position,
+ * with nothing turned. `round(v)`: the rounding the position would be
+ * applied with.
  */
 export function samePlan(plan, boxes, sheetIds, round = (v) => v) {
   if (plan.sheets.length !== sheetIds.length || plan.sheets.some((id, i) => id !== sheetIds[i])) return false;
@@ -72,10 +75,10 @@ export function samePlan(plan, boxes, sheetIds, round = (v) => v) {
   });
 }
 
-// Las posiciones se guardan redondeadas a 0,01 mm, así que un hueco exacto
-// (lo que dejó una pieza igual) puede quedar unas milésimas más angosto. Los
-// obstáculos se achican esto (la mitad de cada lado) para que la pieza vuelva
-// a entrar donde estaba; es menos que cualquier tolerancia visible.
+// Arranged positions are stored rounded to 0.01 mm, so an exact space (what
+// an equal piece left) can end a few thousandths narrower. Obstacles shrink
+// by this (half on each side) so the piece fits again where it was; it is
+// less than any visible tolerance.
 const ROUND_SLACK = 0.012;
 
 const asObstacle = (b, margin) => ({
@@ -85,21 +88,21 @@ const asObstacle = (b, margin) => ({
   h: Math.max(0, b.h - ROUND_SLACK),
 });
 
-/** Obstáculos de cada hoja (lo ocupado), en coordenadas del área útil. */
+/** Each sheet's obstacles (what is taken), in printable area coordinates. */
 export function obstaclesBySheet(boxes, sheetIds, margin = 0) {
   return sheetIds.map((id) => boxes.filter((b) => b.sheet === id).map((b) => asObstacle(b, margin)));
 }
 
 /**
- * Ubica piezas NUEVAS (`rects`: {id, w, h}) sin mover las que ya están
- * (`boxes`), con `packInto`: rellena los huecos empezando por la hoja `from`
- * (índice en `sheetIds`) y sigue con las siguientes; lo que no entra va a
- * hojas nuevas al final (`newId()` para cada una). Las hojas anteriores a
- * `from` no se tocan.
+ * Places NEW pieces (`rects`: {id, w, h}) without moving those already there
+ * (`boxes`), with `packInto`: fills the spaces from sheet `from` (an index in
+ * `sheetIds`) on through the following ones; what doesn't fit goes to new
+ * sheets at the end (`newId()` for each). The sheets before `from` aren't
+ * touched.
  *
- * Devuelve {placements, sheets, unplaced}: `placements`, [{id, sheet, x, y,
- * rotated}] con x/y en la hoja; `sheets`, los ids de las hojas nuevas, en
- * orden; `unplaced`, los ids que no entran ni solos en una hoja vacía.
+ * Gives {placements, sheets, unplaced}: `placements`, [{id, sheet, x, y,
+ * rotated}] with x/y on the sheet; `sheets`, the new sheets' ids, in order;
+ * `unplaced`, the ids that don't fit even alone on an empty sheet.
  */
 export function placeIntoSheets(rects, boxes, sheetIds, { from = 0, area, margin = 0, gap = 0, rotate = true, newId }) {
   const start = Math.min(Math.max(0, from), Math.max(0, sheetIds.length - 1));
@@ -110,7 +113,7 @@ export function placeIntoSheets(rects, boxes, sheetIds, { from = 0, area, margin
     sheets: obstaclesBySheet(boxes, targets, margin),
     from: 0,
   });
-  const fresh = new Map(); // índice de hoja nueva → id
+  const fresh = new Map(); // new sheet's index → id
   const placements = result.placements.map((p) => {
     let sheet = targets[p.sheet];
     if (sheet === undefined) {
@@ -124,9 +127,9 @@ export function placeIntoSheets(rects, boxes, sheetIds, { from = 0, area, margin
 }
 
 /**
- * Lugar libre para UNA pieza (`rect`: {id, w, h}) en una hoja con esos
- * obstáculos (`boxes` de esa hoja), sin girarla. Devuelve {x, y} en la hoja,
- * o null si no entra ahí.
+ * A free place for ONE piece (`rect`: {id, w, h}) on a sheet with those
+ * obstacles (`boxes` of that sheet), without turning it. Gives {x, y} on the
+ * sheet, or null when it doesn't fit there.
  */
 export function spotOnSheet(rect, boxes, { area, margin = 0, gap = 0 }) {
   const result = packInto([rect], area.w, area.h, {
@@ -139,9 +142,9 @@ export function spotOnSheet(rect, boxes, { area, margin = 0, gap = 0 }) {
 }
 
 /**
- * Posición más cercana a (x, y) para una pieza de w × h con el centro dentro
- * de la hoja W × H: puede salirse hasta la mitad, nunca entera (así su marco
- * y su barra quedan siempre junto a la hoja). Devuelve {x, y}.
+ * The position nearest to (x, y) for a w × h piece with its center on the
+ * W × H sheet: up to half of it may stick out, never all of it (so its frame
+ * and toolbar always stay by the sheet). Gives {x, y}.
  */
 export function keepCenterInside({ x, y, w, h }, W, H) {
   const fit = (v, size, total) => Math.min(Math.max(v, -size / 2), total - size / 2);
@@ -185,10 +188,10 @@ export function freeSpotNear(rect, others, { W, H, margin = 0 }) {
 }
 
 /**
- * A qué hoja pertenece algo cuyo centro está a `y` (en el mismo sistema que
- * `tops`): la que lo contiene o, si cae entre hojas o fuera, la más cercana.
- * `tops`: borde superior de cada hoja, en orden; `height`: alto de las hojas.
- * Devuelve el índice (−1 si no hay hojas).
+ * Which sheet something whose center is at `y` (in the same system as
+ * `tops`) belongs to: the one containing it or, when it falls between sheets
+ * or outside, the nearest. `tops`: each sheet's top edge, in order;
+ * `height`: the sheets' height. Gives the index (−1 without sheets).
  */
 export function sheetAt(y, tops, height) {
   let best = -1;
@@ -204,9 +207,9 @@ export function sheetAt(y, tops, height) {
 }
 
 /**
- * Problemas de cada pieza en su hoja (W×H, margen `margin`): se sale de la
- * hoja (`cut`), pasa el margen (`pastMargin`) o se superpone con otra de la
- * MISMA hoja (`overlap`). Devuelve Map id → {cut, pastMargin, overlap}.
+ * Each piece's problems on its sheet (W×H, margin `margin`): it sticks out of
+ * the sheet (`cut`), passes the margin (`pastMargin`) or overlaps another of
+ * the SAME sheet (`overlap`). Gives Map id → {cut, pastMargin, overlap}.
  */
 export function pieceProblems(boxes, { W, H, margin = 0 }) {
   const outside = (b, inset) =>
@@ -229,8 +232,9 @@ export function pieceProblems(boxes, { W, H, margin = 0 }) {
 }
 
 /**
- * Resumen de `pieceProblems` por tipo: cuántas piezas y en qué hojas (índices
- * en `sheetIds`, de menor a mayor). {cut: {count, sheets}, pastMargin, overlap}.
+ * `pieceProblems` summed up by kind: how many pieces and on which sheets
+ * (indices in `sheetIds`, ascending). {cut: {count, sheets}, pastMargin,
+ * overlap}.
  */
 export function problemSummary(problems, boxes, sheetIds) {
   const summary = {};
