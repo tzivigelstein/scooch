@@ -132,6 +132,8 @@ describe('links that open the editor', () => {
 const NO_CLAIMS: Partial<Record<Lang, RegExp>> = {
   es: /habitual|usual|Argentina|México|España|Estados Unidos|EE\.\s?UU\.|India|Colombia|Chile|Perú|Schengen/i,
   en: /\b(usual|typical|standard|common|United States|U\.S\.|USA?|American|India|Indian|UK|British|Canada|Mexico|Schengen|EU)\b/i,
+  // «身份证» is the mainland identity card: naming it would tie a size to a country's document.
+  'zh-Hans': /通常|常用|常见(?!问题)|标准|一般|普遍|中国|大陆|内地|国内|香港|澳门|台湾|美国|英国|印度|加拿大|墨西哥|西班牙|欧盟|申根|身份证/,
   // \b would split words at accented letters: whole words are told by \p{L}. «US» alone is the app's «Lettre US».
   fr: /(?<!\p{L})(habituel\p{L}*|usuel\p{L}*|courante?s?|typiques?|standards?|normes?|officiel\p{L}*|France|français\p{L}*|Belgique|belges?|Suisse|suisses?|Canada|canadien\p{L}*|Québec|ANTS|Schengen|UE|USA|États-Unis|américain\p{L}*|europé\p{L}*)(?!\p{L})/iu,
 };
@@ -188,6 +190,17 @@ const COPY_RULES: Partial<Record<Lang, readonly (readonly [string, RegExp])[]>> 
     ['a number glued to its unit', /\d(mm|cm|in|ppi)\b/],
     ['a number and its unit that may break apart', /\d (mm|cm|in|ppi)\b/],
     ['words the glossary replaces', /\b(simply|just|please|pieces?|uploads?)\b/i],
+  ],
+  'zh-Hans': [
+    ['exclamations', /[!！]/],
+    ['straight quotes or guillemets instead of “ ”', /["'«»]/],
+    ['half-width punctuation next to Chinese', /\p{Script=Han}[,.:;?()]|[,.:;?()]\p{Script=Han}/u],
+    ['a space between Chinese and Latin letters or numbers', /\p{Script=Han}[  ][A-Za-z\d]|[A-Za-z\d][  ]\p{Script=Han}/u],
+    ['a space before %', /\d\s%/],
+    ['a number glued to its unit', /\d(mm|cm|in|ppi)\b/],
+    ['a number and its unit that may break apart', /\d (mm|cm|in|ppi)\b/],
+    // 页面 only for a PDF's page and the print dialog's “适合页面”; 复制 is copying to the clipboard.
+    ['words the glossary replaces', /元素|对象|画布|磁铁|出血|复制|(?<!PDF|适合)页面/],
   ],
   // The no-break spaces are the catalogue's (src/copy/fr.ts): U+00A0 before «:» and inside « », U+202F before ; ? % and !.
   // Whole words are told by \p{L}: \b would split them at accented letters («prêtes»).

@@ -6,5 +6,6 @@ import type { SiteLanguage } from '../types.ts';
 import { en } from './en/index.ts';
 import { es } from './es/index.ts';
 import { fr } from './fr/index.ts';
+import { zhHans } from './zh-Hans/index.ts';
 
-export const SITE_LANGUAGES: readonly SiteLanguage[] = Object.freeze([es, en, fr]);
+export const SITE_LANGUAGES: readonly SiteLanguage[] = Object.freeze([es, en, zhHans, fr]);
