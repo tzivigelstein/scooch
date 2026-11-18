@@ -42,6 +42,7 @@ export const SPEC_GROUPS = {
     'print-summary',
     'projects',
     'segmented-controls',
+    'site-links',
     'site-pages',
     'stored-formats',
     'theme',
