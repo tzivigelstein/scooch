@@ -4,7 +4,8 @@
 // calls its print() (spied: no dialog opens, and it closes right away);
 // where that can't work the PDF opens in another tab (print() fails, or there
 // is no PDF viewer), or downloads (popups blocked too). Once the person is
-// back, the summary dialog shows. Their keys never reach the browser, and
+// back, the summary dialog shows. The advice's drawing plays once, 5 s at
+// most, and rests on «100 %». Their keys never reach the browser, and
 // under a dialog they do nothing (the rule itself, in
 // tests/hooks/useGlobalShortcuts.test.tsx). Full Chromium has the PDF viewer; the
 // headless shell (the default) doesn't. What each way says, the advice's
@@ -299,5 +300,53 @@ test.describe('downloading', () => {
       expect(info.pages.map(({ w, h, xobjects }) => ({ w, h, xobjects }))).toEqual([{ w: 210, h: 297, xobjects: 3 }]);
       expect(consoleErrors, 'the page built it: the worker didn’t load').toContainEqual(expect.stringMatching(/^The PDF worker stopped; building the PDF in the page\. /));
     });
+  });
+});
+
+test.describe('the advice’s drawing', () => {
+  /** Of the drawing of a print dialog, each animation: how long it lasts in all (ms) and how many times it plays. Runs in the page. */
+  const readMotion = () =>
+    document
+      .getAnimations()
+      .filter((a) => ((a.effect as KeyframeEffect | null)?.target as Element | null)?.closest('#print-tip .tip-drawing'))
+      .map((a) => {
+        const timing = a.effect!.getComputedTiming();
+        return { end: Number(timing.endTime), iterations: timing.iterations };
+      });
+
+  /** What the drawing shows: which scale is chosen, the pointer, the pieces' size. Runs in the page. */
+  const readFrame = () => {
+    const style = (selector: string) => getComputedStyle(document.querySelector(`#print-tip ${selector}`)!);
+    return { fit: style('.tip-scale-from').opacity, actual: style('.tip-scale-to').opacity, pointer: style('.tip-pointer').opacity, pieces: style('.tip-content').transform };
+  };
+
+  /** «100 %» chosen, the pointer gone, the pieces at their size. */
+  const END = { fit: '0', actual: '1', pointer: '0', pieces: 'none' };
+
+  test.describe('with motion', () => {
+    test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+    test('it plays once, for 5 s at most, and rests on its last frame: «100 %» chosen', async ({ app, page }) => {
+      await app.addFiles(['small.jpg']);
+      await page.locator('#print').click();
+      await expect(advice(page)).toHaveAttribute('open', '');
+      const motion = await page.evaluate(readMotion);
+      expect(motion.length, 'the drawing moves').toBeGreaterThanOrEqual(5);
+      expect(motion.filter((m) => m.iterations !== 1 || m.end > 5000)).toEqual([]);
+      // Played to its end: nothing moves any more, and the frame is the one without motion.
+      await page.evaluate(() => {
+        for (const a of document.getAnimations()) if (((a.effect as KeyframeEffect | null)?.target as Element | null)?.closest('#print-tip .tip-drawing')) a.finish();
+      });
+      expect(await page.evaluate(readMotion)).toEqual([]);
+      expect(await page.evaluate(readFrame)).toEqual(END);
+    });
+  });
+
+  test('with reduced motion it doesn’t move and shows that last frame', async ({ app, page }) => {
+    await app.addFiles(['small.jpg']);
+    await page.locator('#print').click();
+    await expect(advice(page)).toHaveAttribute('open', '');
+    expect(await page.evaluate(readMotion)).toEqual([]);
+    expect(await page.evaluate(readFrame)).toEqual(END);
   });
 });
