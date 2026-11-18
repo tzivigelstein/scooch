@@ -1,13 +1,13 @@
-// Líneas de corte: marcas en las esquinas de cada pieza o su contorno, como
-// segmentos en mm (origen arriba a la izquierda de la hoja). Módulo puro.
+// Cut lines: marks at each piece's corners, or its outline, as segments in mm
+// (origin at the sheet's top left).
 
-// Dos coordenadas a menos de esto (mm) son la misma línea; un tramo más corto
-// que esto no se dibuja.
+// Two coordinates closer than this (mm) are the same line; a stretch shorter
+// than this isn't drawn.
 const TOL = 1e-6;
 
 const finite = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
 
-/** Modos de `cutLines`. ('contour', since document version 6: see contour.js.) */
+/** The modes of `cutLines`. ('contour', since document version 6: see contour.js.) */
 export const CUT_MODES = Object.freeze(['none', 'corners', 'outline', 'contour']);
 
 // ---------- Style ----------
@@ -53,16 +53,16 @@ export function cutStyle({ weight = 'thin', color = CUT_COLORS.black, dash = 'so
   return { width, hex, rgb, dash: dash === 'dotted' ? dotPattern(width) : null };
 }
 
-// Internamente cada segmento es {dir, c, a, b}: horizontal ('h') sobre y = c
-// de x = a a x = b, o vertical ('v') sobre x = c de y = a a y = b; a < b.
+// Inside, each segment is {dir, c, a, b}: horizontal ('h') on y = c from
+// x = a to x = b, or vertical ('v') on x = c from y = a to y = b; a < b.
 
-// Los bordes de la pieza paralelos a `dir`: [desde, hasta] a lo largo del
-// segmento y [lo, hi] en la coordenada perpendicular.
+// The piece's edges parallel to `dir`: [from, to] along the segment and
+// [lo, hi] on the perpendicular coordinate.
 const span = (q, dir) => (dir === 'h' ? [q.x, q.x + q.w, q.y, q.y + q.h] : [q.y, q.y + q.h, q.x, q.x + q.w]);
 
-// Las 8 marcas de una pieza: en cada esquina, una horizontal sobre la línea
-// del borde de arriba o de abajo y una vertical sobre la del borde izquierdo
-// o derecho, hacia afuera, empezando a `offset` de la esquina.
+// A piece's 8 marks: at each corner, a horizontal one on the line of the top
+// or bottom edge and a vertical one on the line of the left or right edge,
+// pointing out, starting `offset` from the corner.
 function cornerMarks(q, length, offset) {
   const x0 = q.x;
   const x1 = q.x + q.w;
@@ -125,8 +125,8 @@ function notUnder(seg, above) {
   return parts.filter(([a, b]) => b - a > TOL).map(([a, b]) => ({ dir: seg.dir, c: seg.c, a, b }));
 }
 
-// Saca del segmento lo que cae sobre alguna pieza, borde incluido: una marca
-// que corre por el borde de otra pieza se imprimiría sobre su imagen.
+// Removes what of the segment falls on some piece, edge included: a mark
+// running along another piece's edge would print over its image.
 function outsidePieces(seg, pieces) {
   let parts = [[seg.a, seg.b]];
   for (const q of pieces) {
@@ -145,8 +145,8 @@ function outsidePieces(seg, pieces) {
   return parts.filter(([a, b]) => b - a > TOL).map(([a, b]) => ({ dir: seg.dir, c: seg.c, a, b }));
 }
 
-// Une los segmentos colineales que se pisan o se tocan. Devuelve primero las
-// horizontales (por y, después x) y después las verticales (por x, después y).
+// Joins the collinear segments that overlap or touch. Gives the horizontal
+// ones first (by y, then x), then the vertical ones (by x, then y).
 function merge(segments) {
   const out = [];
   for (const dir of ['h', 'v']) {
@@ -171,8 +171,8 @@ function merge(segments) {
   return out;
 }
 
-// Recorta al área `bounds`. Lo que corre justo sobre su borde se descarta:
-// ahí ya hay corte (el borde de la hoja) y no se imprime.
+// Clips to the area `bounds`. What runs right on its edge is dropped: there
+// is already a cut there (the sheet's edge) and it wouldn't print.
 function clip(seg, bounds) {
   const [from, to, lo, hi] = span(bounds, seg.dir);
   if (seg.c <= lo + TOL || seg.c >= hi - TOL) return [];
@@ -182,23 +182,23 @@ function clip(seg, bounds) {
 }
 
 /**
- * Líneas de corte para las piezas `rects` ({x, y, w, h} en mm, ya giradas),
- * como segmentos horizontales o verticales [{x1, y1, x2, y2}] (x1 ≤ x2,
- * y1 ≤ y2): primero las horizontales (por y, después x) y después las
- * verticales (por x, después y).
+ * Cut lines for the pieces `rects` ({x, y, w, h} in mm, rotated), as
+ * horizontal or vertical segments [{x1, y1, x2, y2}] (x1 ≤ x2, y1 ≤ y2): the
+ * horizontal ones first (by y, then x), then the vertical ones (by x, then
+ * y).
  *
- * Modos:
- * - 'corners': marcas en L hacia afuera en cada esquina de cada pieza: un
- *   trazo sobre la línea del borde horizontal y otro sobre la del vertical,
- *   que arrancan a `offset` mm de la esquina y miden `length` mm. Lo que caería
- *   sobre otra pieza (adentro o justo sobre su borde) se recorta, y las marcas
- *   colineales que se pisan o se tocan se unen: piezas pegadas o alineadas
- *   comparten marca, y entre piezas más cerca que `offset + length` la marca
- *   cruza el espacio entre ellas de lado a lado.
- * - 'outline': el contorno de cada pieza; los bordes compartidos (o que se
- *   continúan en la misma línea) quedan como un solo segmento. With
- *   overlapping pieces (`rects` in stacking order, the last on top), what of an
- *   outline runs inside a piece above it is left out.
+ * Modes:
+ * - 'corners': L marks pointing out at each corner of each piece: a stroke on
+ *   the line of the horizontal edge and another on the line of the vertical
+ *   one, starting `offset` mm from the corner and `length` mm long. What would
+ *   fall on another piece (inside or right on its edge) is cut away, and
+ *   collinear marks that overlap or touch are joined: pieces side by side or
+ *   aligned share a mark, and between pieces closer than `offset + length`
+ *   the mark crosses the space between them from one to the other.
+ * - 'outline': each piece's outline; shared edges (or edges that continue on
+ *   the same line) become a single segment. With overlapping pieces (`rects`
+ *   in stacking order, the last on top), what of an outline runs inside a
+ *   piece above it is left out.
  * - 'contour': like 'outline', except for the rects in `shaped` (the same
  *   objects): those get the contour of their shape instead (contour.js), and
  *   still hide what runs under them.
@@ -207,13 +207,13 @@ function clip(seg, bounds) {
  * With `margin` (mm) the lines go on each piece's cut box (see cutBox) instead
  * of its image; nothing runs inside another piece's image or cut box.
  *
- * Con `bounds` ({x, y, w, h}, la hoja) todo se recorta a esa área, y lo que
- * cae justo sobre su borde se descarta. Las piezas de medidas no positivas
- * o no finitas se ignoran; `offset` negativo cuenta como 0 y `length` ≤ 0 no
- * dibuja marcas.
+ * With `bounds` ({x, y, w, h}, the sheet) everything is clipped to that area,
+ * and what falls right on its edge is dropped. Pieces with sizes that aren't
+ * positive and finite are ignored; a negative `offset` counts as 0 and
+ * `length` ≤ 0 draws no marks.
  */
 export function cutLines(rects, { mode = 'corners', length = 4, offset = 1.5, margin = 0, bounds = null, shaped = null } = {}) {
-  if (!CUT_MODES.includes(mode)) throw new RangeError(`modo de corte desconocido: ${mode}`);
+  if (!CUT_MODES.includes(mode)) throw new RangeError(`unknown cut mode: ${mode}`);
   if (mode === 'none') return [];
   const pieces = rects.filter(
     (q) => [q.x, q.y, q.w, q.h].every((v) => typeof v === 'number' && Number.isFinite(v)) && q.w > 0 && q.h > 0
