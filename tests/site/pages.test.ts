@@ -132,6 +132,8 @@ describe('links that open the editor', () => {
 const NO_CLAIMS: Partial<Record<Lang, RegExp>> = {
   es: /habitual|usual|Argentina|México|España|Estados Unidos|EE\.\s?UU\.|India|Colombia|Chile|Perú|Schengen/i,
   en: /\b(usual|typical|standard|common|United States|U\.S\.|USA?|American|India|Indian|UK|British|Canada|Mexico|Schengen|EU)\b/i,
+  // \b would split words at accented letters: whole words are told by \p{L}. «US» alone is the app's «Lettre US».
+  fr: /(?<!\p{L})(habituel\p{L}*|usuel\p{L}*|courante?s?|typiques?|standards?|normes?|officiel\p{L}*|France|français\p{L}*|Belgique|belges?|Suisse|suisses?|Canada|canadien\p{L}*|Québec|ANTS|Schengen|UE|USA|États-Unis|américain\p{L}*|europé\p{L}*)(?!\p{L})/iu,
 };
 
 describe('the photo ID guide', () => {
@@ -186,6 +188,19 @@ const COPY_RULES: Partial<Record<Lang, readonly (readonly [string, RegExp])[]>> 
     ['a number glued to its unit', /\d(mm|cm|in|ppi)\b/],
     ['a number and its unit that may break apart', /\d (mm|cm|in|ppi)\b/],
     ['words the glossary replaces', /\b(simply|just|please|pieces?|uploads?)\b/i],
+  ],
+  // The no-break spaces are the catalogue's (src/copy/fr.ts): U+00A0 before «:» and inside « », U+202F before ; ? % and !.
+  // Whole words are told by \p{L}: \b would split them at accented letters («prêtes»).
+  fr: [
+    ['exclamations', /!/],
+    ['straight quotes or English quotes instead of « » and ’', /["“”'‘]/],
+    ['a colon without a no-break space before it', /[^ ]:/],
+    ['; ? or % without a narrow no-break space before it', /[^ ][;?%]/],
+    ['guillemets without no-break spaces inside', /«[^ ]|[^ ]»/],
+    ['a number glued to its unit', /\d(mm|cm|po|ppp)\b/],
+    ['a number and its unit that may break apart', /\d (mm|cm|po|pouces|ppp)(?![\w])/],
+    ['tutoiement instead of vous', /(?<!\p{L})(tu|toi|ton|tes)(?!\p{L})/iu],
+    ['words the glossary replaces', /(?<!\p{L})(pièces?|objets?|téléverse\p{L}*|importe[rz]|astuces?|simplement|plan de travail)(?!\p{L})/iu],
   ],
 };
 

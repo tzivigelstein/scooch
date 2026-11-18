@@ -85,6 +85,30 @@ const POLICY: Partial<Record<Lang, { section: string; noAnalytics: RegExp; terms
       [JOURNAL_PREFIX]: 'Temporary copy',
     },
   },
+  fr: {
+    section: 'Ce qui est enregistré sur votre appareil',
+    noAnalytics: /n’utilise ni cookies, ni publicité, ni traceurs, ni outils de\s+mesure d’audience/,
+    // French writes a no-break space before the colon: «**Unités :**».
+    terms: Object.fromEntries(
+      Object.entries({
+        [UNIT_STORAGE]: 'Unités',
+        [THEME_STORAGE]: 'Thème',
+        [LANGUAGE_STORAGE]: 'Langue',
+        [SINGLE_KEYS_STORAGE]: 'Raccourcis à 1 touche',
+        [VIEW_STORAGE]: 'Affichage',
+        [GRID_STORAGE]: 'Grille et aimantation',
+        [SECTIONS_STORAGE]: 'Sections des Propriétés',
+        [PRINT_STORAGE]: 'Impression',
+        [CUSTOM_PAPER_STORAGE]: 'Papier personnalisé',
+        [PALETTE_STORAGE]: 'Actions récentes',
+        [TIPS_STORAGE]: 'Conseils d’utilisation',
+        [SAVINGS_STORAGE]: 'Feuilles économisées',
+        [DONATE_STORAGE]: 'Invitation à soutenir',
+        [LAST_PROJECT_STORAGE]: 'Dernier projet',
+        [JOURNAL_PREFIX]: 'Copie temporaire',
+      }).map(([key, term]) => [key, `${term} `])
+    ),
+  },
 };
 
 /** The document with its placeholders filled in and its draft note gone, as the owner will leave it. */

@@ -32,6 +32,6 @@ describe('a table too wide for a phone', () => {
     const carrying = sitePages(legal)
       .filter((page) => files.get(pageFile(page))!.includes(STACKED_CSS.trim()))
       .map((page) => page.path);
-    expect(carrying).toEqual(['/es/fotos-10x15-en-hoja-a4', '/es/licencias-de-terceros', '/en/print-4x6-photos-on-a4', '/en/third-party-licenses']);
+    expect(carrying).toEqual(['/es/fotos-10x15-en-hoja-a4', '/es/licencias-de-terceros', '/en/print-4x6-photos-on-a4', '/en/third-party-licenses', '/fr/imprimer-photos-10x15-sur-a4', '/fr/licences-tierces']);
   });
 });
