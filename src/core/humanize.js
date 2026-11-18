@@ -1,5 +1,5 @@
-// Fechas relativas y tamaños para mostrar («hace 5 minutos», «3,2 MB»), con
-// los datos de idioma de Intl. Módulo puro.
+// Relative dates and sizes to show («5 minutes ago», «3.2 MB»), with Intl's
+// language data.
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -12,9 +12,9 @@ const cached = (key, make) => {
 };
 
 /**
- * Cuándo fue `then` respecto de `now` (ms): «ahora», «hace 3 minutos», «hace
- * 2 horas», «ayer», «hace 4 días»; desde una semana, la fecha («12 nov 2026»,
- * con el año solo si no es el actual).
+ * When `then` was relative to `now` (ms): «now», «3 minutes ago», «2 hours
+ * ago», «yesterday», «4 days ago»; from a week on, the date («Nov 12, 2026»,
+ * with the year only when it isn't the current one).
  */
 export function relativeTime(then, now = Date.now(), { locale = 'es' } = {}) {
   const rtf = cached(`rtf|${locale}`, () => new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }));
@@ -55,7 +55,7 @@ export function storageShare(usage, quota) {
 
 const UNITS = ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte'];
 
-/** Bytes para mostrar: «820 B», «3,2 MB», «1,5 GB» (base 1000, como los sistemas). */
+/** Bytes to show: «820 B», «3.2 MB», «1.5 GB» (base 1000, as operating systems count). */
 export function formatBytes(bytes, { locale = 'es' } = {}) {
   let value = Math.max(0, Number(bytes) || 0);
   let i = 0;
