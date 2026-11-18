@@ -8,8 +8,8 @@ Drafts of the site's legal pages, in Spanish:
 **Spanish is the reference version**: translations follow it. Each language
 of the site has its translation in a folder of its own, with the same file
 names in every language: [en/terms.md](en/terms.md) and
-[en/privacy.md](en/privacy.md); [hi/terms.md](hi/terms.md) and
-[hi/privacy.md](hi/privacy.md). A translation keeps the Spanish
+[en/privacy.md](en/privacy.md), and the same two files under
+[zh-Hans/](zh-Hans/), [hi/](hi/) and [fr/](fr/). A translation keeps the Spanish
 placeholders, translates the draft note and says the Spanish version is the
 reference until a lawyer reviews it.
 

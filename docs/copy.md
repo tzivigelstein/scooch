@@ -79,7 +79,7 @@ revisión de hablantes nativos.
   y el nombre del archivo están en `src/copy/output.ts`, en español, como
   siempre. Las URL y el documento guardado tampoco dependen del idioma.
 - Las páginas del sitio (`src/site`) tienen su propia versión en cada idioma
-  que las tiene (hoy español e inglés), con los nombres de los botones, los
+  que las tiene (hoy español, inglés, chino simplificado, hindi y francés), con los nombres de los botones, los
   papeles y los tamaños de foto del catálogo de ese idioma (`createKit`, en
   `src/site/kit.ts`). [site.md](site.md) explica cómo se suma un idioma.
 - Para sumar un idioma: su archivo en `src/copy/`, su nombre propio en

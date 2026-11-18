@@ -17,7 +17,8 @@ editor loads.
 
 The site's languages are the app's (`LANGUAGES` in `src/core/language.js`,
 each named in itself by `src/copy/languages.ts`); the ones with content are
-listed in `src/site/content/index.ts`: Spanish, the reference, English and Hindi.
+listed in `src/site/content/index.ts`: Spanish, the reference, English,
+Simplified Chinese, Hindi and French.
 Each page lives at `/<language>/<address>`, the language in lowercase
 (`/es`, `/en`, `/zh-hans`, `/hi`, `/fr`) and the address in that language,
 with the words people search for:
@@ -50,6 +51,22 @@ has no settled spelling.
 | `faq` | `/hi/faq` |
 | `legal-terms`, `legal-privacy` | `/hi/terms`, `/hi/privacy` |
 | `legal-notices`, `legal-license` | `/hi/third-party-licenses`, `/hi/license` |
+
+Simplified Chinese's addresses are short English words too: in mainland
+China this is searched in characters, nobody types pinyin, and the address
+weighs little next to the title. French's are French without accents.
+
+| Page (id) | Simplified Chinese | French |
+| --- | --- | --- |
+| `several-photos` | `/zh-hans/multiple-photos-on-one-sheet` | `/fr/imprimer-plusieurs-photos-sur-une-feuille` |
+| `how-many` (calculator) | `/zh-hans/photos-per-sheet-calculator` | `/fr/combien-de-photos-sur-une-feuille` |
+| `photos-10x15` | `/zh-hans/6-inch-photos-on-a4` | `/fr/imprimer-photos-10x15-sur-a4` |
+| `id-photos` | `/zh-hans/id-photo-layout` | `/fr/photo-identite-a-imprimer` |
+| `same-photo` | `/zh-hans/same-photo-multiple-copies` | `/fr/imprimer-plusieurs-fois-la-meme-photo` |
+| `actual-size` | `/zh-hans/print-image-actual-size` | `/fr/imprimer-image-taille-reelle` |
+| `faq` | `/zh-hans/faq` | `/fr/questions-frequentes` |
+| `legal-terms`, `legal-privacy` | `/zh-hans/terms`, `/zh-hans/privacy` | `/fr/conditions-utilisation`, `/fr/confidentialite` |
+| `legal-notices`, `legal-license` | `/zh-hans/third-party-licenses`, `/zh-hans/license` | `/fr/licences-tierces`, `/fr/licence` |
 
 - **Addresses don't change** once published: search engines may have them,
   and the app links to `/es/terminos` and `/es/privacidad` (`LEGAL_PATHS`,
