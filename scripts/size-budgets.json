@@ -73,6 +73,21 @@
       "measured": 14.3,
       "what": "The third-party licenses page in English, the same THIRD_PARTY_NOTICES.md: it grows with each dependency the build ships."
     },
+    "zh-hans/photos-per-sheet-calculator.html": {
+      "kB": 8.3,
+      "measured": 7.9,
+      "what": "The calculator in Simplified Chinese: Chinese takes three bytes a character in UTF-8, and the page carries the calculator's texts twice (in its HTML and as the script's JSON), so it weighs a little more than the Spanish one."
+    },
+    "zh-hans/privacy.html": {
+      "kB": 9.3,
+      "measured": 8.8,
+      "what": "The privacy policy in Simplified Chinese, from docs/legal/zh-Hans/privacy.md: like the Spanish one, it grows with each new setting, and Chinese takes three bytes a character in UTF-8."
+    },
+    "zh-hans/third-party-licenses.html": {
+      "kB": 15.7,
+      "measured": 14.9,
+      "what": "The third-party licenses page in Simplified Chinese, the same THIRD_PARTY_NOTICES.md with a Chinese introduction: it grows with each dependency the build ships."
+    },
     "fr/confidentialite.html": {
       "kB": 9.0,
       "measured": 8.5,
