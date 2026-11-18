@@ -1,14 +1,14 @@
-// Selección múltiple: alinear, distribuir y transformar un grupo de piezas.
-// Trabaja con rectángulos {id, x, y, w, h} en mm, ya con la orientación de
-// cada pieza aplicada (origen arriba a la izquierda, y hacia abajo). Módulo
-// puro: devuelve rectángulos nuevos con la misma forma y en el mismo orden que
-// la entrada (así encadenan y van directo a `validate`); nunca la modifica.
+// Several selected pieces: align, distribute and transform them as a group.
+// Works on rectangles {id, x, y, w, h} in mm with each piece's orientation
+// already applied (origin at the top left, y down). Returns new rectangles of
+// the same shape and in the same order as the input (so calls chain and go
+// straight to `validate`); never changes the input.
 
 import { overlaps } from './collide.js';
 
 const copy = ({ id, x, y, w, h }) => ({ id, x, y, w, h });
 
-/** Caja {x, y, w, h} que contiene a todos, o null si no hay ninguno. */
+/** The box {x, y, w, h} around all of them, or null when there are none. */
 export function bounds(rects) {
   if (!rects.length) return null;
   let x0 = Infinity;
@@ -24,8 +24,8 @@ export function bounds(rects) {
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
 }
 
-// Modo → [coordenada, medida, fracción]: la pieza queda en
-// referencia.coordenada + (referencia.medida − pieza.medida) × fracción.
+// Mode → [coordinate, length, fraction]: the piece ends at
+// reference.coordinate + (reference.length − piece.length) × fraction.
 const MODES = {
   left: ['x', 'w', 0],
   centerX: ['x', 'w', 0.5],
@@ -35,18 +35,17 @@ const MODES = {
   bottom: ['y', 'h', 1],
 };
 
-/** Modos de `align`. */
 export const ALIGN_MODES = Object.keys(MODES);
 
 /**
- * Alinea cada pieza contra la caja `reference` ({x, y, w, h}): la de la
- * selección (por omisión, `bounds(rects)`) o el área útil de la hoja (en
- * coordenadas de la hoja: {x: margen, y: margen, w: ancho útil, h: alto útil}).
- * `mode`: 'left' | 'centerX' | 'right' | 'top' | 'centerY' | 'bottom'. Solo
- * cambia la coordenada de ese eje. Alinear dos veces da lo mismo.
+ * Aligns each piece against the box `reference` ({x, y, w, h}): the
+ * selection's (by default, `bounds(rects)`) or the sheet's printable area (in
+ * sheet coordinates: {x: margin, y: margin, w: printable width, h: printable
+ * height}). Only the coordinate of the mode's axis changes. Aligning twice
+ * gives the same.
  */
 export function align(rects, mode, reference = bounds(rects)) {
-  if (!Object.hasOwn(MODES, mode)) throw new RangeError(`modo de alineación desconocido: ${mode}`);
+  if (!Object.hasOwn(MODES, mode)) throw new RangeError(`unknown align mode: ${mode}`);
   const [pos, size, t] = MODES[mode];
   return rects.map((r) => {
     const out = copy(r);
@@ -63,21 +62,22 @@ const compareIds = (a, b) => {
 };
 
 /**
- * Distribuye las piezas a lo largo de `axis` ('x' | 'y'), ordenadas por su
- * posición en ese eje (a igual posición, la más corta primero y después por
- * id). La otra coordenada no cambia. Dos modos:
+ * Distributes the pieces along `axis` ('x' | 'y'), in the order of their
+ * position on it (at the same position, the shorter first, then by id). The
+ * other coordinate doesn't change. Two modes:
  *
- * - `{gap}`: la primera queda donde está y cada una de las siguientes arranca
- *   exactamente `gap` mm después de donde termina la anterior. Con menos de 2
- *   piezas no hay nada que hacer y quedan como están.
- * - `{within: caja}`: la primera arranca al principio de la caja, la última
- *   termina al final, y el espacio que sobra se reparte en partes iguales entre
- *   cada par de consecutivas. Con 2 piezas, quedan contra los extremos; con 1
- *   (o ninguna), como están. Si las piezas suman más que la caja, el espacio
- *   entre ellas es negativo (se pisarían en ese eje): `validate` lo detecta.
+ * - `{gap}`: the first stays where it is and each of the next starts exactly
+ *   `gap` mm after the previous one ends. With fewer than 2 pieces they stay
+ *   as they are.
+ * - `{within: box}`: the first starts at the box's start, the last ends at
+ *   its end, and the space left over is shared evenly between each pair of
+ *   consecutive ones. With 2 pieces they go against the ends; with 1 (or
+ *   none), they stay as they are. When the pieces add up to more than the
+ *   box, the space between them is negative (they would overlap on that
+ *   axis): `validate` catches it.
  */
 export function distribute(rects, axis, options = {}) {
-  if (!Object.hasOwn(AXES, axis)) throw new RangeError(`eje desconocido: ${axis}`);
+  if (!Object.hasOwn(AXES, axis)) throw new RangeError(`unknown axis: ${axis}`);
   const [pos, size] = AXES[axis];
   const out = rects.map(copy);
   const order = out
@@ -98,7 +98,7 @@ export function distribute(rects, axis, options = {}) {
       r[pos] = cursor;
       cursor += r[size] + space;
     }
-    // La última, exacta contra el final (sin el error acumulado de las sumas).
+    // The last one exactly against the end, without the sums' accumulated error.
     const last = order[order.length - 1];
     last[pos] = box[pos] + box[size] - last[size];
     return out;
@@ -111,13 +111,12 @@ export function distribute(rects, axis, options = {}) {
     }
     return out;
   }
-  throw new TypeError('distribute: se esperaba {gap} o {within}');
+  throw new TypeError('distribute: expected {gap} or {within}');
 }
 
-/** Mueve todas las piezas (dx, dy) mm. */
 export const moveBy = (rects, dx, dy) => rects.map((r) => ({ ...copy(r), x: r.x + dx, y: r.y + dy }));
 
-// Anclas con nombre: fracción del ancho y del alto de la caja del grupo.
+// Named anchors: fractions of the width and the height of the group's box.
 const ANCHORS = {
   'top-left': [0, 0],
   top: [0.5, 0],
@@ -130,24 +129,23 @@ const ANCHORS = {
   'bottom-right': [1, 1],
 };
 
-/** Punto {x, y} de un ancla: un punto dado o un nombre de ANCHORS sobre la caja del grupo. */
+/** The point {x, y} of an anchor: a given point, or a name of ANCHORS on the group's box. */
 function anchorPoint(rects, anchor) {
   if (anchor && typeof anchor === 'object') return anchor;
-  if (!Object.hasOwn(ANCHORS, anchor)) throw new RangeError(`ancla desconocida: ${anchor}`);
+  if (!Object.hasOwn(ANCHORS, anchor)) throw new RangeError(`unknown anchor: ${anchor}`);
   const b = bounds(rects) ?? { x: 0, y: 0, w: 0, h: 0 };
   const [fx, fy] = ANCHORS[anchor];
   return { x: b.x + b.w * fx, y: b.y + b.h * fy };
 }
 
 /**
- * Escala el grupo por `k` (> 0) respecto de `anchor`: un punto {x, y} en mm o
- * un nombre ('center', 'top-left', 'top', 'top-right', 'left', 'right',
- * 'bottom-left', 'bottom', 'bottom-right') sobre la caja del grupo. Escala
- * posiciones y tamaños, así las distancias entre piezas crecen igual.
- * Devuelve {rects, factor}: `factor` (= k) multiplica el `scale` de cada pieza.
+ * Scales the group by `k` (> 0) around `anchor`: a point {x, y} in mm or a
+ * name of ANCHORS on the group's box. Positions scale with the sizes, so the
+ * distances between pieces grow alike. Gives {rects, factor}: `factor` (= k)
+ * multiplies each piece's `scale`.
  */
 export function scaleGroup(rects, k, anchor = 'center') {
-  if (typeof k !== 'number' || !Number.isFinite(k) || k <= 0) throw new RangeError(`factor inválido: ${k}`);
+  if (typeof k !== 'number' || !Number.isFinite(k) || k <= 0) throw new RangeError(`invalid factor: ${k}`);
   const a = anchorPoint(rects, anchor);
   return {
     rects: rects.map((r) => ({ id: r.id, x: a.x + (r.x - a.x) * k, y: a.y + (r.y - a.y) * k, w: r.w * k, h: r.h * k })),
@@ -156,14 +154,14 @@ export function scaleGroup(rects, k, anchor = 'center') {
 }
 
 /**
- * Gira el grupo 90° alrededor del centro de su caja: `direction` 'cw'
- * (horario, como `r`) o 'ccw'. Cada pieza gira con él: su centro da la vuelta
- * alrededor del centro del grupo y su ancho y alto se intercambian. Devuelve
- * {rects, dr}: `dr` (90 o 270) se suma al `r` de cada pieza, módulo 360.
- * La caja del grupo conserva el centro y queda con ancho y alto intercambiados.
+ * Rotates the group 90° around the center of its box: `direction` 'cw'
+ * (clockwise, like `r`) or 'ccw'. Each piece turns with it: its center goes
+ * around the group's center and its width and height swap. Gives {rects, dr}:
+ * `dr` (90 or 270) is added to each piece's `r`, modulo 360. The group's box
+ * keeps its center, with width and height swapped.
  */
 export function rotateGroup(rects, direction = 'cw') {
-  if (direction !== 'cw' && direction !== 'ccw') throw new RangeError(`sentido desconocido: ${direction}`);
+  if (direction !== 'cw' && direction !== 'ccw') throw new RangeError(`unknown direction: ${direction}`);
   const b = bounds(rects);
   if (!b) return { rects: [], dr: direction === 'cw' ? 90 : 270 };
   const cx = b.x + b.w / 2;
@@ -173,7 +171,7 @@ export function rotateGroup(rects, direction = 'cw') {
     rects: rects.map((r) => {
       const dx = r.x + r.w / 2 - cx;
       const dy = r.y + r.h / 2 - cy;
-      // Con la y hacia abajo, horario es (dx, dy) → (−dy, dx).
+      // With y down, clockwise is (dx, dy) → (−dy, dx).
       const nx = cw ? -dy : dy;
       const ny = cw ? dx : -dx;
       return { id: r.id, x: cx + nx - r.h / 2, y: cy + ny - r.w / 2, w: r.h, h: r.w };
@@ -182,8 +180,8 @@ export function rotateGroup(rects, direction = 'cw') {
   };
 }
 
-// Redondeo a la grilla: al más cercano, hacia arriba o hacia abajo (con una
-// tolerancia, así un valor que ya está en la grilla no salta un paso).
+// Rounding to the grid: nearest, up or down (with a tolerance, so a value
+// already on the grid doesn't jump a step).
 const ROUNDING = {
   nearest: Math.round,
   up: (v) => Math.ceil(v - 1e-9),
@@ -191,15 +189,15 @@ const ROUNDING = {
 };
 
 /**
- * Imán para el grupo como bloque: lo mueve entero (mismo delta para todas)
- * para que la esquina superior izquierda de su caja caiga en la grilla más
- * cercana de paso `step` mm, con origen en `origin` (por omisión la esquina de
- * la hoja, como el imán de una pieza). No cambia las distancias internas. Con
- * un paso no positivo o no finito, no mueve nada. No redondea el resultado.
+ * Snap for the group as a block: moves it whole (the same delta for all) so
+ * the top left corner of its box falls on the nearest grid line of `step` mm,
+ * from `origin` (by default the sheet's corner, as a single piece snaps). The
+ * distances inside don't change. A step that isn't positive and finite moves
+ * nothing. The result isn't rounded.
  *
- * `axes`: 'xy' (por omisión), 'x' o 'y': en qué ejes se ajusta (el otro no
- * se toca). `round`: 'nearest' (por omisión), 'up' o 'down', o {x, y} con uno
- * por eje: hacia dónde va la esquina (p. ej. hacia adentro del margen).
+ * `axes`: 'xy' (default), 'x' or 'y': the axes that snap (the other is left
+ * alone). `round`: 'nearest' (default), 'up' or 'down', or {x, y} with one
+ * per axis: where the corner goes (inside the margin, for instance).
  */
 export function snapGroup(rects, step, { origin = { x: 0, y: 0 }, axes = 'xy', round = 'nearest' } = {}) {
   const b = bounds(rects);
@@ -210,13 +208,14 @@ export function snapGroup(rects, step, { origin = { x: 0, y: 0 }, axes = 'xy', r
 }
 
 /**
- * ¿El resultado de una operación de grupo es aceptable? true si las piezas
- * de `result` no se pisan entre sí ni con `others` (las no seleccionadas;
- * se ignoran las de `others` cuyo id está en `result`, así se puede pasar la
- * hoja entera). Tocarse no es pisarse (tolerancia de collide.js). Con
- * `allowOverlap`, siempre true. La UI lo usa para rechazar la operación entera.
- * Con `internal: false` no compara las de `result` entre sí (para un grupo que
- * se mueve rígido: lo que ya se pisaba adentro no lo cambia el movimiento).
+ * Is the result of a group operation acceptable? true when the pieces of
+ * `result` overlap neither each other nor `others` (the unselected ones;
+ * those of `others` whose id is in `result` are skipped, so the whole sheet
+ * can be passed). Touching isn't overlapping (collide.js's tolerance). With
+ * `allowOverlap`, always true. The UI uses it to reject the whole operation.
+ * `internal: false` doesn't compare the pieces of `result` with each other
+ * (for a group moved rigidly: what already overlapped inside, moving doesn't
+ * change).
  */
 export function validate(result, others = [], { allowOverlap = false, internal = true } = {}) {
   if (allowOverlap) return true;
