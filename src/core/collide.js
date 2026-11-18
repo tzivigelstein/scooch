@@ -1,14 +1,14 @@
-// Colisiones entre rectángulos {x, y, w, h} (mm, origen arriba a la izquierda).
-// Tocarse no es superponerse: hay una tolerancia de EPS mm. Módulo puro.
+// Collisions between rectangles {x, y, w, h} (mm, origin at the top left).
+// Touching isn't overlapping: there is a tolerance of EPS mm.
 
 export const EPS = 0.01;
 
-/** ¿`a` y `b` se pisan (más que tocarse)? */
+/** Do `a` and `b` overlap (more than touching)? */
 export function overlaps(a, b, eps = EPS) {
   return a.x < b.x + b.w - eps && b.x < a.x + a.w - eps && a.y < b.y + b.h - eps && b.y < a.y + a.h - eps;
 }
 
-/** Los de `others` que `rect` pisa. */
+/** Those of `others` that `rect` overlaps. */
 export const overlapping = (rect, others, eps = EPS) => others.filter((o) => overlaps(rect, o, eps));
 
 export const overlapsAny = (rect, others, eps = EPS) => others.some((o) => overlaps(rect, o, eps));
@@ -17,17 +17,17 @@ const inside = (r, b, eps = EPS) =>
   r.x >= b.x - eps && r.y >= b.y - eps && r.x + r.w <= b.x + b.w + eps && r.y + r.h <= b.y + b.h + eps;
 
 /**
- * Posición libre más cercana (distancia euclídea de la esquina) a `rect` para
- * un rectángulo de rect.w × rect.h que no pise a ninguno de `others`.
+ * The free position nearest to `rect` (Euclidean distance of the corner) for
+ * a rectangle of rect.w × rect.h that overlaps none of `others`.
  *
- * Candidatos: la propia posición y las que lo apoyan contra los bordes de los
- * otros (x = izquierda de otro − ancho, x = derecha de otro, ídem en y) y de
- * `bounds`, combinadas entre sí y con la x/y original. Ahí está siempre la más
- * cercana: o solo se corre en un eje hasta un borde, o queda en una esquina
- * formada por bordes de dos rectángulos.
+ * Candidates: its own position and those that rest it against the edges of
+ * the others (x = another's left − width, x = another's right, the same in y)
+ * and of `bounds`, combined with each other and with the original x/y. The
+ * nearest is always among them: either it only slides along one axis to an
+ * edge, or it ends in a corner made by the edges of two rectangles.
  *
- * Opciones: `bounds` ({x, y, w, h}) si tiene que quedar adentro de un área;
- * `maxDistance` para descartar lugares demasiado lejos. Devuelve {x, y} o null.
+ * Options: `bounds` ({x, y, w, h}) when it has to stay inside an area;
+ * `maxDistance` to drop places too far away. Gives {x, y} or null.
  */
 export function nearestFree(rect, others, { bounds = null, maxDistance = Infinity } = {}) {
   const { w, h } = rect;
@@ -54,7 +54,7 @@ export function nearestFree(rect, others, { bounds = null, maxDistance = Infinit
       candidates.push({ x, y, d });
     }
   }
-  // A igual distancia, la de más arriba y después la de más a la izquierda.
+  // At the same distance, the topmost, then the leftmost.
   candidates.sort((a, b) => a.d - b.d || a.y - b.y || a.x - b.x);
   for (const c of candidates) {
     if (!overlapsAny({ x: c.x, y: c.y, w, h }, others)) return { x: c.x, y: c.y };
@@ -63,15 +63,16 @@ export function nearestFree(rect, others, { bounds = null, maxDistance = Infinit
 }
 
 /**
- * Mueve `rect` en (dx, dy) (un solo eje). Si ahí pisa a otro, salta al primer
- * lugar libre en esa misma dirección, justo al otro lado de lo que estorba.
- * Nunca queda trabado. Devuelve {x, y, jumped} con los rectángulos saltados.
+ * Moves `rect` by (dx, dy) (one axis only). When it overlaps another there, it
+ * jumps to the first free place in that same direction, right past what is in
+ * the way, so it never gets stuck. Gives {x, y, jumped} with the rectangles
+ * jumped over.
  */
 export function nextFreeInDirection(rect, others, dx, dy) {
   let x = rect.x + dx;
   let y = rect.y + dy;
   const jumped = [];
-  // Cada vuelta deja atrás al menos un rectángulo, que ya no vuelve a estorbar.
+  // Each round leaves at least one rectangle behind, which can't block again.
   for (let guard = 0; guard <= others.length; guard++) {
     const blockers = overlapping({ x, y, w: rect.w, h: rect.h }, others);
     if (!blockers.length || (!dx && !dy)) break;
@@ -84,12 +85,12 @@ export function nextFreeInDirection(rect, others, dx, dy) {
   return { x, y, jumped };
 }
 
-// ---------- Grupos que se mueven rígidos (varias piezas, en una o varias hojas) ----------
+// ---------- Groups moved rigidly (several pieces, on one or more sheets) ----------
 //
-// `layers`: [{rects, others, bounds?}], una por hoja: `rects` son las piezas del
-// grupo en esa hoja y `others`, las demás de esa hoja. Todas las capas se
-// corren igual. Con `bounds` ({W, H}), el centro de cada pieza tiene que quedar
-// dentro de la hoja W × H.
+// `layers`: [{rects, others, bounds?}], one per sheet: `rects` are the group's
+// pieces on that sheet and `others` the rest of that sheet. Every layer moves
+// by the same offset. With `bounds` ({W, H}), each piece's center has to stay
+// on the W × H sheet.
 
 const movedBy = (r, dx, dy) => ({ x: r.x + dx, y: r.y + dy, w: r.w, h: r.h });
 
@@ -101,10 +102,10 @@ function centerInside(r, bounds) {
 }
 
 /**
- * Como `nextFreeInDirection`, para un grupo: lo corre (dx, dy) (un solo eje)
- * y, si alguna pieza pisa a otra de su hoja, salta en esa dirección lo justo
- * para dejarla atrás, hasta que no pise nada. Devuelve {dx, dy, jumped}: el
- * corrimiento final y las de `others` que saltó (sin repetir).
+ * `nextFreeInDirection` for a group: moves it by (dx, dy) (one axis only)
+ * and, while some piece overlaps another of its sheet, jumps in that
+ * direction just enough to leave it behind. Gives {dx, dy, jumped}: the final
+ * offset and those of `others` it jumped over (each once).
  */
 export function nextFreeForGroup(layers, dx, dy) {
   let ox = dx;
@@ -112,7 +113,7 @@ export function nextFreeForGroup(layers, dx, dy) {
   const jumped = [];
   const forward = dx > 0 || dy > 0;
   const pairs = layers.reduce((n, l) => n + l.rects.length * l.others.length, 0);
-  // Cada vuelta avanza hasta el borde de un par pieza–obstáculo distinto: termina.
+  // Each round reaches the edge of a different piece–obstacle pair, so it ends.
   for (let guard = 0; guard <= pairs && (dx || dy); guard++) {
     let next = null;
     for (const { rects, others } of layers) {
@@ -134,15 +135,15 @@ export function nextFreeForGroup(layers, dx, dy) {
 }
 
 /**
- * Corrimiento (dx, dy) más corto (distancia euclídea) que deja un grupo sin
- * pisar a nadie de su hoja y, con `bounds`, con los centros dentro de la hoja.
- * Candidatos: 0 y los corrimientos que apoyan una pieza del grupo contra un
- * borde de otra (o su centro contra el borde de la hoja), combinados en x e y
- * (como `nearestFree`). `maxDistance` descarta los lejanos. No compara las del
- * grupo entre sí (se mueven juntas). Con `step` (> 0), solo corrimientos que
- * son múltiplos del paso (el bloque sigue en la grilla del imán): cada
- * candidato se redondea al múltiplo de abajo y al de arriba. Devuelve {dx, dy}
- * o null.
+ * The shortest offset (dx, dy) (Euclidean distance) that leaves a group
+ * overlapping nothing on its sheet and, with `bounds`, with the centers on
+ * the sheet. Candidates: 0 and the offsets that rest a piece of the group
+ * against another's edge (or its center against the sheet's edge), combined
+ * in x and y (as in `nearestFree`). `maxDistance` drops the far ones. The
+ * group's pieces aren't compared with each other (they move together). With
+ * `step` (> 0), only offsets that are multiples of the step (the block stays
+ * on the snap grid): each candidate is rounded to the multiple below and the
+ * one above. Gives {dx, dy} or null.
  */
 export function nearestFreeOffset(layers, { maxDistance = Infinity, step = 0 } = {}) {
   const xs = new Set([0]);
@@ -180,7 +181,7 @@ export function nearestFreeOffset(layers, { maxDistance = Infinity, step = 0 } =
       if (d <= maxDistance + 1e-9) candidates.push({ dx, dy, d });
     }
   }
-  // A igual distancia, más arriba y después más a la izquierda (como nearestFree).
+  // At the same distance, the topmost, then the leftmost (as in nearestFree).
   candidates.sort((a, b) => a.d - b.d || a.dy - b.dy || a.dx - b.dx);
   const fits = (dx, dy) =>
     layers.every(({ rects, others, bounds }) =>
@@ -189,18 +190,19 @@ export function nearestFreeOffset(layers, { maxDistance = Infinity, step = 0 } =
         return centerInside(m, bounds) && !overlapsAny(m, others);
       })
     );
-  // Tope de candidatos: los más cercanos alcanzan (el resto queda muy lejos).
+  // A cap on candidates: the nearest are enough (the rest are very far away).
   for (const c of candidates.slice(0, 20000)) if (fits(c.dx, c.dy)) return { dx: c.dx, dy: c.dy };
   return null;
 }
 
 /**
- * Factores k entre los que se puede escalar un grupo respecto de `anchor`
- * ({x, y}: posiciones y medidas se multiplican por k desde ese punto, como
- * align.scaleGroup) sin que ninguna de `rects` pise a ninguna de `others`.
- * Las del grupo nunca se pisan entre sí al escalar (es una homotecia). Las
- * que ya se pisan a k = 1 no frenan (como maxGrowth). Devuelve {min, max}:
- * 0 e Infinity si nada lo frena; en los extremos se tocan, sin pisarse.
+ * The factors k a group can be scaled by around `anchor` ({x, y}: positions
+ * and sizes are multiplied by k from that point, as in align.scaleGroup)
+ * without any of `rects` overlapping any of `others`. The group's own pieces
+ * never overlap each other when scaled (it is a homothety). Those that
+ * already overlap at k = 1 don't stop it (as in maxGrowth). Gives {min, max}:
+ * 0 and Infinity when nothing stops it; at the ends they touch without
+ * overlapping.
  */
 export function groupScaleRange(rects, others, anchor) {
   let min = 0;
@@ -208,7 +210,7 @@ export function groupScaleRange(rects, others, anchor) {
   for (const r of rects) {
     for (const o of others) {
       if (overlaps(r, o)) continue;
-      // Se pisan para k en (lo, hi): cada desigualdad es lineal en k.
+      // They overlap for k in (lo, hi): each inequality is linear in k.
       let lo = 0;
       let hi = Infinity;
       const less = (c, d) => {
@@ -236,10 +238,11 @@ export function groupScaleRange(rects, others, anchor) {
 }
 
 /**
- * Mayor factor k por el que se puede agrandar `rect` sin pisar a `others`.
- * `anchor`: 'center' (crece desde el centro) o 'top-left' (crece hacia la
- * derecha y abajo, como con el tirador). Los que ya pisa no lo frenan.
- * Infinity si nada lo frena; puede ser < 1 si ya está tocando a otro.
+ * The largest factor k `rect` can grow by without overlapping `others`.
+ * `anchor`: 'center' (grows from the center) or 'top-left' (grows right and
+ * down, as with the handle). Those it already overlaps don't stop it.
+ * Infinity when nothing stops it; it can be < 1 when it already touches
+ * another.
  */
 export function maxGrowth(rect, others, anchor = 'center') {
   let limit = Infinity;
@@ -247,13 +250,13 @@ export function maxGrowth(rect, others, anchor = 'center') {
     if (overlaps(rect, b)) continue;
     let k;
     if (anchor === 'center') {
-      // Se pisan cuando las distancias entre centros son menores que la suma de
-      // las semi-medidas en los dos ejes a la vez.
+      // They overlap when the distances between centers are smaller than the
+      // sum of the half sizes on both axes at once.
       const dx = Math.abs(rect.x + rect.w / 2 - (b.x + b.w / 2));
       const dy = Math.abs(rect.y + rect.h / 2 - (b.y + b.h / 2));
       k = Math.max((2 * dx - b.w) / rect.w, (2 * dy - b.h) / rect.h);
     } else {
-      // Lo que queda a la izquierda o arriba nunca se alcanza.
+      // What lies to the left or above is never reached.
       if (b.x + b.w <= rect.x + EPS || b.y + b.h <= rect.y + EPS) continue;
       k = Math.max((b.x - rect.x) / rect.w, (b.y - rect.y) / rect.h);
     }
