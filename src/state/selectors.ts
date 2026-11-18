@@ -1,12 +1,13 @@
 // Derived values of the document: sizes, boxes, the selection and problems.
 // They read the stores when called (for actions) or take a state (for components).
 
+import { grown } from '../core/align.js';
 import type { GroupOptions } from '../core/group.js';
 import { sizeOf } from '../core/papers.js';
 import { pieceSize } from '../core/crop.js';
 import { footprintPad } from '../core/cutmarks.js';
 import { pieceProblems, problemSummary } from '../core/sheets.js';
-import type { Box, Rect } from '../core/types.ts';
+import type { Box } from '../core/types.ts';
 import { fine } from '../core/util.js';
 import { t } from '../copy/index.ts';
 import { sizeText } from '../services/measure.ts';
@@ -51,7 +52,7 @@ export const boxOf = (item: Piece): Box => boxWith(item, layoutPad());
 /** A piece's box with `pad` mm around its image (boxOf with the pad already known). */
 export function boxWith(item: Piece, pad: number): Box {
   const [w, h] = dims(item);
-  return { id: item.id, sheet: item.sheet, x: item.x - pad, y: item.y - pad, w: w + 2 * pad, h: h + 2 * pad };
+  return grown({ id: item.id, sheet: item.sheet, x: item.x, y: item.y, w, h }, pad);
 }
 
 /** A piece's image box on its sheet (what is drawn; scaling and the cut lines start from it). */
@@ -59,9 +60,6 @@ export const imageBoxOf = (item: Piece): Box => boxWith(item, 0);
 
 /** Where a piece goes for its layout box to be at (x, y). */
 export const fromBox = (x: number, y: number, pad = layoutPad()) => ({ x: x + pad, y: y + pad });
-
-/** A box grown by `d` mm on every side. */
-export const grown = <T extends Rect>(r: T, d: number): T => (d ? { ...r, x: r.x - d, y: r.y - d, w: r.w + 2 * d, h: r.h + 2 * d } : r);
 
 export const boxes = (doc: Pick<DocumentData, 'items' | 'cuts'> = getDocument()) => {
   const pad = layoutPad(doc);

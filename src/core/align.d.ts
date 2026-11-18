@@ -18,6 +18,9 @@ export function distribute<I extends RectId>(rects: readonly IdRect<I>[], axis: 
 
 export function moveBy<I extends RectId>(rects: readonly IdRect<I>[], dx: number, dy: number): IdRect<I>[];
 
+/** A box grown by `d` mm on every side (the same box when `d` is 0). */
+export function grown<T extends Rect>(r: T, d: number): T;
+
 /** Scales positions and sizes by `k` around an anchor point or a named point of the bounding box. */
 export function scaleGroup<I extends RectId>(rects: readonly IdRect<I>[], k: number, anchor?: AnchorName | Point): { rects: IdRect<I>[]; factor: number };
 

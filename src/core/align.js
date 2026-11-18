@@ -112,6 +112,9 @@ export function distribute(rects, axis, options = {}) {
 
 export const moveBy = (rects, dx, dy) => rects.map((r) => ({ ...copy(r), x: r.x + dx, y: r.y + dy }));
 
+/** A box grown by `d` mm on every side (the same box when `d` is 0). */
+export const grown = (r, d) => (d ? { ...r, x: r.x - d, y: r.y - d, w: r.w + 2 * d, h: r.h + 2 * d } : r);
+
 // Named anchors: fractions of the width and the height of the group's box.
 const ANCHORS = {
   'top-left': [0, 0],

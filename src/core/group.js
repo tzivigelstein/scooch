@@ -4,7 +4,7 @@
 // its sheet, and checked for overlaps. Takes boxes {id, sheet, x, y, w, h} in
 // mm (rotated and cropped) and returns new ones, changing nothing.
 
-import { bounds, snapGroup, validate, align, distribute, moveBy, rotateGroup, scaleGroup } from './align.js';
+import { bounds, snapGroup, validate, align, distribute, grown, moveBy, rotateGroup, scaleGroup } from './align.js';
 import { nextFreeForGroup, nearestFreeOffset, groupScaleRange } from './collide.js';
 
 /**
@@ -75,7 +75,7 @@ function containShift(lo, hi, step) {
 export function planGroup(boxes, ids, transform, options = {}) {
   const { W, H, snap = null, contain = 'clamp', allowOverlap = false, rigid = false, round = (v) => v, pad = 0 } = options;
   // With `pad`, `boxes` are images and each one takes `pad` more on every side (the cut margin).
-  const grown = (list) => (pad > 0 ? list.map((r) => ({ ...r, x: r.x - pad, y: r.y - pad, w: r.w + 2 * pad, h: r.h + 2 * pad })) : list);
+  const padded = (list) => (pad > 0 ? list.map((r) => grown(r, pad)) : list);
   const rects = new Map();
   let failure = null;
   let changed = false;
@@ -96,7 +96,7 @@ export function planGroup(boxes, ids, transform, options = {}) {
       }
     }
     next = next.map((r) => ({ ...r, x: round(r.x), y: round(r.y) }));
-    if (!failure && !validate(grown(next), grown(others), { allowOverlap, internal: !rigid })) failure = { reason: 'overlap', sheet };
+    if (!failure && !validate(padded(next), padded(others), { allowOverlap, internal: !rigid })) failure = { reason: 'overlap', sheet };
     next.forEach((r, i) => {
       const before = group[i];
       if (r.x !== before.x || r.y !== before.y || Math.abs(r.w - before.w) > 1e-9 || Math.abs(r.h - before.h) > 1e-9) changed = true;
@@ -259,7 +259,7 @@ export function scaleBounds(boxes, ids, scales, anchor, opts) {
     if (!opts.allowOverlap) {
       // Two images `pad` apart on each side don't overlap when one doesn't reach the other grown by 2 · pad.
       const pad = opts.pad ?? 0;
-      const near = pad > 0 ? others.map((o) => ({ ...o, x: o.x - 2 * pad, y: o.y - 2 * pad, w: o.w + 4 * pad, h: o.h + 4 * pad })) : others;
+      const near = pad > 0 ? others.map((o) => grown(o, 2 * pad)) : others;
       const free = groupScaleRange(rects, near, point);
       min = Math.max(min, free.min);
       max = Math.min(max, free.max);
