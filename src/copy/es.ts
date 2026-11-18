@@ -861,6 +861,8 @@ const es = {
     unitChanged: 'Medidas en {unit}',
     // A switch of its own, without a heading: {keys}, two of them as alternatives, as this device shows them («D o R»)
     singleKeys: 'Atajos de 1 tecla, como {keys}',
+    // A link at the foot to the site's questions, by the page's own name (src/site/content/es/faq.ts)
+    faq: 'Preguntas frecuentes',
   },
 
   // «Atajos de teclado» dialog

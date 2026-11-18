@@ -91,7 +91,7 @@ export default function PrefsDialog() {
           />
         </div>
       </div>
-      <LegalLinks />
+      <SiteLinks />
     </>
   );
 }
@@ -103,14 +103,19 @@ const singleKeyExamples = () =>
     .join('');
 
 /**
- * The site's terms and privacy policy in the language on screen (pages of
- * their own: the project saves itself before leaving).
+ * The site's pages, in the language on screen: the questions, in a new tab
+ * (whoever looks for help stays in the editor), and the terms and privacy
+ * policy (pages of their own: the project saves itself before leaving).
  */
-function LegalLinks() {
+function SiteLinks() {
   const language = shownLanguage();
   return (
     <div className="dialog-foot">
       <p id="prefs-legal" className="dialog-note">
+        <a className="link-btn" href={sitePath(language, 'faq')} target="_blank" rel="noopener">
+          {t('prefs.faq')}
+        </a>
+        {t('legal.separator')}
         <a className="link-btn" href={sitePath(language, 'legal-terms')}>
           {t('legal.terms')}
         </a>

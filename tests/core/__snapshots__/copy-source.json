@@ -725,6 +725,7 @@
   "prefs.unitLabel": "{symbol}, {name}",
   "prefs.unitChanged": "Medidas en {unit}",
   "prefs.singleKeys": "Atajos de 1 tecla, como {keys}",
+  "prefs.faq": "Preguntas frecuentes",
   "shortcuts.title": "Atajos de teclado",
   "shortcuts.singleKeysNote": "Los atajos de 1 tecla se activan en <link>Preferencias</link>",
   "shortcuts.search": "Buscar atajos",

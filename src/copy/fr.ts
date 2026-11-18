@@ -779,6 +779,7 @@ const fr: Catalogue = {
     unitLabel: '{symbol}, {name}',
     unitChanged: 'Mesures en {unit}',
     singleKeys: 'Raccourcis à 1 touche, comme {keys}',
+    faq: 'Questions fréquentes',
   },
 
   shortcuts: {

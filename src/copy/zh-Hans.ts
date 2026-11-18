@@ -749,6 +749,7 @@ const zhHans: Catalogue = {
     unitLabel: '{symbol}，{name}',
     unitChanged: '尺寸单位：{unit}',
     singleKeys: '单键快捷键，如{keys}',
+    faq: '常见问题',
   },
 
   shortcuts: {

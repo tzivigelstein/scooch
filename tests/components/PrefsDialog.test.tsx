@@ -210,28 +210,33 @@ describe('the site’s pages', () => {
 
   const FOOT: Record<Language, string[][]> = {
     es: [
+      ['Preguntas frecuentes', '/es/preguntas-frecuentes'],
       ['Términos de uso', '/es/terminos'],
       ['Política de privacidad', '/es/privacidad'],
     ],
     en: [
+      ['Frequently asked questions', '/en/faq'],
       ['Terms of use', '/en/terms'],
       ['Privacy policy', '/en/privacy'],
     ],
     'zh-Hans': [
+      ['常见问题', '/zh-hans/faq'],
       ['使用条款', '/zh-hans/terms'],
       ['隐私政策', '/zh-hans/privacy'],
     ],
     hi: [
+      ['अक्सर पूछे जाने वाले सवाल', '/hi/faq'],
       ['इस्तेमाल की शर्तें', '/hi/terms'],
       ['निजता नीति', '/hi/privacy'],
     ],
     fr: [
+      ['Questions fréquentes', '/fr/questions-frequentes'],
       ['Conditions d’utilisation', '/fr/conditions-utilisation'],
       ['Politique de confidentialité', '/fr/confidentialite'],
     ],
   };
 
-  test.each(LANGUAGES)('in %s, the foot of Preferencias links to the terms of use and the privacy policy in that language, outside the groups', (language) => {
+  test.each(LANGUAGES)('in %s, the foot of Preferencias links to the questions, the terms of use and the privacy policy in that language, outside the groups', (language) => {
     setTexts(CATALOGUES[language]);
     render(<PrefsDialog />);
     const foot = document.getElementById('prefs-legal')!;
@@ -240,5 +245,15 @@ describe('the site’s pages', () => {
     // In the page's own language: nothing to say about it.
     expect(links.map((a) => a.getAttribute('hreflang'))).toEqual(links.map(() => null));
     expect(foot.closest('[role="group"], .dialog-body')).toBeNull();
+  });
+
+  test('the questions open in a new tab, without a hold on the editor; the terms and the privacy policy in this one', () => {
+    render(<PrefsDialog />);
+    const links = within(document.getElementById('prefs-legal')!).getAllByRole('link');
+    expect(links.map((a) => [a.getAttribute('target'), a.getAttribute('rel')])).toEqual([
+      ['_blank', 'noopener'],
+      [null, null],
+      [null, null],
+    ]);
   });
 });

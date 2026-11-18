@@ -779,6 +779,7 @@ const hi: Catalogue = {
     unitLabel: '{symbol}, {name}',
     unitChanged: 'माप {unit} में',
     singleKeys: 'एक कुंजी वाले शॉर्टकट, जैसे {keys}',
+    faq: 'अक्सर पूछे जाने वाले सवाल',
   },
 
   shortcuts: {

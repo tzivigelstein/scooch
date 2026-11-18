@@ -778,6 +778,7 @@ const en: Catalogue = {
     unitLabel: '{symbol}, {name}',
     unitChanged: 'Measurements in {unit}',
     singleKeys: 'Single-key shortcuts, like {keys}',
+    faq: 'Frequently asked questions',
   },
 
   shortcuts: {
