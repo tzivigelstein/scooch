@@ -72,6 +72,16 @@
       "kB": 15,
       "measured": 14.3,
       "what": "The third-party licenses page in English, the same THIRD_PARTY_NOTICES.md: it grows with each dependency the build ships."
+    },
+    "fr/confidentialite.html": {
+      "kB": 9.0,
+      "measured": 8.5,
+      "what": "The privacy policy in French, from docs/legal/fr/privacy.md: like the Spanish one, it grows with each new setting, and French takes more words to say the same."
+    },
+    "fr/licences-tierces.html": {
+      "kB": 15.2,
+      "measured": 14.5,
+      "what": "The third-party licenses page in French, the same THIRD_PARTY_NOTICES.md with a French introduction: it grows with each dependency the build ships."
     }
   }
 }
