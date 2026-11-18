@@ -10,7 +10,7 @@ import { deepLinkSearch, LENGTH_RANGE, PHOTO_RANGE } from '../core/deeplink.js';
 import { sizeOf } from '../core/papers.js';
 import type { PaperId } from '../core/types.ts';
 import { sheetSvg } from './drawing.ts';
-import { esc } from './html.ts';
+import { esc, joinWords } from './html.ts';
 
 export interface CalcState {
   paper: PaperId;
@@ -92,15 +92,15 @@ export function calc(input: CalcState, texts: CalcTexts): CalcResult {
   const rules = new Intl.PluralRules(texts.locale);
   const plural = (forms: { one: string; other: string }, count: number) => (rules.select(count) === 'one' ? forms.one : forms.other);
   const photoText = preset ? fill(texts.photoPreset, { name: texts.photos[preset.id], size: size(preset.w, preset.h) }) : size(piece.w, piece.h);
-  const paperText = `${texts.papers[state.paper]} ${state.landscape ? texts.orientation.landscape : texts.orientation.portrait}`;
+  const paperText = joinWords([texts.papers[state.paper], state.landscape ? texts.orientation.landscape : texts.orientation.portrait]);
   const count = result.capped ? fill(texts.count.capped, { n: n(texts.max) }) : n(result.count);
-  const countHtml = `<strong>${esc(count)}</strong> ${esc(result.capped ? texts.count.other : plural(texts.count, result.count))}`;
+  const countHtml = joinWords([`<strong>${esc(count)}</strong>`, esc(result.capped ? texts.count.other : plural(texts.count, result.count))]);
   const summary = fill(texts.summary, { photo: photoText, paper: paperText, margin: mm(state.margin), gap: mm(state.gap) }) + (state.rotate ? '' : texts.noRotate);
 
   let note = texts.noteNone;
   if (result.count > 0) {
     note = result.grid.count < result.count ? fill(texts.noteMore, { grid: n(result.grid.count), n: n(result.count) }) : fill(result.count === 1 ? texts.noteSame.one : texts.noteSame.other, { n: n(result.count) });
-    if (result.capped) note += ` ${fill(texts.noteCapped, { max: n(texts.max) })}`;
+    if (result.capped) note = joinWords([note, fill(texts.noteCapped, { max: n(texts.max) })]);
   }
 
   const label = fill(plural(texts.figure, result.count), { n: count, paper: paperText });

@@ -39,4 +39,21 @@ describe('the calculator’s words for a count', () => {
     expect(result.svg).toContain(`aria-label="${result.count} ${words}"`);
     expect(result.note).toBe(note);
   });
+
+  test('in Chinese, the count, the paper and its orientation, and the notes join without spaces', () => {
+    const chinese: CalcTexts = {
+      ...texts('zh-Hans'),
+      orientation: { portrait: '纵向', landscape: '横向' },
+      count: { one: '张', other: '张', capped: '超过{n}' },
+      summary: '{paper}',
+      noteSame: { one: '一张。', other: '{n}张。' },
+      noteCapped: '上限{max}个。',
+      figure: { one: '{paper}：{n}张', other: '{paper}：{n}张' },
+    };
+    const result = calc({ ...photo(50, 50), landscape: true }, chinese);
+    expect(result.countHtml).toBe('<strong>15</strong>张');
+    expect(result.summary).toBe('A4横向');
+    expect(result.svg).toContain('aria-label="A4横向：15张"');
+    expect(calc({ ...photo(5, 5), margin: 0, gap: 0 }, chinese).note).toBe('200张。上限200个。');
+  });
 });
