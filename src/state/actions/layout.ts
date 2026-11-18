@@ -5,7 +5,7 @@
 import { CROWD_LIMIT, MAX_ITEMS } from '../../config.ts';
 import { isIdentity, pieceSize } from '../../core/crop.js';
 import { fitScale, pack, packedRotation, packSheets } from '../../core/pack.js';
-import { settleResized } from '../../core/resize.js';
+import { settleResized, withCenterKept as centerKept } from '../../core/resize.js';
 import { arrangeSheets, placeIntoSheets, samePlan, type ArrangePlan } from '../../core/sheets.js';
 import type { Item } from '../../core/types.ts';
 import { clamp, tidy } from '../../core/util.js';
@@ -38,12 +38,7 @@ const rects = (items: readonly Piece[], k = 1) => {
 // ---------- Geometry of one piece ----------
 
 /** `item` with `patch` applied, moved so its center stays where it was. */
-export function withCenterKept(item: Piece, patch: Partial<Item>): Item {
-  const [w, h] = dims(item);
-  const next = { ...item, ...patch };
-  const [nw, nh] = dims(next);
-  return { ...next, x: item.x + w / 2 - nw / 2, y: item.y + h / 2 - nh / 2 };
-}
+export const withCenterKept = (item: Piece, patch: Partial<Item>): Item => centerKept(item, patch, getAsset(item.asset));
 
 /** The position that centers the piece on its sheet. */
 export function centeredOnSheet(item: Piece) {

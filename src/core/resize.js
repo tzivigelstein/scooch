@@ -21,7 +21,7 @@ const same = (a, b) => Math.abs(a - b) < 1e-9;
 const sameCrop = (a, b) => (!a || !b ? a === b : same(a.x, b.x) && same(a.y, b.y) && same(a.w, b.w) && same(a.h, b.h));
 
 /** `item` with `patch` applied, moved so its center stays where it was. */
-function withCenterKept(item, patch, asset) {
+export function withCenterKept(item, patch, asset) {
   const before = pieceSize(asset, item);
   const next = { ...item, ...patch };
   const after = pieceSize(asset, next);

@@ -23,6 +23,9 @@ export interface Settled {
   sheets: number[];
 }
 
+/** `item` with `patch` applied, moved so its center stays where it was. */
+export function withCenterKept(item: Item, patch: Partial<Item>, asset: AssetSize): Item;
+
 /** Where pieces that changed size go: center kept and on the sheet, moved off others unless overlaps are allowed. */
 export function settleResized(changed: readonly Item[], items: readonly Item[], sheetIds: readonly number[], options: SettleOptions): Settled;
 
