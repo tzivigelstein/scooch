@@ -206,10 +206,17 @@ editor's metadata, which no other language needs).
      that a machine can see: exclamations, the wrong quotes, a space where
      there must be none, a number and unit that can break apart, words the
      glossary replaces) and `NO_CLAIMS` (words that would call a document
-     photo size the usual one, or name a country, on the photo ID guide);
+     photo size the usual one, or name a country, on the photo ID guide).
+     In JavaScript `\b` only knows ASCII letters: in a language with
+     accents or another script it cuts words apart («prêtes» holds «tes»),
+     so mark whole words with `(?<!\p{L})…(?!\p{L})` and the `u` flag. The
+     rules read each page's body: check its title and description, and the
+     calculator's texts that only show once it is used, by eye;
    - `tests/site/legal.test.ts`: `POLICY` (the heading of the policy's list
      of what is stored, the sentence that says there is no analytics, and
-     the bold term of each stored key);
+     the bold term of each stored key). The test looks for `**term:**`: a
+     language that writes something before the colon (French, a no-break
+     space: `**Unités :**`) ends each term with it;
    - `tests/site/table.test.ts`: its photos-10x15 page and third-party
      licenses page, which carry the stacked-table CSS;
    - `e2e/specs/site-pages.spec.ts`: its pages in `SHOWN`;
@@ -225,6 +232,11 @@ editor's metadata, which no other language needs).
      as the editor shows them; inches appear only where the size really is
      an inch size (the photo sizes' names come from the catalogue: «4 × 6 in»,
      «6寸»). Don't convert sizes.
+   - Where the Spanish page writes a paper's name as a word (Carta and
+     Oficio in its descriptions and buttons), name it with
+     `ui('papers.names.letter')`, not `paperName`: the comparison counts
+     `paperName` as a fact the Spanish page doesn't have, while interface
+     names are words, and the name still comes from the catalogue.
    - The print dialog's options are quoted as that language's browsers name
      them (Spanish «Tamaño real», «100 %»; English “Actual size”, “100%”).
    - Titles up to 65 characters, descriptions 70 to 160.
