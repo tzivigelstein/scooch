@@ -10,7 +10,7 @@ import { commit } from '../history.ts';
 import { selectedItem, sheetIndex } from '../selectors.ts';
 import { flushUi } from '../flush.ts';
 import { revealPieces } from '../../components/canvas/viewport.ts';
-import { setView } from '../view.ts';
+import { getView, setView } from '../view.ts';
 import { addedAgain } from '../tips.ts';
 import { say } from './notify.ts';
 import { placeNew } from './layout.ts';
@@ -18,10 +18,52 @@ import { placeNew } from './layout.ts';
 /** Two PDF pages this close (mm) have the same size: a crop carries over. */
 const PAGE_SIZE_TOLERANCE = 0.05;
 
-/** Something is loading (actions wait and the pill says what). */
+/** A notice of work in progress shows once the work has lasted this long (ms): quicker work shows nothing. */
+export const BUSY_SHOW_DELAY = 200;
+/** Once shown, it stays at least this long (ms), so it never blinks. */
+export const BUSY_MIN_SHOWN = 400;
+
+const busyPill = {
+  show: undefined as ReturnType<typeof setTimeout> | undefined,
+  /** Running while the notice is shown and hasn't been there BUSY_MIN_SHOWN yet. */
+  held: undefined as ReturnType<typeof setTimeout> | undefined,
+};
+
+/** There is work in progress with something to say. */
+const working = () => getDocument().busy && getView().busyText !== '';
+
+/**
+ * Something is loading: actions wait at once (busy), and the pill says
+ * `text` once the work has lasted BUSY_SHOW_DELAY, then for BUSY_MIN_SHOWN at
+ * least (busyNotice). Work without a text shows nothing meanwhile.
+ */
 export function setBusy(on: boolean, text = '') {
   setDocument({ busy: on });
+  setBusyText(on ? text : '');
+}
+
+/** What the work in progress says now; a notice already shown says it at once. */
+export function setBusyText(text: string) {
   setView({ busyText: text });
+  const shown = getView().busyNotice !== '';
+  if (working()) {
+    if (shown) setView({ busyNotice: text });
+    else busyPill.show ??= setTimeout(showBusy, BUSY_SHOW_DELAY);
+    return;
+  }
+  clearTimeout(busyPill.show);
+  busyPill.show = undefined;
+  if (shown && !busyPill.held) setView({ busyNotice: '' });
+}
+
+function showBusy() {
+  busyPill.show = undefined;
+  if (!working()) return;
+  setView({ busyNotice: getView().busyText });
+  busyPill.held = setTimeout(() => {
+    busyPill.held = undefined;
+    if (!working()) setView({ busyNotice: '' });
+  }, BUSY_MIN_SHOWN);
 }
 
 /** Opens the browser's file picker. */
@@ -44,7 +86,7 @@ export async function loadFiles(files: readonly File[]) {
       skipped = files.length - i;
       break;
     }
-    setView({ busyText: files.length > 1 ? t('busy.loadingCount', { i: i + 1, n: files.length }) : t('busy.loadingFile', { name: file.name }) });
+    setBusyText(files.length > 1 ? t('busy.loadingCount', { i: i + 1, n: files.length }) : t('busy.loadingFile', { name: file.name }));
     try {
       const asset = await readFile(file);
       if (asset.hashes && present.has(asset.hashes.src)) again++;
@@ -61,7 +103,7 @@ export async function loadFiles(files: readonly File[]) {
     commit(); // still busy: the cleanup leaves the assets just created alone
     placeNew(keys);
   }
-  setDocument({ busy: false });
+  setBusy(false);
   const failed = errors.length + skipped;
   if (skipped) errors.push(t('errors.maxReached', { max: MAX_ITEMS, n: skipped }));
   if (errors.length) say(t('errors.load', { n: failed, list: errors.join(t('errors.loadSeparator')) }), { warn: true });

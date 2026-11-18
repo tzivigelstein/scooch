@@ -42,8 +42,10 @@ export interface ViewState {
    */
   pinned: boolean;
   flash: Flash | null;
-  /** What the pill says while something loads. */
+  /** What the work in progress says («Cargando…»). */
   busyText: string;
+  /** What the pill shows of it ('' for nothing): it waits a moment, then stays a moment (actions/files.ts setBusy). */
+  busyNotice: string;
   /** Align against the selection or the printable area (with several pieces). */
   alignTo: 'selection' | 'sheet';
   distribute: DistributeMode;
@@ -74,6 +76,7 @@ export const useView = create<ViewState>()(() => ({
   pinned: false,
   flash: null,
   busyText: '',
+  busyNotice: '',
   alignTo: remembered.alignTo,
   distribute: remembered.distribute,
   zoom: fromPercent(remembered.zoomPct),

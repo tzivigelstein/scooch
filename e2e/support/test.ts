@@ -137,14 +137,22 @@ export class App {
     const before = await this.pieces().count();
     await this.page.locator('#file').setInputFiles(names.map(fixture));
     await expect
-      .poll(async () => (await this.pieces().count()) > before || (await this.page.locator('#canvas[aria-busy="true"]').count()) > 0 || (await this.notice()).text !== '', { timeout: 30_000 })
+      .poll(async () => (await this.pieces().count()) > before || (await this.busy()) || (await this.page.locator('#canvas[aria-busy="true"]').count()) > 0 || (await this.notice()).text !== '', { timeout: 30_000 })
       .toBe(true);
     await this.idle();
   }
 
-  /** Waits until nothing is loading, creating or preparing (the notice says so meanwhile). */
+  /** Something is loading, creating or preparing (its notice waits a moment before it shows). */
+  busy() {
+    return this.page.locator('#pill[data-busy]').count().then((n) => n > 0);
+  }
+
+  /**
+   * Waits until nothing is loading, creating or preparing, and the notice
+   * doesn't say so any more (once shown, it stays a moment after the work).
+   */
   async idle() {
-    await expect.poll(async () => /Cargando|Creando|Preparando/.test((await this.notice()).text), { timeout: 60_000 }).toBe(false);
+    await expect.poll(async () => (await this.busy()) || /Cargando|Creando|Preparando/.test((await this.notice()).text), { timeout: 60_000 }).toBe(false);
   }
 
   /** The ids of the pieces, sorted. */
@@ -332,7 +340,7 @@ export class App {
     const name = download.suggestedFilename();
     const file = this.info.outputPath(`${Date.now()}-${name}`);
     await download.saveAs(file);
-    await expect.poll(async () => /Creando/.test((await this.notice()).text)).toBe(false);
+    await expect.poll(async () => (await this.busy()) || /Creando/.test((await this.notice()).text)).toBe(false);
     return { file, name };
   }
 

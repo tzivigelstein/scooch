@@ -65,6 +65,7 @@ const CHANGES: Record<string, () => void> = {
   'view.propsTab': () => setView({ propsTab: 'piece' }),
   'view.flash': () => setView({ flash: { text: 'Un aviso' } }),
   'view.busyText': () => setView({ busyText: 'Cargando…' }),
+  'view.busyNotice': () => setView({ busyNotice: 'Cargando…' }),
   'view.animating': () => setView({ animating: true }),
   'view.loading': () => setView({ loading: false }),
   'view.editing': () => setView({ editing: true }),

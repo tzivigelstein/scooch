@@ -7,7 +7,6 @@ import { confirmAction } from '../../components/dialogs/confirm.ts';
 import { closeDialog, projectListChanged } from '../../components/dialogs/dialogs.ts';
 import type { ProjectRecord } from '../../core/types.ts';
 import { duplicate, initProjects, newProject, openProject, projectSession, remove, retry, saveAsNew, takeOver, type ProjectNotice } from '../../services/projects.ts';
-import { setDocument } from '../document.ts';
 import { useProject } from '../project.ts';
 import { setView } from '../view.ts';
 import { setBusy } from './files.ts';
@@ -185,8 +184,8 @@ export async function startProjects() {
   } finally {
     // Even after a failure nothing else handles, the app shows (the loading screen goes away).
     clearTimeout(slow);
-    setDocument({ busy: false });
-    setView({ busyText: '', loading: false });
+    setBusy(false);
+    setView({ loading: false });
   }
   if (link) linkOpened(link);
   void restoreCut();

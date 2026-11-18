@@ -5,7 +5,7 @@ import { NoticePill } from '../../src/components/feedback/NoticePill.tsx';
 import { addAsset } from '../../src/state/assets.ts';
 import { getDocument, setDocument } from '../../src/state/document.ts';
 import { resetHistory } from '../../src/state/history.ts';
-
+import { setBusy } from '../../src/state/actions/files.ts';
 import { setView } from '../../src/state/view.ts';
 
 const key = addAsset({
@@ -28,7 +28,7 @@ const text = () => (pill().hidden ? '' : document.getElementById('pill-text')!.t
 
 beforeEach(() => {
   setDocument({ sheets: [{ id: 1 }], items: [{ id: 1, asset: key, sheet: 1, x: 20, y: 20, scale: 100, r: 0, crop: null }], margin: 10, busy: false });
-  setView({ flash: null, editing: false, busyText: '' });
+  setView({ flash: null, editing: false, busyText: '', busyNotice: '' });
   render(
     <>
       <NoticePill />
@@ -111,5 +111,91 @@ describe('notice pill', () => {
     // The canvas shows the result: only announced, and the problem is gone.
     expect(text()).toBe('');
     expect(pill().hidden).toBe(true);
+  });
+});
+
+describe('a notice of work in progress', () => {
+  const live = () => `${document.getElementById('live-polite')!.textContent}${document.getElementById('live-assertive')!.textContent}`.trim();
+
+  /** Lets `ms` go by in steps of 10 ms, keeping each change of what the pill shows or the live regions say, with when (ms since the work began). */
+  let clock = 0;
+  const seen: string[] = [];
+  const heard: string[] = [];
+  const look = () => {
+    const now = text() ?? '';
+    if (now !== (seen.at(-1)?.replace(/^\d+ /, '') ?? '')) seen.push(`${clock} ${now}`);
+    // Without the no-break space the announcer alternates to repeat a text.
+    const said = live().replace(/ /g, '').trim();
+    if (said && said !== heard.at(-1)?.replace(/^\d+ /, '')) heard.push(`${clock} ${said}`);
+  };
+  const pass = (ms: number) => {
+    look();
+    for (let end = clock + ms; clock < end; ) {
+      act(() => vi.advanceTimersByTime(10));
+      clock += 10;
+      look();
+    }
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    clock = 0;
+    seen.length = 0;
+    heard.length = 0;
+  });
+  afterEach(() => {
+    act(() => setBusy(false));
+    act(() => vi.runAllTimers());
+  });
+
+  test('a 30 ms load shows nothing and says nothing', () => {
+    act(() => setBusy(true, 'Cargando foto.png…'));
+    pass(30);
+    act(() => setBusy(false));
+    pass(2000);
+    expect(seen).toEqual([]);
+    expect(heard).toEqual([]);
+  });
+
+  test('a 400 ms load shows from 200 ms to 600 ms, without a blink; once over, its «Cargando…» isn’t announced', () => {
+    act(() => setBusy(true, 'Cargando foto.png…'));
+    pass(400);
+    act(() => setBusy(false));
+    pass(2000);
+    expect(seen).toEqual(['200 Cargando foto.png…', '600 ']);
+    expect(heard).toEqual([]);
+  });
+
+  test('a long load is announced while it lasts, and what came of it after its notice', () => {
+    act(() => setBusy(true, 'Cargando foto.png…'));
+    pass(1000);
+    act(() => {
+      setBusy(false);
+      setView({ flash: { text: 'Se agregó 1 archivo a la hoja 2', info: true } });
+    });
+    pass(500);
+    expect(seen).toEqual(['200 Cargando foto.png…', '1000 Se agregó 1 archivo a la hoja 2']);
+    // Shown at 200 ms, said 250 ms later (and the 60 ms the live regions gather what comes together).
+    expect(heard).toEqual(['510 Cargando foto.png…', '1060 Se agregó 1 archivo a la hoja 2.']);
+  });
+
+  test('a result while its notice stays its minimum time shows after it', () => {
+    act(() => setBusy(true, 'Cargando foto.png…'));
+    pass(300);
+    act(() => {
+      setBusy(false);
+      setView({ flash: { text: 'Se agregaron 7 archivos en las hojas 1 y 2' } });
+    });
+    pass(1000);
+    expect(seen).toEqual(['200 Cargando foto.png…', '600 Se agregaron 7 archivos en las hojas 1 y 2']);
+    expect(heard).toEqual(['660 Se agregaron 7 archivos en las hojas 1 y 2.']);
+  });
+
+  test('while the notice waits, the one already there stays', () => {
+    act(() => setView({ flash: { text: 'Se copiaron 3 piezas', info: true } }));
+    act(() => setBusy(true, 'Cargando foto.png…'));
+    expect(text()).toBe('Se copiaron 3 piezas');
+    pass(200);
+    expect(text()).toBe('Cargando foto.png…');
   });
 });

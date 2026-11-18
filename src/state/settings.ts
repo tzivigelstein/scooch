@@ -90,6 +90,7 @@ export const SETTINGS: readonly Setting[] = [
   { store: 'view', key: 'propsTab', lives: 'session' },
   { store: 'view', key: 'flash', lives: 'ephemeral' },
   { store: 'view', key: 'busyText', lives: 'ephemeral' },
+  { store: 'view', key: 'busyNotice', lives: 'ephemeral' },
   { store: 'view', key: 'animating', lives: 'ephemeral' },
   { store: 'view', key: 'loading', lives: 'ephemeral' },
   { store: 'view', key: 'editing', lives: 'ephemeral' },

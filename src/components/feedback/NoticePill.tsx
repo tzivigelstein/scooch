@@ -37,18 +37,23 @@ function inSheets(text: string, sheets: readonly number[], many: boolean) {
 }
 
 /**
- * Which notice applies now, by priority (null: nothing to say). While a
- * measurement field is being edited, problems stay as they were when the edit
- * began: what is typed is still a preview.
+ * Which notice applies now, by priority (null: nothing to say). Work in
+ * progress shows once it has lasted a moment, and then for a moment at least
+ * (busyNotice: actions/files.ts setBusy); meanwhile what was there stays.
+ * While a measurement field is being edited, problems stay as they were when
+ * the edit began: what is typed is still a preview.
  */
 export function useCurrentNotice(): Notice | null {
   const busy = useDocument((s) => s.busy);
   const busyText = useView((s) => s.busyText);
+  const busyNotice = useView((s) => s.busyNotice);
   const flash = useView((s) => s.flash);
   const editing = useView((s) => s.editing);
   const doc = useDocument((s) => s);
   const problems = useRef<Notice | null>(null);
-  if (busy) return busyText ? { text: busyText, busy: true } : null;
+  if (busyNotice) return { text: busyNotice, busy: true };
+  // Work that says nothing (a new project being set up): nothing shows meanwhile.
+  if (busy && !busyText) return null;
   if (flash) return { ...flash, flash: true };
   if (!editing) problems.current = problemNotice(doc);
   return problems.current;
@@ -144,6 +149,13 @@ export function NoticePill() {
     // Only when what the notice says changes.
   }, [signature]);
 
+  // The work ended while its notice stays its minimum time: what it said and
+  // wasn't announced yet isn't any more (what came of it is announced).
+  const working = useDocument((s) => s.busy);
+  useEffect(() => {
+    if (busy && !working) cancelAnnounce('notice');
+  }, [busy, working]);
+
   useEffect(() => () => clearTimeout(timer.current.id), []);
 
   return (
@@ -153,6 +165,8 @@ export function NoticePill() {
       className="pill"
       hidden={!notice}
       data-tone={notice ? tone : undefined}
+      // Work in progress, shown or not yet (for the tests: the notice waits a moment).
+      data-busy={working ? '' : undefined}
       {...(problem && previewAttrs('problems', problem))}
       onPointerEnter={() => ((timer.current.hovering = true), pause())}
       onPointerLeave={() => ((timer.current.hovering = false), resume())}
