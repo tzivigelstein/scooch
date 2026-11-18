@@ -87,10 +87,10 @@ function adopt(target: Element) {
 }
 
 /**
- * M / H: the Pieza or Proyecto tab of Propiedades (opening it where it is
- * collapsed), with the focus on the tab itself: H and M keep switching, the
- * arrows too, Tab goes into the tab's controls and Esc back to the canvas.
- * Without a selection, Pieza shows its hint.
+ * M / H: the «Pieza» or «Proyecto» tab of «Propiedades» (opening it where it
+ * is collapsed), with the focus on the tab itself: H and M keep switching,
+ * the arrows too, Tab goes into the tab's controls and Esc back to the
+ * canvas. Without a selection, «Pieza» shows its hint.
  */
 export function focusPropsTab(tab: PropsTab) {
   const active = document.activeElement;

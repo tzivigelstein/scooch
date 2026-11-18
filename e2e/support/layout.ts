@@ -33,7 +33,7 @@ export const readTabs = () => {
     active: active?.id || String(active?.className ?? ''),
     /** The focused piece's id, if a piece has the focus. */
     activePiece: active?.classList.contains('piece') ? Number(active.dataset.id) : null,
-    /** Pieza shows only its hint (nothing else of the panel is rendered). */
+    /** The «Pieza» tab shows only its hint (nothing else of the panel is rendered). */
     hintOnly: [...piecePanel.querySelectorAll('*')].filter((el) => el.getClientRects().length && !el.closest('[hidden]')).every((el) => el.closest('#piece-empty') || el.id === 'section-piece'),
   };
 };

@@ -125,7 +125,7 @@ export const readLayout = (): Layout => {
   // 3. Overlapping: visible controls whose boxes (cut to what their scrolling
   //    ancestors show) intersect by more than a pixel each way, unless the
   //    layering allows it. Layers, bottom to top:
-  //      0 the canvas's content (sheet titles, «quitar hoja», «agregar hoja»), which scrolls;
+  //      0 the canvas's content (sheet titles, «Quitar hoja», «Agregar hoja»), which scrolls;
   //      1 the app's chrome (top bar, columns, the zoom control, the dock);
   //      2 the notice and the selection's toolbar, floating over the canvas;
   //      3 a panel sliding over everything (the drawer, the bottom sheet);

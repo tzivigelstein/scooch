@@ -69,8 +69,8 @@ export function removeSheet(id: number, { viaKeyboard = false } = {}) {
 
 /**
  * A sheet's title («Cambiar el papel»): that sheet becomes the current one,
- * nothing stays selected and Propiedades shows Proyecto (opening it on narrow
- * screens) with Papel open and in view, and the focus on the paper size.
+ * nothing stays selected and «Propiedades» shows «Proyecto» (opening it on narrow
+ * screens) with «Papel» open and in view, and the focus on the paper size.
  */
 export function showPaperSettings(id: number) {
   if (sheetIndex(id) < 0) return;

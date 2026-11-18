@@ -1,4 +1,4 @@
-// «Líneas de corte» (Proyecto tab): none, corner marks, the outline or the
+// «Líneas de corte» («Proyecto» tab): none, corner marks, the outline or the
 // contour of an image's shape («Silueta»), and in
 // «Más opciones» the marks' length and distance and the stroke (weight,
 // color, dash). Document settings: in the undo history and saved with it;

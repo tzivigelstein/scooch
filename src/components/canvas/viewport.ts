@@ -227,7 +227,7 @@ export function stepZoom(dir: 1 | -1) {
 }
 
 /**
- * «Ajustar hoja» / «Ajustar ancho»: fits `sheet` (its top, with its heading,
+ * «Ver la hoja entera» / «Ver el ancho de la hoja»: fits `sheet` (its top, with its heading,
  * in view) and keeps fitting it when the window changes. It says so.
  */
 export function fitSheet(mode: 'fit' | 'width', sheet: number) {

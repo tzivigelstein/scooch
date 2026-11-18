@@ -4,7 +4,7 @@
 // keys, gestures and fields report which action they ran and by which route
 // (`used` and the reports below); the table says what counts toward each tip,
 // and core/tips.js decides which one is due. The «Consejos de uso» switch
-// in Preferencias turns them off; on again, the dismissed ones come back.
+// in «Preferencias» turns them off; on again, the dismissed ones come back.
 
 import { create } from 'zustand';
 import { TIPS_STORAGE } from '../config.ts';
@@ -59,7 +59,7 @@ const either = (...combos: string[]) =>
     .join('');
 
 /**
- * The pieza tab with «Duplicar ×N»'s count focused, and the panel open where
+ * The «Pieza» tab with «Duplicar ×N»'s count focused, and the panel open where
  * it collapses; when the panel closes, the focus goes back to the piece.
  */
 function goToDuplicate() {
@@ -191,7 +191,7 @@ const TIDY_GAP_MS = 60_000;
 const SAME_MM = 0.05;
 
 export interface TipsState {
-  /** The «Consejos de uso» switch in Preferencias. */
+  /** The «Consejos de uso» switch in «Preferencias». */
   on: boolean;
   /** The topics with «No volver a mostrar». */
   dismissed: readonly string[];

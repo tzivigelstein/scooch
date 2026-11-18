@@ -1,7 +1,7 @@
 // The advice before printing or downloading: a dialog that shows how to print
 // at real size (scale and paper) while the PDF is being made. Its button is
 // the gesture that prints or downloads; closing it otherwise cancels. Its
-// «No volver a mostrar» is this browser's preference (Preferencias turns it
+// «No volver a mostrar» is this browser's preference («Preferencias» turns it
 // back on).
 
 import { create } from 'zustand';

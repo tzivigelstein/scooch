@@ -259,7 +259,7 @@ function paperChoices(): Choice[] {
     id: 'custom',
     label: t('papers.custom'),
     current: typeof paper !== 'string',
-    // Its width and height are typed in Papel: it goes there.
+    // Its width and height are typed in «Papel»: it goes there.
     run: () => {
       choosePaper('custom');
       showPaperSettings(currentSheet());

@@ -199,7 +199,7 @@ export class App {
     await expect(button).toHaveAttribute('aria-selected', 'true');
   }
 
-  /** Shows the selected piece's measures (the Pieza tab). */
+  /** Shows the selected piece's measures (the «Pieza» tab). */
   async openMeasures() {
     if (!(await this.page.locator('#pos-x').isVisible())) await this.showTab('piece');
     await expect(this.page.locator('#pos-x')).toBeVisible();
@@ -215,7 +215,7 @@ export class App {
     await expect(control).toHaveAttribute('aria-expanded', 'false');
   }
 
-  /** Shows a document setting (paper, gap, overlap, grid…): the Proyecto tab, with its section open. */
+  /** Shows a document setting (paper, gap, overlap, grid…): the «Proyecto» tab, with its section open. */
   async openSetting(selector: string) {
     const field = this.page.locator(selector);
     if (await field.isVisible()) return;
@@ -228,7 +228,7 @@ export class App {
     await expect(field).toBeVisible();
   }
 
-  /** The paper fields (the Proyecto tab, «Papel» section open). */
+  /** The paper fields (the «Proyecto» tab, «Papel» section open). */
   openSheet = () => this.openSetting('#paper');
 
   /** Types a value in one of the piece's measure fields and confirms it (change). */

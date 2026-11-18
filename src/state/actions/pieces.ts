@@ -454,7 +454,7 @@ export function lengthFieldKey(field: LengthField) {
 /** The undo key of the scale field and the slider. */
 export const scaleFieldKey = (name: 'scale' | 'slider') => (isGroup() ? `group-${name}` : `${name}:${selectedItem()?.id}`);
 
-// ¿Would anything change? (Confirming the same twice adds no undo steps.)
+// Would anything change? (Confirming the same twice adds no undo steps.)
 const differs = (item: Piece, changes: Partial<Item>) => (Object.keys(changes) as (keyof Item)[]).some((key) => item[key] !== changes[key]);
 
 // X and Y: a piece may stick out of the sheet, but not more than half (its center stays on it).
@@ -577,7 +577,7 @@ export function alignPlan(mode: AlignMode) {
 
 /**
  * Aligns: two or more against the selection's box (of each sheet) or, with
- * «Alinear a: hoja», against the printable area; one piece against the
+ * «Alinear a» set to «Hoja», against the printable area; one piece against the
  * printable area.
  */
 export function alignSelection(mode: AlignMode) {
@@ -610,7 +610,7 @@ export function distributePlan(axis: Axis) {
 }
 
 /**
- * Distributes along `axis`: with the «Separación» of Distribución between
+ * Distributes along `axis`: with the «Separación» of «Distribución» between
  * consecutive pieces (the first stays) or evenly between the first and the
  * last. Each sheet on its own.
  */

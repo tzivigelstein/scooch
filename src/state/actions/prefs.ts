@@ -1,4 +1,4 @@
-// Changing this browser's preferences from the interface (Preferencias, the
+// Changing this browser's preferences from the interface («Preferencias», the
 // command palette), with what they announce.
 
 import type { Unit } from '../../core/units.js';
