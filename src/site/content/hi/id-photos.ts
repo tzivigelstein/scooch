@@ -8,7 +8,7 @@ import { idPhotosFacts } from '../../facts/id-photos.ts';
 import { guide } from '../../guide.ts';
 import { app, link, note, paragraphs, sheetFigure, steps, table, type Kit } from '../../kit.ts';
 import type { SitePage } from '../../types.ts';
-import { CUSTOM_SIZE, legalNames, q } from './chrome.ts';
+import { CUSTOM_SIZE, q } from './chrome.ts';
 import { PATHS } from './paths.ts';
 
 export function idPhotos(k: Kit): SitePage {
@@ -69,7 +69,7 @@ export function idPhotos(k: Kit): SitePage {
       },
       {
         q: `क्या ${app} जांचता है कि फ़ोटो नियमों के मुताबिक है?`,
-        a: `नहीं। यह सिर्फ़ आपके चुने हुए आकार में फ़ोटो को क्रॉप और प्रिंट करता है। बैकग्राउंड, रोशनी, फ़्रेमिंग और चेहरे का आकार आपकी फ़ोटो पर निर्भर करते हैं। ${link(PATHS['legal-terms'], legalNames(k).terms)} वाले पेज पर भी यही लिखा है।`,
+        a: `नहीं। यह सिर्फ़ आपके चुने हुए आकार में फ़ोटो को क्रॉप और प्रिंट करता है। बैकग्राउंड, रोशनी, फ़्रेमिंग और चेहरे का आकार आपकी फ़ोटो पर निर्भर करते हैं। ${link(PATHS['legal-terms'], ui('legal.terms'))} वाले पेज पर भी यही लिखा है।`,
       },
       { q: `${size(2, 2, 'in')} की फ़ोटो कितनी बड़ी होती है?`, a: `${size(f.twoInches, f.twoInches)}, यानी लगभग ${size(5, 5, 'cm')}। ${app} में यह ${photoName('visa-5x5')} आकार है।` },
       {

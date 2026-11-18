@@ -8,35 +8,23 @@ import { app, type Kit } from '../../kit.ts';
 import type { Chrome } from '../../layout.ts';
 import { PATHS } from './paths.ts';
 
-/**
- * The app's names for the legal pages, without the «(स्पैनिश में)» the app
- * adds (it links to the Spanish pages; these are in Hindi).
- */
-export const legalNames = ({ ui }: Kit) => ({
-  terms: ui('legal.terms').replace(/\s*\([^)]*\)$/u, ''),
-  privacy: ui('legal.privacy').replace(/\s*\([^)]*\)$/u, ''),
+export const chrome = ({ ui }: Kit): Chrome => ({
+  skip: 'मुख्य सामग्री पर जाएं',
+  open: `${app} खोलें`,
+  crumbs: 'आप यहां हैं',
+  guides: 'गाइड',
+  legal: 'कानूनी जानकारी',
+  languages: 'भाषा',
+  about: `${app} मुफ़्त है, इसके लिए अकाउंट नहीं चाहिए और आपकी फ़ाइलें ब्राउज़र से बाहर नहीं जातीं।`,
+  faq: 'अक्सर पूछे जाने वाले सवाल',
+  imageAlt: `${app}: असली आकार में एक शीट पर व्यवस्थित फ़ोटो`,
+  legalLinks: [
+    [ui('legal.terms'), PATHS['legal-terms']],
+    [ui('legal.privacy'), PATHS['legal-privacy']],
+    ['थर्ड-पार्टी लाइसेंस', PATHS['legal-notices']],
+    ['कोड का लाइसेंस', PATHS['legal-license']],
+  ],
 });
-
-export const chrome = (k: Kit): Chrome => {
-  const names = legalNames(k);
-  return {
-    skip: 'मुख्य सामग्री पर जाएं',
-    open: `${app} खोलें`,
-    crumbs: 'आप यहां हैं',
-    guides: 'गाइड',
-    legal: 'कानूनी जानकारी',
-    languages: 'भाषा',
-    about: `${app} मुफ़्त है, इसके लिए अकाउंट नहीं चाहिए और आपकी फ़ाइलें ब्राउज़र से बाहर नहीं जातीं।`,
-    faq: 'अक्सर पूछे जाने वाले सवाल',
-    imageAlt: `${app}: असली आकार में एक शीट पर व्यवस्थित फ़ोटो`,
-    legalLinks: [
-      [names.terms, PATHS['legal-terms']],
-      [names.privacy, PATHS['legal-privacy']],
-      ['थर्ड-पार्टी लाइसेंस', PATHS['legal-notices']],
-      ['कोड का लाइसेंस', PATHS['legal-license']],
-    ],
-  };
-};
 
 /** A name of the app in curly quotes, as Hindi writes a button or an option inside a sentence: «“व्यवस्थित करें” दबाएं». */
 export const q = (name: string) => `“${name}”`;

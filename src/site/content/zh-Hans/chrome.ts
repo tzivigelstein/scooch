@@ -9,8 +9,7 @@ import { app, type Kit } from '../../kit.ts';
 import type { Chrome } from '../../layout.ts';
 import { PATHS } from './paths.ts';
 
-// The app's Chinese names for the legal pages say «（西班牙语）»: these pages aren't.
-export const chrome = (_: Kit): Chrome => ({
+export const chrome = ({ ui }: Kit): Chrome => ({
   skip: '跳到正文',
   open: `打开${app}`,
   crumbs: '面包屑导航',
@@ -21,8 +20,8 @@ export const chrome = (_: Kit): Chrome => ({
   faq: '常见问题',
   imageAlt: `${app}：按实际尺寸排在一张纸上的照片`,
   legalLinks: [
-    ['使用条款', PATHS['legal-terms']],
-    ['隐私政策', PATHS['legal-privacy']],
+    [ui('legal.terms'), PATHS['legal-terms']],
+    [ui('legal.privacy'), PATHS['legal-privacy']],
     ['第三方许可证', PATHS['legal-notices']],
     ['代码许可证', PATHS['legal-license']],
   ],

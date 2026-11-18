@@ -5,7 +5,7 @@ import { severalPhotosFacts } from '../../facts/several-photos.ts';
 import { guide } from '../../guide.ts';
 import { app, link, MAX_ITEMS, paragraphs, sheetFigure, steps, table, type Kit } from '../../kit.ts';
 import type { SitePage } from '../../types.ts';
-import { legalNames, q } from './chrome.ts';
+import { q } from './chrome.ts';
 import { PATHS } from './paths.ts';
 
 export function severalPhotos(k: Kit): SitePage {
@@ -70,7 +70,7 @@ export function severalPhotos(k: Kit): SitePage {
       },
       {
         q: 'क्या मेरी फ़ोटो किसी सर्वर पर अपलोड होती हैं?',
-        a: `नहीं। फ़ोटो आपके ब्राउज़र में ही खुलती और प्रोसेस होती हैं, और PDF भी वहीं बनती है। ${link(PATHS['legal-privacy'], legalNames(k).privacy)} में इसकी जानकारी है।`,
+        a: `नहीं। फ़ोटो आपके ब्राउज़र में ही खुलती और प्रोसेस होती हैं, और PDF भी वहीं बनती है। ${link(PATHS['legal-privacy'], ui('legal.privacy'))} में इसकी जानकारी है।`,
       },
       { q: 'क्या अलग-अलग आकार की फ़ोटो, या फ़ोटो और PDF के पेज एक साथ रख सकते हैं?', a: `हां। ${q(ui('bar.arrange'))} किसी भी आकार के आइटम एक साथ रखता है, और PDF का हर पेज एक अलग आइटम होता है।` },
       { q: 'क्या वॉटरमार्क लगता है या फ़ोटो की कोई सीमा है?', a: `वॉटरमार्क नहीं लगता। एक प्रोजेक्ट में ${num(MAX_ITEMS)} आइटम तक हो सकते हैं।` },

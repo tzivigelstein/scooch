@@ -2,7 +2,7 @@
 
 import { app, link, MAX_ITEMS, type Kit } from '../../kit.ts';
 import type { SitePage } from '../../types.ts';
-import { legalNames, papersSentence, photoSizesSentence, q } from './chrome.ts';
+import { papersSentence, photoSizesSentence, q } from './chrome.ts';
 import { PATHS } from './paths.ts';
 
 export function faqPage(k: Kit): SitePage {
@@ -26,7 +26,7 @@ export function faqPage(k: Kit): SitePage {
       { q: 'इसके लिए कितने पैसे लगते हैं?', a: `कुछ नहीं। ${app} मुफ़्त है, अकाउंट नहीं मांगता, और न वॉटरमार्क लगाता है, न विज्ञापन दिखाता है।` },
       {
         q: 'क्या मेरी फ़ाइलें किसी सर्वर पर अपलोड होती हैं?',
-        a: `नहीं। इमेज और PDF आपके ब्राउज़र में ही खुलती और प्रोसेस होती हैं, और PDF भी वहीं बनती है। ज़्यादा जानकारी ${link(PATHS['legal-privacy'], legalNames(k).privacy)} में है।`,
+        a: `नहीं। इमेज और PDF आपके ब्राउज़र में ही खुलती और प्रोसेस होती हैं, और PDF भी वहीं बनती है। ज़्यादा जानकारी ${link(PATHS['legal-privacy'], ui('legal.privacy'))} में है।`,
       },
       {
         q: 'मेरे प्रोजेक्ट कहां सेव होते हैं?',

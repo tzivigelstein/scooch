@@ -7,8 +7,7 @@ import { app, type Kit } from '../../kit.ts';
 import type { Chrome } from '../../layout.ts';
 import { PATHS } from './paths.ts';
 
-// The app's English names for the legal pages say «(in Spanish)»: these pages aren't.
-export const chrome = (_: Kit): Chrome => ({
+export const chrome = ({ ui }: Kit): Chrome => ({
   skip: 'Skip to content',
   open: `Open ${app}`,
   crumbs: 'Breadcrumb',
@@ -19,8 +18,8 @@ export const chrome = (_: Kit): Chrome => ({
   faq: 'Frequently asked questions',
   imageAlt: `${app}: photos arranged on a sheet at actual size`,
   legalLinks: [
-    ['Terms of use', PATHS['legal-terms']],
-    ['Privacy policy', PATHS['legal-privacy']],
+    [ui('legal.terms'), PATHS['legal-terms']],
+    [ui('legal.privacy'), PATHS['legal-privacy']],
     ['Third-party licenses', PATHS['legal-notices']],
     ['Code license', PATHS['legal-license']],
   ],

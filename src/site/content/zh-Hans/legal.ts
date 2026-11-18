@@ -10,13 +10,13 @@ import { PATHS } from './paths.ts';
 
 export const LEGAL_MARKERS: LegalMarkers = { draft: '_草稿。', analytics: '数据分析', pending: '待补充' };
 
-const TEXTS: Readonly<Record<LegalId, LegalPageTexts>> = {
+const texts = ({ ui }: Kit): Readonly<Record<LegalId, LegalPageTexts>> => ({
   terms: {
-    h1: '使用条款',
+    h1: ui('legal.terms'),
     description: `使用${app}须遵守的条款。${app}是一款免费的网页工具，可以按实际尺寸把图片和PDF页面排到纸上。条款包括禁止的用途、免责声明和责任限制。`,
   },
   privacy: {
-    h1: '隐私政策',
+    h1: ui('legal.privacy'),
     description: `${app}会在你的浏览器中保存哪些数据、怎样删除，以及网站的托管服务商会收到哪些技术数据。你的图片和PDF不会离开你的设备，也不会上传到任何服务器。`,
   },
   notices: {
@@ -29,8 +29,8 @@ const TEXTS: Readonly<Record<LegalId, LegalPageTexts>> = {
     description: `PolyForm Noncommercial 1.0.0许可证的全文。${app}的源代码按这个许可证发布：可以出于非商业目的使用、研究和修改，但不允许商业用途。`,
     intro: `${app}的源代码按PolyForm Noncommercial 1.0.0许可证发布。以下是许可证原文（英文）；<a href="${PATHS['legal-terms']}">使用条款</a>说明了它允许哪些用途。`,
   },
-};
+});
 
 const LEGAL = { terms: PATHS['legal-terms'], privacy: PATHS['legal-privacy'], notices: PATHS['legal-notices'], license: PATHS['legal-license'] };
 
-export const legalPage = (_: Kit, doc: LegalDoc): SitePage => page(doc, TEXTS[doc.id], LEGAL);
+export const legalPage = (k: Kit, doc: LegalDoc): SitePage => page(doc, texts(k)[doc.id], LEGAL);

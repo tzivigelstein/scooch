@@ -10,13 +10,13 @@ import { PATHS } from './paths.ts';
 
 export const LEGAL_MARKERS: LegalMarkers = { draft: '_Brouillon.', analytics: 'Mesure d’audience', pending: 'À COMPLÉTER' };
 
-const TEXTS: Readonly<Record<LegalId, LegalPageTexts>> = {
+const texts = ({ ui }: Kit): Readonly<Record<LegalId, LegalPageTexts>> => ({
   terms: {
-    h1: 'Conditions d’utilisation',
+    h1: ui('legal.terms'),
     description: `Les conditions d’utilisation de ${app}, un outil web gratuit qui dispose des images et des pages de PDF sur des feuilles en taille réelle.`,
   },
   privacy: {
-    h1: 'Politique de confidentialité',
+    h1: ui('legal.privacy'),
     description: `Ce que ${app} enregistre dans votre navigateur, comment l’effacer et ce que reçoit l’hébergeur du site. Vos fichiers ne quittent pas votre appareil.`,
   },
   notices: {
@@ -29,8 +29,8 @@ const TEXTS: Readonly<Record<LegalId, LegalPageTexts>> = {
     description: `Le texte de la licence PolyForm Noncommercial 1.0.0, sous laquelle le code source de ${app} est publié.`,
     intro: `Le code source de ${app} est publié sous la licence PolyForm Noncommercial 1.0.0. En voici le texte, en anglais ; les <a href="${PATHS['legal-terms']}">conditions d’utilisation</a> expliquent ce qu’elle permet.`,
   },
-};
+});
 
 const LEGAL = { terms: PATHS['legal-terms'], privacy: PATHS['legal-privacy'], notices: PATHS['legal-notices'], license: PATHS['legal-license'] };
 
-export const legalPage = (_: Kit, doc: LegalDoc): SitePage => page(doc, TEXTS[doc.id], LEGAL);
+export const legalPage = (k: Kit, doc: LegalDoc): SitePage => page(doc, texts(k)[doc.id], LEGAL);

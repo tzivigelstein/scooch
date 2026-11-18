@@ -25,9 +25,7 @@ Spanish guide ([../copy.md](../copy.md)), adapted to English conventions.
 ## Site pages
 
 The guides in `src/site/content/en` follow the same conventions, with the
-app’s names from `en.ts` (but the legal pages are “Terms of use” and
-“Privacy policy” there: the app’s labels say “(in Spanish)” because it links
-to the Spanish pages).
+app’s names from `en.ts`, the legal pages’ included.
 
 - The print dialog’s options as browsers name them: “Actual size” or
   “100%”, “Fit to page”, “Fit to printable area”.
