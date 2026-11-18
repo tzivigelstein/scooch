@@ -5,7 +5,7 @@
 // under the notice. (Which spot wins is decided by pickSpot, unit-tested in
 // tests/core/placement.test.js.)
 import type { Page } from '@playwright/test';
-import { frames, zoomMenu } from '../support/canvas.ts';
+import { frames, scrollStage, zoomMenu } from '../support/canvas.ts';
 import { hit, within, type Rect } from '../support/layout.ts';
 import { cards, expect, test, type App } from '../support/test.ts';
 
@@ -165,7 +165,7 @@ test('scrolling the piece out of view hides its toolbar; scrolling back shows it
     const g = await rects(page);
     return { pieceInView: hit(g.selected, g.canvas), barHidden: g.hidden };
   }).toEqual({ pieceInView: false, barHidden: true });
-  await page.evaluate(() => document.getElementById('stage')!.scrollTo(0, 0));
+  await scrollStage(page, 0);
   await expect.poll(async () => {
     const g = await rects(page);
     return !g.hidden && Math.abs(g.bar.y - g0.bar.y) < 2 && Math.abs(g.bar.x - g0.bar.x) < 2;
