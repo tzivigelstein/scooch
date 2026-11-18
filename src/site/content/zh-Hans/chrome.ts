@@ -31,6 +31,13 @@ export const chrome = (_: Kit): Chrome => ({
 /** The name of a button, an option or a tab of the app, quoted: «“排版”». */
 export const quoted = (name: string) => `“${name}”`;
 
+/**
+ * A table row's name with its measure, as the app's photo size menu writes
+ * them («6寸 · 101.6 × 152.4 mm»): full-width parentheses around a measure
+ * that can't break would make the column too wide for a phone.
+ */
+export const sizeCell = (name: string, measure: string) => `${name} <span class="muted">· ${measure}</span>`;
+
 const photoPapers = PAPERS.filter((p) => p.group === 'photo');
 const otherPapers = PAPERS.filter((p) => p.group !== 'photo');
 

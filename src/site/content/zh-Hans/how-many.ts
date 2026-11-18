@@ -9,7 +9,7 @@ import { CALC_START, howManyFacts } from '../../facts/how-many.ts';
 import { guide } from '../../guide.ts';
 import { app, MAX_ITEMS, table, type Kit } from '../../kit.ts';
 import type { SitePage } from '../../types.ts';
-import { quoted as q } from './chrome.ts';
+import { quoted as q, sizeCell } from './chrome.ts';
 import { PATHS } from './paths.ts';
 
 // Chinese has one plural form: «one» and «other» say the same. The count is
@@ -65,7 +65,7 @@ export function howMany(k: Kit): SitePage {
         h2: '常用纸张每张能放几张照片',
         html: table(
           [{ head: '照片' }, ...f.papers.map((p) => ({ head: paperName(p), num: true }))],
-          f.rows.map((r) => [`${photoName(r.id)}<span class="muted">（${size(r.w, r.h)}）</span>`, ...r.counts.map((n) => num(n))]),
+          f.rows.map((r) => [sizeCell(photoName(r.id), size(r.w, r.h)), ...r.counts.map((n) => num(n))]),
           `页边距${mm(f.margin)}，照片间距${mm(f.gap)}，开启${q(ui('props.rotate'))}。这就是${q(ui('bar.arrange'))}排出的结果。`
         ),
       },

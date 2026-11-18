@@ -4,7 +4,7 @@ import { severalPhotosFacts } from '../../facts/several-photos.ts';
 import { guide } from '../../guide.ts';
 import { app, link, MAX_ITEMS, paragraphs, sheetFigure, steps, table, type Kit } from '../../kit.ts';
 import type { SitePage } from '../../types.ts';
-import { quoted as q } from './chrome.ts';
+import { quoted as q, sizeCell } from './chrome.ts';
 import { PATHS } from './paths.ts';
 
 export function severalPhotos({ ui, num, mm, size, photoName, paperName }: Kit): SitePage {
@@ -40,7 +40,7 @@ export function severalPhotos({ ui, num, mm, size, photoName, paperName }: Kit):
           paragraphs(`这取决于照片的尺寸、纸张，以及打印机留出的边距。下表是${q(ui('bar.arrange'))}在每张纸上放下的相同照片数量：`) +
           table(
             [{ head: '照片' }, ...f.papers.map((p) => ({ head: paperName(p), num: true }))],
-            f.rows.map((r) => [`${photoName(r.id)}<span class="muted">（${size(r.w, r.h)}）</span>`, ...r.counts.map((n) => num(n))]),
+            f.rows.map((r) => [sizeCell(photoName(r.id), size(r.w, r.h)), ...r.counts.map((n) => num(n))]),
             `页边距${mm(f.layout.margin)}，照片间距${mm(f.layout.gap)}，开启${q(ui('props.rotate'))}。`
           ) +
           paragraphs(`其他尺寸和页边距，可以用${link(PATHS['how-many'], '照片数量计算器')}算一算。`),

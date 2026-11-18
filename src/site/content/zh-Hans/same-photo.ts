@@ -5,7 +5,7 @@ import { samePhotoFacts, type Copy } from '../../facts/same-photo.ts';
 import { guide } from '../../guide.ts';
 import { app, link, paragraphs, sheetFigure, steps, table, type Kit } from '../../kit.ts';
 import type { SitePage } from '../../types.ts';
-import { quoted as q } from './chrome.ts';
+import { quoted as q, sizeCell } from './chrome.ts';
 import { PATHS } from './paths.ts';
 
 export function samePhoto({ ui, num, mm, size, photoName, paperName }: Kit): SitePage {
@@ -43,7 +43,7 @@ export function samePhoto({ ui, num, mm, size, photoName, paperName }: Kit): Sit
         html:
           table(
             [{ head: '副本' }, ...f.papers.map((p) => ({ head: paperName(p), num: true }))],
-            f.rows.map(({ copy, counts }) => [`${copyName(copy)}<span class="muted">（${size(copy.w, copy.h)}）</span>`, ...counts.map((n) => num(n))]),
+            f.rows.map(({ copy, counts }) => [sizeCell(copyName(copy), size(copy.w, copy.h)), ...counts.map((n) => num(n))]),
             `用${q(ui('props.fill'))}时每张纸能放的副本数，页边距${mm(f.layout.margin)}，间距${mm(f.layout.gap)}。`
           ) + paragraphs(`其他尺寸，可以用${link(PATHS['how-many'], '照片数量计算器')}算一算。`),
       },
