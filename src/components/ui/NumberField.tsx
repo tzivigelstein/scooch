@@ -7,6 +7,7 @@
 // to how it was. Arrows step (Shift: coarse; Alt: fine).
 
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type InputHTMLAttributes, type Ref } from 'react';
+import { clamp } from '../../core/util.js';
 import { t } from '../../copy/index.ts';
 import { cancelEdit } from '../../state/history.ts';
 import { setView } from '../../state/view.ts';
@@ -57,7 +58,7 @@ export interface NumberFieldProps extends Omit<InputHTMLAttributes<HTMLInputElem
 }
 
 const same = (a: number, b: number) => Math.abs(a - b) < 1e-9;
-const clampTo = (value: number, range: Range | null) => (range ? Math.min(range.max, Math.max(range.min, value)) : value);
+const clampTo = (value: number, range: Range | null) => (range ? clamp(value, range.min, range.max) : value);
 
 export function NumberField({
   value,
