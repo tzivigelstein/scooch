@@ -66,6 +66,7 @@ import {
   fromBox,
   groupOptions,
   imageBoxes,
+  imageBoxOf,
   layoutPad,
   obstaclesFor,
   othersOnSheet,
@@ -231,11 +232,6 @@ const pointer = (e: PointerEvent): Pointer => ({
   moved: false,
 });
 
-const rectOf = (item: Piece): Rect => {
-  const [w, h] = dims(item);
-  return { x: item.x, y: item.y, w, h };
-};
-
 function begin(next: Gesture) {
   gesture = next;
   // A change to the document mid-gesture (a shortcut, another tab…) cancels it.
@@ -338,7 +334,7 @@ function startResize(e: PointerEvent, handle: HTMLElement) {
     ...pointer(e),
     size: dims(item),
     // Without overlaps, the handle stops when touching another piece.
-    growth: !getDocument().allowOverlap ? maxGrowth(rectOf(item), obstaclesFor(item.sheet, item.id), 'top-left') : Infinity,
+    growth: !getDocument().allowOverlap ? maxGrowth(imageBoxOf(item), obstaclesFor(item.sheet, item.id), 'top-left') : Infinity,
     draft: { ...item },
   });
 }
@@ -354,7 +350,7 @@ function startGroupMove(e: PointerEvent, item: Piece, collapse: boolean) {
     collapse,
     // On one sheet, the group may move to another; on several, each part stays on its own.
     oneSheet: sheets.size === 1 ? item.sheet : null,
-    box: bounds(items.map(rectOf))!,
+    box: bounds(items.map(imageBoxOf))!,
     all: boxes(),
     drafts: new Map(items.map((other) => [other.id, { ...other }])),
     drag: null,
@@ -444,7 +440,7 @@ function updateMove(g: MoveGesture, px: number, dy: number) {
   // Where the piece is in #sheets and which sheet it belongs to (the one with its center).
   const [W, H] = sheetSize();
   const [w, h] = g.size;
-  const start = toLayer(g.item.sheet, rectOf(g.item))!;
+  const start = toLayer(g.item.sheet, imageBoxOf(g.item))!;
   const ax = start.left + px;
   const ay = start.top + dy;
   g.delta = { x: px, y: dy };
@@ -524,7 +520,7 @@ function updateGroupResize(g: GroupResizeGesture, px: number, dy: number) {
   }
   for (const list of bySheet.values()) {
     const scaled = scaleGroup(
-      list.map((item) => ({ id: item.id, ...rectOf(item) })),
+      list.map(imageBoxOf),
       k,
       'top-left'
     ).rects;
@@ -547,7 +543,7 @@ function updateMarquee(g: MarqueeGesture, first: boolean) {
   const area = { x: Math.min(g.origin.x, now.x), y: Math.min(g.origin.y, now.y), w: Math.abs(now.x - g.origin.x), h: Math.abs(now.y - g.origin.y) };
   Object.assign(marquee.style, { left: `${area.x}px`, top: `${area.y}px`, width: `${area.w}px`, height: `${area.h}px` });
   const placed = getDocument().items.flatMap((item) => {
-    const r = toLayer(item.sheet, rectOf(item));
+    const r = toLayer(item.sheet, imageBoxOf(item));
     return r ? [{ id: item.id, x: r.left, y: r.top, w: r.width, h: r.height }] : [];
   });
   g.touched = touchedBy(area, placed);
@@ -794,7 +790,7 @@ function dropGroup(drag: Drag, target: number | null) {
  */
 function dropOnNewSheet(spot: NewSheetSpot, items: readonly Piece[], delta: Point) {
   const pad = layoutPad();
-  const frame = bounds(items.map(rectOf))!;
+  const frame = bounds(items.map(imageBoxOf))!;
   const start = toLayer(items[0].sheet, frame)!;
   // Their layout box where it was let go, in mm on the new sheet.
   const box = {
