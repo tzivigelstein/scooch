@@ -184,9 +184,9 @@ editor's metadata, which no other language needs).
    | File | What it has |
    | --- | --- |
    | `paths.ts` | One address per page id, under `/<lang in lowercase>/`: lowercase ASCII letters, digits and hyphens, with the words people search for. A language in another script writes them in Latin letters: the words people type in that market if they search in Latin letters (much of India searches this in English or romanized Hindi: «passport-size-photo»), otherwise short English words (the address weighs little next to the title). |
-   | `index.ts` | The `SiteLanguage`: `lang`, `units` (what follows a measure: `mm`, `cm` and the word for inches), `paths`, `legalMarkers`, `chrome`, `llms`, `pages` (same order as Spanish). |
-   | `chrome.ts` | The frame: skip link, header button, breadcrumb label, footer headings (`languages` heads the links to other languages), the line about the tool, the questions' heading, the share image's description, the legal links' labels; the sentences listing papers and photo sizes; the headings of `llms.txt`. |
-   | `several-photos.ts`, `how-many.ts`, `photos-10x15.ts`, `id-photos.ts`, `same-photo.ts`, `actual-size.ts`, `faq.ts` | One per page. `how-many.ts` also has the calculator's texts (`calcTexts`: `locale` is the catalogue's `meta.numberLocale`; `count` and `figure` are plural forms chosen by the language's rules, so a language with a single form gives `one` and `other` the same text; `noteSame.one` is for exactly one copy) and its labels. |
+   | `index.ts` | The `SiteLanguage`: `lang`, `units` (what follows a measure: `mm`, `cm` and the word for inches; the kit puts a no-break space before it, so a language that writes no space before a unit word, like Chinese 厘米, uses the symbols, as its catalogue's measures do), `paths`, `legalMarkers`, `chrome`, `llms`, `pages` (same order as Spanish). |
+   | `chrome.ts` | The frame: skip link, header button, breadcrumb label, footer headings (`languages` heads the links to other languages), the line about the tool, the questions' heading, the share image's description, the legal links' labels (typed, not the catalogue's `legal.terms` and `legal.privacy`: those say the page is in Spanish, true for the app's links but not for a translated page); the sentences listing papers and photo sizes; the headings of `llms.txt`. |
+   | `several-photos.ts`, `how-many.ts`, `photos-10x15.ts`, `id-photos.ts`, `same-photo.ts`, `actual-size.ts`, `faq.ts` | One per page. `how-many.ts` also has the calculator's texts (`calcTexts`: `locale` is the catalogue's `meta.numberLocale`; `count` and `figure` are plural forms chosen by the language's rules, so a language with a single form gives `one` and `other` the same text; `count` is shown under the number, on a line of its own; `noteSame.one` is for exactly one copy) and its labels. The calculator joins its pieces (the count and its words, the paper and its orientation, a note and the cap) with a space, or with none next to Chinese (`joinWords`, `src/site/html.ts`). |
    | `legal.ts` | The legal pages' titles, descriptions and the license texts' introductions; `LEGAL_MARKERS`: the first words of the translated draft note, the analytics heading and the word its reminder starts with. |
 
 3. **Translate the legal drafts** from Spanish into
@@ -200,13 +200,20 @@ editor's metadata, which no other language needs).
    `../../../THIRD_PARTY_NOTICES.md`, in-page links to the translated
    headings' ids, and the app's names for what the policy lists (its
    catalogue's). Don't translate `LICENSE` or `THIRD_PARTY_NOTICES.md`.
+   The site's Markdown joins the lines of a paragraph or a list item with a
+   space, or with none where either side is Chinese, so a Chinese draft
+   breaks its lines next to a Chinese character. Italics (`_nosotros_`) need
+   a space or punctuation around them: Chinese marks such a term with “ ”
+   instead.
 4. **Register it** in `src/site/content/index.ts`.
 5. **Add its entries** where the tests and budgets list languages:
    - `tests/site/pages.test.ts`: `COPY_RULES` (what its glossary forbids
      that a machine can see: exclamations, the wrong quotes, a space where
      there must be none, a number and unit that can break apart, words the
      glossary replaces) and `NO_CLAIMS` (words that would call a document
-     photo size the usual one, or name a country, on the photo ID guide).
+     photo size the usual one, or name a country, on the photo ID guide;
+     it reads the whole `<main>`, the questions' heading included, so a
+     word like Chinese 常见, “common”, needs to leave out 常见问题, “FAQ”).
      In JavaScript `\b` only knows ASCII letters: in a language with
      accents or another script it cuts words apart («prêtes» holds «tes»),
      so mark whole words with `(?<!\p{L})…(?!\p{L})` and the `u` flag. The
@@ -214,9 +221,10 @@ editor's metadata, which no other language needs).
      calculator's texts that only show once it is used, by eye;
    - `tests/site/legal.test.ts`: `POLICY` (the heading of the policy's list
      of what is stored, the sentence that says there is no analytics, and
-     the bold term of each stored key). The test looks for `**term:**`: a
-     language that writes something before the colon (French, a no-break
-     space: `**Unités :**`) ends each term with it;
+     the bold term of each stored key). The test looks for `**term:**`,
+     with `:` or Chinese `：` inside the bold (`- **单位：**`): a language
+     that writes something before the colon (French, a no-break space:
+     `**Unités :**`) ends each term with it;
    - `tests/site/table.test.ts`: its photos-10x15 page and third-party
      licenses page, which carry the stacked-table CSS;
    - `e2e/specs/site-pages.spec.ts`: its pages in `SHOWN`;
@@ -238,8 +246,15 @@ editor's metadata, which no other language needs).
      `paperName` as a fact the Spanish page doesn't have, while interface
      names are words, and the name still comes from the catalogue.
    - The print dialog's options are quoted as that language's browsers name
-     them (Spanish «Tamaño real», «100 %»; English “Actual size”, “100%”).
-   - Titles up to 65 characters, descriptions 70 to 160.
+     them (Spanish «Tamaño real», «100 %»; English “Actual size”, “100%”;
+     Chinese “实际大小”, “100%”, as the app's print tip says).
+   - Titles up to 65 characters, descriptions 70 to 160. The test counts
+     characters, so a Chinese description needs about twice what an English
+     one says to reach 70.
+   - A measure never breaks (the kit's no-break spaces): in a table's first
+     column, what goes around it must still fit a phone, which the e2e spec
+     checks at 390 px with wider letters. Full-width parentheses around a
+     measure don't: the Chinese tables write the app's «6寸 · 101.6 × 152.4 mm».
 7. **Run the checks:**
 
    ```sh
