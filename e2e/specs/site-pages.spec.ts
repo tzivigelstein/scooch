@@ -87,6 +87,7 @@ async function load(page: Page, path: string) {
 const SHOWN = [
   ...['imprimir-varias-fotos-en-una-hoja', 'cuantas-fotos-caben-en-una-hoja', 'fotos-10x15-en-hoja-a4', 'foto-carnet-para-imprimir', 'imprimir-misma-foto-varias-veces', 'imprimir-imagen-tamano-real', 'preguntas-frecuentes', 'terminos', 'privacidad', 'licencias-de-terceros', 'licencia'].map((name) => `es/${name}.html`),
   ...['print-multiple-pictures-on-one-page', 'how-many-photos-fit-on-a-page', 'print-4x6-photos-on-a4', 'print-passport-photos-at-home', 'print-same-picture-multiple-times', 'print-image-actual-size', 'faq', 'terms', 'privacy', 'third-party-licenses', 'license'].map((name) => `en/${name}.html`),
+  ...['imprimer-plusieurs-photos-sur-une-feuille', 'combien-de-photos-sur-une-feuille', 'imprimer-photos-10x15-sur-a4', 'photo-identite-a-imprimer', 'imprimer-plusieurs-fois-la-meme-photo', 'imprimer-image-taille-reelle', 'questions-frequentes', 'conditions-utilisation', 'confidentialite', 'licences-tierces', 'licence'].map((name) => `fr/${name}.html`),
 ];
 
 test.describe('in the browser', () => {
