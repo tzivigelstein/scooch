@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { clampCrop, pieceSize, cropToAspect, panCrop, zoomCrop, drawParams, cssParams } from '../../src/core/crop.js';
+import { clampCrop, pieceSize, cropToAspect, drawParams, cssParams } from '../../src/core/crop.js';
 import { prng } from '../support/prng.js';
 import { PT_PER_MM, ROTATIONS, assertCropInside, close, cssPoint } from '../support/crop.js';
 
@@ -45,32 +45,6 @@ describe('cropToAspect', () => {
       // Centered on the focus unless an edge stops it.
       const cx = c.x + c.w / 2;
       if (c.x > 0 && c.x + c.w < 1) assert.ok(close(cx, focus.x), `case ${i}: focus x`);
-    }
-  });
-});
-
-describe('panCrop and zoomCrop', () => {
-  test('panCrop stops at the edge and keeps the size (fuzz)', () => {
-    const rnd = prng(3);
-    for (let i = 0; i < 200; i++) {
-      const crop = clampCrop({ x: rnd(), y: rnd(), w: 0.05 + rnd() * 0.9, h: 0.05 + rnd() * 0.9 });
-      const moved = panCrop(crop, rnd() * 2 - 1, rnd() * 2 - 1);
-      assertCropInside(moved, `case ${i}`);
-      if (crop && moved) assert.ok(close(moved.w, crop.w) && close(moved.h, crop.h), `case ${i}`);
-    }
-  });
-
-  test('zoomCrop: inside [0, 1] and with the same proportion (fuzz)', () => {
-    const rnd = prng(4);
-    for (let i = 0; i < 300; i++) {
-      const crop = clampCrop({ x: rnd(), y: rnd(), w: 0.02 + rnd() * 0.98, h: 0.02 + rnd() * 0.98 });
-      const factor = Math.exp(rnd() * 6 - 3);
-      const focus = rnd() < 0.5 ? undefined : { x: rnd(), y: rnd() };
-      const z = zoomCrop(crop, factor, focus);
-      assertCropInside(z, `case ${i}`);
-      const before = crop ?? { w: 1, h: 1 };
-      const after = z ?? { w: 1, h: 1 };
-      assert.ok(close(after.w / after.h, before.w / before.h, 1e-9), `case ${i}: proportion`);
     }
   });
 });

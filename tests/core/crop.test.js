@@ -9,13 +9,10 @@ import {
   pieceSize,
   cropToAspect,
   fitToSize,
-  panCrop,
-  panDelta,
-  zoomCrop,
   drawParams,
   cssParams,
 } from '../../src/core/crop.js';
-import { PT_PER_MM, ROTATIONS, assertCropInside, close, cssPoint } from '../support/crop.js';
+import { PT_PER_MM, ROTATIONS, assertCropInside, close } from '../support/crop.js';
 
 // Exact cases of the crop geometry. The properties checked over generated
 // crops are in tests/properties/crop.test.js.
@@ -161,61 +158,6 @@ describe('fitToSize', () => {
     const right = fitToSize({ w: 150, h: 100 }, 0, { w: 50, h: 50 }, { focus: { x: 1, y: 0.5 } });
     assert.ok(close(right.crop.x + right.crop.w, 1));
     assert.equal(fitToSize({ w: 150, h: 100 }, 450, { w: 10, h: 10 }).r, 90, 'normalized rotation');
-  });
-});
-
-describe('panCrop, panDelta and zoomCrop', () => {
-  test('panCrop stops at the edge and does not change the size', () => {
-    const c = { x: 0.2, y: 0.2, w: 0.5, h: 0.5 };
-    assert.deepEqual(panCrop(c, 0.1, -0.1), { x: 0.30000000000000004, y: 0.1, w: 0.5, h: 0.5 });
-    assert.deepEqual(panCrop(c, 1, 1), { x: 0.5, y: 0.5, w: 0.5, h: 0.5 });
-    assert.deepEqual(panCrop(c, -1, 0), { x: 0, y: 0.2, w: 0.5, h: 0.5 });
-    assert.equal(panCrop(null, 0.1, 0.1), null);
-  });
-
-  test('panDelta: the content follows the drag in every rotation', () => {
-    const asset = { w: 150, h: 100 };
-    const crop = { x: 0.25, y: 0.25, w: 0.5, h: 0.5 };
-    const zoom = 3;
-    for (const r of ROTATIONS) {
-      const item = { x: 20, y: 30, scale: 80, r, crop };
-      for (const [dx, dy] of [
-        [4, 0],
-        [0, -3],
-        [2.5, 1.5],
-      ]) {
-        const d = panDelta(asset, item, dx, dy);
-        const moved = { ...item, crop: panCrop(crop, d.dx, d.dy) };
-        // The same point of the image moves (dx, dy) mm on the sheet.
-        const before = cssPoint(cssParams(item, asset, zoom).img, 0.5, 0.5);
-        const after = cssPoint(cssParams(moved, asset, zoom).img, 0.5, 0.5);
-        assert.ok(close(after.x - before.x, dx * zoom, 1e-9), `r${r} (${dx}, ${dy}): x ${after.x - before.x}`);
-        assert.ok(close(after.y - before.y, dy * zoom, 1e-9), `r${r} (${dx}, ${dy}): y ${after.y - before.y}`);
-      }
-    }
-  });
-
-  test('zoomCrop keeps the proportion and the focus, and stays inside', () => {
-    const c = { x: 0.2, y: 0.3, w: 0.4, h: 0.2 };
-    const z = zoomCrop(c, 2);
-    assert.ok(close(z.w, 0.2) && close(z.h, 0.1));
-    assert.ok(close(z.x + z.w / 2, 0.4) && close(z.y + z.h / 2, 0.4), 'fixed center');
-    // Focus on a corner of the crop: that corner does not move.
-    const corner = zoomCrop(c, 2, { x: 0.2, y: 0.3 });
-    assert.ok(close(corner.x, 0.2) && close(corner.y, 0.3));
-    // Zooming out to the whole image: it stops when one side reaches 1.
-    const out = zoomCrop(c, 0.01);
-    assert.ok(close(out.w, 1) && close(out.h, 0.5), JSON.stringify(out));
-    assertCropInside(out);
-    // From «no crop»: zooming out does nothing; zooming in crops with the proportion of the image.
-    assert.equal(zoomCrop(null, 0.5), null);
-    assert.deepEqual(zoomCrop(null, 2), { x: 0.25, y: 0.25, w: 0.5, h: 0.5 });
-    assert.equal(zoomCrop(zoomCrop(null, 2), 0.5), null, 'there and back');
-    // It does not go below MIN_CROP.
-    const deep = zoomCrop(c, 1e6);
-    assert.ok(close(Math.min(deep.w, deep.h), MIN_CROP));
-    assert.throws(() => zoomCrop(c, 0), RangeError);
-    assert.throws(() => zoomCrop(c, NaN), RangeError);
   });
 });
 

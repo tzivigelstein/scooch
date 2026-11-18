@@ -32,9 +32,6 @@ export interface Placed {
 export function pieceSize(asset: AssetSize, piece: Placed): PieceSize;
 export function cropToAspect(imgW: number, imgH: number, aspect: number, focus?: Point): Crop;
 export function fitToSize(asset: AssetSize, r: number, target: Size, options?: { autoOrient?: boolean; focus?: Point }): { crop: Crop | null; scale: number; r: Rotation };
-export function panCrop(crop: Crop | null | undefined, dx: number, dy: number): Crop | null;
-export function panDelta(asset: AssetSize, item: { scale: number; r: number }, dx: number, dy: number): { dx: number; dy: number };
-export function zoomCrop(crop: Crop | null | undefined, factor: number, focus?: Point): Crop | null;
 
 export interface PlacedOnSheet extends Placed {
   x: number;

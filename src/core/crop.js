@@ -151,50 +151,6 @@ export function fitToSize(asset, r, target, { autoOrient = true, focus = { x: 0.
 }
 
 /**
- * Pans the crop by (dx, dy) in the image's normalized coordinates, stopping
- * at its edge. Without a crop there is nothing to pan: null. `panDelta` turns
- * a drag on the sheet into these.
- */
-export function panCrop(crop, dx, dy) {
-  if (isIdentity(crop)) return null;
-  return clampCrop({ x: crop.x + dx, y: crop.y + dy, w: crop.w, h: crop.h });
-}
-
-/**
- * How far to pan the crop (for `panCrop`) so the piece's content follows a
- * drag of (dx, dy) mm on the sheet, given the piece's rotation and scale:
- * dragging right shows what was on the left. `item`: {scale, r}. Gives
- * normalized {dx, dy}.
- */
-export function panDelta(asset, item, dx, dy) {
-  const [cos, sin] = TRIG[normRotation(item.r)];
-  const k = item.scale / 100;
-  // From the sheet's rotation back to the unrotated image: the inverse rotation.
-  const u = dx * cos + dy * sin;
-  const v = -dx * sin + dy * cos;
-  return { dx: -u / (asset.w * k) || 0, dy: -v / (asset.h * k) || 0 };
-}
-
-/**
- * Zooms the crop in (`factor` > 1) or out (< 1), keeping its proportion and
- * the point `focus` fixed (normalized, of the image; by default the crop's
- * center). It stops at the whole image (on whichever side gets there first)
- * and at MIN_CROP, and moves as needed to stay inside. Without a crop it
- * starts from the whole image. null when it ends covering the whole image.
- */
-export function zoomCrop(crop, factor, focus) {
-  if (!(factor > 0) || !Number.isFinite(factor)) throw new RangeError(`invalid factor: ${factor}`);
-  const c = isIdentity(crop) ? FULL : crop;
-  const f = focus ?? { x: c.x + c.w / 2, y: c.y + c.h / 2 };
-  const most = Math.max(c.w, c.h); // the factor down to here: a side reaches 1
-  const least = Math.min(c.w, c.h) / MIN_CROP; // up to here: a side reaches the minimum
-  const k = clamp(factor, most, Math.max(most, least));
-  const w = snapUnit(c.w / k);
-  const h = snapUnit(c.h / k);
-  return clampCrop({ x: f.x - (f.x - c.x) / k, y: f.y - (f.y - c.y) / k, w, h });
-}
-
-/**
  * Numbers to draw the piece (cropped and rotated) with pdf-lib, in PDF points
  * (origin at the bottom left). `item`: {x, y, scale, r, crop} in mm from the
  * sheet's top left corner; `asset`: {w, h} in mm at 100 %; `sheetH`: the
