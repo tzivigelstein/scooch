@@ -23,8 +23,10 @@ function assertCropClose(actual, expected, label = '') {
   }
 }
 
-// The geometry of export.js as it is today (a piece without a crop).
-function currentPlacement({ x, y, w, h, uw, uh, r }, sheetHeight) {
+// Where a piece without a crop goes in the PDF, worked out on its own: the
+// image turns about its bottom left corner (pdf-lib), so the rotation moves
+// that corner, and the PDF's y axis goes up from the bottom of the sheet.
+function uncroppedPlacement({ x, y, w, h, uw, uh, r }, sheetHeight) {
   return {
     x: (x + (r === 180 || r === 270 ? w : 0)) * PT_PER_MM,
     y: (sheetHeight - y - (r === 90 || r === 180 ? 0 : h)) * PT_PER_MM,
@@ -162,14 +164,14 @@ describe('fitToSize', () => {
 });
 
 describe('drawParams (PDF)', () => {
-  test('without a crop it is identical to export.js', () => {
+  test('without a crop (none, or the whole image) nothing is clipped and the whole image sits on the piece, in points, its corner moved by the rotation', () => {
     for (const asset of assets) {
       for (const r of ROTATIONS) {
         for (const scale of [100, 37.5, 250]) {
           const item = { x: 12.3, y: 45.6, scale, r };
           const k = scale / 100;
           const [w, h] = r % 180 ? [asset.h * k, asset.w * k] : [asset.w * k, asset.h * k];
-          const expected = currentPlacement({ x: item.x, y: item.y, w, h, uw: asset.w * k, uh: asset.h * k, r }, 297);
+          const expected = uncroppedPlacement({ x: item.x, y: item.y, w, h, uw: asset.w * k, uh: asset.h * k, r }, 297);
           for (const crop of [undefined, null, { x: 0, y: 0, w: 1, h: 1 }]) {
             const p = drawParams({ ...item, crop }, asset, 297);
             assert.equal(p.clip, null);
@@ -185,7 +187,7 @@ describe('drawParams (PDF)', () => {
 });
 
 describe('cssParams (screen)', () => {
-  test('without a crop it is identical to sheetview.js', () => {
+  test('without a crop the box is the piece at the zoom, and the whole image fills it, centered and rotated', () => {
     for (const asset of assets) {
       for (const r of ROTATIONS) {
         const item = { x: 10, y: 20, scale: 55, r };
