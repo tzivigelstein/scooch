@@ -8,9 +8,9 @@
 
 import { LANGUAGES } from './language.js';
 import { MILESTONES } from './savings.js';
+import { isRecord } from './util.js';
 import { ZOOM_MAX, ZOOM_MIN } from './zoom.js';
 
-const isRecord = (value) => !!value && typeof value === 'object' && !Array.isArray(value);
 const oneOf = (value, options, fallback) => (options.includes(value) ? value : fallback);
 
 // ---------- View preferences (scooch:view-preferences) ----------

@@ -8,8 +8,7 @@
 
 import { packSheets, packInto } from './pack.js';
 import { overlaps, EPS, nearestFree } from './collide.js';
-
-const sameNumber = (a, b) => Math.abs(a - b) < 1e-9;
+import { sameNumber } from './util.js';
 
 /**
  * Arranges ALL the pieces on as many sheets as needed (`packSheets`).

@@ -8,7 +8,7 @@
 // that return a crop return null when it covers the whole image, so «no
 // crop» has a single representation.
 
-import { clamp } from './util.js';
+import { clamp, sameNumber } from './util.js';
 
 const PT_PER_MM = 72 / 25.4;
 
@@ -64,6 +64,9 @@ export function isIdentity(crop) {
 }
 
 const normalize = (crop) => (isIdentity(crop) ? null : crop);
+
+/** The same crop (both none, or the same rectangle but for floating point noise). */
+export const sameCrop = (a, b) => (!a || !b ? a === b : sameNumber(a.x, b.x) && sameNumber(a.y, b.y) && sameNumber(a.w, b.w) && sameNumber(a.h, b.h));
 
 /**
  * The valid crop closest to `crop`: sides between MIN_CROP and 1 (each on its

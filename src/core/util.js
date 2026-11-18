@@ -9,6 +9,12 @@ export const fine = (v) => Math.round(v * 1e4) / 1e4 || 0;
 /** For numeric inputs: «41.6» (for display, t() in src/copy). */
 export const num = (v) => String(round1(v));
 
+/** Equal but for floating point noise. */
+export const sameNumber = (a, b) => Math.abs(a - b) < 1e-9;
+
+/** A plain object (not null, not an array): what a stored setting has to be to be read. */
+export const isRecord = (value) => !!value && typeof value === 'object' && !Array.isArray(value);
+
 /** Orders ids of mixed types: by type first, then by value. */
 export const compareIds = (a, b) => {
   if (typeof a !== typeof b) return typeof a < typeof b ? -1 : 1;

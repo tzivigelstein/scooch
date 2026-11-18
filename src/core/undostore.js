@@ -29,6 +29,7 @@
 //    assets: {aK: meta}, files: {key: hash}, hashes: [hash]}
 
 import { DOC_VERSION, cleanCrop, cleanCuts, fileKeys, validate } from './projectdoc.js';
+import { isRecord } from './util.js';
 
 export const HISTORY_VERSION = 1;
 export const CLIP_VERSION = 1;
@@ -36,7 +37,6 @@ export const CLIP_VERSION = 1;
 /** Document versions whose steps and pieces read as they are. */
 const READABLE_DOC_VERSIONS = [5, DOC_VERSION];
 
-const isRecord = (value) => !!value && typeof value === 'object' && !Array.isArray(value);
 const cleanItem = ({ id, asset, sheet, x, y, scale, r, crop }) => ({ id, asset, sheet, x, y, scale, r, crop: cleanCrop(crop) });
 
 /**

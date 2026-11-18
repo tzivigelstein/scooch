@@ -14,6 +14,7 @@ export function photoSize(id: string): PhotoSize | null;
 
 export function isIdentity(crop: Crop | null | undefined): boolean;
 export function clampCrop(crop: Crop | null | undefined): Crop | null;
+export function sameCrop(a: Crop | null | undefined, b: Crop | null | undefined): boolean;
 
 /** A piece's printed size: `w`/`h` as it sits on the sheet (rotated), `uw`/`uh` unrotated. */
 export interface PieceSize {

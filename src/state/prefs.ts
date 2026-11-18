@@ -30,7 +30,7 @@ import {
   type ThemeChoice,
 } from '../core/storedprefs.js';
 import { isUnit, type Unit } from '../core/units.js';
-import { clamp } from '../core/util.js';
+import { clamp, isRecord } from '../core/util.js';
 import { storageGet, storageJson, storageSet } from '../services/storage/local.ts';
 
 export interface GridPrefs {
@@ -58,8 +58,6 @@ export interface PrefsState {
   /** «Idioma»: 'auto' follows the browser's languages (services/language.ts loads and applies it). */
   language: LanguageChoice;
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 
 function loadGrid(): GridPrefs {
   const saved = storageJson(GRID_STORAGE);

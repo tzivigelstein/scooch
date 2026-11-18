@@ -1,9 +1,10 @@
 // Crop: standard photo sizes for the selection and committing a crop session
 // (the session itself is the lazily loaded crop mode, components/canvas/crop).
 
-import { matchPhotoSize, photoSize } from '../../core/crop.js';
+import { matchPhotoSize, photoSize, sameCrop } from '../../core/crop.js';
 import { planPhotoSize } from '../../core/resize.js';
 import type { Item } from '../../core/types.ts';
+import { sameNumber } from '../../core/util.js';
 import { formatList, sentences, t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
 import { sizeText } from '../../services/measure.ts';
@@ -13,9 +14,6 @@ import { dims, findItem, pieceName, selectedItems, sheetIndex } from '../selecto
 import { animateNext } from '../view.ts';
 import { applySettled, resizeOptions, settle } from './layout.ts';
 import { say } from './notify.ts';
-
-const same = (a: number, b: number) => Math.abs(a - b) < 1e-9;
-const sameCrop = (a: Item['crop'], b: Item['crop']) => (!a || !b ? a === b : same(a.x, b.x) && same(a.y, b.y) && same(a.w, b.w) && same(a.h, b.h));
 
 /** What the «Tamaño de foto» select shows for a piece: a standard size id, 'original' or 'custom'. */
 export function photoSizeOf(item: Piece): string {
@@ -125,7 +123,7 @@ function resultText(id: string, list: readonly Piece[]) {
 export function commitCrop(id: number, patch: Pick<Item, 'x' | 'y' | 'scale' | 'crop'>) {
   const item = findItem(id);
   if (!item || getDocument().busy) return;
-  if (same(item.x, patch.x) && same(item.y, patch.y) && same(item.scale, patch.scale) && sameCrop(item.crop, patch.crop)) {
+  if (sameNumber(item.x, patch.x) && sameNumber(item.y, patch.y) && sameNumber(item.scale, patch.scale) && sameCrop(item.crop, patch.crop)) {
     announce(t('crop.unchanged'));
     return;
   }

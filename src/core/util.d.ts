@@ -8,5 +8,7 @@ export function tidy(v: number): number;
 /** Rounds to 0.0001. */
 export function fine(v: number): number;
 export function num(v: number): string;
+export function sameNumber(a: number, b: number): boolean;
+export function isRecord(value: unknown): value is Record<string, unknown>;
 export function compareIds(a: RectId, b: RectId): number;
 export function slug(text: string, fallback: string): string;

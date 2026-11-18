@@ -11,14 +11,11 @@
 // empty sheet stays where it is.
 
 import { overlapsAny } from './collide.js';
-import { fitToSize, pieceSize } from './crop.js';
+import { fitToSize, pieceSize, sameCrop } from './crop.js';
 import { SCALE_RANGE } from './group.js';
 import { packedRotation } from './pack.js';
 import { freeSpotNear, keepCenterInside, pieceProblems, placeIntoSheets } from './sheets.js';
-import { tidy } from './util.js';
-
-const same = (a, b) => Math.abs(a - b) < 1e-9;
-const sameCrop = (a, b) => (!a || !b ? a === b : same(a.x, b.x) && same(a.y, b.y) && same(a.w, b.w) && same(a.h, b.h));
+import { sameNumber, tidy } from './util.js';
 
 /** `item` with `patch` applied, moved so its center stays where it was. */
 export function withCenterKept(item, patch, asset) {
@@ -117,7 +114,7 @@ export function planPhotoSize(selected, size, { items, sheetIds, ...options }) {
     const fit = fitToSize(asset, item.r, size);
     const next = withCenterKept(item, { crop: fit.crop, scale: fit.scale }, asset);
     if (fit.scale < SCALE_RANGE.min || fit.scale > SCALE_RANGE.max) refused.push(next);
-    else if (!sameCrop(next.crop, item.crop) || !same(next.scale, item.scale)) resized.push(next);
+    else if (!sameCrop(next.crop, item.crop) || !sameNumber(next.scale, item.scale)) resized.push(next);
   }
   if (!resized.length) return { changed: [], refused, moved: [], sheets: [], problems: [] };
   const settled = settleResized(resized, items, sheetIds, options);
