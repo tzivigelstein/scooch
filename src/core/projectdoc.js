@@ -45,6 +45,7 @@
 import { sizeOf } from './papers.js';
 import { MIN_CROP, clampCrop, isIdentity } from './crop.js';
 import { CUT_DASHES, CUT_MODES, CUT_WEIGHTS, isHexColor } from './cutmarks.js';
+import { clamp } from './util.js';
 
 export const DOC_VERSION = 6;
 
@@ -290,8 +291,7 @@ export function validate(doc) {
   return problems;
 }
 
-const clampTo = (v, [lo, hi]) => Math.min(hi, Math.max(lo, v));
-const numberOr = (v, fallback, range) => (isFiniteNumber(v) ? clampTo(v, range) : fallback);
+const numberOr = (v, fallback, range) => (isFiniteNumber(v) ? clamp(v, ...range) : fallback);
 const LENGTH_RANGE = [0, 50];
 
 /**
@@ -326,7 +326,7 @@ export function repair(doc) {
       const fixed = { ...item };
       // A crop that can't be read is no crop; one slightly outside the image is brought inside.
       if (item.crop != null) fixed.crop = typeof item.crop === 'object' ? clampCrop(item.crop) : null;
-      if (isPositive(item.scale)) fixed.scale = clampTo(item.scale, [1, 1000]);
+      if (isPositive(item.scale)) fixed.scale = clamp(item.scale, 1, 1000);
       return fixed;
     });
   }

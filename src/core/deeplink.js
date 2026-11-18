@@ -10,6 +10,7 @@
 import { PHOTO_SIZES } from './crop.js';
 import { CUT_MODES } from './cutmarks.js';
 import { CUSTOM_MAX, CUSTOM_MIN, PAPERS, sizeOf } from './papers.js';
+import { clamp, tidy } from './util.js';
 
 /** The parameters a deep link reads, in the order a built link writes them. */
 export const DEEP_LINK_KEYS = Object.freeze(['paper', 'orientation', 'margin', 'gap', 'photo', 'cuts', 'rotate']);
@@ -27,16 +28,14 @@ const SWITCH = Object.freeze({ on: true, true: true, 1: true, off: false, false:
 const NUMBER = /^-?\d+(?:[.,]\d+)?$/;
 const SIZE_MM = /^(\d+(?:[.,]\d+)?)x(\d+(?:[.,]\d+)?)mm$/;
 
-const clamp = (v, [lo, hi]) => Math.min(hi, Math.max(lo, v));
 const toNumber = (text) => Number(text.replace(',', '.'));
-// Hundredths of a mm: what a link can say, and what it writes back.
-const tidy = (v) => Math.round(v * 100) / 100 || 0;
 
-const lengthOf = (text) => (NUMBER.test(text) ? tidy(clamp(toNumber(text), LENGTH_RANGE)) : undefined);
+// Lengths are kept in hundredths of a mm (tidy): what a link can say, and what it writes back.
+const lengthOf = (text) => (NUMBER.test(text) ? tidy(clamp(toNumber(text), ...LENGTH_RANGE)) : undefined);
 
 function sizeOfText(text, range) {
   const match = SIZE_MM.exec(text);
-  return match ? { w: tidy(clamp(toNumber(match[1]), range)), h: tidy(clamp(toNumber(match[2]), range)) } : null;
+  return match ? { w: tidy(clamp(toNumber(match[1]), ...range)), h: tidy(clamp(toNumber(match[2]), ...range)) } : null;
 }
 
 function paperOf(text) {

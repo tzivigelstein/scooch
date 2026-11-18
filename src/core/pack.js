@@ -1,6 +1,8 @@
 // Rectangle packing (MaxRects) to arrange pieces on the sheet. Everything in
 // the same unit (mm), origin at the printable area's top left.
 
+import { compareIds } from './util.js';
+
 const EPS = 1e-6;
 
 const intersects = (a, b) =>
@@ -137,10 +139,6 @@ function startFree(W, H, gap, obstacles) {
 // The input's canonical order (long side, short side, then id), so the result
 // doesn't depend on the array's order: the sorts' ties are stable. It ignores
 // orientation, so a piece turned beforehand breaks ties as if it weren't.
-const compareIds = (a, b) => {
-  if (typeof a !== typeof b) return typeof a < typeof b ? -1 : 1;
-  return a < b ? -1 : a > b ? 1 : 0;
-};
 const canonical = (rects) =>
   [...rects].sort(
     (a, b) =>

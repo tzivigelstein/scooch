@@ -15,8 +15,8 @@ import { fitToSize, pieceSize } from './crop.js';
 import { SCALE_RANGE } from './group.js';
 import { packedRotation } from './pack.js';
 import { freeSpotNear, keepCenterInside, pieceProblems, placeIntoSheets } from './sheets.js';
+import { tidy } from './util.js';
 
-const tidy = (v) => Math.round(v * 100) / 100 || 0;
 const same = (a, b) => Math.abs(a - b) < 1e-9;
 const sameCrop = (a, b) => (!a || !b ? a === b : same(a.x, b.x) && same(a.y, b.y) && same(a.w, b.w) && same(a.h, b.h));
 

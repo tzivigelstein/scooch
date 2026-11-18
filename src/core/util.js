@@ -1,4 +1,4 @@
-// Small stateless number and text helpers.
+// Small stateless helpers for numbers, text and ids.
 
 export const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 export const round1 = (v) => Math.round(v * 10) / 10 || 0;
@@ -8,6 +8,12 @@ export const fine = (v) => Math.round(v * 1e4) / 1e4 || 0;
 
 /** For numeric inputs: «41.6» (for display, t() in src/copy). */
 export const num = (v) => String(round1(v));
+
+/** Orders ids of mixed types: by type first, then by value. */
+export const compareIds = (a, b) => {
+  if (typeof a !== typeof b) return typeof a < typeof b ? -1 : 1;
+  return a < b ? -1 : a > b ? 1 : 0;
+};
 
 /** A safe file name from a text («Mi App» → «mi-app»). */
 export const slug = (text, fallback) =>

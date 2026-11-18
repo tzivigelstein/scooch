@@ -8,6 +8,8 @@
 // that return a crop return null when it covers the whole image, so «no
 // crop» has a single representation.
 
+import { clamp } from './util.js';
+
 const PT_PER_MM = 72 / 25.4;
 
 /** The smallest side of a crop (a fraction of the image): up to 100 × closer. */
@@ -15,8 +17,6 @@ export const MIN_CROP = 0.01;
 
 const FULL = Object.freeze({ x: 0, y: 0, w: 1, h: 1 });
 const IDENTITY_TOL = 1e-6;
-
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 // Values a hair from 0 or 1 (rounding error) become exact.
 const snapUnit = (v) => (Math.abs(v) < 1e-9 ? 0 : Math.abs(v - 1) < 1e-9 ? 1 : v);

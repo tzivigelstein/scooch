@@ -5,6 +5,7 @@
 // straight to `validate`); never changes the input.
 
 import { overlaps } from './collide.js';
+import { compareIds } from './util.js';
 
 const copy = ({ id, x, y, w, h }) => ({ id, x, y, w, h });
 
@@ -55,11 +56,6 @@ export function align(rects, mode, reference = bounds(rects)) {
 }
 
 const AXES = { x: ['x', 'w'], y: ['y', 'h'] };
-
-const compareIds = (a, b) => {
-  if (typeof a !== typeof b) return typeof a < typeof b ? -1 : 1;
-  return a < b ? -1 : a > b ? 1 : 0;
-};
 
 /**
  * Distributes the pieces along `axis` ('x' | 'y'), in the order of their
