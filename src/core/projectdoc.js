@@ -1,5 +1,5 @@
-// Formato del documento de un proyecto guardado: serializar, deserializar,
-// migrar versiones viejas y validar. Módulo puro (sin DOM ni textos).
+// The format of a saved project's document: serializing, deserializing,
+// migrating older versions and validating. No DOM, no texts.
 //
 // RULE: the shape of a version that has ever been written to storage is
 // frozen. Any change to the format (a new field included) is a new version
@@ -12,34 +12,35 @@
 // clamped (repair); only what can't be interpreted (no sheets, items or
 // assets, pieces pointing nowhere) makes a document damaged.
 //
-// Forma (versión 6):
+// Shape (version 6):
 //
 //   {
 //     version: 6,
-//     paper: 'A4' | {custom: true, w, h},   // ids de papers.js; medidas en mm
+//     paper: 'A4' | {custom: true, w, h},   // ids of papers.js; sizes in mm
 //     landscape: false,
 //     margin: 10, gap: 5,                  // mm
 //     rotate: true,                        // «Rotación automática»
 //     allowOverlap: false,                 // «Permitir superposición» (since 5; before, a device preference)
-//     cuts: {mode: 'none', length: 4, offset: 1.5,   // líneas de corte (cutmarks.js): modo y mm,
+//     cuts: {mode: 'none', length: 4, offset: 1.5,   // cut lines (cutmarks.js): mode and mm,
 //                                          // mode 'none' | 'corners' | 'outline' | 'contour' (since 6)
 //            weight: 'thin', color: '#000000', dash: 'solid',   // their stroke (since 3)
 //            margin: 0},                          // cut margin around each image (mm, −5…20; since 4)
-//     sheets: [{id: 1}, {id: 2}],          // en orden; al menos una
-//     items: [{id, asset, sheet, x, y, scale, r, crop}],   // en orden de apilado;
-//                                          // crop: null o {x, y, w, h} normalizado (crop.js)
+//     sheets: [{id: 1}, {id: 2}],          // in order; at least one
+//     items: [{id, asset, sheet, x, y, scale, r, crop}],   // in stacking order;
+//                                          // crop: null or a normalized {x, y, w, h} (crop.js)
 //     assets: {
 //       a1: {kind: 'image', name, src, px: [w, h], format: 'jpg' | 'png', dpi, w, h, derived},
 //       a2: {kind: 'pdf', name, src, page, pages, pageRotation, view: [x0, y0, x1, y1], px, w, h},
 //     },
 //   }
 //
-// `src` identifica el archivo original (las páginas de un mismo PDF lo
-// comparten). Los binarios van aparte, con estas claves (fileKeys):
-//   'src:N'      el archivo original (imagen o PDF)
-//   'bytes:N'    lo que se embebe en el PDF si no es el original (derived: true:
-//                JPG con orientación EXIF o formatos que pdf-lib no embebe)
-//   'preview:aK' la vista previa ya rasterizada (así no hace falta pdf.js al abrir)
+// `src` identifies the original file (the pages of one PDF share it). The
+// binaries go apart, under these keys (fileKeys):
+//   'src:N'      the original file (image or PDF)
+//   'bytes:N'    what is embedded in the PDF when it isn't the original
+//                (derived: true: a JPG with an EXIF orientation, or formats
+//                pdf-lib can't embed)
+//   'preview:aK' the rasterized preview (so opening needs no pdf.js)
 
 import { sizeOf } from './papers.js';
 import { MIN_CROP, clampCrop, isIdentity } from './crop.js';
@@ -52,7 +53,7 @@ export const DEFAULT_CUTS = Object.freeze({ mode: 'none', length: 4, offset: 1.5
 
 /** The stroke documents had before it could be chosen (version 2): 0.25 pt dark gray, solid. */
 export const LEGACY_CUT_STYLE = Object.freeze({ weight: 'thin', color: '#333333', dash: 'solid' });
-/** Largo de las marcas, separación de la esquina and the cut margin, in mm (inclusive). */
+/** The marks' length, their distance from the corner and the cut margin, in mm (inclusive). */
 export const CUT_LIMITS = Object.freeze({ length: [0.5, 20], offset: [0, 10], margin: [-5, 20] });
 
 /** A clean copy of the cut lines, with the default stroke for what is missing. */
@@ -61,10 +62,10 @@ export function cleanCuts(cuts) {
   return { mode, length, offset, margin, weight, color, dash };
 }
 
-/** Copia limpia de un recorte (o null si no hay o es la imagen entera). */
+/** A clean copy of a crop (null when there is none or it is the whole image). */
 export const cleanCrop = (crop) => (isIdentity(crop) ? null : { x: crop.x, y: crop.y, w: crop.w, h: crop.h });
 
-/** Error de un documento que no se puede abrir: `code` 'corrupt' o 'newer'. */
+/** A document that can't be opened: `code` 'corrupt' or 'newer' ('missing' in projectstore.js). */
 export class ProjectError extends Error {
   constructor(code, detail = '') {
     super(detail ? `${code}: ${detail}` : code);
@@ -82,16 +83,16 @@ const pick = (obj, fields) => Object.fromEntries(fields.map((key) => [key, Array
 export const assetMeta = (asset) => (asset.kind === 'pdf' ? pick(asset, PDF_FIELDS) : { ...pick(asset, IMAGE_FIELDS), derived: !!asset.derived });
 
 /**
- * Documento a guardar a partir del estado. `assets`: Map clave → asset (los
- * de la app, con sus binarios); solo se incluyen los que usan las piezas.
- * Para imágenes, `derived` dice si lo que se embebe no es el archivo original.
+ * The document to save from the state. `assets`: Map key → asset (the app's,
+ * with their binaries); only those the pieces use are included. For images,
+ * `derived` says whether what is embedded isn't the original file.
  */
 export function serialize({ sheets, items, paper, landscape, margin, gap, rotate, allowOverlap, cuts = DEFAULT_CUTS }, assets) {
   const used = {};
   for (const item of items) {
     if (used[item.asset]) continue;
     const asset = assets.get(item.asset);
-    if (!asset) throw new ProjectError('corrupt', `falta el asset ${item.asset}`);
+    if (!asset) throw new ProjectError('corrupt', `missing asset ${item.asset}`);
     used[item.asset] = assetMeta(asset);
   }
   return {
@@ -109,7 +110,7 @@ export function serialize({ sheets, items, paper, landscape, margin, gap, rotate
   };
 }
 
-/** Claves de los binarios que necesita el documento (ver arriba), sin repetir. */
+/** The keys of the binaries the document needs (see above), each once. */
 export function fileKeys(doc) {
   const keys = new Set();
   for (const [key, asset] of Object.entries(doc.assets)) {
@@ -120,10 +121,10 @@ export function fileKeys(doc) {
   return [...keys];
 }
 
-/** Cantidad de hojas y de piezas (para la lista de proyectos). */
+/** How many sheets and pieces (for the projects list). */
 export const counts = (doc) => ({ sheets: doc.sheets.length, pieces: doc.items.length });
 
-/** Próximos ids libres para piezas, hojas, assets y orígenes. */
+/** The next free ids for pieces, sheets, assets and sources. */
 export function nextIds(doc) {
   const max = (values) => values.reduce((m, v) => Math.max(m, v), 0);
   return {
@@ -134,14 +135,14 @@ export function nextIds(doc) {
   };
 }
 
-// ---------- Migración ----------
+// ---------- Migration ----------
 
-// Papeles de antes de papers.js (nombres en lugar de ids).
+// Papers from before papers.js (stored by name instead of id).
 const LEGACY_PAPERS = { Carta: 'letter', Oficio: 'legal' };
 
 /**
- * Pasos de una versión a la siguiente. La 0 es la de una sola hoja (sin
- * `sheets` ni `item.sheet`, con los papeles por nombre: «Carta», «Oficio»).
+ * The steps from each version to the next. Version 0 is the single-sheet one
+ * (no `sheets` nor `item.sheet`, papers by name: «Carta», «Oficio»).
  * `context`: what a step needs from outside the document (see migrate).
  */
 const MIGRATIONS = {
@@ -153,7 +154,7 @@ const MIGRATIONS = {
     sheets: [{ id: 1 }],
     items: (doc.items ?? []).map((item) => ({ ...item, sheet: 1 })),
   }),
-  // La 1 no tenía recorte ni líneas de corte.
+  // Version 1 had neither crops nor cut lines.
   1: (doc) => ({
     ...doc,
     version: 2,
@@ -181,17 +182,18 @@ const MIGRATIONS = {
 };
 
 /**
- * Lleva un documento guardado a la versión actual (sin modificar el
- * original). Lanza ProjectError 'newer' si es de una versión futura y
- * 'corrupt' si no tiene forma de documento. `context.allowOverlap`: the
- * device's «Permitir superposición», which documents before version 5 take.
+ * Brings a saved document to the current version (without changing the
+ * original). Throws ProjectError 'newer' when it is from a later version and
+ * 'corrupt' when it isn't shaped like a document. `context.allowOverlap`:
+ * the device's «Permitir superposición», which documents before version 5
+ * take.
  */
 export function migrate(raw, context = {}) {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ProjectError('corrupt', 'no es un objeto');
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ProjectError('corrupt', 'not an object');
   let doc = structuredClone(raw);
   let version = doc.version ?? 0;
-  if (!Number.isInteger(version) || version < 0) throw new ProjectError('corrupt', `versión ${version}`);
-  if (version > DOC_VERSION) throw new ProjectError('newer', `versión ${version}`);
+  if (!Number.isInteger(version) || version < 0) throw new ProjectError('corrupt', `version ${version}`);
+  if (version > DOC_VERSION) throw new ProjectError('newer', `version ${version}`);
   while (version < DOC_VERSION) {
     doc = MIGRATIONS[version](doc, context);
     version = doc.version;
@@ -199,7 +201,7 @@ export function migrate(raw, context = {}) {
   return doc;
 }
 
-// ---------- Validación ----------
+// ---------- Validation ----------
 
 const isFiniteNumber = (v) => typeof v === 'number' && Number.isFinite(v);
 const isPositive = (v) => isFiniteNumber(v) && v > 0;
@@ -207,25 +209,25 @@ const isId = (v) => Number.isInteger(v) && v > 0;
 const isPair = (v) => Array.isArray(v) && v.length === 2 && v.every(isPositive);
 
 function assetProblem(key, asset) {
-  if (!/^a\d+$/.test(key)) return `clave de asset ${key}`;
+  if (!/^a\d+$/.test(key)) return `asset key ${key}`;
   if (!asset || typeof asset !== 'object') return `asset ${key}`;
   if (typeof asset.name !== 'string' || !isId(asset.src) || !isPair(asset.px) || !isPositive(asset.w) || !isPositive(asset.h)) {
-    return `asset ${key} incompleto`;
+    return `asset ${key} incomplete`;
   }
   if (asset.kind === 'image') {
-    if (!['jpg', 'png'].includes(asset.format) || !isPositive(asset.dpi)) return `imagen ${key}`;
+    if (!['jpg', 'png'].includes(asset.format) || !isPositive(asset.dpi)) return `image ${key}`;
     return null;
   }
   if (asset.kind === 'pdf') {
-    if (!isId(asset.page) || !isId(asset.pages) || asset.page > asset.pages) return `página de ${key}`;
-    if (!Number.isInteger(asset.pageRotation) || asset.pageRotation % 90) return `giro de ${key}`;
-    if (!Array.isArray(asset.view) || asset.view.length !== 4 || !asset.view.every(isFiniteNumber)) return `caja de ${key}`;
+    if (!isId(asset.page) || !isId(asset.pages) || asset.page > asset.pages) return `page of ${key}`;
+    if (!Number.isInteger(asset.pageRotation) || asset.pageRotation % 90) return `rotation of ${key}`;
+    if (!Array.isArray(asset.view) || asset.view.length !== 4 || !asset.view.every(isFiniteNumber)) return `box of ${key}`;
     return null;
   }
-  return `tipo de ${key}`;
+  return `kind of ${key}`;
 }
 
-// Recorte: lados entre MIN_CROP y 1 y la zona dentro de la imagen (con un pelo de tolerancia).
+// A crop: sides between MIN_CROP and 1 and the area inside the image (with a hair of tolerance).
 function validCrop(crop) {
   if (!crop || typeof crop !== 'object' || ![crop.x, crop.y, crop.w, crop.h].every(isFiniteNumber)) return false;
   const tol = 1e-9;
@@ -233,36 +235,36 @@ function validCrop(crop) {
 }
 
 /**
- * Problemas de un documento ya migrado: [] si está bien, o una lista de
- * descripciones (para el registro; la interfaz solo dice «dañado»).
+ * The problems of a migrated document: [] when it is fine, or a list of
+ * descriptions (for the log; the interface only says it is damaged).
  */
 export function validate(doc) {
   const problems = [];
-  if (!doc || typeof doc !== 'object') return ['no es un objeto'];
-  if (doc.version !== DOC_VERSION) problems.push(`versión ${doc.version}`);
-  if (!sizeOf(doc.paper, false)) problems.push('papel');
-  if (typeof doc.landscape !== 'boolean') problems.push('orientación');
+  if (!doc || typeof doc !== 'object') return ['not an object'];
+  if (doc.version !== DOC_VERSION) problems.push(`version ${doc.version}`);
+  if (!sizeOf(doc.paper, false)) problems.push('paper');
+  if (typeof doc.landscape !== 'boolean') problems.push('landscape');
   for (const key of ['margin', 'gap']) {
     if (!isFiniteNumber(doc[key]) || doc[key] < 0 || doc[key] > 50) problems.push(key);
   }
   if (typeof doc.rotate !== 'boolean') problems.push('rotate');
   if (typeof doc.allowOverlap !== 'boolean') problems.push('allowOverlap');
   const cuts = doc.cuts;
-  if (!cuts || typeof cuts !== 'object' || !CUT_MODES.includes(cuts.mode)) problems.push('líneas de corte');
+  if (!cuts || typeof cuts !== 'object' || !CUT_MODES.includes(cuts.mode)) problems.push('cut lines');
   else {
     for (const key of ['length', 'offset', 'margin']) {
       const [lo, hi] = CUT_LIMITS[key];
-      if (!isFiniteNumber(cuts[key]) || cuts[key] < lo || cuts[key] > hi) problems.push(`líneas de corte: ${key}`);
+      if (!isFiniteNumber(cuts[key]) || cuts[key] < lo || cuts[key] > hi) problems.push(`cut lines: ${key}`);
     }
     if (!Object.hasOwn(CUT_WEIGHTS, cuts.weight)) problems.push('cut lines: weight');
     if (!isHexColor(cuts.color)) problems.push('cut lines: color');
     if (!CUT_DASHES.includes(cuts.dash)) problems.push('cut lines: dash');
   }
   const sheets = Array.isArray(doc.sheets) ? doc.sheets : null;
-  if (!sheets || !sheets.length) problems.push('hojas');
+  if (!sheets || !sheets.length) problems.push('sheets');
   const sheetIds = new Set();
   for (const sheet of sheets ?? []) {
-    if (!isId(sheet?.id) || sheetIds.has(sheet.id)) problems.push(`hoja ${sheet?.id}`);
+    if (!isId(sheet?.id) || sheetIds.has(sheet.id)) problems.push(`sheet ${sheet?.id}`);
     else sheetIds.add(sheet.id);
   }
   const assets = doc.assets && typeof doc.assets === 'object' && !Array.isArray(doc.assets) ? doc.assets : null;
@@ -271,19 +273,19 @@ export function validate(doc) {
     const problem = assetProblem(key, asset);
     if (problem) problems.push(problem);
   }
-  if (!Array.isArray(doc.items)) problems.push('piezas');
+  if (!Array.isArray(doc.items)) problems.push('items');
   const itemIds = new Set();
   for (const item of Array.isArray(doc.items) ? doc.items : []) {
-    const where = `pieza ${item?.id}`;
+    const where = `item ${item?.id}`;
     if (!isId(item?.id) || itemIds.has(item.id)) problems.push(where);
     else itemIds.add(item.id);
     if (!assets || !Object.hasOwn(assets, item?.asset)) problems.push(`${where}: asset`);
-    if (!sheetIds.has(item?.sheet)) problems.push(`${where}: hoja`);
-    if (!isFiniteNumber(item?.x) || !isFiniteNumber(item?.y)) problems.push(`${where}: posición`);
-    if (!isPositive(item?.scale)) problems.push(`${where}: escala`);
-    if (![0, 90, 180, 270].includes(item?.r)) problems.push(`${where}: giro`);
-    // Sin `crop` (o null): sin recorte.
-    if (item?.crop != null && !validCrop(item.crop)) problems.push(`${where}: recorte`);
+    if (!sheetIds.has(item?.sheet)) problems.push(`${where}: sheet`);
+    if (!isFiniteNumber(item?.x) || !isFiniteNumber(item?.y)) problems.push(`${where}: position`);
+    if (!isPositive(item?.scale)) problems.push(`${where}: scale`);
+    if (![0, 90, 180, 270].includes(item?.r)) problems.push(`${where}: rotation`);
+    // No `crop` (or null): no crop.
+    if (item?.crop != null && !validCrop(item.crop)) problems.push(`${where}: crop`);
   }
   return problems;
 }
@@ -332,9 +334,9 @@ export function repair(doc) {
 }
 
 /**
- * Documento guardado → documento listo para usar (migrado, reparado y
- * validado). Lanza ProjectError ('corrupt' o 'newer') si no se puede abrir.
- * `context`: see migrate.
+ * A saved document → a document ready to use (migrated, repaired and
+ * validated). Throws ProjectError ('corrupt' or 'newer') when it can't be
+ * opened. `context`: see migrate.
  */
 export function deserialize(raw, context = {}) {
   const doc = repair(migrate(raw, context));
