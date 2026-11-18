@@ -59,9 +59,6 @@ export const endEdit = () => {
   editKey = null;
 };
 
-/** The key of the continuous edit in progress, if any. */
-export const currentEdit = () => editKey;
-
 /**
  * Cancels the continuous edit with that key: back to how it was before it
  * started, without leaving it to redo (e.g. if a field's value is not valid

@@ -37,7 +37,6 @@ export function touchProject(storage: ProjectStorage, id: string, now: number): 
 export function deleteProject(storage: ProjectStorage, id: string): Promise<void>;
 /** Why a record's document can't be opened: null, 'corrupt' or 'newer' (saved by a newer version of the app). */
 export function openProblem(record: ProjectRecord): 'corrupt' | 'newer' | null;
-export function isDamaged(record: ProjectRecord): boolean;
 /** Every project, the last opened first, with `damaged` and `newer`. */
 export function listProjects(storage: ProjectStorage): Promise<ListedProject[]>;
 /** Which project to open on start: the last one if it can be opened, else the last opened of the rest (or null). */

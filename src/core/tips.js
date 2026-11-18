@@ -8,9 +8,6 @@
 // topic: «No volver a mostrar», showing it this session or doing it the fast
 // way (`knownBy`) silences the whole topic.
 
-/** The ways an action is reached. */
-export const ROUTES = Object.freeze(['pointer', 'touch', 'keyboard', 'menu', 'palette', 'shortcut', 'gesture']);
-
 /** At most one tip every `cooldown` ms, and `perSession` tips per page load. */
 export const TIP_LIMITS = Object.freeze({ cooldown: 5 * 60_000, perSession: 2 });
 

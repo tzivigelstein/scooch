@@ -4,7 +4,6 @@
  * palette; its keyboard shortcut; a gesture on the canvas (wheel, pinch).
  */
 export type Route = 'pointer' | 'touch' | 'keyboard' | 'menu' | 'palette' | 'shortcut' | 'gesture';
-export const ROUTES: readonly Route[];
 
 /** Some actions (any, without `actions`) reached by some routes (any, without `routes`). */
 export interface ActionRule {

@@ -141,9 +141,6 @@ export function openProblem(record) {
   }
 }
 
-/** Is the record's document damaged? (Without looking at its files.) */
-export const isDamaged = (record) => openProblem(record) === 'corrupt';
-
 /**
  * Every project, the last opened first, with `damaged` and `newer` (saved by
  * a newer version of the app: left alone).

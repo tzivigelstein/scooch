@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import type { ListedProject } from '../../core/types.ts';
 import { estimate, list, projectSession } from '../../services/projects.ts';
-import { closeDialog, isDialogOpen, openDialog } from '../../components/dialogs/dialogs.ts';
+import { isDialogOpen, openDialog } from '../../components/dialogs/dialogs.ts';
 import { PaletteContent, PrefsContent, ProjectsContent, ShortcutsContent, whenLoaded } from '../../components/dialogs/lazy.ts';
 import { useProject } from '../project.ts';
 
@@ -29,8 +29,6 @@ export async function openProjects() {
   await Promise.all([refreshProjectList(), ProjectsContent.preload()]);
   openDialog('projects', returnTo);
 }
-
-export const closeProjects = () => closeDialog('projects');
 
 export function openShortcuts() {
   const returnTo = document.activeElement;

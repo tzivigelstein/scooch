@@ -38,7 +38,7 @@ import { flushUi } from '../../../state/flush.ts';
 import { gestureStore } from '../../../state/gesture.ts';
 import { getPrefs } from '../../../state/prefs.ts';
 import { findItem, pieceName } from '../../../state/selectors.ts';
-import { getView, setView, useView } from '../../../state/view.ts';
+import { setView, useView } from '../../../state/view.ts';
 import { commitCrop, photoSizeName } from '../../../state/actions/crop.ts';
 import { pieceNode } from '../../../state/actions/focus.ts';
 import { announce } from '../../feedback/announcer.ts';
@@ -530,5 +530,3 @@ export default function CropMode() {
 /** For tests: the live session's frame. */
 export const cropSession = () => (session ? { frames: session.frames, lock: session.lock } : null);
 
-// Leaving crop mode from elsewhere (a dialog opening…) while still mounted.
-export const _cropping = () => getView().cropping;

@@ -61,11 +61,6 @@ export function adoptAssets(adopted: ReadonlyMap<string, AppAsset>) {
   }
 }
 
-/** New keys continue at least after `nextId`. */
-export function reserveAssetIds(nextId: number) {
-  nextAssetId = Math.max(nextAssetId, nextId);
-}
-
 /** Replaces every asset (opening a project); new keys continue after `nextId`. */
 export function replaceAssets(loaded: ReadonlyMap<string, AppAsset>, nextId: number) {
   const dropped = [...assets.values()];
