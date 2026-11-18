@@ -1,10 +1,10 @@
-// Dónde ubicar algo flotante (la barra de la pieza) entre varias posiciones
-// posibles. Módulo puro: rectángulos {x, y, w, h} en px.
+// Where to put something floating (the piece toolbar) among several possible
+// positions. Rectangles {x, y, w, h} in px.
 
 const intersects = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 const inside = (r, b) => r.x >= b.x && r.y >= b.y && r.x + r.w <= b.x + b.w && r.y + r.h <= b.y + b.h;
 
-/** Intersección de dos rectángulos, o null si no se tocan. */
+/** The intersection of two rectangles, or null when they don't touch. */
 export function clip(a, b) {
   const x = Math.max(a.x, b.x);
   const y = Math.max(a.y, b.y);
@@ -14,9 +14,9 @@ export function clip(a, b) {
 }
 
 /**
- * De los `candidates` (en orden de preferencia), el que tapa menos rectángulos de
- * `covers`; a igualdad, el primero. Descarta los que no entran enteros en `bounds`
- * o pisan alguno de `blocked`. Devuelve el candidato elegido, o null si no queda ninguno.
+ * Of the `candidates` (in order of preference), the one that covers the
+ * fewest rectangles of `covers`; on a tie, the first. Skips those not wholly
+ * inside `bounds` or over one of `blocked`. null when none is left.
  */
 export function pickSpot(candidates, { bounds, covers = [], blocked = [] }) {
   let best = null;
