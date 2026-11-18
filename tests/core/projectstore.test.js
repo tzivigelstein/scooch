@@ -27,7 +27,7 @@ const journalFixture = (version) => JSON.parse(readFileSync(join(import.meta.dir
 
 const blob = (text) => new Blob([text]);
 
-/** Documento con una imagen (con bytes derivados) y una página de PDF. */
+/** A document with an image (with derived bytes) and a PDF page. */
 function docWith(items = 2) {
   const doc = emptyDoc({ paper: 'folio' });
   doc.sheets = [{ id: 1 }, { id: 2 }];
@@ -54,7 +54,7 @@ async function saved(storage, id = 'p1', now = 1000) {
   return { ...result, doc };
 }
 
-describe('nombres e ids', () => {
+describe('names and ids', () => {
   test('cleanName', () => {
     assert.equal(cleanName('  Tarjetas   de  visita ', 'Sin título'), 'Tarjetas de visita');
     assert.equal(cleanName('   ', 'Sin título'), 'Sin título');
@@ -62,15 +62,15 @@ describe('nombres e ids', () => {
     assert.equal(cleanName('a'.repeat(200), 'X').length, NAME_MAX);
   });
 
-  test('newProjectId: distinto con otro tiempo o azar', () => {
+  test('newProjectId: different with another time or random number', () => {
     assert.match(newProjectId(1, () => 0.5), /^p[0-9a-z]+$/);
     assert.notEqual(newProjectId(1, () => 0.1), newProjectId(1, () => 0.2));
     assert.notEqual(newProjectId(1, () => 0.1), newProjectId(2, () => 0.1));
   });
 });
 
-describe('guardar y abrir', () => {
-  test('crear, guardar con archivos y abrir de nuevo', async () => {
+describe('saving and opening', () => {
+  test('create, save with files and open again', async () => {
     const storage = memoryStorage();
     const { record, stored, doc } = await saved(storage);
     assert.deepEqual([...stored.keys()].sort(), ['bytes:1', 'preview:a1', 'preview:a2', 'src:1', 'src:2']);
@@ -84,7 +84,7 @@ describe('guardar y abrir', () => {
     assert.equal(loaded.files.get('src:2').hash, 'h-src:2');
   });
 
-  test('solo escribe lo que falta y borra lo que ya no se usa', async () => {
+  test('writes only what is missing and removes what is no longer used', async () => {
     const writes = [];
     const base = memoryStorage();
     const storage = { ...base, write: (record, change) => (writes.push(change), base.write(record, change)) };
@@ -100,7 +100,7 @@ describe('guardar y abrir', () => {
     assert.deepEqual([...files.keys()].sort(), ['bytes:1', 'preview:a1', 'src:1']);
   });
 
-  test('si falta un binario en memoria, no guarda a medias', async () => {
+  test('with a binary missing from memory, nothing is half saved', async () => {
     const storage = memoryStorage();
     const record = await createProject(storage, { id: 'p1', name: 'X', now: 1 });
     const doc = docWith();
@@ -110,41 +110,41 @@ describe('guardar y abrir', () => {
     assert.deepEqual((await storage.get('p1')).doc.items, []);
   });
 
-  test('una falla del almacenamiento (p. ej. cuota) llega a quien guarda', async () => {
-    const quota = Object.assign(new Error('lleno'), { name: 'QuotaExceededError' });
+  test('a storage failure (a quota, say) reaches whoever saves', async () => {
+    const quota = Object.assign(new Error('full'), { name: 'QuotaExceededError' });
     let full = false;
     const storage = memoryStorage({ fail: (op) => (full && op === 'write' ? quota : null) });
     const record = await createProject(storage, { id: 'p1', name: 'X', now: 1 });
     full = true;
     const doc = docWith();
-    await assert.rejects(saveProject(storage, { record, doc, files: filesFor(doc), now: 2 }), /lleno/);
+    await assert.rejects(saveProject(storage, { record, doc, files: filesFor(doc), now: 2 }), /full/);
     full = false;
-    await saveProject(storage, { record, doc, files: filesFor(doc), now: 3 }); // reintentar funciona
+    await saveProject(storage, { record, doc, files: filesFor(doc), now: 3 }); // retrying works
     assert.equal((await storage.get('p1')).doc.items.length, 2);
   });
 
-  test('proyecto dañado o con archivos faltantes → ProjectError «corrupt»; inexistente → «missing»', async () => {
+  test('a damaged project or one with missing files → ProjectError «corrupt»; one that doesn’t exist → «missing»', async () => {
     const storage = memoryStorage();
     await saved(storage);
     const record = await storage.get('p1');
-    await storage.write({ ...record, id: 'roto', doc: { ...record.doc, sheets: 'nada' } }, { create: true });
-    await assert.rejects(loadProject(storage, 'roto'), (err) => err.code === 'corrupt');
-    await storage.write({ ...record, id: 'sinarchivos' }, { put: new Map([['src:1', file('x')]]), create: true });
-    await assert.rejects(loadProject(storage, 'sinarchivos'), (err) => err.code === 'corrupt' && /preview:a1/.test(err.message));
-    await assert.rejects(loadProject(storage, 'nada'), (err) => err.code === 'missing');
+    await storage.write({ ...record, id: 'broken', doc: { ...record.doc, sheets: 'none' } }, { create: true });
+    await assert.rejects(loadProject(storage, 'broken'), (err) => err.code === 'corrupt');
+    await storage.write({ ...record, id: 'nofiles' }, { put: new Map([['src:1', file('x')]]), create: true });
+    await assert.rejects(loadProject(storage, 'nofiles'), (err) => err.code === 'corrupt' && /preview:a1/.test(err.message));
+    await assert.rejects(loadProject(storage, 'none'), (err) => err.code === 'missing');
     const list = await listProjects(storage);
     assert.deepEqual(
       list.map((r) => [r.id, r.damaged]).sort(),
       [
+        ['broken', true],
+        ['nofiles', false],
         ['p1', false],
-        ['roto', true],
-        ['sinarchivos', false],
       ]
     );
   });
 });
 
-describe('duplicar, renombrar, eliminar y listar', () => {
+describe('duplicating, renaming, deleting and listing', () => {
   test('a copy has the same document and files, sharing every binary; deleting either never touches the other', async () => {
     const storage = memoryStorage();
     await saved(storage);
@@ -241,10 +241,10 @@ describe('duplicar, renombrar, eliminar y listar', () => {
     await createProject(storage, { id: 'b', name: 'B', now: 30 });
     await createProject(storage, { id: 'c', name: 'C', now: 20 });
     const list = await listProjects(storage);
-    assert.equal(pickProject(list, 'c'), 'c', 'el último abierto');
-    assert.equal(pickProject(list, 'borrado'), 'b', 'si ya no existe, el más reciente');
+    assert.equal(pickProject(list, 'c'), 'c', 'the last opened');
+    assert.equal(pickProject(list, 'deleted'), 'b', 'when it no longer exists, the most recent');
     assert.equal(pickProject([], 'x'), null);
-    assert.equal(pickProject([{ id: 'r', damaged: true }, ...list], 'r'), 'b', 'nunca uno dañado');
+    assert.equal(pickProject([{ id: 'r', damaged: true }, ...list], 'r'), 'b', 'never a damaged one');
     assert.equal(pickProject([{ id: 'n', damaged: false, newer: true }, ...list], 'n'), 'b', 'nor one a newer version saved');
   });
 
@@ -264,31 +264,31 @@ describe('duplicar, renombrar, eliminar y listar', () => {
 });
 
 describe('recoverJournal', () => {
-  test('usa el diario si es de ese proyecto y más nuevo; descarta lo que no tiene archivos', async () => {
+  test('uses the journal when it is that project’s and newer; drops what has no files', async () => {
     const storage = memoryStorage();
     const { record } = await saved(storage);
     const { files } = await loadProject(storage, 'p1');
     const doc = docWith();
     doc.items[0].x = 99;
-    // Una pieza agregada a último momento, sin archivos guardados todavía.
-    doc.assets.a3 = { kind: 'image', name: 'nueva.png', src: 3, px: [10, 10], format: 'png', dpi: 300, w: 1, h: 1 };
+    // A piece added at the last moment, with no files stored yet.
+    doc.assets.a3 = { kind: 'image', name: 'new.png', src: 3, px: [10, 10], format: 'png', dpi: 300, w: 1, h: 1 };
     doc.items.push({ id: 3, asset: 'a3', sheet: 1, x: 0, y: 0, scale: 100, r: 0 });
-    const journal = { id: 'p1', at: record.modified + 10, name: 'Otro nombre', doc };
+    const journal = { id: 'p1', at: record.modified + 10, name: 'Another name', doc };
     const out = recoverJournal(record, files, journal);
-    assert.equal(out.name, 'Otro nombre');
-    assert.equal(out.doc.items.length, 2, 'sin la pieza sin archivos');
-    assert.equal(out.doc.items[0].x, 99, 'con el cambio de último momento');
+    assert.equal(out.name, 'Another name');
+    assert.equal(out.doc.items.length, 2, 'without the piece that has no files');
+    assert.equal(out.doc.items[0].x, 99, 'with the last-moment change');
     assert.deepEqual(Object.keys(out.doc.assets).sort(), ['a1', 'a2']);
   });
 
-  test('no lo usa si es viejo, de otro proyecto o está roto', async () => {
+  test('doesn’t use it when it is old, another project’s or broken', async () => {
     const storage = memoryStorage();
     const { record, doc } = await saved(storage);
     const { files } = await loadProject(storage, 'p1');
     assert.equal(recoverJournal(record, files, null), null);
-    assert.equal(recoverJournal(record, files, { id: 'p1', at: record.modified - 1, doc }), null, 'más viejo que lo guardado');
-    assert.equal(recoverJournal(record, files, { id: 'p2', at: record.modified + 1, doc }), null, 'de otro proyecto');
-    assert.equal(recoverJournal(record, files, { id: 'p1', at: record.modified + 1, doc: { ...doc, sheets: 'x' } }), null, 'roto');
+    assert.equal(recoverJournal(record, files, { id: 'p1', at: record.modified - 1, doc }), null, 'older than what was saved');
+    assert.equal(recoverJournal(record, files, { id: 'p2', at: record.modified + 1, doc }), null, 'another project’s');
+    assert.equal(recoverJournal(record, files, { id: 'p1', at: record.modified + 1, doc: { ...doc, sheets: 'x' } }), null, 'broken');
   });
 });
 
@@ -330,7 +330,7 @@ describe('humanize', () => {
     assert.equal(relativeTime(now - 4 * 86400_000, now), 'hace 4 días');
     assert.match(relativeTime(Date.UTC(2026, 9, 1, 12), now), /^1 oct\.?$/);
     assert.match(relativeTime(Date.UTC(2025, 9, 1, 12), now), /1 oct\.? 2025/);
-    assert.equal(relativeTime(now + 5000, now), 'ahora', 'un reloj adelantado no da fechas futuras');
+    assert.equal(relativeTime(now + 5000, now), 'ahora', 'a clock ahead gives no future dates');
   });
 
   test('storageShare: the percent to say, a visible minimum fill and the warning from 80 %', () => {
