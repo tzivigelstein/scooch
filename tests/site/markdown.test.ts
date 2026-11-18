@@ -16,6 +16,10 @@ describe('blocks', () => {
     expect(md('Una línea\ny la siguiente.\n\nOtro párrafo.')).toBe('<p>Una línea y la siguiente.</p>\n<p>Otro párrafo.</p>');
   });
 
+  test('lines of Chinese join without a space, also next to Latin letters, numbers and full-width punctuation', () => {
+    expect(md('你的文件不会\n离开浏览器，\nPDF也在\n浏览器中生成。\n\n- 最多50\n  步。Scooch\n  不使用Cookie')).toBe('<p>你的文件不会离开浏览器，PDF也在浏览器中生成。</p>\n<ul><li>最多50步。Scooch不使用Cookie</li></ul>');
+  });
+
   test('lists, with items that continue on indented lines', () => {
     expect(md('- uno;\n- dos,\n  sigue;\n\n1. primero\n2. segundo')).toBe('<ul><li>uno;</li><li>dos, sigue;</li></ul>\n<ol><li>primero</li><li>segundo</li></ol>');
   });

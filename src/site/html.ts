@@ -9,6 +9,17 @@ export const esc = (text: string | number) => String(text).replace(/[&<>"']/g, (
 /** JSON for a <script type="application/ld+json"> or a data block: «<» escaped, so no text can close the script. */
 export const scriptJson = (data: unknown) => JSON.stringify(data).replace(/</g, '\\u003c');
 
+/** Chinese characters and the full-width punctuation that goes with them. */
+const CJK = /[\p{Script=Han}　-〿＀-￯]/u;
+
+/**
+ * Texts joined as words, with a space between them, except where either side
+ * is Chinese: Chinese puts no space between its words, nor before or after
+ * Latin letters and numbers (docs/copy/zh-Hans.md).
+ */
+export const joinWords = (parts: readonly string[]) =>
+  parts.reduce((text, part) => (text && part ? `${text}${CJK.test(text.slice(-1)) || CJK.test(part[0]) ? '' : ' '}${part}` : text + part), '');
+
 export interface TableColumn {
   /** The header cell, as HTML. */
   head: string;

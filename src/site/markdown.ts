@@ -4,7 +4,7 @@
 // inline code, links, autolinks, bold and «_italics_». Anything else is text:
 // HTML in the source shows as text, except comments, which are dropped.
 
-import { esc, plainText, tableHtml } from './html.ts';
+import { esc, joinWords, plainText, tableHtml } from './html.ts';
 
 /** Where a link goes, and the language of the page there when it isn't this page's. */
 export type MarkdownLink = string | { href: string; hreflang?: string };
@@ -70,7 +70,7 @@ export function renderMarkdown(md: string, { link = (href) => href, shift = 0 }:
   const out: string[] = [];
   const paragraph: string[] = [];
   const flush = () => {
-    if (paragraph.length) out.push(`<p>${inline(paragraph.join(' '), link)}</p>`);
+    if (paragraph.length) out.push(`<p>${inline(joinWords(paragraph), link)}</p>`);
     paragraph.length = 0;
   };
   // Repeated headings get «-1», «-2»… like on GitHub.
@@ -139,7 +139,7 @@ export function renderMarkdown(md: string, { link = (href) => href, shift = 0 }:
         i++;
       }
       const tag = ordered ? 'ol' : 'ul';
-      out.push(`<${tag}>${items.map((item) => `<li>${inline(item.join(' '), link)}</li>`).join('')}</${tag}>`);
+      out.push(`<${tag}>${items.map((item) => `<li>${inline(joinWords(item), link)}</li>`).join('')}</${tag}>`);
       continue;
     }
     paragraph.push(line.trim());
