@@ -13,20 +13,15 @@ import { t } from '../../copy/index.ts';
 import { sizeText } from '../../services/measure.ts';
 import type { Piece } from '../../state/document.ts';
 import { getDocument } from '../../state/document.ts';
-import { dims, itemsOn, sheetSize } from '../../state/selectors.ts';
+import { imageBoxOf, itemsOn, sheetSize } from '../../state/selectors.ts';
 import { layerStyle, measureBoxes, mmToPx, pageNode, sheetBoxes, stageBars, toClient } from './viewport.ts';
-
-const rectOf = (item: Piece): Rect => {
-  const [w, h] = dims(item);
-  return { x: item.x, y: item.y, w, h };
-};
 
 /** The box of the selected pieces of each sheet (mm, on its sheet): sheet → rect. */
 export function groupBoxes(list: readonly Piece[]) {
   const bySheet = new Map<number, Rect[]>();
   for (const item of list) {
     if (!bySheet.has(item.sheet)) bySheet.set(item.sheet, []);
-    bySheet.get(item.sheet)!.push(rectOf(item));
+    bySheet.get(item.sheet)!.push(imageBoxOf(item));
   }
   return new Map([...bySheet].map(([id, rects]) => [id, bounds(rects)!]));
 }
@@ -45,7 +40,7 @@ export function selectionTarget(list: readonly Piece[], bySheet = list.length > 
   const primaryId = getDocument().selection.at(-1);
   const primary = list.find((item) => item.id === primaryId) ?? list.at(-1)!;
   if (!sheetBoxes().get(primary.sheet)) return null;
-  const rect = list.length > 1 ? bySheet!.get(primary.sheet)! : rectOf(primary);
+  const rect = list.length > 1 ? bySheet!.get(primary.sheet)! : imageBoxOf(primary);
   return { sheet: primary.sheet, x: rect.x, y: rect.y, w: rect.w, h: rect.h, ids: new Set(list.map((item) => item.id)) };
 }
 
@@ -57,7 +52,7 @@ export function paintSelection(list: readonly Piece[], { place = true } = {}) {
   const group = list.length > 1;
   const single = !group ? list[0] : undefined;
   const frame = document.getElementById('frame');
-  const style = single && layerStyle(single.sheet, rectOf(single));
+  const style = single && layerStyle(single.sheet, imageBoxOf(single));
   if (frame) {
     frame.hidden = !style;
     if (style) Object.assign(frame.style, style);
@@ -167,7 +162,7 @@ export function placeBar(bar: HTMLElement, target: Pick<SelectionTarget, 'sheet'
   const head = page.firstElementChild!.getBoundingClientRect();
   const covers = itemsOn(target.sheet)
     .filter((other) => !target.ids.has(other.id))
-    .map((other) => clip(onCanvas(rectOf(other)), sheet))
+    .map((other) => clip(onCanvas(imageBoxOf(other)), sheet))
     .filter((r) => !!r)
     .concat({ x: head.left - canvas.left, y: head.top - canvas.top, w: head.width, h: head.height });
   // If it fits nowhere, over the piece, inside the canvas: lifted off the

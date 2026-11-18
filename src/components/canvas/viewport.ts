@@ -3,12 +3,13 @@
 // or a sheet is visible.
 
 import { NARROW_QUERY } from '../../config.ts';
+import { bounds } from '../../core/align.js';
 import { t } from '../../copy/index.ts';
 import { newSheetRoom } from '../../core/dragscroll.js';
 import { sheetAt } from '../../core/sheets.js';
 import type { Point, Rect } from '../../core/types.ts';
 import { getDocument } from '../../state/document.ts';
-import { dims, findItem, sheetSize } from '../../state/selectors.ts';
+import { findItem, imageBoxOf, sheetSize } from '../../state/selectors.ts';
 import { clampPercent, fromPercent, pinchSpan, pinchView, stepPercent, toPercent, type PinchPair } from '../../core/zoom.js';
 import { flushUi } from '../../state/flush.ts';
 import { isDragging } from '../../state/gesture.ts';
@@ -514,8 +515,7 @@ export function revealRect(sheet: number, rect: Rect) {
 export function revealPiece(id: number) {
   const item = findItem(id);
   if (!item) return;
-  const [w, h] = dims(item);
-  revealRect(item.sheet, { x: item.x, y: item.y, w, h });
+  revealRect(item.sheet, imageBoxOf(item));
 }
 
 /**
@@ -526,13 +526,7 @@ export function revealPieces(ids: readonly number[], primary: number) {
   const items = ids.map((id) => findItem(id)).filter((item) => !!item);
   if (!items.length) return;
   if (new Set(items.map((item) => item.sheet)).size > 1) return revealPiece(primary);
-  const rects = items.map((item) => {
-    const [w, h] = dims(item);
-    return { x: item.x, y: item.y, w, h };
-  });
-  const x = Math.min(...rects.map((r) => r.x));
-  const y = Math.min(...rects.map((r) => r.y));
-  revealRect(items[0].sheet, { x, y, w: Math.max(...rects.map((r) => r.x + r.w)) - x, h: Math.max(...rects.map((r) => r.y + r.h)) - y });
+  revealRect(items[0].sheet, bounds(items.map(imageBoxOf))!);
 }
 
 /** Back to the top of the first sheet (another project opened: its sheets are another column). */

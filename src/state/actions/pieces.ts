@@ -38,7 +38,7 @@ import {
   scaleLimits,
   type Plan,
 } from '../../core/group.js';
-import type { AlignMode, Axis } from '../../core/align.js';
+import { bounds, type AlignMode, type Axis } from '../../core/align.js';
 import { keepCenterInside } from '../../core/sheets.js';
 import type { IdRect, Item } from '../../core/types.ts';
 import { clamp, round1 } from '../../core/util.js';
@@ -390,15 +390,7 @@ export const lengthFieldsOff = () => (spansSheets() ? t('menu.reasons.oneSheet')
 export function primaryBox(list: readonly Piece[] = selectedItems()) {
   const primaryId = getDocument().selection.at(-1);
   const primary = list.find((item) => item.id === primaryId) ?? list.at(-1)!;
-  const rects = list
-    .filter((item) => item.sheet === primary.sheet)
-    .map((item) => {
-      const [w, h] = dims(item);
-      return { x: item.x, y: item.y, w, h };
-    });
-  const x0 = Math.min(...rects.map((r) => r.x));
-  const y0 = Math.min(...rects.map((r) => r.y));
-  return { x: x0, y: y0, w: Math.max(...rects.map((r) => r.x + r.w)) - x0, h: Math.max(...rects.map((r) => r.y + r.h)) - y0 };
+  return bounds(list.filter((item) => item.sheet === primary.sheet).map(imageBoxOf))!;
 }
 
 /** The value a length field shows, in mm (the piece's, or the group box's), or null without a selection or while the fields are off. */
