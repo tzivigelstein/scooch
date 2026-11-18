@@ -1,0 +1,125 @@
+<!--
+DRAFT. Placeholders to fill in before publishing (they appear between
+backticks in the text; replace the backticks too). They are the same as in
+the Spanish version, docs/legal/terminos.md:
+
+  <TITULAR>               Name of the person or entity offering the app.
+  <CORREO DE CONTACTO>    Email for questions about these terms.
+  <PAÍS / JURISDICCIÓN>   Law that governs the terms and, if needed, courts.
+  <FECHA DE VIGENCIA>     Date this version takes effect.
+
+This is a translation into Simplified Chinese: the Spanish version is the
+reference. The site joins the lines of a paragraph without a space where
+either side is Chinese, so lines may break anywhere next to a Chinese
+character. See docs/legal/README.md for what to check again when the app
+changes.
+-->
+
+_草稿。本文不构成法律建议。发布或依据本文行事之前，须由法律专业人士审阅。_
+
+_本文是[西班牙语版本](../terminos.md)的译文。在律师审阅本译文之前，
+以西班牙语版本为准。_
+
+# 使用条款
+
+自`<FECHA DE VIGENCIA>`起生效。
+
+## 1. 什么是Scooch
+
+Scooch是一款免费的网页工具，用于按实际尺寸把图片和PDF页面排到纸上，
+并下载或打印排好的结果。
+
+由`<TITULAR>`提供Scooch。本条款中的“我们”是指`<TITULAR>`。
+
+使用Scooch即表示你接受本条款。如果你不同意，请不要使用Scooch。
+
+## 2. 一款看不到你文件的工具
+
+Scooch在你的浏览器中运行。你添加的图片和PDF不会上传到任何服务器。我们不会接收、
+查看、检查或保存这些文件。项目只保存在你的浏览器中，也就是你的设备上。
+[隐私政策](privacy.md)说明了会保存哪些内容以及如何删除。
+
+因此，我们不知道也无法控制你加载、编排或打印的内容。
+
+## 3. 你对自己的内容负责
+
+对于你用Scooch加载、编排、打印或分享的内容，以及合法使用这些内容，
+你是唯一的责任人。
+
+在打印或复制图片或文件之前，请确认你有权这样做。这包括著作权、
+其中出现的人的肖像权、商标以及第三方的任何其他权利。
+
+## 4. 禁止的用途
+
+不得将Scooch用于：
+
+- 伪造或篡改官方文件，例如身份证件、护照、证书或印章；
+- 伪造纸币、硬币、邮票或其他有价证券；
+- 欺骗他人或机构，或冒充他人；
+- 侵犯著作权、肖像权、商标或第三方的其他权利；
+- 任何其他违法活动。
+
+## 5. 不提供担保
+
+在法律允许的范围内，Scooch按“现状”和“可用”的状态提供，不附带任何形式的担保。
+特别是：
+
+- **打印尺寸。**Scooch按实际尺寸生成PDF，但纸上的尺寸取决于你的打印机及其设置，
+  例如你在打印对话框中选择的缩放比例。要按实际尺寸打印，请选择“实际大小”
+  或“100%”。我们不保证打印结果的尺寸完全准确。大量打印之前，
+  请先打印一份测试并测量。
+- **可用性。**Scooch可能随时变更、出现错误或停止提供，恕不另行通知。
+- **已保存的项目。**项目只保存在你的浏览器中。如果你清除网站数据、
+  浏览器释放空间、你使用无痕窗口、更换浏览器或设备，或者因为出错，
+  项目都可能丢失。我们没有任何副本，也无法恢复。请保留原始文件，
+  并下载你想保存的PDF。
+- **办理手续用的照片尺寸。**证件用照片的尺寸（证件照、护照、签证等）仅供参考。
+  每个机关都有自己的要求：尺寸、背景、构图等。请务必向要求提供照片的机构确认。
+  以该机构的说明为准。
+
+## 6. 责任限制
+
+在法律允许的范围内，对于因使用或无法使用Scooch而造成的损害或损失，
+我们不承担责任。这包括：
+
+- 浪费的纸张、墨水或其他耗材；
+- 印坏的或尺寸不正确的打印品；
+- 项目或浏览器中保存的其他数据丢失；
+- 因照片不符合要求而导致手续延误或被拒。
+
+## 7. 免费，无需账号
+
+Scooch免费使用，无需账号。如果出现在Patreon上赞助的选项，赞助完全自愿，
+并在Patreon上进行，适用Patreon自己的条款。
+
+## 8. 代码许可证
+
+Scooch的源代码按PolyForm Noncommercial 1.0.0许可证发布。
+你可以出于非商业目的使用、研究和修改它。该许可证不允许商业用途，例如出售本应用、
+作为付费服务提供，或发布带广告的副本。完整文本见代码仓库中的
+[LICENSE](../../../LICENSE)文件；如有任何出入，以该文本为准。
+如果你对某种用途有疑问，请联系我们。
+
+Scooch的名称和标志不属于该许可证的范围。本应用包含的第三方库有各自的许可证，
+详见代码仓库中的[THIRD_PARTY_NOTICES.md](../../../THIRD_PARTY_NOTICES.md)文件。
+
+## 9. 指向其他网站的链接
+
+Scooch可能包含指向其他网站（例如Patreon）的链接。我们无法控制这些网站，
+也不对其内容负责。每个网站都有自己的条款和隐私政策。
+
+## 10. 本条款的变更
+
+我们可能会更新本条款，例如在应用发生变化时。上方的生效日期表示当前版本。
+如果你在变更后继续使用Scooch，即表示你接受新版本。
+
+## 11. 适用法律
+
+本条款受`<PAÍS / JURISDICCIÓN>`的法律管辖。这不影响你所在国家或地区的法律赋予
+你、且不可放弃的权利。
+
+如果本条款的某一部分无效，其余部分仍然有效。
+
+## 12. 联系方式
+
+如对本条款有疑问，请发送邮件至`<CORREO DE CONTACTO>`。
