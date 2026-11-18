@@ -189,6 +189,16 @@ editor's metadata, which no other language needs).
    | `several-photos.ts`, `how-many.ts`, `photos-10x15.ts`, `id-photos.ts`, `same-photo.ts`, `actual-size.ts`, `faq.ts` | One per page. `how-many.ts` also has the calculator's texts (`calcTexts`: `locale` is the catalogue's `meta.numberLocale`; `count` and `figure` are plural forms chosen by the language's rules, so a language with a single form gives `one` and `other` the same text; `count` is shown under the number, on a line of its own; `noteSame.one` is for exactly one copy) and its labels. The calculator joins its pieces (the count and its words, the paper and its orientation, a note and the cap) with a space, or with none next to Chinese (`joinWords`, `src/site/html.ts`). |
    | `legal.ts` | The legal pages' titles, descriptions and the license texts' introductions; `LEGAL_MARKERS`: the first words of the translated draft note, the analytics heading and the word its reminder starts with. |
 
+   Write the files in Unicode NFC, as the catalogues are: a nukta letter
+   typed precomposed (U+095E) isn't the catalogue's «फ़» (फ + ़), so a
+   `replace` on an app name finds nothing. A measure typed by hand takes a
+   no-break space before its unit (U+00A0), as the kit's do. Where the
+   catalogue's photo size names write a unit as a word, `units` uses that
+   word, so a measure reads like the names next to it (Hindi «सेमी»,
+   «इंच»). The word the analytics reminder starts with (`LEGAL_MARKERS`)
+   must be one the rest of the policy doesn't use: the published policy
+   must not contain it.
+
 3. **Translate the legal drafts** from Spanish into
    `docs/legal/<lang>/terms.md` and `privacy.md`, faithfully, like
    `docs/legal/en/`: the same headings and lists in the same order, the
@@ -218,7 +228,9 @@ editor's metadata, which no other language needs).
      accents or another script it cuts words apart («prêtes» holds «tes»),
      so mark whole words with `(?<!\p{L})…(?!\p{L})` and the `u` flag. The
      rules read each page's body: check its title and description, and the
-     calculator's texts that only show once it is used, by eye;
+     calculator's texts that only show once it is used, by eye. Devanagari's vowel signs are
+     marks, not letters: where a boundary matters there, use `\p{M}` with
+     `\p{L}`;
    - `tests/site/legal.test.ts`: `POLICY` (the heading of the policy's list
      of what is stored, the sentence that says there is no analytics, and
      the bold term of each stored key). The test looks for `**term:**`,
@@ -230,7 +242,12 @@ editor's metadata, which no other language needs).
    - `e2e/specs/site-pages.spec.ts`: its pages in `SHOWN`;
    - `scripts/size-budgets.json`: its privacy policy and third-party
      licenses, which are over the budget for any page (and any other page
-     `yarn size` finds over it).
+     `yarn size` finds over it or right at it: a script that takes three
+     bytes a letter in UTF-8, like Devanagari, puts the calculator and the
+     terms there too);
+   - the docs: the languages with content and their addresses under
+     «Languages» above, and the translations in
+     [legal/README.md](legal/README.md) and [copy.md](copy.md).
 6. **Keep what the pages say true in every language:**
    - The photo ID guide names no country and calls no size the usual one:
      it tells readers to check the requirement of the office that asks for
@@ -270,6 +287,11 @@ editor's metadata, which no other language needs).
    one side has and the other doesn't. Fix the translation, not the facts.
    Then `yarn verify`, and the WebKit and Firefox `app` groups
    ([testing.md](testing.md)).
+
+   A machine without a font for the language's script (`fc-list :lang=hi`
+   prints nothing) shows boxes: the browser checks still pass, but they
+   measure the boxes. Look at the headings, buttons and tables where the
+   script has a font (any phone, or Playwright's Docker image).
 8. **Leave a review sheet** for a native speaker (`review-site-<lang>.md`,
    where the owner asks; the English one is `review-site-en.md`), like the
    app's translators did: the address and the search words chosen for each
