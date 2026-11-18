@@ -10,7 +10,7 @@ import { cutLines } from '../../src/core/cutmarks.js';
 
 const PT = 72 / 25.4;
 
-// PNG de 2 × 2 px (RGB), armado a mano: alcanza para que pdf-lib lo embeba.
+// A 2 × 2 px PNG (RGB), built by hand: enough for pdf-lib to embed it.
 function png() {
   const crcTable = Array.from({ length: 256 }, (_, n) => {
     let c = n;
@@ -42,7 +42,7 @@ function png() {
 const image = { kind: 'image', src: 1, format: 'png', bytes: png(), w: 50, h: 30 };
 const SHEET = { width: 210, height: 297 };
 
-// Lo que hacía export.js antes del recorte (para comparar byte a byte).
+// What the export did before crops existed (to compare byte for byte).
 function oldPlacement({ x, y, scale, r }, asset, sheetHeight) {
   const k = scale / 100;
   const [w, h] = r % 180 ? [asset.h * k, asset.w * k] : [asset.w * k, asset.h * k];
@@ -65,7 +65,7 @@ async function oldPdf(pieces) {
   return doc.save();
 }
 
-/** Operadores del contenido de cada página, decodificados. */
+/** Each page's content operators, decoded. */
 async function contents(bytes) {
   const doc = await PDFDocument.load(bytes, { updateMetadata: false });
   return doc.getPages().map((page) => {
@@ -84,14 +84,14 @@ async function xobjectTypes(bytes) {
 const numbers = (text) => text.trim().split(/\s+/).map(Number);
 
 describe('buildPdf', () => {
-  test('sin recorte ni líneas: el mismo contenido que antes, byte a byte, en los 4 giros', async () => {
+  test('without crop or lines: the same content as before, byte for byte, in the 4 rotations', async () => {
     const pieces = [0, 90, 180, 270].map((r, i) => ({ asset: image, x: 10 + i * 45, y: 20 + i * 30, scale: 37.5 + i * 10, r, crop: null }));
     const now = await buildPdf({ ...SHEET, pages: [{ pieces, lines: [] }], title: 't' });
     const before = await oldPdf(pieces);
     assert.deepEqual(await contents(now), await contents(before));
   });
 
-  test('con recorte: la imagen entera dentro de un trazado de recorte (el rectángulo de la pieza)', async () => {
+  test('with a crop: the whole image inside a clipping path (the piece’s rectangle)', async () => {
     const piece = { asset: image, x: 30, y: 40, scale: 120, r: 90, crop: { x: 0.25, y: 0.1, w: 0.5, h: 0.6 } };
     const [content] = await contents(await buildPdf({ ...SHEET, pages: [{ pieces: [piece] }], title: 't' }));
     const p = drawParams(piece, image, SHEET.height);
@@ -99,10 +99,10 @@ describe('buildPdf', () => {
     assert.ok(match, content);
     const rect = numbers(match.slice(1, 5).join(' '));
     for (const [got, want] of rect.map((v, i) => [v, [p.clip.x, p.clip.y, p.clip.width, p.clip.height][i]])) assert.ok(Math.abs(got - want) < 1e-3, `${got} ≠ ${want}`);
-    assert.match(match[5], /\/Image-\d+ Do/, 'la imagen se dibuja adentro del recorte');
+    assert.match(match[5], /\/Image-\d+ Do/, 'the image is drawn inside the clip');
   });
 
-  test('con recorte, una página de PDF sigue siendo vector (Form XObject)', async () => {
+  test('with a crop, a PDF page stays vector (a Form XObject)', async () => {
     const source = await PDFDocument.create();
     const pg = source.addPage([200, 100]);
     pg.drawRectangle({ x: 10, y: 10, width: 50, height: 30, color: rgb(1, 0, 0) });
@@ -114,7 +114,7 @@ describe('buildPdf', () => {
     assert.match(content, /re\nW\nn\n[\s\S]*Do\nQ/);
   });
 
-  test('líneas de corte: un trazo fino negro por segmento, en sus coordenadas; sin líneas, nada extra', async () => {
+  test('cut lines: one thin black stroke per segment, at its coordinates; without lines, nothing extra', async () => {
     const boxes = [
       { x: 20, y: 20, w: 50, h: 30 },
       { x: 80, y: 20, w: 50, h: 30 },
@@ -127,12 +127,12 @@ describe('buildPdf', () => {
     assert.equal(strokes.length, lines.length);
     lines.forEach((line, i) => {
       const want = [line.x1 * PT, (SHEET.height - line.y1) * PT, line.x2 * PT, (SHEET.height - line.y2) * PT];
-      strokes[i].forEach((v, j) => assert.ok(Math.abs(v - want[j]) < 1e-3, `línea ${i}: ${v} ≠ ${want[j]}`));
+      strokes[i].forEach((v, j) => assert.ok(Math.abs(v - want[j]) < 1e-3, `line ${i}: ${v} ≠ ${want[j]}`));
     });
     assert.match(withLines, /0\.25 w/);
     assert.match(withLines, /0 0 0 RG/);
     assert.doesNotMatch(withLines, /\[\d[^\]]*\] \S+ d/, 'solid: no dash pattern');
-    assert.ok(withLines.startsWith(without), 'las líneas van después de las piezas, sin cambiar lo demás');
+    assert.ok(withLines.startsWith(without), 'the lines go after the pieces, without changing the rest');
     assert.equal((without.match(/ l\nS/g) ?? []).length, 0);
   });
 
@@ -186,7 +186,7 @@ describe('buildPdf', () => {
     assert.deepEqual(Buffer.from(streams[0].contents), Buffer.from(file));
   });
 
-  test('varias páginas: cada una con lo suyo', async () => {
+  test('several pages: each with its own', async () => {
     const piece = { asset: image, x: 10, y: 10, scale: 100, r: 0, crop: null };
     const out = await buildPdf({ ...SHEET, pages: [{ pieces: [piece] }, { pieces: [piece, { ...piece, x: 100 }] }], title: 't' });
     const pages = await contents(out);

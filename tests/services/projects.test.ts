@@ -276,14 +276,14 @@ describe('two tabs', () => {
     await vi.waitFor(() => expect(a.status()).toBe('readonly'));
     expect(b.status()).toBe('saved');
 
-    await a.projects.rename('p1', 'Desde la otra pestaña');
-    expect((await storage.get('p1'))!.name).toBe('Desde la otra pestaña');
-    await vi.waitFor(() => expect(b.projects.projectSession().record?.name).toBe('Desde la otra pestaña'));
+    await a.projects.rename('p1', 'From the other tab');
+    expect((await storage.get('p1'))!.name).toBe('From the other tab');
+    await vi.waitFor(() => expect(b.projects.projectSession().record?.name).toBe('From the other tab'));
     // What the tab that saves it writes next keeps that name.
     b.setDocument({ selection: [1] });
     b.nudge(1, 0);
     await b.projects.flush();
-    expect((await storage.get('p1'))!).toMatchObject({ name: 'Desde la otra pestaña', doc: { items: [{ x: 12 }] } });
+    expect((await storage.get('p1'))!).toMatchObject({ name: 'From the other tab', doc: { items: [{ x: 12 }] } });
   });
 });
 

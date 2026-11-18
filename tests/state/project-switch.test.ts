@@ -33,7 +33,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe('switching projects', () => {
   test('the new project shows from the top of its first sheet, and that sheet is the current one', async () => {
     const storage = memoryStorage();
-    await storedProject(storage, 'p1', 'Tres hojas', 30, 1000, { sheets: 3 });
+    await storedProject(storage, 'p1', 'Three sheets', 30, 1000, { sheets: 3 });
     await storedProject(storage, 'p2', 'Otro', 40, 2000, { sheets: 2 });
     localStorage.setItem('scooch:last-project', 'p1');
     opened.storage = storage;

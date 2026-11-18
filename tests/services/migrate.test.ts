@@ -134,10 +134,10 @@ describe('migrateProjects', () => {
     const from = memoryStorage();
     const to = memoryStorage();
     await seeded(from, ['Viejo']);
-    const edited = { ...(await from.get('p0'))!, name: 'Editado después' };
+    const edited = { ...(await from.get('p0'))!, name: 'Edited later' };
     await to.write(edited, { create: true });
     expect(await migrateProjects(from, to)).toBe(0);
-    expect((await to.get('p0'))!.name).toBe('Editado después');
+    expect((await to.get('p0'))!.name).toBe('Edited later');
     expect(await from.list()).toEqual([]);
   });
 
