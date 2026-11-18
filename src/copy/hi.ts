@@ -877,7 +877,9 @@ const hi: Catalogue = {
       unit: 'इकाइयां, माप, mm, cm, in, इंच, मिलीमीटर',
       theme: 'थीम, रंग, रूप, डार्क मोड, theme',
       language: 'भाषा, अनुवाद, language, idioma, langue, 语言',
+      faq: 'मदद, गाइड, सवाल, सहायता, FAQ, help',
     },
+    faq: 'अक्सर पूछे जाने वाले सवाल देखें',
   },
 
   palette: {

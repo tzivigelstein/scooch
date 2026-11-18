@@ -876,7 +876,9 @@ const en: Catalogue = {
       unit: 'units, measurements, mm, cm, in, inches, millimeters',
       theme: 'theme, colors, appearance, dark mode',
       language: 'language, translate, idioma, langue, 语言, भाषा',
+      faq: 'help, guides, questions, support, faq',
     },
+    faq: 'Show frequently asked questions',
   },
 
   palette: {

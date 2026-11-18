@@ -1,6 +1,7 @@
 // Every action of the app, once: its name, other words that find it, its keys
 // (names in the shortcut table, hooks/shortcuts.ts), why it can't run now if it
-// can't, and what it does: the same actions the buttons, menus and keys call.
+// can't, and what it does: the same actions the buttons, menus and keys call
+// (or the page of the site it opens).
 // The command palette lists them, the shortcuts dialog shows their keys, and
 // the context and zoom menus take their entries from here.
 
@@ -14,6 +15,7 @@ import {
   AlignStartVertical,
   AlignVerticalSpaceBetween,
   BringToFront,
+  CircleQuestionMark,
   ClipboardPaste,
   Copy,
   CopyPlus,
@@ -73,8 +75,9 @@ import { startCrop } from '../components/canvas/cropMode.ts';
 import { fitSheet, stepZoom, zoomToPercent } from '../components/canvas/viewport.ts';
 import { focusPieces, focusPropsTab } from '../hooks/useGlobalShortcuts.ts';
 import { SHORTCUTS, type ShortcutKeys, type ShortcutName } from '../hooks/shortcuts.ts';
-import { browserLanguage } from '../services/language.ts';
+import { browserLanguage, shownLanguage } from '../services/language.ts';
 import { sizeText } from '../services/measure.ts';
+import { sitePath } from '../site/links.ts';
 import { getDocument } from './document.ts';
 import { getPrefs, setLanguage, setTheme } from './prefs.ts';
 import { useProject } from './project.ts';
@@ -147,9 +150,10 @@ interface Definition {
   disabled?: () => string | null;
   /** It is the option in use (a theme, a unit). */
   current?: () => boolean;
-  /** What it does; or, for a command that needs a value, its choices. */
+  /** What it does; or, for a command that needs a value, its choices; or, for one that opens a page of the site in a new tab, its address. */
   run?: () => void;
   choices?: () => readonly Choice[];
+  href?: () => string;
 }
 
 /** A command as the palette, the dialog and the menus use it, with its texts and state as they are now. */
@@ -164,6 +168,8 @@ export interface Command {
   current: boolean;
   run: (() => void) | null;
   choices: (() => readonly Choice[]) | null;
+  /** The page it opens in a new tab, as a link. */
+  href: string | null;
 }
 
 // ---------- When a command can't run ----------
@@ -295,6 +301,7 @@ const DEFINITIONS = {
   print: { section: 'general', label: 'bar.print', icon: Printer, aliases: 'commands.aliases.print', keys: ['print'], disabled: noPieces, run: () => void printPdf() },
   download: { section: 'general', label: 'bar.download', icon: Download, aliases: 'commands.aliases.download', keys: ['download', 'downloadAlt'], disabled: noPieces, run: () => void exportPdf() },
   shortcuts: { section: 'general', label: 'commands.shortcuts', icon: Keyboard, aliases: 'commands.aliases.shortcuts', keys: ['help'], run: openShortcuts },
+  faq: { section: 'general', label: 'commands.faq', icon: CircleQuestionMark, aliases: 'commands.aliases.faq', href: () => sitePath(shownLanguage(), 'faq') },
 
   // Projects
   projects: { section: 'projects', label: 'commands.projects', icon: FolderOpen, aliases: 'commands.aliases.projects', keys: ['projects'], run: () => void openProjects() },
@@ -431,6 +438,7 @@ export function command(id: CommandId): Command {
     current: d.current?.() ?? false,
     run: d.run ?? null,
     choices: d.choices ?? null,
+    href: d.href?.() ?? null,
   };
 }
 
@@ -440,7 +448,8 @@ export const commands = () => COMMAND_IDS.map(command);
 /**
  * Runs command `id` reached by `route` (a menu, the palette), or `run` (a
  * value of it the palette chose), and reports it to the usage tips with
- * whether a shortcut for it shows next to it.
+ * whether a shortcut for it shows next to it. A link's page is opened by the
+ * browser: for one, this only reports it.
  */
 export function runCommand(id: CommandId, route: Route, run?: () => void) {
   const d: Definition = DEFINITIONS[id];

@@ -819,6 +819,8 @@
   "commands.aliases.unit": "unidades, medidas, mm, cm, in, pulgadas",
   "commands.aliases.theme": "tema, colores, apariencia, modo",
   "commands.aliases.language": "idioma, lengua, traducir, language, langue, 语言, भाषा",
+  "commands.aliases.faq": "ayuda, guías, preguntas, dudas, soporte, faq, help",
+  "commands.faq": "Ver las preguntas frecuentes",
   "palette.title": "Buscar acciones",
   "palette.placeholder": "Busca una acción",
   "palette.choicePlaceholder": "Busca una opción",

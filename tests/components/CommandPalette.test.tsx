@@ -206,6 +206,49 @@ describe('running a command', () => {
   });
 });
 
+describe('a command that opens a page of the site', () => {
+  /** The clicks that reach the document, kept from navigating (jsdom doesn't open tabs). */
+  let clicked: EventTarget[] = [];
+  const follow = (e: MouseEvent) => {
+    clicked.push(e.target!);
+    e.preventDefault();
+  };
+  beforeEach(() => {
+    clicked = [];
+    document.addEventListener('click', follow);
+  });
+  afterEach(() => document.removeEventListener('click', follow));
+
+  test('is a link to it, in a new tab, an option of the list with no Tab stop of its own', () => {
+    render(<CommandPalette />);
+    type('preguntas');
+    expect(activeName()).toBe('Ver las preguntas frecuentes');
+    const link = active()!;
+    expect([link.tagName, link.getAttribute('role'), link.getAttribute('href'), link.getAttribute('target'), link.getAttribute('rel'), link.getAttribute('tabindex')]).toEqual([
+      'A',
+      'option',
+      '/es/preguntas-frecuentes',
+      '_blank',
+      'noopener',
+      '-1',
+    ]);
+  });
+
+  test('Enter clicks the link; once the browser has followed it, the palette closes and keeps it as the newest recent command', async () => {
+    render(<CommandPalette />);
+    type('ayuda');
+    const link = options().find((o) => o.tagName === 'A')!;
+    while (active() !== link) press('ArrowDown');
+    press('Enter');
+    expect(clicked).toEqual([link]);
+    // Closing first would take the link out of the page before the browser follows it.
+    expect(useDialogs.getState().open.palette).toBeDefined();
+    await act(() => new Promise((done) => setTimeout(done)));
+    expect(useDialogs.getState().open.palette).toBeUndefined();
+    expect(recentCommands()).toEqual(['faq']);
+  });
+});
+
 describe('a command that needs a value', () => {
   test('opens its choices in a second step, named by the command, with the one in use active and marked', () => {
     render(<CommandPalette />);

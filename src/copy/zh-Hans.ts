@@ -847,7 +847,9 @@ const zhHans: Catalogue = {
       unit: '单位, 尺寸, mm, cm, in, 毫米, 厘米, 英寸',
       theme: '主题, 颜色, 外观, 深色模式',
       language: '语言, 翻译, language, idioma, langue, भाषा',
+      faq: '帮助, 使用指南, 指南, 问题, 支持, FAQ, help',
     },
+    faq: '查看常见问题',
   },
 
   palette: {

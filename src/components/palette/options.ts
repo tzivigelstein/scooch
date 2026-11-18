@@ -24,6 +24,8 @@ export interface PaletteOption {
   lang?: string;
   /** It opens a second step with its choices. */
   more: boolean;
+  /** The page it opens in a new tab: the option is a link to it. */
+  href: string | null;
   command: Command | null;
   choice: Choice | null;
 }
@@ -47,6 +49,7 @@ export function commandGroups(list: readonly Command[], targets: readonly FuzzyT
     disabled: c.disabled,
     current: c.current,
     more: !!c.choices,
+    href: c.href,
     command: c,
     choice: null,
   });
@@ -71,6 +74,7 @@ export function choiceGroups(choices: readonly Choice[], targets: readonly Fuzzy
     current: !!c.current,
     lang: c.lang,
     more: false,
+    href: null,
     command: null,
     choice: c,
   });

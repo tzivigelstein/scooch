@@ -972,7 +972,10 @@ const es = {
       theme: 'tema, colores, apariencia, modo',
       // Also the word in the other languages, for someone who can't read this one
       language: 'idioma, lengua, traducir, language, langue, 语言, भाषा',
+      faq: 'ayuda, guías, preguntas, dudas, soporte, faq, help',
     },
+    // The site's questions, a page that opens in a new tab (named as in prefs.faq)
+    faq: 'Ver las preguntas frecuentes',
   },
 
   // The command palette (Mod+K, or the search button in the top bar)

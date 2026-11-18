@@ -6,6 +6,9 @@
 import { act } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { LANGUAGES } from '../../src/core/language.js';
+import { CATALOGUES } from '../../src/copy/all.ts';
+import es from '../../src/copy/es.ts';
+import { setTexts } from '../../src/copy/index.ts';
 import { LANGUAGE_NAMES } from '../../src/copy/languages.ts';
 import { SHORTCUTS } from '../../src/hooks/shortcuts.ts';
 import { COMMAND_IDS, SECTIONS, command, commands, isCommandId, type CommandId } from '../../src/state/commands.ts';
@@ -44,13 +47,13 @@ const twoSheets = (selection: number[] = []) =>
   resetState({ sheets: [{ id: 1 }, { id: 2 }], items: [piece(1, card, 10, 10), piece(2, card, 10, 100), piece(3, card, 10, 10, { sheet: 2 })], selection });
 
 describe('the registry', () => {
-  test('ids are unique; each command has a name, an icon, a section in order, and either something to do or choices', () => {
+  test('ids are unique; each command has a name, an icon, a section in order, and one of something to do, choices or a page to open', () => {
     expect(new Set(COMMAND_IDS).size).toBe(COMMAND_IDS.length);
     for (const c of commands()) {
       expect(c.label, c.id).toMatch(/\S/);
       expect(c.icon, c.id).toBeTruthy();
       expect(SECTIONS, c.id).toContain(c.section);
-      expect(!!c.run !== !!c.choices, `${c.id}: run or choices, not both`).toBe(true);
+      expect([c.run, c.choices, c.href].filter(Boolean), `${c.id}: run, choices or href, only one`).toHaveLength(1);
     }
     // Listed section by section.
     const order = commands().map((c) => SECTIONS.indexOf(c.section));
@@ -247,5 +250,33 @@ describe('running a command does what its button or key does', () => {
     expect(heard()).toBe('');
     command('unitCm').run!();
     expect(heard()).toBe('Medidas en centímetros.');
+  });
+});
+
+describe('the questions', () => {
+  afterEach(() => setTexts(es));
+
+  test('a link to the site’s questions, after the keyboard shortcuts, with no keys; «ayuda», «guías», «preguntas» and «help» find it', () => {
+    const c = command('faq');
+    expect({ section: c.section, label: c.label, href: c.href, run: c.run, choices: c.choices, keys: c.keys }).toEqual({
+      section: 'general',
+      label: 'Ver las preguntas frecuentes',
+      href: '/es/preguntas-frecuentes',
+      run: null,
+      choices: null,
+      keys: [],
+    });
+    expect(COMMAND_IDS[COMMAND_IDS.indexOf('shortcuts') + 1]).toBe('faq');
+    expect(c.aliases.split(', ')).toEqual(expect.arrayContaining(['ayuda', 'guías', 'preguntas', 'help']));
+  });
+
+  test.each([
+    ['en', 'Show frequently asked questions', '/en/faq'],
+    ['zh-Hans', '查看常见问题', '/zh-hans/faq'],
+    ['hi', 'अक्सर पूछे जाने वाले सवाल देखें', '/hi/faq'],
+    ['fr', 'Voir les questions fréquentes', '/fr/questions-frequentes'],
+  ] as const)('in %s, the page of that language', (language, label, href) => {
+    setTexts(CATALOGUES[language]);
+    expect([command('faq').label, command('faq').href]).toEqual([label, href]);
   });
 });

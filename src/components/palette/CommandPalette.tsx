@@ -4,10 +4,11 @@
 // in the field while the arrows, Home, End, Page Up and Page Down move
 // through the options; Enter runs one and closes, Esc closes. A command that
 // can't run now stays listed with why, and doesn't run. One that needs a
-// value (a paper, a sheet) lists its choices in a second step.
+// value (a paper, a sheet) lists its choices in a second step. One that opens
+// a page of the site is a link to it, in a new tab.
 
-import { ArrowLeft, Check, ChevronRight, Search, X } from 'lucide-react';
-import { Fragment, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { ArrowLeft, Check, ChevronRight, ExternalLink, Search, X } from 'lucide-react';
+import { Fragment, useLayoutEffect, useMemo, useRef, useState, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
 import { prepare, type FuzzyRanges, type FuzzyTarget } from '../../core/fuzzy.js';
 import { keyLabel, t } from '../../copy/index.ts';
 import { flushUi } from '../../state/flush.ts';
@@ -92,6 +93,16 @@ export default function CommandPalette() {
       return setSaid((before) => (before === reason ? `${reason}​` : reason));
     }
     const c = option.command;
+    if (c?.href) {
+      // The click on the link opens its page; closing takes the link out of
+      // the page, so it waits until the browser has followed it.
+      rememberCommand(c.id);
+      setTimeout(() => {
+        closeDialog('palette');
+        runCommand(c.id, 'palette');
+      });
+      return;
+    }
     if (c?.choices) {
       const choices = c.choices();
       setStep({ command: c, choices, targets: choices.map((choice) => prepare(choice.label)), query, active: index });
@@ -125,7 +136,9 @@ export default function CommandPalette() {
       if (flat.length) setActive(moves[e.key]);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (focused) choose(focused);
+      // A link opens as when it is clicked: the browser opens the new tab.
+      if (focused?.href) document.getElementById(optionId(focused))?.click();
+      else if (focused) choose(focused);
     } else if (e.key === 'Backspace' && step && !query) {
       e.preventDefault();
       back();
@@ -136,20 +149,20 @@ export default function CommandPalette() {
   const option = (o: PaletteOption) => {
     const i = ++n;
     const id = optionId(o);
-    return (
-      <div
-        key={o.key}
-        id={id}
-        role="option"
-        className="palette-option"
-        aria-selected={i === index ? 'true' : undefined}
-        aria-disabled={o.disabled ? 'true' : undefined}
-        aria-current={o.current ? 'true' : undefined}
-        aria-describedby={o.disabled ? `${id}-why` : undefined}
-        aria-keyshortcuts={o.shortcut?.aria}
-        onPointerMove={() => i !== index && setActive(i)}
-        onClick={() => choose(o)}
-      >
+    const props: HTMLAttributes<HTMLElement> = {
+      id,
+      role: 'option',
+      className: 'palette-option',
+      'aria-selected': i === index ? 'true' : undefined,
+      'aria-disabled': o.disabled ? 'true' : undefined,
+      'aria-current': o.current ? 'true' : undefined,
+      'aria-describedby': o.disabled ? `${id}-why` : undefined,
+      'aria-keyshortcuts': o.shortcut?.aria,
+      onPointerMove: () => i !== index && setActive(i),
+      onClick: () => choose(o),
+    };
+    const content = (
+      <>
         <span className="palette-icon">{o.icon && <Icon icon={o.icon} />}</span>
         <span className="palette-label" lang={o.lang}>
           {marked(o.label, o.ranges)}
@@ -158,6 +171,7 @@ export default function CommandPalette() {
           {o.current && <Icon icon={Check} className="palette-check" />}
           {o.shortcut && <kbd>{keyLabel(o.shortcut.kbd)}</kbd>}
           {o.more && <Icon icon={ChevronRight} />}
+          {o.href && <Icon icon={ExternalLink} />}
         </span>
         {o.disabled && (
           // Its description, not part of its name.
@@ -165,6 +179,16 @@ export default function CommandPalette() {
             {o.disabled}
           </span>
         )}
+      </>
+    );
+    // A link is an option of the list like the others: no stop of its own for Tab.
+    return o.href ? (
+      <a key={o.key} {...props} href={o.href} target="_blank" rel="noopener" tabIndex={-1}>
+        {content}
+      </a>
+    ) : (
+      <div key={o.key} {...props}>
+        {content}
       </div>
     );
   };

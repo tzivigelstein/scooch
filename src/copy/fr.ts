@@ -877,7 +877,9 @@ const fr: Catalogue = {
       unit: 'unités, mesures, mm, cm, po, pouces',
       theme: 'thème, couleurs, apparence, mode sombre',
       language: 'langue, traduire, language, idioma, 语言, भाषा',
+      faq: 'aide, guides, questions, assistance, FAQ, help',
     },
+    faq: 'Voir les questions fréquentes',
   },
 
   palette: {
