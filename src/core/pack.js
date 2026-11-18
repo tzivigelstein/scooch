@@ -1,5 +1,5 @@
-// Empaquetado de rectángulos (MaxRects) para acomodar piezas en la hoja.
-// Todo en las mismas unidades (mm), con origen arriba a la izquierda del área útil.
+// Rectangle packing (MaxRects) to arrange pieces on the sheet. Everything in
+// the same unit (mm), origin at the printable area's top left.
 
 const EPS = 1e-6;
 
@@ -9,7 +9,7 @@ const intersects = (a, b) =>
 const contains = (a, b) =>
   b.x >= a.x - EPS && b.y >= a.y - EPS && b.x + b.w <= a.x + a.w + EPS && b.y + b.h <= a.y + a.h + EPS;
 
-// Quita `used` de la lista de huecos libres, partiendo los que toca.
+// Takes `used` out of the list of free spaces, splitting those it touches.
 function occupy(free, used) {
   const kept = [];
   const parts = [];
@@ -25,9 +25,9 @@ function occupy(free, used) {
     if (used.y + used.h < f.y + f.h - EPS)
       parts.push({ x: f.x, y: used.y + used.h, w: f.w, h: f.y + f.h - used.y - used.h });
   }
-  // Los huecos intactos ya eran maximales entre sí y ninguno puede caber en un
-  // pedazo nuevo (que sale de un hueco que no los contenía): alcanza con
-  // descartar los pedazos nuevos contenidos en otro hueco.
+  // The untouched spaces were already maximal among themselves and none can
+  // fit in a new part (which comes from a space that didn't contain them): it
+  // is enough to drop the new parts contained in another space.
   const fresh = parts.filter(
     (r, i) =>
       !kept.some((o) => contains(o, r)) &&
@@ -36,15 +36,15 @@ function occupy(free, used) {
   return kept.concat(fresh);
 }
 
-// Dónde poner cada pieza: menor es mejor; se comparan como tuplas.
+// Where to put each piece: lower is better; compared as tuples.
 const HEURISTICS = [
-  (f, w, h) => [f.y + h, f.x], // abajo-izquierda
-  (f, w, h) => [Math.min(f.w - w, f.h - h), Math.max(f.w - w, f.h - h)], // lado corto
-  (f, w, h) => [Math.max(f.w - w, f.h - h), Math.min(f.w - w, f.h - h)], // lado largo
-  (f, w, h) => [f.w * f.h - w * h, Math.min(f.w - w, f.h - h)], // área sobrante
+  (f, w, h) => [f.y + h, f.x], // bottom-left
+  (f, w, h) => [Math.min(f.w - w, f.h - h), Math.max(f.w - w, f.h - h)], // short side fit
+  (f, w, h) => [Math.max(f.w - w, f.h - h), Math.min(f.w - w, f.h - h)], // long side fit
+  (f, w, h) => [f.w * f.h - w * h, Math.min(f.w - w, f.h - h)], // area left over
 ];
 
-// En qué orden ubicarlas (de mayor a menor según cada criterio).
+// The orders to place them in (largest first by each criterion).
 const ORDERS = [
   (a, b) => b.w * b.h - a.w * a.h,
   (a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h),
@@ -55,7 +55,7 @@ const ORDERS = [
 
 const better = (a, b) => a[0] < b[0] - EPS || (Math.abs(a[0] - b[0]) <= EPS && a[1] < b[1] - EPS);
 
-// Piezas con orientación fija: `shouldFlip(r)` decide cuáles van giradas.
+// Pieces with a fixed orientation: `shouldFlip(r)` decides which are turned.
 const fixedOrientation = (rects, shouldFlip) =>
   rects.map((r, i) => {
     const flip = shouldFlip(r, i);
@@ -64,12 +64,12 @@ const fixedOrientation = (rects, shouldFlip) =>
 
 const isSquare = (r) => Math.abs(r.w - r.h) <= EPS;
 
-// Maneras de orientar las piezas antes de empaquetar. Cada pieza lleva `flip`
-// (ya viene girada respecto de la original) y `free` (la heurística puede
-// girarla). Con giro libre la heurística decide pieza por pieza y a veces se
-// equivoca: en una grilla justa gira la primera porque "deja más lugar" y
-// después no entran todas. Por eso también se prueban todas como vinieron y
-// todas apaisadas o todas verticales.
+// Ways to orient the pieces before packing. Each piece carries `flip` (it
+// comes turned from the original) and `free` (the heuristic may turn it).
+// Turning freely, the heuristic decides piece by piece and sometimes gets it
+// wrong: in a tight grid it turns the first one because it "leaves more
+// room" and then not all of them fit. So all as they came, all landscape and
+// all portrait are tried too.
 function orientations(rects, rotate) {
   const asIs = fixedOrientation(rects, () => false);
   if (!rotate) return [asIs];
@@ -77,7 +77,7 @@ function orientations(rects, rotate) {
   const variants = [asIs];
   const landscape = fixedOrientation(rects, (r) => r.h > r.w + EPS);
   const portrait = fixedOrientation(rects, (r) => r.w > r.h + EPS);
-  // Si ninguna pieza se gira, es igual a "como vinieron".
+  // When no piece turns, it is the same as "as they came".
   if (landscape.some((p) => p.flip)) variants.push(landscape);
   if (portrait.some((p) => p.flip)) variants.push(portrait);
   const free = rects.map((r) => ({ id: r.id, w: r.w, h: r.h, flip: false, free: !isSquare(r) }));
@@ -95,7 +95,7 @@ export function countWork(counter) {
   work = counter;
 }
 
-// Mejor hueco para la pieza según la heurística (con su gap), o null si no entra.
+// The best space for the piece by the heuristic (with its gap), or null when it doesn't fit.
 function bestSpot(p, free, gap, heuristic) {
   let best = null;
   for (const turn of p.free ? [false, true] : [false]) {
@@ -111,7 +111,7 @@ function bestSpot(p, free, gap, heuristic) {
   return best;
 }
 
-// Ubica las piezas en el orden dado; null si alguna no entra.
+// Places the pieces in the given order; null when one doesn't fit.
 function packOnce(pieces, start, gap, heuristic) {
   if (work) work.attempts++;
   let free = start;
@@ -125,19 +125,18 @@ function packOnce(pieces, start, gap, heuristic) {
   return placements;
 }
 
-// Huecos libres iniciales. Cada pieza (y cada obstáculo) reserva `gap` a su
-// derecha y abajo; el área se agranda igual para que la última fila/columna
-// no pierda ese espacio.
+// The initial free spaces. Each piece (and each obstacle) reserves `gap` on
+// its right and below; the area grows by as much so the last row or column
+// doesn't lose that space.
 function startFree(W, H, gap, obstacles) {
   let free = [{ x: 0, y: 0, w: W + gap, h: H + gap }];
   for (const o of obstacles) free = occupy(free, { x: o.x, y: o.y, w: o.w + gap, h: o.h + gap });
   return free;
 }
 
-// Orden canónico de la entrada (lado mayor, lado menor y después id), para que
-// el resultado no dependa del orden del arreglo: los empates de los
-// ordenamientos son estables. No mira la orientación, así una pieza girada de
-// antemano desempata igual que sin girar.
+// The input's canonical order (long side, short side, then id), so the result
+// doesn't depend on the array's order: the sorts' ties are stable. It ignores
+// orientation, so a piece turned beforehand breaks ties as if it weren't.
 const compareIds = (a, b) => {
   if (typeof a !== typeof b) return typeof a < typeof b ? -1 : 1;
   return a < b ? -1 : a > b ? 1 : 0;
@@ -148,9 +147,9 @@ const canonical = (rects) =>
       Math.max(a.w, a.h) - Math.max(b.w, b.h) || Math.min(a.w, a.h) - Math.min(b.w, b.h) || compareIds(a.id, b.id)
   );
 
-// Prueba las combinaciones fijas orientación × orden × heurística (hasta 80),
-// siempre en el mismo orden, y llama a `visit(ubicaciones, orientación)` con
-// cada una que entra. Si `visit` devuelve true, corta ahí.
+// Tries the fixed combinations orientation × order × heuristic (up to 80),
+// always in the same order, and calls `visit(placements, orientation)` with
+// each one that fits. When `visit` returns true, it stops there.
 function eachFixed(oriented, start, gap, visit) {
   for (const pieces of oriented) {
     for (const order of ORDERS) {
@@ -163,37 +162,36 @@ function eachFixed(oriented, start, gap, visit) {
   }
 }
 
-// --- Puntaje ---------------------------------------------------------------
-// Menor es mejor. Todo se mide en "fracciones del alto": 0,01 equivale a que
-// la franja libre de abajo sea un 1 % del alto más chica. Una diferencia de
-// altura chica (≲ 2–3 %) puede perder contra no girar o contra una hoja más
-// prolija; una grande no: girar todas cuesta a lo sumo 5 % y la desprolijidad
-// rara vez separa más de 2 % a dos candidatas.
+// --- Score -----------------------------------------------------------------
+// Lower is better. Everything is measured in "fractions of the height": 0.01
+// is the free strip at the bottom being 1 % of the height smaller. A small
+// height difference (≲ 2–3 %) can lose to not turning or to a tidier sheet;
+// a large one can't: turning them all costs at most 5 %, and untidiness
+// rarely sets two candidates more than 2 % apart.
 
-// a. Hasta dónde llegan las piezas hacia abajo, sobre el alto (0–1).
+// a. How far down the pieces reach, over the height (0–1).
 const W_BOTTOM = 1;
-// b. Girar piezas respecto de como las puso el usuario: girar aunque sea una
-//    cuesta como un 2 % del alto, y girarlas todas un 3 % más (proporcional a
-//    la fracción girada). O sea, solo se gira si libera más de ~2–5 % del alto.
+// b. Turning pieces from how the person placed them: turning even one costs
+//    about 2 % of the height, and turning all of them 3 % more (in proportion
+//    to the share turned). So it turns only when that frees more than ~2–5 %
+//    of the height.
 const W_ROTATE_ANY = 0.02;
 const W_ROTATE_SHARE = 0.03;
-// c. Desprolijidad (cada medida va de 0 a 1):
-//    - bordes: cuántas coordenadas x e y distintas tienen los bordes de las
-//      piezas (cada una es un corte más; filas y columnas parejas comparten),
-//    - dispersión: qué tan desparramadas quedan las piezas de igual medida,
-//    - mezcla: piezas iguales con orientaciones distintas.
-//    Entre una hoja prolija y una desprolija suele haber ~1 % del alto: le gana
-//    a diferencias de altura chicas, pero no a girar (b) ni a ~3 % de altura.
+// c. Untidiness (each measure goes from 0 to 1):
+//    - edges: how many distinct x and y coordinates the pieces' edges have
+//      (each one is one more cut; even rows and columns share them),
+//    - scatter: how spread out the pieces of the same size end up,
+//    - mixed: equal pieces in different orientations.
+//    A tidy and an untidy sheet are usually ~1 % of the height apart: that
+//    beats small height differences, but not turning (b) nor ~3 % of height.
 const W_EDGES = 0.03;
 const W_SCATTER = 0.02;
 const W_MIXED = 0.02;
-// d. Hasta dónde llegan hacia la derecha, sobre el ancho: solo desempata.
+// d. How far right they reach, over the width: only breaks ties.
 const W_RIGHT = 0.005;
 
-// Dos bordes a menos de esto (mm) cuentan como alineados.
+// Two edges closer than this (mm) count as aligned.
 const ALIGN_TOL = 0.1;
-
-// Cantidad de valores distintos.
 function distinctCount(values) {
   values = Float64Array.from(values).sort();
   let count = 0;
@@ -205,11 +203,11 @@ function distinctCount(values) {
   return count;
 }
 
-// Piezas de igual medida (a 0,1 mm), sin importar cómo vinieron orientadas.
+// Pieces of the same size (to 0.1 mm), whatever orientation they came in.
 const sizeKey = (r) => `${Math.round(Math.max(r.w, r.h) * 10)}x${Math.round(Math.min(r.w, r.h) * 10)}`;
 
-// id → {w, h, group}: `group` numera las medidas distintas (piezas iguales,
-// mismo número). Se arma una vez y sirve para puntuar todos los candidatos.
+// id → {w, h, group}: `group` numbers the distinct sizes (equal pieces, the
+// same number). Built once, it serves to score every candidate.
 function pieceInfo(rects) {
   const groups = new Map();
   const info = new Map();
@@ -221,7 +219,7 @@ function pieceInfo(rects) {
   return info;
 }
 
-// Desglose del puntaje (para afinar y para tests); `info` viene de pieceInfo.
+// The score's breakdown (for tuning and tests); `info` comes from pieceInfo.
 function scoreParts(placements, info, W, H) {
   const n = placements.length;
   if (!n) return { bottom: 0, rotated: 0, edges: 0, scatter: 0, mixed: 0, right: 0 };
@@ -240,7 +238,7 @@ function scoreParts(placements, info, W, H) {
     if (p.rotated) rotated++;
     xs.push(p.x, p.x + w);
     ys.push(p.y, p.y + h);
-    // Orientación con que quedó en la hoja (las cuadradas no cuentan).
+    // The orientation it ended in on the sheet (square ones don't count).
     const lying = w > h + EPS ? 1 : 0;
     const standing = h > w + EPS ? 1 : 0;
     const g = groups[r.group];
@@ -255,11 +253,11 @@ function scoreParts(placements, info, W, H) {
       g.y1 = Math.max(g.y1, p.y + h);
     } else groups[r.group] = { count: 1, lying, standing, area: w * h, x0: p.x, y0: p.y, x1: p.x + w, y1: p.y + h };
   }
-  // Bordes: entre 4 (todas alineadas en una sola caja) y 4n (ninguno compartido).
+  // Edges: between 4 (all aligned in a single box) and 4n (none shared).
   const edges = n > 1 ? (distinctCount(xs) + distinctCount(ys) - 4) / (4 * n - 4) : 0;
-  // Por cada grupo de piezas iguales: dispersión = cuánto de la caja que las
-  // encierra no es pieza del grupo (0 = juntas, cerca de 1 = desparramadas);
-  // mezcla = cuántas quedaron en la orientación minoritaria del grupo.
+  // For each group of equal pieces: scatter = how much of the box around them
+  // isn't the group's pieces (0 = together, near 1 = spread out); mixed = how
+  // many ended in the group's minority orientation.
   let scattered = 0;
   let minority = 0;
   let grouped = 0;
@@ -291,16 +289,16 @@ function combine(s) {
 }
 
 /**
- * Puntaje de una distribución de `pack` ({id, x, y, rotated}) de las piezas
- * `rects` en un área W×H. Menor es mejor. Ver los pesos W_* arriba.
+ * The score of a layout from `pack` ({id, x, y, rotated}) of the pieces
+ * `rects` in a W×H area. Lower is better; the W_* weights above say how.
  */
 export function score(placements, rects, W, H) {
   return combine(scoreParts(placements, pieceInfo(rects), W, H));
 }
 
-// --- Búsqueda --------------------------------------------------------------
+// --- Search ----------------------------------------------------------------
 
-// PRNG con semilla (mulberry32): misma entrada, mismo resultado.
+// A seeded PRNG (mulberry32): the same input, the same result.
 function prng(seed) {
   let a = seed >>> 0;
   return () => {
@@ -311,26 +309,26 @@ function prng(seed) {
   };
 }
 
-// Criterios para los órdenes perturbados (los de ORDERS, sin desempate).
+// The criteria for the perturbed orders (those of ORDERS, without tie breaks).
 const KEYS = [(p) => p.w * p.h, (p) => Math.max(p.w, p.h), (p) => p.w + p.h, (p) => p.h, (p) => p.w];
 const SEED = 0x5eed;
-// Cuántos órdenes perturbados probar además de los fijos. Es una cantidad fija
-// (no un tiempo) para que el resultado sea determinístico. Cada intento cuesta
-// ~n² (n piezas × huecos libres), así que baja con n: 400 hasta 100 piezas
-// (~70 ms con 60), 100 con 200 piezas (~180 ms). Rinde cada vez menos: el doble
-// de intentos mejora el puntaje medio ~0,1 % del alto y duplica el tiempo.
+// How many perturbed orders to try besides the fixed ones. A fixed count (not
+// a time) so the result is deterministic. Each attempt costs ~n² (n pieces ×
+// free spaces), so it drops with n: 400 up to 100 pieces (~70 ms with 60),
+// 100 with 200 pieces (~180 ms). Returns diminish: twice the attempts improve
+// the mean score by ~0.1 % of the height and double the time.
 const extraAttempts = (n) => Math.max(40, Math.min(400, Math.round(4e6 / (n * n || 1))));
 
 /**
- * Ubica `rects` ({id, w, h}) dentro de un área W×H sin superponerlos.
- * Devuelve [{id, x, y, rotated}] o null si no entran todos; `rotated` indica
- * que la pieza ocupa h×w. Entre piezas, y entre piezas y obstáculos, queda al
- * menos `gap` (contra el borde del área no se exige).
- * `obstacles` ({x, y, w, h}) son zonas ya ocupadas que hay que esquivar.
+ * Places `rects` ({id, w, h}) in a W×H area without overlapping them. Gives
+ * [{id, x, y, rotated}], or null when not all of them fit; `rotated` means
+ * the piece takes h×w. There is at least `gap` between pieces, and between
+ * pieces and obstacles (not against the area's edge). `obstacles` ({x, y, w,
+ * h}) are areas already taken, to avoid.
  *
- * Genera muchas distribuciones válidas (combinaciones fijas de orientación,
- * orden y heurística, y órdenes perturbados con semilla fija) y devuelve la de
- * menor `score`. Es determinística y no depende del orden de `rects`.
+ * Generates many valid layouts (fixed combinations of orientation, order and
+ * heuristic, and perturbed orders with a fixed seed) and returns the one with
+ * the lowest `score`. Deterministic, and independent of the order of `rects`.
  */
 export function pack(rects, W, H, { gap = 0, rotate = true, obstacles = [] } = {}) {
   const pieces = canonical(rects);
@@ -342,26 +340,27 @@ export function pack(rects, W, H, { gap = 0, rotate = true, obstacles = [] } = {
   let bestScore = Infinity;
   const consider = (placements) => {
     const s = combine(scoreParts(placements, info, W, H));
-    // Ante un empate (o casi) queda la primera encontrada.
+    // On a tie (or nearly), the first one found stays.
     if (s < bestScore - 1e-9) {
       best = placements;
       bestScore = s;
     }
   };
 
-  const working = new Set(); // orientaciones con al menos una solución
+  const working = new Set(); // orientations with at least one solution
   eachFixed(oriented, start, gap, (placements, o) => {
     working.add(o);
     consider(placements);
   });
-  // Los órdenes perturbados solo buscan algo mejor: si ninguna combinación fija
-  // entra, no entra (así `fitScale` puede cortar en la primera que entre).
+  // The perturbed orders only look for something better: when no fixed
+  // combination fits, it doesn't fit (so `fitScale` can stop at the first
+  // that does).
   if (!best) return null;
 
-  // Órdenes perturbados: un criterio de ORDERS con cada clave multiplicada por
-  // (1 ± amp). El ruido a veces es uno por grupo de piezas iguales (siguen
-  // juntas, más prolijo) y a veces uno por pieza. Los intentos repetidos
-  // (misma orientación, orden y heurística) se saltean.
+  // Perturbed orders: a criterion of ORDERS with each key multiplied by
+  // (1 ± amp). Sometimes the noise is one per group of equal pieces (they
+  // stay together, tidier) and sometimes one per piece. Repeated attempts
+  // (same orientation, order and heuristic) are skipped.
   const group = pieces.map((r) => info.get(r.id).group);
   const groupCount = Math.max(0, ...group) + 1;
   const pool = oriented.filter((o) => working.has(o));
@@ -373,7 +372,7 @@ export function pack(rects, W, H, { gap = 0, rotate = true, obstacles = [] } = {
     let base;
     let baseKey;
     if (canFlip && rnd() < 0.25) {
-      // Cada grupo de iguales, todo junto: como vino, acostado o parado.
+      // Each group of equal pieces all alike: as it came, landscape or portrait.
       const mode = Array.from({ length: groupCount }, () => Math.floor(rnd() * 3));
       base = fixedOrientation(pieces, (r, j) => {
         const m = mode[group[j]];
@@ -402,8 +401,8 @@ export function pack(rects, W, H, { gap = 0, rotate = true, obstacles = [] } = {
   return best;
 }
 
-// ¿Entra con alguna de las combinaciones fijas? Es lo mismo que `pack` !== null,
-// pero corta en la primera que entra y no puntúa.
+// Does it fit with one of the fixed combinations? The same as `pack` !== null,
+// but it stops at the first that fits and doesn't score.
 function fits(rects, W, H, { gap = 0, rotate = true, obstacles = [] } = {}) {
   let ok = false;
   eachFixed(orientations(canonical(rects), rotate), startFree(W, H, gap, obstacles), gap, () => (ok = true));
@@ -411,8 +410,8 @@ function fits(rects, W, H, { gap = 0, rotate = true, obstacles = [] } = {}) {
 }
 
 /**
- * Las distribuciones de las combinaciones fijas que entran (las que `pack`
- * compara antes de los órdenes perturbados). Expuesta para tests.
+ * The layouts of the fixed combinations that fit (those `pack` compares
+ * before the perturbed orders). Exported for tests.
  */
 export function fixedCandidates(rects, W, H, { gap = 0, rotate = true, obstacles = [] } = {}) {
   const out = [];
@@ -423,18 +422,18 @@ export function fixedCandidates(rects, W, H, { gap = 0, rotate = true, obstacles
 }
 
 /**
- * Mayor factor (0–1] por el que hay que escalar todas las piezas para que
- * entren (el gap y los obstáculos no se escalan). Devuelve 0 si ni
- * reduciéndolas al mínimo se puede (o si haría falta menos de 0.01).
- * Garantía: `pack` con piezas de w·k × h·k y las mismas opciones entra. Con un
- * factor apenas menor casi siempre también, pero no está asegurado.
+ * The largest factor (0–1] all pieces have to be scaled by to fit (the gap
+ * and the obstacles don't scale). 0 when not even the smallest works (or it
+ * would take less than 0.01). Guarantee: `pack` with w·k × h·k pieces and the
+ * same options fits. A slightly smaller factor nearly always does too, but
+ * that isn't assured.
  */
 export function fitScale(rects, W, H, options = {}) {
   const scaled = (k) => rects.map((r) => ({ id: r.id, w: r.w * k, h: r.h * k }));
   if (fits(rects, W, H, options)) return 1;
-  // Búsqueda binaria: `lo` siempre es un factor con el que se pudo empaquetar.
-  // Como el empaquetado es heurístico no es estrictamente monótono, así que
-  // puede no ser el máximo exacto, pero sí uno que funciona.
+  // Binary search: `lo` is always a factor that packed. Packing is heuristic
+  // and not strictly monotonic, so it may not be the exact largest, but it
+  // is one that works.
   let lo = 0;
   let hi = 1;
   for (let n = 0; n < 16; n++) {
@@ -445,18 +444,18 @@ export function fitScale(rects, W, H, options = {}) {
   return lo < 0.01 ? 0 : lo;
 }
 
-// --- Varias hojas ----------------------------------------------------------
-// Reparto en hojas iguales: hoja por hoja se elige qué piezas van (de las que
-// quedan) con rellenos voraces que saltean lo que no entra, y después cada
-// hoja se reacomoda con `pack` para que quede prolija. Así las primeras hojas
-// salen llenas y la última es la más vacía.
+// --- Several sheets --------------------------------------------------------
+// Sharing out over equal sheets: sheet by sheet, which of the remaining
+// pieces go there is chosen with greedy fills that skip what doesn't fit,
+// and then each sheet is packed again with `pack` to tidy it. So the first
+// sheets come out full and the last is the emptiest.
 
-// ¿Entra sola en los huecos `start`? (Con una hoja vacía, el gap no influye.)
+// Does it fit alone in the spaces `start`? (On an empty sheet the gap doesn't matter.)
 function fitsAlone(r, start, gap, rotate) {
   return bestSpot({ w: r.w, h: r.h, free: rotate && !isSquare(r) }, start, gap, HEURISTICS[0]) !== null;
 }
 
-// Como packOnce, pero saltea las piezas que no entran.
+// packOnce, but skipping the pieces that don't fit.
 function fillOnce(pieces, start, gap, heuristic) {
   if (work) work.attempts++;
   let free = start;
@@ -470,9 +469,9 @@ function fillOnce(pieces, start, gap, heuristic) {
   return placements;
 }
 
-// Primero cada grupo de piezas iguales entero (si no entra todo, no va
-// ninguna) y después, si `topUp`, rellena con las que quedaron afuera. Los
-// grupos van en el orden de su primera pieza.
+// First each group of equal pieces whole (when not all fit, none go), then,
+// with `topUp`, fills in with those left out. Groups go in the order of
+// their first piece.
 function fillGroups(pieces, start, gap, heuristic, info, topUp) {
   if (work) work.attempts++;
   const blocks = new Map();
@@ -505,10 +504,10 @@ function fillGroups(pieces, start, gap, heuristic, info, topUp) {
   return placements.concat(fillOnce(rest, free, gap, heuristic));
 }
 
-// Conjuntos distintos de piezas que pueden ir en una hoja, con una ubicación
-// válida de cada uno: todas las combinaciones fijas orientación × orden ×
-// heurística, rellenando de tres maneras (pieza por pieza, grupos enteros y
-// grupos enteros más relleno). `index`: id → posición canónica.
+// Distinct sets of pieces that can go on one sheet, with a valid placement of
+// each: every fixed combination orientation × order × heuristic, filling in
+// three ways (piece by piece, whole groups, and whole groups topped up).
+// `index`: id → canonical position.
 const FILL_MODES = [null, 'groups', 'groups+'];
 
 function sheetCandidates(remaining, start, gap, rotate, info, index) {
@@ -540,8 +539,8 @@ function sheetCandidates(remaining, start, gap, rotate, info, index) {
   return out;
 }
 
-// Cuántos grupos de piezas iguales parte el candidato: tiene algunas del
-// grupo pero no todas las que quedan.
+// How many groups of equal pieces the candidate splits: it has some of the
+// group but not all that remain.
 function countSplits(candidate, remaining, info) {
   const left = new Map();
   for (const r of remaining) {
@@ -558,10 +557,11 @@ function countSplits(candidate, remaining, info) {
   return splits;
 }
 
-// Cuánto relleno de una hoja (fracción del mejor candidato) se puede resignar
-// para no partir grupos de piezas iguales. Se prueba cada valor por separado
-// y gana el reparto que use menos hojas; a igual cantidad, el que parta menos
-// grupos; después, el que llene más las primeras hojas.
+// How much of a sheet's fill (a fraction of the best candidate's) may be
+// given up so as not to split groups of equal pieces. Each value is tried on
+// its own and the share-out with the fewest sheets wins; with as many, the
+// one that splits fewer groups; then the one that fills the first sheets
+// most.
 const COHESION = [0, 0.15, 1];
 
 function choose(candidates, tolerance, remaining, info) {
@@ -578,10 +578,10 @@ function choose(candidates, tolerance, remaining, info) {
   return best;
 }
 
-// Reparte `pieces` (orden canónico, todas entran solas en una hoja vacía)
-// hoja por hoja: primero las existentes (`existing`: obstáculos por hoja) y
-// después hojas nuevas. `memo` comparte candidatos entre tolerancias: con las
-// mismas piezas restantes y la misma hoja salen los mismos.
+// Shares out `pieces` (canonical order, each fits alone on an empty sheet)
+// sheet by sheet: first the existing ones (`existing`: obstacles per sheet),
+// then new sheets. `memo` shares candidates between tolerances: the same
+// remaining pieces on the same sheet give the same ones.
 function assign(pieces, W, H, gap, rotate, existing, tolerance, info, index, memo) {
   const sheets = [];
   let remaining = pieces;
@@ -595,7 +595,7 @@ function assign(pieces, W, H, gap, rotate, existing, tolerance, info, index, mem
     }
     const pick = choose(candidates, tolerance, remaining, info);
     if (!pick) {
-      if (isNew) break; // no pasa: en una hoja vacía siempre entra al menos una
+      if (isNew) break; // can't happen: at least one always fits on an empty sheet
       sheets.push(null);
       continue;
     }
@@ -603,10 +603,10 @@ function assign(pieces, W, H, gap, rotate, existing, tolerance, info, index, mem
     const used = new Set(pick.placements.map((p) => p.id));
     remaining = remaining.filter((p) => !used.has(p.id));
   }
-  // Las hojas nuevas, de la más llena a la más vacía.
+  // The new sheets, fullest first.
   const fresh = sheets.slice(existing.length).sort((a, b) => b.area - a.area);
   const all = sheets.slice(0, existing.length).concat(fresh);
-  // Grupos partidos en total: por grupo, en cuántas hojas quedó, menos una.
+  // Splits in all: for each group, on how many sheets it ended, minus one.
   const where = new Map();
   all.forEach((sheet, s) => {
     for (const p of sheet?.placements ?? []) {
@@ -632,8 +632,9 @@ function betterAssignment(a, b) {
   return false;
 }
 
-// Separa las que no entran ni solas en una hoja vacía. Devuelve las que sí
-// (en orden canónico), las que no (ids, en orden canónico) y los datos comunes.
+// Sets apart those that don't fit even alone on an empty sheet. Gives those
+// that do (canonical order), those that don't (ids, canonical order) and the
+// shared data.
 function prepare(rects, W, H, gap, rotate) {
   const pieces = canonical(rects);
   const empty = startFree(W, H, gap, []);
@@ -646,7 +647,7 @@ function prepare(rects, W, H, gap, rotate) {
   return { fit, unplaced, info: pieceInfo(fit), index: new Map(fit.map((r, i) => [r.id, i])) };
 }
 
-// El mejor reparto entre las tolerancias de COHESION.
+// The best share-out among the tolerances of COHESION.
 function bestAssignment(fit, W, H, gap, rotate, existing, info, index) {
   const memo = new Map();
   let best = null;
@@ -657,8 +658,8 @@ function bestAssignment(fit, W, H, gap, rotate, existing, info, index) {
   return best;
 }
 
-// Ubicación final de una hoja: lo mejor entre `pack` con esas piezas y la
-// ubicación con que se eligieron (que es válida aunque `pack` no la encuentre).
+// A sheet's final layout: the better of `pack` with those pieces and the
+// placement they were chosen with (valid even when `pack` doesn't find it).
 function finalLayout(sheet, byId, W, H, gap, rotate, obstacles) {
   const rects = sheet.placements.map((p) => byId.get(p.id));
   const packed = pack(rects, W, H, { gap, rotate, obstacles });
@@ -667,20 +668,21 @@ function finalLayout(sheet, byId, W, H, gap, rotate, obstacles) {
 }
 
 /**
- * Reparte `rects` ({id, w, h}) en hojas iguales de W×H (área útil), usando
- * pocas hojas. Devuelve `{sheets, unplaced}`: `sheets[i]` son las ubicaciones
- * ({id, x, y, rotated}, como las de `pack`) de la hoja i; `unplaced`, los ids
- * de las piezas que no entran ni solas en una hoja vacía. Cada id aparece una
- * sola vez, en una hoja o en `unplaced`.
+ * Shares out `rects` ({id, w, h}) over equal W×H sheets (the printable area),
+ * using few sheets. Gives `{sheets, unplaced}`: `sheets[i]` are the
+ * placements ({id, x, y, rotated}, like those of `pack`) of sheet i;
+ * `unplaced`, the ids of the pieces that don't fit even alone on an empty
+ * sheet. Each id appears once, on a sheet or in `unplaced`.
  *
- * Criterios, en orden: menos hojas; no partir entre hojas los grupos de
- * piezas de igual medida; llenar bien las primeras hojas (la última es la más
- * vacía: las hojas van de mayor a menor área ocupada). Cada hoja queda con la
- * mejor distribución que encuentra `pack` para sus piezas.
+ * Criteria, in order: fewer sheets; not splitting groups of equal-size pieces
+ * between sheets; filling the first sheets well (the last is the emptiest:
+ * sheets go from most to least area taken). Each sheet gets the best layout
+ * `pack` finds for its pieces.
  *
- * Es heurístico (el problema exacto es intratable): en casos fáciles usa la
- * cota por área o una hoja más. Determinístico e independiente del orden de
- * `rects`; `unplaced` va en orden canónico (lado mayor, lado menor, id).
+ * It is heuristic (the exact problem is intractable): in easy cases it
+ * reaches the bound by area or one sheet more. Deterministic and independent
+ * of the order of `rects`; `unplaced` is in canonical order (long side, short
+ * side, id).
  */
 export function packSheets(rects, W, H, { gap = 0, rotate = true } = {}) {
   const { fit, unplaced, info, index } = prepare(rects, W, H, gap, rotate);
@@ -694,17 +696,17 @@ export function packSheets(rects, W, H, { gap = 0, rotate = true } = {}) {
 }
 
 /**
- * Ubica piezas NUEVAS (`rects`: {id, w, h}) sin mover las que ya están.
- * `sheets`: por cada hoja existente, sus obstáculos ({x, y, w, h}, en
- * coordenadas del área útil: lo ocupado). Rellena los huecos de las hojas
- * existentes en orden (empezando por la hoja `from`, si se indica, y siguiendo
- * con las siguientes y después las anteriores) y lo que no entra va a hojas
- * nuevas, con índices desde `sheets.length` (de la más llena a la más vacía).
+ * Places NEW pieces (`rects`: {id, w, h}) without moving those already there.
+ * `sheets`: for each existing sheet, its obstacles ({x, y, w, h}, in
+ * printable area coordinates: what is taken). Fills the existing sheets'
+ * spaces in order (from sheet `from`, when given, then the following ones,
+ * then the earlier ones) and what doesn't fit goes to new sheets, with
+ * indices from `sheets.length` (fullest first).
  *
- * Devuelve `{placements, unplaced}`: `placements` son {id, sheet, x, y,
- * rotated}; `unplaced`, los ids de las que no entran ni solas en una hoja
- * vacía. Respeta `gap` entre piezas nuevas y entre piezas y obstáculos.
- * Mismos criterios y garantías que `packSheets`.
+ * Gives `{placements, unplaced}`: `placements` are {id, sheet, x, y,
+ * rotated}; `unplaced`, the ids of those that don't fit even alone on an
+ * empty sheet. Keeps `gap` between new pieces and between pieces and
+ * obstacles. The same criteria and guarantees as `packSheets`.
  */
 export function packInto(rects, W, H, { gap = 0, rotate = true, sheets = [], from = 0 } = {}) {
   const { fit, unplaced, info, index } = prepare(rects, W, H, gap, rotate);
