@@ -106,4 +106,13 @@
       height: 2.5rem;
     }
   }
+
+  /* Touch screens: at least 16 px, or iOS zooms the page into the field it focuses. */
+  @media (pointer: coarse) {
+    select,
+    input[type="number"],
+    input[type="text"] {
+      font-size: max(1rem, 16px);
+    }
+  }
 }

@@ -10,6 +10,13 @@
     font-size: 0.875rem;
   }
 
+  /* At least 16 px on a touch screen, or iOS zooms the page into the field. */
+  @media (pointer: coarse) {
+    input.keys-search {
+      font-size: max(1rem, 16px);
+    }
+  }
+
   .keys-section + .keys-section {
     margin-top: 1.125rem;
   }

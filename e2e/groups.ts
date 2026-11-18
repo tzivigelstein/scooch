@@ -46,6 +46,7 @@ export const SPEC_GROUPS = {
     'site-pages',
     'stored-formats',
     'theme',
+    'touch-screen',
     'units',
     'usage-tips',
   ],

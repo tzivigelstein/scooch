@@ -108,6 +108,15 @@
     line-height: inherit;
   }
 
+  /* On a touch screen its text is 16 px (or iOS zooms the page into it): the
+     taller box overlaps the gaps around the title, which keeps its place. */
+  @media (pointer: coarse) {
+    input.project-title-input {
+      margin-block: calc(0.725 * 0.84375rem - 0.725em);
+      font-size: max(1rem, 16px);
+    }
+  }
+
   .project-meta {
     margin: 0;
     color: var(--muted);
