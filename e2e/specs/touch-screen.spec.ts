@@ -3,7 +3,9 @@
 // the page into the one it focuses, with nothing overflowing at 390 px in any
 // language, while a mouse keeps the sizes it had; «Propiedades» opens with the
 // focus on its tab, not in a field (where it goes, with a mouse and with a
-// finger: tests/components/panels.test.tsx). Touch is emulated through
+// finger: tests/components/panels.test.tsx); a double tap on a control isn't
+// taken for a zoom, while the canvas keeps its own gestures (pinch-zoom.spec
+// pinches them). Touch is emulated through
 // Chromium's DevTools; on a real iPhone, Safari's own zoom still needs a look.
 import type { Page } from '@playwright/test';
 import { LANGUAGES } from '../../src/core/language.js';
@@ -125,6 +127,40 @@ test.describe('on a phone, with a finger', () => {
     await expect(page.locator('#props-panel')).toBeVisible();
     await expect(page.locator('#props-tab-piece')).toBeFocused();
     await expect(page.locator('#pos-x')).toBeVisible();
+  });
+
+  test('a double tap on a control is two taps, not the page zooming: every control is touch-action: manipulation, and the canvas keeps its own gestures', async ({ app, page }) => {
+    /** The controls shown whose double tap the browser could take for a zoom, and the canvas's own touch-action. Runs in the page. */
+    const readTouchActions = () => {
+      // A label is a control when it is the tap target of its checkbox or radio (not one around a field).
+      const selector = 'a[href], button, input, label:has(> input[type="checkbox"], > input[type="radio"]), select, summary, textarea, [role="button"], [role="menuitem"], [role="option"], [role="tab"]';
+      const controls = [...document.querySelectorAll<HTMLElement>(selector)].filter(
+        (el) => el.getClientRects().length && !el.closest('[hidden], dialog:not([open])')
+      );
+      const action = (el: Element | null) => (el ? getComputedStyle(el).touchAction : null);
+      return {
+        count: controls.length,
+        zoomable: controls.filter((el) => !['manipulation', 'none', 'pan-x pan-y'].includes(action(el)!)).map((el) => `${el.id || el.className} ${action(el)}`),
+        stage: action(document.querySelector('.stage')),
+        piece: action(document.querySelector('#sheets .piece')),
+      };
+    };
+    await app.addFiles(['small.jpg', 'square.webp']);
+    await app.clickPiece(app.pieces().first());
+    await page.locator('#props-toggle').tap();
+    await expect(page.locator('#props-panel')).toBeVisible();
+    const shown = await page.evaluate(readTouchActions);
+    expect(shown.count, 'controls found').toBeGreaterThan(30);
+    expect(shown.zoomable).toEqual([]);
+    expect([shown.stage, shown.piece], 'the canvas: its own pan and pinch, the pieces’ drag').toEqual(['pan-x pan-y', 'none']);
+    await app.closePopover();
+    await page.locator('#pieces-dock').tap();
+    await expect(page.locator('#pieces-panel')).toBeVisible();
+    expect((await page.evaluate(readTouchActions)).zoomable, 'with the pieces’ list').toEqual([]);
+    await page.keyboard.press('Escape');
+    await page.locator('#projects-open').tap();
+    await expect(page.locator('#projects')).toHaveAttribute('open', '');
+    expect((await page.evaluate(readTouchActions)).zoomable, 'in a dialog').toEqual([]);
   });
 
   test('the calculator’s fields on the site are 16 px at least', async ({ page }) => {

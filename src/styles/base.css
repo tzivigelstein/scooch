@@ -49,6 +49,25 @@
     cursor: pointer;
   }
 
+  /* A quick double tap on a control is two taps, never the browser zooming
+     the page (pinching still zooms it). A label counts when it is the tap
+     target of the checkbox or radio inside it; one around a field is no
+     control of its own. The canvas's own gestures set theirs in a later
+     layer (Stage.css, Piece.css, SelectionOverlay.css, CropMode.css). */
+  a,
+  button,
+  input,
+  label:has(> input[type="checkbox"], > input[type="radio"]),
+  select,
+  summary,
+  textarea,
+  [role="button"],
+  [role="menuitem"],
+  [role="option"],
+  [role="tab"] {
+    touch-action: manipulation;
+  }
+
   button:disabled,
   button[aria-disabled="true"] {
     cursor: not-allowed;
