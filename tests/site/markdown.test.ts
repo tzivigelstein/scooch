@@ -12,6 +12,11 @@ describe('blocks', () => {
     expect(headingId('Lo que no hacemos')).toBe('lo-que-no-hacemos');
   });
 
+  test('a heading in Devanagari keeps its vowel signs, as on GitHub, so two headings don’t end up with one id', () => {
+    expect(headingId('हम क्या नहीं करते')).toBe('हम-क्या-नहीं-करते');
+    expect(headingId('कैसे करें')).not.toBe(headingId('कसे कर'));
+  });
+
   test('lines of a paragraph join; a blank line starts another', () => {
     expect(md('Una línea\ny la siguiente.\n\nOtro párrafo.')).toBe('<p>Una línea y la siguiente.</p>\n<p>Otro párrafo.</p>');
   });

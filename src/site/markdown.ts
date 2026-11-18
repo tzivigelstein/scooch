@@ -21,11 +21,15 @@ export const stripComments = (md: string) => md.replace(/<!--[\s\S]*?-->/g, '');
 /** Placeholders like «<TITULAR>» or «<COPYRIGHT HOLDER>» (comments aside), once each, in order. */
 export const findPlaceholders = (md: string) => [...new Set(stripComments(md).match(/<[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ /]*[A-ZÁÉÍÓÚÑ]>/g) ?? [])];
 
-/** GitHub's id for a heading's text: lowercase, letters and digits, spaces as hyphens. */
+/**
+ * GitHub's id for a heading's text: lowercase, letters (with their combining
+ * marks: Devanagari's vowel signs are marks, not letters) and digits, spaces
+ * as hyphens.
+ */
 export const headingId = (text: string) =>
   text
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .replace(/[^\p{L}\p{M}\p{N}\s-]/gu, '')
     .trim()
     .replace(/\s/g, '-');
 
