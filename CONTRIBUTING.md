@@ -72,8 +72,9 @@ The [README](README.md) explains how the parts fit together.
 
 ### Language and naming
 
-- Code, identifiers, comments and commit messages are in English. Some older
-  modules still have comments in Spanish; don't add new ones.
+- Code, identifiers, comments, test titles and commit messages are in
+  English. A comment may cite an interface text as it reads in Spanish, in
+  «quotes».
 - Use the domain's own terms, the same ones every time. The interface is in
   Spanish and the code in English:
 
