@@ -1,7 +1,9 @@
 // Tooltips for the elements with `data-tip` (and `data-kbd` for the shortcut,
 // `data-tip-note` for a note). They show with the mouse (after a short delay)
 // and with the keyboard focus; the pointer can move onto them, and Esc closes
-// them without moving the focus (WCAG 1.4.13).
+// them without moving the focus (WCAG 1.4.13). What comes under a pointer
+// that isn't moving (a panel opening, a list scrolling) doesn't take the
+// tooltip from the focused element: the pointer has to move.
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -20,7 +22,18 @@ export function Tooltip() {
   const tip = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState<Tip | null>(null);
   const singleKeys = usePrefs((s) => s.singleKeys);
-  const state = useRef({ target: null as HTMLElement | null, showTimer: 0 as ReturnType<typeof setTimeout> | 0, hideTimer: 0 as ReturnType<typeof setTimeout> | 0, lastPointer: -Infinity, singleKeys });
+  const state = useRef({
+    target: null as HTMLElement | null,
+    showTimer: 0 as ReturnType<typeof setTimeout> | 0,
+    hideTimer: 0 as ReturnType<typeof setTimeout> | 0,
+    lastPointer: -Infinity,
+    // Where the mouse (or pen) last moved to, in the window (NaN: nowhere yet).
+    x: NaN,
+    y: NaN,
+    // What came under it, without its moving, while the focused element's tooltip showed: its own waits for a move.
+    under: null as HTMLElement | null,
+    singleKeys,
+  });
 
   // The shortcut shows unless it is a single-key one and those are off.
   const tipOf = (el: HTMLElement): Tip => ({
@@ -49,27 +62,52 @@ export function Tooltip() {
       clearTimeout(s.hideTimer);
       s.hideTimer = setTimeout(hide, 120);
     };
-    const onPointerOver = (e: PointerEvent) => {
-      if (e.pointerType === 'touch') return;
-      const target = e.target as Element;
-      const el = target.closest?.<HTMLElement>('[data-tip]') ?? null;
-      if (el === s.target) return clearTimeout(s.hideTimer);
-      if (tip.current?.contains(target)) return clearTimeout(s.hideTimer);
-      if (!el) return;
+    const hover = (el: HTMLElement) => {
       clearTimeout(s.showTimer);
       // With no tooltip showing there is nothing to hide: the hide that leaving
       // another button scheduled would only cancel this one before it shows.
       if (!s.target) clearTimeout(s.hideTimer);
       s.showTimer = setTimeout(() => show(el), s.target ? 0 : 300);
     };
+    // A boundary event at the pointer's last position: the page moved under it,
+    // not the pointer (browsers send them when the element under it changes).
+    const still = (e: PointerEvent) => e.clientX === s.x && e.clientY === s.y;
+    const forFocus = () => !!s.target?.contains(document.activeElement);
+    const onPointerOver = (e: PointerEvent) => {
+      if (e.pointerType === 'touch') return;
+      s.under = null;
+      const target = e.target as Element;
+      const el = target.closest?.<HTMLElement>('[data-tip]') ?? null;
+      if (el === s.target) return clearTimeout(s.hideTimer);
+      if (tip.current?.contains(target)) return clearTimeout(s.hideTimer);
+      if (!el) return;
+      if (still(e) && forFocus()) {
+        s.under = el;
+        return;
+      }
+      hover(el);
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerType === 'touch') return;
+      const moved = !still(e);
+      s.x = e.clientX;
+      s.y = e.clientY;
+      const el = s.under;
+      if (!moved || !el) return;
+      s.under = null;
+      if (el.isConnected) hover(el);
+    };
     const onPointerOut = (e: PointerEvent) => {
       const target = e.target as Element;
       const el = target.closest?.('[data-tip]');
       const to = e.relatedTarget as Node | null;
       if (el && el.contains(to)) return;
+      if (el && el === s.under) s.under = null;
       if (!el && !tip.current?.contains(target)) return;
       clearTimeout(s.showTimer);
       if (to && (tip.current?.contains(to) || s.target?.contains(to))) return;
+      // Something moving away from under a still pointer leaves the focused element's tooltip too.
+      if (still(e) && forFocus()) return;
       scheduleHide();
     };
     const onFocusIn = (e: FocusEvent) => {
@@ -81,6 +119,7 @@ export function Tooltip() {
     };
     const onPointerDown = () => {
       s.lastPointer = performance.now();
+      s.under = null;
       hide();
     };
     // With the keyboard, the next focus is a keyboard one.
@@ -116,6 +155,7 @@ export function Tooltip() {
       e.stopImmediatePropagation();
     };
     document.addEventListener('pointerover', onPointerOver);
+    document.addEventListener('pointermove', onPointerMove, { passive: true });
     document.addEventListener('pointerout', onPointerOut);
     document.addEventListener('focusin', onFocusIn);
     document.addEventListener('focusout', hide);
@@ -125,6 +165,7 @@ export function Tooltip() {
     window.addEventListener('scroll', onScroll, true);
     return () => {
       document.removeEventListener('pointerover', onPointerOver);
+      document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerout', onPointerOut);
       document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('focusout', hide);
