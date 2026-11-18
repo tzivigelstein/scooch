@@ -1,17 +1,16 @@
-// Operaciones de grupo (varias piezas elegidas, en una o varias hojas): cada
-// subgrupo (las elegidas de una hoja) se transforma dentro de su hoja, se
-// ajusta a la grilla como bloque (imán), se acota para que el centro de cada
-// pieza quede en su hoja y se valida contra las superposiciones. Módulo puro:
-// recibe cajas {id, sheet, x, y, w, h} en mm (ya giradas y recortadas) y
-// devuelve las nuevas, sin tocar nada.
+// Group operations (several selected pieces, on one or more sheets): each
+// subgroup (the selected pieces of one sheet) is transformed within its
+// sheet, snapped to the grid as a block, kept so each piece's center stays on
+// its sheet, and checked for overlaps. Takes boxes {id, sheet, x, y, w, h} in
+// mm (rotated and cropped) and returns new ones, changing nothing.
 
 import { bounds, snapGroup, validate, align, distribute, moveBy, rotateGroup, scaleGroup } from './align.js';
 import { nextFreeForGroup, nearestFreeOffset, groupScaleRange } from './collide.js';
 
 /**
- * Las elegidas (`ids`, un Set) agrupadas por hoja, en el orden de `boxes`:
- * Map hoja → {rects: elegidas, others: las demás de esa hoja}. Solo las hojas
- * que tienen alguna elegida.
+ * The selected boxes (`ids`, a Set) by sheet, in the order of `boxes`: Map
+ * sheet → {rects: the selected ones, others: the rest of that sheet}. Only
+ * the sheets with something selected.
  */
 export function subgroups(boxes, ids) {
   const out = new Map();
@@ -26,8 +25,8 @@ export function subgroups(boxes, ids) {
 
 const plain = ({ id, x, y, w, h }) => ({ id, x, y, w, h });
 
-// Rango de corrimientos [lo, hi] de un eje para que todos los centros queden
-// en [0, total]. lo > hi: no hay forma.
+// The offsets [lo, hi] on one axis that keep every center in [0, total].
+// lo > hi: there are none.
 function centerRange(rects, pos, size, total) {
   let lo = -Infinity;
   let hi = Infinity;
@@ -39,8 +38,8 @@ function centerRange(rects, pos, size, total) {
   return [lo, hi];
 }
 
-// Corrimiento mínimo para entrar en [lo, hi]; con imán, redondeado hacia
-// afuera a un múltiplo del paso si así también entra (el bloque sigue en la grilla).
+// The smallest offset into [lo, hi]; with snap, rounded away from zero to a
+// multiple of the step when that fits too (so the block stays on the grid).
 function containShift(lo, hi, step) {
   const shift = Math.min(Math.max(0, lo), hi);
   if (!shift || !step) return shift;
@@ -50,28 +49,28 @@ function containShift(lo, hi, step) {
 }
 
 /**
- * Plan de una operación de grupo.
+ * The plan of a group operation.
  *
- * `boxes`: todas las piezas del documento; `ids`: Set de las elegidas.
- * `transform(rects, sheet)`: devuelve los rectángulos nuevos del subgrupo de
- * esa hoja (mismo orden e ids).
+ * `boxes`: every piece of the document; `ids`: a Set of the selected ones.
+ * `transform(rects, sheet)`: gives the new rectangles of that sheet's
+ * subgroup (same order and ids).
  *
- * Opciones:
- * - `W`, `H`: medidas de la hoja.
- * - `snap`: null o {step, axes ('x' | 'y' | 'xy'), round} para snapGroup: el
- *   subgrupo se ajusta a la grilla como bloque, sin cambiar sus distancias.
- * - `contain`: 'clamp' (por omisión: si algún centro sale de la hoja, el
- *   subgrupo entero se corre lo justo para que todos queden adentro) o
- *   'reject' (no se aplica: `reason` 'outside').
- * - `allowOverlap`: con false (por omisión), si alguna pieza pisa a otra de su
- *   hoja (elegida o no) la operación no vale: `reason` 'overlap'.
- * - `rigid`: el grupo solo se mueve; las elegidas que ya se pisaban entre sí
- *   no cuentan (el movimiento no lo cambia).
- * - `round(v)`: redondeo de las posiciones (p. ej. a 0,0001 mm).
+ * Options:
+ * - `W`, `H`: the sheet's size.
+ * - `snap`: null or {step, axes ('x' | 'y' | 'xy'), round} for snapGroup: the
+ *   subgroup snaps to the grid as a block, keeping its distances.
+ * - `contain`: 'clamp' (default: when some center leaves the sheet, the whole
+ *   subgroup moves just enough for all of them to be on it) or 'reject' (not
+ *   applied: `reason` 'outside').
+ * - `allowOverlap`: when false (default), a piece overlapping another of its
+ *   sheet (selected or not) makes the operation invalid: `reason` 'overlap'.
+ * - `rigid`: the group only moves; selected pieces that already overlapped
+ *   each other don't count (moving doesn't change that).
+ * - `round(v)`: rounding of the positions (to 0.0001 mm, for instance).
  *
- * Devuelve {ok, reason, sheet, rects, changed}: `rects`, Map id → {id, x, y,
- * w, h} (también cuando no vale por superposición, para mostrarlo); `sheet`,
- * la hoja del problema; `changed`, si algo se movió o cambió de medida.
+ * Gives {ok, reason, sheet, rects, changed}: `rects`, Map id → {id, x, y, w,
+ * h} (also when an overlap makes it invalid, to show it); `sheet`, the sheet
+ * with the problem; `changed`, whether anything moved or changed size.
  */
 export function planGroup(boxes, ids, transform, options = {}) {
   const { W, H, snap = null, contain = 'clamp', allowOverlap = false, rigid = false, round = (v) => v, pad = 0 } = options;
@@ -108,9 +107,9 @@ export function planGroup(boxes, ids, transform, options = {}) {
 }
 
 /**
- * Factores k para escalar `rects` desde `anchor` ({x, y}, como
- * align.scaleGroup) sin que ningún centro salga de la hoja W × H. Devuelve
- * {min, max} (min > max: ningún factor sirve).
+ * The factors k to scale `rects` by from `anchor` ({x, y}, as in
+ * align.scaleGroup) with no center leaving the W × H sheet. Gives {min, max}
+ * (min > max: no factor works).
  */
 export function containScaleRange(rects, anchor, W, H) {
   let min = 0;
@@ -120,7 +119,7 @@ export function containScaleRange(rects, anchor, W, H) {
       [r.x + r.w / 2, anchor.x, W],
       [r.y + r.h / 2, anchor.y, H],
     ]) {
-      // El centro queda en a + d·k, que tiene que estar en [0, total].
+      // The center ends at a + d·k, which has to be in [0, total].
       const d = c - a;
       if (d > 0) {
         max = Math.min(max, (total - a) / d);
@@ -136,7 +135,7 @@ export function containScaleRange(rects, anchor, W, H) {
   return { min, max };
 }
 
-/** Caja de cada subgrupo: Map hoja → {x, y, w, h}. */
+/** Each subgroup's box: Map sheet → {x, y, w, h}. */
 export function groupBounds(boxes, ids) {
   const out = new Map();
   for (const [sheet, { rects }] of subgroups(boxes, ids)) out.set(sheet, bounds(rects));
@@ -144,8 +143,8 @@ export function groupBounds(boxes, ids) {
 }
 
 /**
- * Valor común de una propiedad en varias piezas (con tolerancia), o null si
- * no coinciden («Mixta»). `values`: números.
+ * The value several pieces share (within a tolerance), or null when they
+ * differ (shown as mixed). `values`: numbers.
  */
 export function common(values, tolerance = 1e-6) {
   if (!values.length) return null;
@@ -154,10 +153,10 @@ export function common(values, tolerance = 1e-6) {
 }
 
 /**
- * Qué piezas son «iguales»: las que vienen del mismo archivo de origen que
- * alguna de `ids`. `items`: [{id, src}] (src: el archivo original del asset;
- * las páginas de un mismo PDF lo comparten, y no cambia con el recorte, la
- * escala, el giro ni la página). Devuelve los ids, en el orden de `items`.
+ * Which pieces are «the same»: those from the same source file as one of
+ * `ids`. `items`: [{id, src}] (src: the asset's original file; the pages of
+ * one PDF share it, and crop, scale, rotation and page don't change it).
+ * Gives the ids, in the order of `items`.
  */
 export function sameSource(items, ids) {
   const sources = new Set(items.filter((item) => ids.has(item.id)).map((item) => item.src));
@@ -165,9 +164,9 @@ export function sameSource(items, ids) {
 }
 
 /**
- * Selección por recuadro: los ids de las cajas (en coordenadas comunes, p. ej.
- * px del lienzo) que el recuadro `area` ({x, y, w, h}) toca (tocarse por un
- * borde no cuenta). `boxes`: [{id, x, y, w, h}].
+ * Marquee selection: the ids of the boxes (in shared coordinates, the
+ * canvas's px for instance) that the marquee `area` ({x, y, w, h}) touches
+ * (touching along an edge doesn't count). `boxes`: [{id, x, y, w, h}].
  */
 export function touchedBy(area, boxes) {
   const x1 = area.x + area.w;
@@ -176,8 +175,9 @@ export function touchedBy(area, boxes) {
 }
 
 /**
- * Rango de una lista entre dos ids (incluidos), para Shift+clic y
- * Shift+flechas: `order`, todos los ids en orden. Si alguno no está, solo `to`.
+ * The run of a list between two ids (both included), for Shift+click and
+ * Shift+arrows: `order`, every id in order. When `from` isn't there, just
+ * `to`.
  */
 export function rangeBetween(order, from, to) {
   const a = order.indexOf(from);
@@ -187,21 +187,21 @@ export function rangeBetween(order, from, to) {
   return order.slice(Math.min(a, b), Math.max(a, b) + 1);
 }
 
-// ---------- Planes de cada operación (la UI solo los aplica y los anuncia) ----------
+// ---------- Each operation's plan (the UI only applies and announces it) ----------
 //
-// Opciones comunes (`opts`): {W, H, allowOverlap, round, snapStep}. `snapStep`:
-// paso de la grilla si el imán está encendido (si no, 0 o null). `boxes`:
-// todas las piezas {id, sheet, x, y, w, h}; `ids`: Set de las elegidas.
+// Shared options (`opts`): {W, H, allowOverlap, round, snapStep}. `snapStep`:
+// the grid's step while snapping is on (otherwise 0 or null). `boxes`: every
+// piece {id, sheet, x, y, w, h}; `ids`: a Set of the selected ones.
 
-/** Escala de cada pieza, en %. */
+/** Each piece's scale, in %. */
 export const SCALE_RANGE = Object.freeze({ min: 1, max: 1000 });
 
 const base = ({ W, H, allowOverlap = false, round = (v) => v, pad = 0 }) => ({ W, H, allowOverlap, round, pad });
 
-// Dos medidas a menos de esto (mm) son la misma (más que el redondeo de las posiciones).
+// Two lengths closer than this (mm) are the same (more than the positions' rounding).
 const SAME_LENGTH = 1e-3;
 
-/** Factores que respetan la escala de cada pieza (`scales`, en %). */
+/** The factors that keep each piece's scale (`scales`, in %) in SCALE_RANGE. */
 export function scaleLimits(scales) {
   let min = 0;
   let max = Infinity;
@@ -212,14 +212,15 @@ export function scaleLimits(scales) {
   return { min, max };
 }
 
-// Ancla de cada subgrupo: un punto de su caja (fracciones del ancho y el alto).
+// Each subgroup's anchor: a point of its box (fractions of the width and the height).
 const ANCHORS = { center: [0.5, 0.5], 'top-left': [0, 0] };
 const anchorOf = (box, anchor) => ({ x: box.x + box.w * ANCHORS[anchor][0], y: box.y + box.h * ANCHORS[anchor][1] });
 
 /**
- * Flechas: corre el grupo (dx, dy). Sin superposición, si chocaría salta lo
- * que estorba (como una pieza); después se acota a la hoja. Devuelve {plan,
- * jumped} (plan.ok false o !plan.changed: no se mueve).
+ * Arrow keys: moves the group by (dx, dy). Without overlaps, when it would
+ * collide it jumps over what is in the way (as a single piece does); then it
+ * is kept on the sheet. Gives {plan, jumped} (plan.ok false or !plan.changed:
+ * it doesn't move).
  */
 export function planNudge(boxes, ids, dx, dy, opts) {
   let ox = dx;
@@ -230,22 +231,23 @@ export function planNudge(boxes, ids, dx, dy, opts) {
 }
 
 /**
- * Campos X e Y: la caja del grupo en la hoja `sheet` pasa a `mm` en `axis`
- * ('x' | 'y'); las demás partes se corren lo mismo. null si ya está ahí.
+ * The X and Y fields: the group's box on sheet `sheet` goes to `mm` on `axis`
+ * ('x' | 'y'); the other parts move by the same. null when it is already
+ * there.
  */
 export function planMoveTo(boxes, ids, sheet, axis, mm, opts) {
   const box = groupBounds(boxes, ids).get(sheet);
   const delta = mm - box[axis];
-  // Las posiciones se guardan redondeadas a 0,0001 mm: lo que difiere menos de
-  // 0,001 mm ya está (p. ej. el «change» que llega al salir del campo).
+  // Positions are stored rounded to 0.0001 mm: less than 0.001 mm away is
+  // already there (the «change» that comes when leaving the field, say).
   if (Math.abs(delta) < SAME_LENGTH) return null;
   return planGroup(boxes, ids, (rects) => moveBy(rects, axis === 'x' ? delta : 0, axis === 'y' ? delta : 0), { ...base(opts), rigid: true, contain: 'reject' });
 }
 
 /**
- * Factores posibles para escalar todo el grupo desde `anchor` ('center' o
- * 'top-left' de la caja de cada parte): escala de cada pieza (`scales`),
- * centros dentro de la hoja y, sin superposición, sin pisar a las demás.
+ * The factors the whole group can be scaled by from `anchor` ('center' or
+ * 'top-left' of each part's box): each piece's scale (`scales`), the centers
+ * on the sheet and, without overlaps, not overlapping the rest.
  */
 export function scaleBounds(boxes, ids, scales, anchor, opts) {
   let { min, max } = scaleLimits(scales);
@@ -266,16 +268,16 @@ export function scaleBounds(boxes, ids, scales, anchor, opts) {
   return { min, max };
 }
 
-/** Escala el grupo por `k` desde `anchor` en cada parte (el plan valida). */
+/** Scales the group by `k` from `anchor` in each part (the plan checks it). */
 export function planScale(boxes, ids, k, anchor, opts) {
   return planGroup(boxes, ids, (rects) => scaleGroup(rects, k, anchorOf(bounds(rects), anchor)).rects, base(opts));
 }
 
 /**
- * + y −: `delta` en puntos de la escala de la principal (`primaryScale`; +1 de
- * 50 % es 51 %), todas en la misma proporción, desde el centro de la caja. Se
- * acota al tocar a otra o al llegar a un límite. Devuelve {plan, k} o null si
- * no puede cambiar en ese sentido.
+ * + and −: `delta` in points of the primary piece's scale (`primaryScale`; +1
+ * from 50 % is 51 %), all in the same proportion, from the box's center. It
+ * stops on touching another or reaching a limit. Gives {plan, k}, or null
+ * when it can't change that way.
  */
 export function planScaleBy(boxes, ids, scales, primaryScale, delta, opts) {
   const wanted = Math.max(SCALE_RANGE.min, primaryScale + delta) / primaryScale;
@@ -288,10 +290,10 @@ export function planScaleBy(boxes, ids, scales, primaryScale, delta, opts) {
 }
 
 /**
- * Campos de ancho y alto: la caja del grupo en la hoja `sheet` pasa a medir
- * `mm` en `axis` ('w' | 'h'), en proporción, desde su esquina superior
- * izquierda (las otras partes igual). null si ya mide eso; {ok: false, reason:
- * 'limit'} si alguna escala pasaría de 1–1000 %. Devuelve {plan, k}.
+ * The width and height fields: the group's box on sheet `sheet` becomes `mm`
+ * on `axis` ('w' | 'h'), in proportion, from its top left corner (the other
+ * parts alike). null when it already measures that; {ok: false, reason:
+ * 'limit'} when some scale would leave 1–1000 %. Gives {plan, k}.
  */
 export function planResizeTo(boxes, ids, sheet, axis, mm, scales, opts) {
   const box = groupBounds(boxes, ids).get(sheet);
@@ -304,8 +306,8 @@ export function planResizeTo(boxes, ids, sheet, axis, mm, scales, opts) {
 }
 
 /**
- * Escala común: todas pasan a `value` % (acotado a 1–1000), cada una desde su
- * centro. `scales`: Map id → escala actual. Devuelve {plan, scale}.
+ * A shared scale: all go to `value` % (kept in 1–1000), each from its center.
+ * `scales`: Map id → current scale. Gives {plan, scale}.
  */
 export function planCommonScale(boxes, ids, scales, value, opts) {
   const scale = Math.min(Math.max(value, SCALE_RANGE.min), SCALE_RANGE.max);
@@ -322,40 +324,41 @@ export function planCommonScale(boxes, ids, scales, value, opts) {
   return { plan, scale };
 }
 
-/** Gira el grupo 90° alrededor del centro de su caja (`dir` > 0: horario). {plan, dr} */
+/** Rotates the group 90° around its box's center (`dir` > 0: clockwise). {plan, dr} */
 export function planRotate(boxes, ids, dir, opts) {
   const direction = dir > 0 ? 'cw' : 'ccw';
   return { plan: planGroup(boxes, ids, (rects) => rotateGroup(rects, direction).rects, base(opts)), dr: dir > 0 ? 90 : 270 };
 }
 
 const ALIGN_AXIS = { left: 'x', centerX: 'x', right: 'x', top: 'y', centerY: 'y', bottom: 'y' };
-// Contra el área útil, con el imán la esquina va hacia adentro del margen.
+// Against the printable area, snapping takes the corner inside the margin.
 const INWARD = { left: 'up', centerX: 'nearest', right: 'down', top: 'up', centerY: 'nearest', bottom: 'down' };
 
 /**
- * Alinear: contra la caja de cada parte o, con `area` ({x, y, w, h}: el área
- * útil), contra ella. Con el imán, el bloque cae en la grilla en el eje que
- * cambia (contra el área útil, hacia adentro). Si alguna pieza saldría de la
- * hoja, no vale.
+ * Align: against each part's box or, with `area` ({x, y, w, h}: the printable
+ * area), against that. With snap, the block lands on the grid on the axis
+ * that changes (against the printable area, inward). When some piece would
+ * leave the sheet, it is invalid.
  */
 export function planAlign(boxes, ids, mode, { area = null, ...opts }) {
   const axis = ALIGN_AXIS[mode];
-  if (!axis) throw new RangeError(`modo de alineación desconocido: ${mode}`);
+  if (!axis) throw new RangeError(`unknown align mode: ${mode}`);
   const snap = opts.snapStep > 0 ? { step: opts.snapStep, axes: axis, round: area ? INWARD[mode] : 'nearest' } : null;
   return planGroup(boxes, ids, (rects) => align(rects, mode, area ?? bounds(rects)), { ...base(opts), snap, contain: 'reject' });
 }
 
-/** Cuántas hacen falta en una misma hoja para distribuir: con separación 2, parejo 3. */
+/** How many pieces one sheet needs to distribute: 2 with the gap, 3 evenly. */
 export const distributeNeeds = (mode) => (mode === 'even' ? 3 : 2);
 
-/** ¿Alguna hoja tiene suficientes elegidas para distribuir con `mode`? */
+/** Does some sheet have enough selected pieces to distribute with `mode`? */
 export const canDistribute = (boxes, ids, mode) => [...subgroups(boxes, ids).values()].some(({ rects }) => rects.length >= distributeNeeds(mode));
 
 /**
- * Distribuir en `axis`: con `gap` mm entre consecutivas (la primera queda) o
- * parejo entre la primera y la última (`mode` 'even'). Las hojas con menos
- * piezas de las necesarias no cambian. Con el imán, el bloque cae en la grilla
- * en ese eje. Si alguna pieza saldría de la hoja, no vale.
+ * Distribute along `axis`: `gap` mm between consecutive ones (the first
+ * stays) or evenly between the first and the last (`mode` 'even'). Sheets
+ * with fewer pieces than needed don't change. With snap, the block lands on
+ * the grid on that axis. When some piece would leave the sheet, it is
+ * invalid.
  */
 export function planDistribute(boxes, ids, axis, { mode = 'gap', gap = 0, ...opts }) {
   const need = distributeNeeds(mode);
@@ -369,10 +372,10 @@ export function planDistribute(boxes, ids, axis, { mode = 'gap', gap = 0, ...opt
 }
 
 /**
- * Arrastre: dónde quedaría el grupo corrido (dx, dy) mm. Con `target` (el
- * grupo está en una sola hoja y va a otra), las elegidas pasan a esa hoja con
- * la y corrida `offsetY` mm. Con el imán, el bloque cae en la grilla.
- * Devuelve {plan, boxes} (las cajas con la hoja nueva, para soltar).
+ * Drag: where the group would end moved by (dx, dy) mm. With `target` (the
+ * group is on one sheet and goes to another), the selected pieces move to
+ * that sheet with y shifted by `offsetY` mm. With snap, the block lands on
+ * the grid. Gives {plan, boxes} (the boxes with the new sheet, for the drop).
  */
 export function planDrag(boxes, ids, dx, dy, { target = null, offsetY = 0, ...opts }) {
   const all = target === null ? boxes : boxes.map((b) => (ids.has(b.id) ? { ...b, sheet: target, y: b.y + offsetY } : b));
@@ -381,10 +384,10 @@ export function planDrag(boxes, ids, dx, dy, { target = null, offsetY = 0, ...op
 }
 
 /**
- * Soltar el arrastre (`drag`: el último planDrag). Si ahí pisaría a otras, el
- * bloque va al lugar libre más cercano (con el imán, corrido en pasos de la
- * grilla); si no hay uno cerca, vuelve. Devuelve {result, rects}: result
- * 'moved', 'moved-aside' o 'reverted'.
+ * Dropping the drag (`drag`: the last planDrag). When it would overlap others
+ * there, the block goes to the nearest free place (with snap, moved in grid
+ * steps); when there is none nearby, it goes back. Gives {result, rects}:
+ * result 'moved', 'moved-aside' or 'reverted'.
  */
 export function planDrop({ plan, boxes }, ids, opts) {
   if (plan.ok) return { result: 'moved', rects: plan.rects };
@@ -399,23 +402,24 @@ export function planDrop({ plan, boxes }, ids, opts) {
   return { result: 'moved-aside', rects };
 }
 
-// ---------- Selección ----------
+// ---------- Selection ----------
 
-/** Lista con `primary` al final (la principal), sin repetir. */
+/** The list with `primary` last (the primary piece), without repeats. */
 export const withPrimaryLast = (list, primary) => (list.includes(primary) ? [...list.filter((id) => id !== primary), primary] : [...list]);
 
-/** Agrega `id` a la selección o lo quita. Devuelve {selection, on}. */
+/** Adds `id` to the selection or removes it. Gives {selection, on}. */
 export function toggled(selection, id) {
   const on = !selection.includes(id);
   return { selection: on ? [...selection, id] : selection.filter((other) => other !== id), on };
 }
 
-/** Recuadro: las que tocó (sumadas a las de antes con `additive`), las tocadas al final. */
+/** Marquee: those it touched (added to the earlier ones with `additive`), the touched ones last. */
 export const touchedSelection = (selection, touched, additive) => [...(additive ? selection.filter((id) => !touched.includes(id)) : []), ...touched];
 
 /**
- * Ctrl+A: las de la hoja actual (`onSheet`, ids); si ya estaban exactamente
- * esas, todas (`all`). La principal sigue siéndolo si queda. {selection, everything}
+ * Ctrl+A: those of the current sheet (`onSheet`, ids); when exactly those
+ * were already selected, all of them (`all`). The primary piece stays primary
+ * when it remains. {selection, everything}
  */
 export function selectAllTarget(selection, onSheet, all) {
   const everything = onSheet.length > 0 && selection.length === onSheet.length && onSheet.every((id) => selection.includes(id));
@@ -423,8 +427,9 @@ export function selectAllTarget(selection, onSheet, all) {
 }
 
 /**
- * Al quitar `removed` (Set), quién queda elegida: la siguiente de la hoja de
- * la principal (`sameSheet`, ids en orden), o la anterior, o ninguna.
+ * Who stays selected after removing `removed` (a Set): the next one on the
+ * primary piece's sheet (`sameSheet`, ids in order), or the previous one, or
+ * none.
  */
 export function neighborAfterRemoval(sameSheet, primary, removed) {
   const index = sameSheet.indexOf(primary);
@@ -433,5 +438,5 @@ export function neighborAfterRemoval(sameSheet, primary, removed) {
   return after ?? before ?? null;
 }
 
-/** Cuántas copias de cada elegida entran sin pasar `max` piezas en total. */
+/** How many copies of each selected piece fit without passing `max` pieces in all. */
 export const copiesAllowed = (total, selected, max) => Math.max(0, Math.floor((max - total) / Math.max(1, selected)));
