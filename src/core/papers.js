@@ -1,17 +1,16 @@
-// Papeles: tamaños estándar (presets) y personalizados. Medidas en mm.
-// Módulo puro y sin textos de interfaz: los nombres que se muestran los pone
-// el texto de la interfaz a partir de los ids, que son estables.
+// Papers: standard sizes (presets) and custom ones, in mm. No interface
+// texts: the interface names them from their ids, which are stable.
 //
-// Un papel es el id de un preset ('A4', 'letter', …) o uno personalizado
-// {custom: true, w, h}. La orientación va aparte (`landscape`), como hoy.
+// A paper is a preset's id ('A4', 'letter', …) or a custom one {custom: true,
+// w, h}. The orientation goes apart (`landscape`).
 
-/** Grupos de presets, en el orden en que conviene mostrarlos. */
+/** Preset groups, in the order they are best shown in. */
 export const PAPER_GROUPS = Object.freeze(['iso-a', 'iso-b', 'us', 'photo']);
 
 /**
- * Presets en vertical (w ≤ h), por grupo: serie A (ISO 216), B4 y B5 (ISO),
- * americanos (carta, oficio/legal, folio y tabloide) y papel fotográfico (sus
- * medidas reales en pulgadas: 'photo-10x15' es 4 × 6 in).
+ * Presets upright (w ≤ h), by group: the A series (ISO 216), B4 and B5 (ISO),
+ * US sizes (letter, legal, folio and tabloid) and photo paper (its real sizes
+ * in inches: 'photo-10x15' is 4 × 6 in).
  */
 export const PAPERS = Object.freeze(
   [
@@ -36,20 +35,19 @@ export const PAPERS = Object.freeze(
   ].map((paper) => Object.freeze(paper))
 );
 
-/** Límites de un lado de papel personalizado, en mm (inclusive). */
+/** The limits of a custom paper's side, in mm (inclusive). */
 export const CUSTOM_MIN = 20;
 export const CUSTOM_MAX = 2000;
 
-/** Tolerancia de `matchPreset`, en mm. */
+/** The tolerance of `matchPreset`, in mm. */
 export const MATCH_TOLERANCE = 0.5;
 
-/** El preset con ese id, o null. */
 export const getPaper = (id) => (typeof id === 'string' && PAPERS.find((p) => p.id === id)) || null;
 
 /**
- * Valida un lado de papel personalizado. Devuelve null si está bien o un
- * código: 'invalid' (no es un número finito), 'too-small' (< CUSTOM_MIN) o
- * 'too-large' (> CUSTOM_MAX).
+ * Checks a custom paper's side: null when it is fine, or a code: 'invalid'
+ * (not a finite number), 'too-small' (< CUSTOM_MIN) or 'too-large'
+ * (> CUSTOM_MAX).
  */
 export function validateSide(mm) {
   if (typeof mm !== 'number' || !Number.isFinite(mm)) return 'invalid';
@@ -59,22 +57,22 @@ export function validateSide(mm) {
 }
 
 /**
- * Valida un papel personalizado de w × h mm: null si está bien, o el código
- * de `validateSide` del primer lado que falla (primero el ancho).
+ * Checks a custom paper of w × h mm: null when it is fine, or the
+ * `validateSide` code of the first side that fails (the width first).
  */
 export const validateCustom = (w, h) => validateSide(w) ?? validateSide(h);
 
 /**
- * Papel personalizado a partir de lo que cargó el usuario: lo guarda en
- * vertical y deduce la orientación (apaisado si w > h). Devuelve {paper,
- * landscape}, o null si las medidas no valen (ver validateCustom).
+ * A custom paper from what the person typed: stored upright, with the
+ * orientation it implies (landscape when w > h). Gives {paper, landscape},
+ * or null when the sizes aren't valid (see validateCustom).
  */
 export function customPaper(w, h) {
   if (validateCustom(w, h)) return null;
   return { paper: { custom: true, w: Math.min(w, h), h: Math.max(w, h) }, landscape: w > h };
 }
 
-// Medidas en vertical de un papel (preset o personalizado), o null si no vale.
+// A paper's upright size (preset or custom), or null when it isn't valid.
 function portrait(paper) {
   if (typeof paper === 'string') return getPaper(paper);
   if (paper && paper.custom === true && !validateCustom(paper.w, paper.h)) {
@@ -84,10 +82,10 @@ function portrait(paper) {
 }
 
 /**
- * Ancho y alto de la hoja ({w, h} en mm) para un papel (id de preset o
- * {custom: true, w, h}) y una orientación: en vertical w ≤ h, apaisado w ≥ h.
- * Un personalizado se toma sin importar el orden de sus medidas (la
- * orientación la da `landscape`). null si el papel no existe o no es válido.
+ * The sheet's width and height ({w, h} in mm) for a paper (a preset's id or
+ * {custom: true, w, h}) and an orientation: portrait w ≤ h, landscape w ≥ h.
+ * A custom paper's sides are taken in any order (`landscape` gives the
+ * orientation). null when the paper doesn't exist or isn't valid.
  */
 export function sizeOf(paper, landscape = false) {
   const p = portrait(paper);
@@ -96,8 +94,8 @@ export function sizeOf(paper, landscape = false) {
 }
 
 /**
- * ¿w × h coincide con algún preset, en cualquier orientación, a menos de
- * `tolerance` mm por lado? Devuelve {id, landscape} del más parecido, o null.
+ * Does w × h match a preset, in either orientation, within `tolerance` mm per
+ * side? Gives {id, landscape} of the closest, or null.
  */
 export function matchPreset(w, h, tolerance = MATCH_TOLERANCE) {
   if (!Number.isFinite(w) || !Number.isFinite(h)) return null;
@@ -113,11 +111,11 @@ export function matchPreset(w, h, tolerance = MATCH_TOLERANCE) {
 }
 
 /**
- * Datos para la etiqueta del papel, sin texto: {custom, id, match, group, w,
- * h, landscape}. `id` es el del preset (null si es personalizado); `match`, el
- * preset con esas medidas (el propio, o el que coincide con un personalizado;
- * null si ninguno) y `group`, el grupo de `match`. `w`, `h` y `landscape`
- * son los de la hoja tal como queda. null si el papel no es válido.
+ * What the paper's label needs, without text: {custom, id, match, group, w,
+ * h, landscape}. `id` is the preset's (null when custom); `match`, the
+ * preset with those sizes (its own, or the one a custom paper matches; null
+ * when none) and `group`, the group of `match`. `w`, `h` and `landscape` are
+ * the sheet's as it ends up. null when the paper isn't valid.
  */
 export function describe(paper, landscape = false) {
   const size = sizeOf(paper, landscape);
