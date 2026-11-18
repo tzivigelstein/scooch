@@ -17,7 +17,7 @@ editor loads.
 
 The site's languages are the app's (`LANGUAGES` in `src/core/language.js`,
 each named in itself by `src/copy/languages.ts`); the ones with content are
-listed in `src/site/content/index.ts`: Spanish, the reference, and English.
+listed in `src/site/content/index.ts`: Spanish, the reference, English and Hindi.
 Each page lives at `/<language>/<address>`, the language in lowercase
 (`/es`, `/en`, `/zh-hans`, `/hi`, `/fr`) and the address in that language,
 with the words people search for:
@@ -33,6 +33,23 @@ with the words people search for:
 | `faq` | `/es/preguntas-frecuentes` | `/en/faq` |
 | `legal-terms`, `legal-privacy` | `/es/terminos`, `/es/privacidad` | `/en/terms`, `/en/privacy` |
 | `legal-notices`, `legal-license` | `/es/licencias-de-terceros`, `/es/licencia` | `/en/third-party-licenses`, `/en/license` |
+
+Hindi's addresses are English words, the ones people in India type when
+they search this in Latin letters («multiple photos in one page print»,
+«passport size photo a4 sheet»): the Hindi part of their Hinglish searches
+has no settled spelling.
+
+| Page (id) | Hindi |
+| --- | --- |
+| `several-photos` | `/hi/print-multiple-photos-in-one-page` |
+| `how-many` (calculator) | `/hi/how-many-photos-in-a4-sheet` |
+| `photos-10x15` | `/hi/print-4x6-photos-on-a4` |
+| `id-photos` | `/hi/passport-size-photo-a4-sheet` |
+| `same-photo` | `/hi/print-same-photo-multiple-times` |
+| `actual-size` | `/hi/print-image-actual-size-in-cm` |
+| `faq` | `/hi/faq` |
+| `legal-terms`, `legal-privacy` | `/hi/terms`, `/hi/privacy` |
+| `legal-notices`, `legal-license` | `/hi/third-party-licenses`, `/hi/license` |
 
 - **Addresses don't change** once published: search engines may have them,
   and the app links to `/es/terminos` and `/es/privacidad` (`LEGAL_PATHS`,

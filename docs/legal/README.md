@@ -8,7 +8,8 @@ Drafts of the site's legal pages, in Spanish:
 **Spanish is the reference version**: translations follow it. Each language
 of the site has its translation in a folder of its own, with the same file
 names in every language: [en/terms.md](en/terms.md) and
-[en/privacy.md](en/privacy.md). A translation keeps the Spanish
+[en/privacy.md](en/privacy.md); [hi/terms.md](hi/terms.md) and
+[hi/privacy.md](hi/privacy.md). A translation keeps the Spanish
 placeholders, translates the draft note and says the Spanish version is the
 reference until a lawyer reviews it.
 
@@ -42,7 +43,8 @@ The site publishes both texts as pages (`/es/terminos` and `/es/privacidad`;
 in English, `/en/terms` and `/en/privacy`), with `LICENSE` and
 `THIRD_PARTY_NOTICES.md` (`/es/licencia` and `/es/licencias-de-terceros`;
 `/en/license` and `/en/third-party-licenses`), which stay in English in every
-language; [docs/site.md](../site.md) explains how. The
+language; [docs/site.md](../site.md) explains how, and lists each language's
+addresses (Hindi: `/hi/terms`, `/hi/privacy`). The
 HTML comment is left out of the pages, and links between the documents point
 to their pages. While a placeholder or the draft note is there, the page is
 kept out of search engines, and a production deployment stops (unless
