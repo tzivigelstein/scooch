@@ -8,7 +8,7 @@ import { revealPiece, revealPieces, revealSheet } from '../../components/canvas/
 import { customPaper } from '../../core/papers.js';
 import { spotOnSheet } from '../../core/sheets.js';
 import type { Cuts, Item, Paper, PaperId } from '../../core/types.ts';
-import { clamp, tidy } from '../../core/util.ts';
+import { clamp, tidy } from '../../core/util.js';
 import { lengthText, paperName } from '../../services/measure.ts';
 import { flushUi } from '../flush.ts';
 import { getDocument, newSheet, patchItems, setDocument } from '../document.ts';

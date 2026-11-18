@@ -32,7 +32,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefO
 import type { AlignMode } from '../../core/align.js';
 import { PHOTO_SIZES } from '../../core/crop.js';
 import { common, SCALE_RANGE } from '../../core/group.js';
-import { clamp, num } from '../../core/util.ts';
+import { clamp, num } from '../../core/util.js';
 import { t, type CopyKey } from '../../copy/index.ts';
 import { MAX_ITEMS } from '../../config.ts';
 import { useNativeEvents } from '../../hooks/useNativeEvents.ts';

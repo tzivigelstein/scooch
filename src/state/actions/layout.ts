@@ -8,7 +8,7 @@ import { fitScale, pack, packedRotation, packSheets } from '../../core/pack.js';
 import { settleResized } from '../../core/resize.js';
 import { arrangeSheets, placeIntoSheets, samePlan, type ArrangePlan } from '../../core/sheets.js';
 import type { Item } from '../../core/types.ts';
-import { clamp, tidy } from '../../core/util.ts';
+import { clamp, tidy } from '../../core/util.js';
 import { formatList, sentences, t } from '../../copy/index.ts';
 import { paperName } from '../../services/measure.ts';
 import { getAsset } from '../assets.ts';

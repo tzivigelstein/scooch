@@ -7,7 +7,7 @@ import { pieceSize } from '../core/crop.js';
 import { footprintPad } from '../core/cutmarks.js';
 import { pieceProblems, problemSummary } from '../core/sheets.js';
 import type { Box, Rect } from '../core/types.ts';
-import { fine } from '../core/util.ts';
+import { fine } from '../core/util.js';
 import { t } from '../copy/index.ts';
 import { sizeText } from '../services/measure.ts';
 import { findAsset, getAsset } from './assets.ts';

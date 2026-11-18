@@ -30,7 +30,7 @@ import {
   type ThemeChoice,
 } from '../core/storedprefs.js';
 import { isUnit, type Unit } from '../core/units.js';
-import { clamp } from '../core/util.ts';
+import { clamp } from '../core/util.js';
 import { storageGet, storageJson, storageSet } from '../services/storage/local.ts';
 
 export interface GridPrefs {

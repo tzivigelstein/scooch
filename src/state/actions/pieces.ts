@@ -41,7 +41,7 @@ import {
 import type { AlignMode, Axis } from '../../core/align.js';
 import { keepCenterInside } from '../../core/sheets.js';
 import type { IdRect, Item } from '../../core/types.ts';
-import { clamp, round1 } from '../../core/util.ts';
+import { clamp, round1 } from '../../core/util.js';
 import { t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
 import { revealPieces } from '../../components/canvas/viewport.ts';

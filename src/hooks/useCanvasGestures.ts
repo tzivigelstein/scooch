@@ -23,7 +23,7 @@ import { heldPointer, letGo, type HeldPointer } from '../core/heldpointer.js';
 import { keepCenterInside, placeOnNewSheet } from '../core/sheets.js';
 import type { Box, Point, Rect } from '../core/types.ts';
 import { pinchSpan, wheelFactor, type PinchPair } from '../core/zoom.js';
-import { clamp, round1, tidy } from '../core/util.ts';
+import { clamp, round1, tidy } from '../core/util.js';
 import { t } from '../copy/index.ts';
 import { announce } from '../components/feedback/announcer.ts';
 import { paintPiece, pieceView } from '../components/canvas/pieceView.ts';

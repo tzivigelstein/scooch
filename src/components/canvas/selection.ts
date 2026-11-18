@@ -8,7 +8,7 @@ import { NARROW_QUERY } from '../../config.ts';
 import { bounds } from '../../core/align.js';
 import { clip, liftOff, pickSpot } from '../../core/placement.js';
 import type { Rect } from '../../core/types.ts';
-import { clamp } from '../../core/util.ts';
+import { clamp } from '../../core/util.js';
 import { t } from '../../copy/index.ts';
 import { sizeText } from '../../services/measure.ts';
 import type { Piece } from '../../state/document.ts';

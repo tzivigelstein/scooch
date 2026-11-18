@@ -3,7 +3,7 @@
 
 import { GRID_MAX, GRID_MIN } from '../../config.ts';
 import { gridPresets } from '../../core/units.js';
-import { clamp } from '../../core/util.ts';
+import { clamp } from '../../core/util.js';
 import { keyLabel, numberLocale, t } from '../../copy/index.ts';
 import { SHORTCUTS, useShortcut } from '../../hooks/shortcuts.ts';
 import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';

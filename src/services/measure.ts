@@ -4,7 +4,7 @@
 import { describe } from '../core/papers.js';
 import type { PaperId } from '../core/types.ts';
 import { formatLength, stepLabel, type StepSize } from '../core/units.js';
-import { slug } from '../core/util.ts';
+import { slug } from '../core/util.js';
 import { numberLocale, t } from '../copy/index.ts';
 import { OUTPUT_TEXTS, outputText } from '../copy/output.ts';
 import { getDocument } from '../state/document.ts';

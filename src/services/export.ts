@@ -8,7 +8,7 @@
 import { APP_NAME } from '../config.ts';
 import { cutStyle } from '../core/cutmarks.js';
 import { pdfKey } from '../core/savings.js';
-import { slug } from '../core/util.ts';
+import { slug } from '../core/util.js';
 import { OUTPUT_TEXTS, outputText } from '../copy/output.ts';
 import { getAsset } from '../state/assets.ts';
 import { getDocument, type Piece } from '../state/document.ts';
