@@ -136,6 +136,8 @@ const NO_CLAIMS: Partial<Record<Lang, RegExp>> = {
   'zh-Hans': /通常|常用|常见(?!问题)|标准|一般|普遍|中国|大陆|内地|国内|香港|澳门|台湾|美国|英国|印度|加拿大|墨西哥|西班牙|欧盟|申根|身份证/,
   // \b would split words at accented letters: whole words are told by \p{L}. «US» alone is the app's «Lettre US».
   fr: /(?<!\p{L})(habituel\p{L}*|usuel\p{L}*|courante?s?|typiques?|standards?|normes?|officiel\p{L}*|France|français\p{L}*|Belgique|belges?|Suisse|suisses?|Canada|canadien\p{L}*|Québec|ANTS|Schengen|UE|USA|États-Unis|américain\p{L}*|europé\p{L}*)(?!\p{L})/iu,
+  // Devanagari words as plain text: \b only knows Latin letters.
+  hi: /सामान्य|आमतौर|आम तौर|स्टैंडर्ड|मानक|प्रचलित|भारत|इंडिया|अमेरिका|ब्रिटेन|यूके|कनाडा|यूरोप|शेंगेन|\b(usual|typical|standard|common|India|Indian|USA?|UK|EU|Schengen)\b/i,
 };
 
 describe('the photo ID guide', () => {
@@ -214,6 +216,17 @@ const COPY_RULES: Partial<Record<Lang, readonly (readonly [string, RegExp])[]>> 
     ['a number and its unit that may break apart', /\d (mm|cm|po|pouces|ppp)(?![\w])/],
     ['tutoiement instead of vous', /(?<!\p{L})(tu|toi|ton|tes)(?!\p{L})/iu],
     ['words the glossary replaces', /(?<!\p{L})(pièces?|objets?|téléverse\p{L}*|importe[rz]|astuces?|simplement|plan de travail)(?!\p{L})/iu],
+  ],
+  hi: [
+    ['exclamations', /!/],
+    ['straight quotes or guillemets instead of curly ones', /['"«»]/],
+    ['a Latin full stop instead of «।» after Hindi', /[\u0900-\u097F]\.(\s|$)/],
+    ['a space before %', /\d\s%/],
+    ['a number glued to its unit', /\d(mm|cm|in|ppi|सेमी|इंच)(?![\p{L}\p{M}])/u],
+    ['a number and its unit that may break apart', /\d (mm|cm|in|ppi|सेमी|इंच)(?![\p{L}\p{M}])/u],
+    ['nukta letters not as Unicode normalizes them (letter + nukta)', /[\u0958-\u095F]/],
+    ['the glossary’s words without their nukta', /फोटो|फाइल|ज्यादा|जरूर|साइज(?!\u093C)/],
+    ['words the glossary replaces', /तत्व|वस्तु|पन्ना|परियोजना|सजाएं|जमाएं|हाशिया|गैप|मोड़ें|पूर्ववत|टूलबार|प्रॉपर्टी|नोटिफ़िकेशन|दान करें/],
   ],
 };
 

@@ -130,6 +130,27 @@ const POLICY: Partial<Record<Lang, { section: string; noAnalytics: RegExp; terms
       }).map(([key, term]) => [key, `${term} `])
     ),
   },
+  hi: {
+    section: 'आपके डिवाइस पर क्या सेव होता है',
+    noAnalytics: /कुकी, विज्ञापन, ट्रैकर या एनालिटिक्स\s+टूल इस्तेमाल नहीं करता/,
+    terms: {
+      [UNIT_STORAGE]: 'इकाइयां',
+      [THEME_STORAGE]: 'थीम',
+      [LANGUAGE_STORAGE]: 'भाषा',
+      [SINGLE_KEYS_STORAGE]: 'एक कुंजी वाले शॉर्टकट',
+      [VIEW_STORAGE]: 'व्यू',
+      [GRID_STORAGE]: 'ग्रिड और स्नैप',
+      [SECTIONS_STORAGE]: 'गुण के सेक्शन',
+      [PRINT_STORAGE]: 'प्रिंटिंग की सलाह और सारांश',
+      [CUSTOM_PAPER_STORAGE]: 'कस्टम कागज़',
+      [PALETTE_STORAGE]: 'हाल की कार्रवाइयां',
+      [TIPS_STORAGE]: 'इस्तेमाल की सलाह',
+      [SAVINGS_STORAGE]: 'बचाई गई शीटें',
+      [DONATE_STORAGE]: 'सहयोग का अनुरोध',
+      [LAST_PROJECT_STORAGE]: 'आखिरी प्रोजेक्ट',
+      [JOURNAL_PREFIX]: 'अस्थायी कॉपी',
+    },
+  },
 };
 
 /** The document with its placeholders filled in and its draft note gone, as the owner will leave it. */
