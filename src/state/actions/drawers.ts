@@ -3,7 +3,8 @@
 // with their button and close with Esc, their close button, a click outside or
 // when the focus leaves; on closing, the focus returns to whoever opened them.
 
-import { LEFT_DRAWER_QUERY, NARROW_QUERY } from '../../config.ts';
+import { focusShown } from '../../components/ui/focusShown.ts';
+import { COARSE_QUERY, LEFT_DRAWER_QUERY, NARROW_QUERY } from '../../config.ts';
 import { matches } from '../../hooks/useMediaQuery.ts';
 import { flushUi } from '../flush.ts';
 import { getView, setView, type DrawerName } from '../view.ts';
@@ -28,10 +29,12 @@ const triggers = (name: DrawerName) => DRAWER_TRIGGERS[name].map((id) => documen
 // What gets the focus when a panel opens: the list (or the add zone), or the first field.
 function initialFocus(name: DrawerName): HTMLElement | null {
   if (name === 'pieces') return listFocusTarget() ?? document.getElementById('addzone');
-  // The open tab's first field (X or the paper); with nothing to edit, the tab itself.
+  // The open tab's first field (X or the paper); with nothing to edit, the
+  // tab itself. With a finger, the tab too: a field would bring up the
+  // on-screen keyboard over the panel just opened.
   const tab = getView().propsTab;
   const field = document.getElementById(tab === 'piece' ? 'pos-x' : 'paper');
-  return field && !field.closest('[hidden]') ? field : document.getElementById(`props-tab-${tab}`);
+  return field && !field.closest('[hidden]') && !matches(COARSE_QUERY) ? field : document.getElementById(`props-tab-${tab}`);
 }
 
 export function openDrawer(name: DrawerName, { returnTo = document.activeElement as Element | null, focus = true } = {}) {
@@ -41,7 +44,8 @@ export function openDrawer(name: DrawerName, { returnTo = document.activeElement
   if (!focus) return;
   flushUi();
   const panel = document.getElementById(DRAWER_PANELS[name])!;
-  (initialFocus(name) ?? panel.querySelector<HTMLElement>(FOCUSABLE))?.focus({ preventScroll: true });
+  const target = initialFocus(name) ?? panel.querySelector<HTMLElement>(FOCUSABLE);
+  if (target) focusShown(target, { preventScroll: true });
 }
 
 /** `focus`: 'return' (to whoever opened it), 'auto' (only if the focus was inside) or 'none'. */

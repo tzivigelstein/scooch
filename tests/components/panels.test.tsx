@@ -1,16 +1,19 @@
 // @vitest-environment jsdom
 // What the side panels show, on the real stores: the pieces panel (its empty
 // state, one row per piece with its name and size, the total) and the count on
-// the narrow screens' «Piezas» button; the Proyecto tab's collapsible sections and
-// the selected piece's name. (Where the panels go at each width, the drawer and
+// the narrow screens' «Piezas» button; where the focus goes when the bottom
+// sheet opens, with a mouse and with a finger; the Proyecto tab's collapsible
+// sections and the selected piece's name. (Where the panels go at each width, the drawer and
 // the bottom sheet, and a collapsed section kept across a reload are in
 // e2e/specs/panels-and-tabs.spec.ts; the list as a listbox in PieceList.test.)
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
-import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { Dock } from '../../src/components/canvas/Dock.tsx';
 import { PiecesPanel } from '../../src/components/pieces-panel/PiecesPanel.tsx';
 import { PropertiesPanel } from '../../src/components/properties-panel/PropertiesPanel.tsx';
+import { COARSE_QUERY, LEFT_DRAWER_QUERY, NARROW_QUERY } from '../../src/config.ts';
 import { setDocument } from '../../src/state/document.ts';
+import { closeDrawer, openDrawer } from '../../src/state/actions/drawers.ts';
 import { showPropsTab } from '../../src/state/actions/panels.ts';
 import { setSelection } from '../../src/state/actions/selection.ts';
 import { fakeImage, fakeImageMm, piece, resetState } from '../support/state.ts';
@@ -68,6 +71,37 @@ describe('the pieces panel', () => {
     expect(text(document.getElementById('dock-count'))).toBe('');
     act(() => setDocument({ items: threePieces().slice(0, 2) }));
     expect(text(document.getElementById('dock-count'))).toBe('2');
+  });
+});
+
+describe('opening Propiedades as the bottom sheet of a narrow screen', () => {
+  /** A narrow window (the panel is a bottom sheet), with a mouse or a finger as its pointer. */
+  const narrow = (pointer: 'mouse' | 'finger') =>
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === NARROW_QUERY || query === LEFT_DRAWER_QUERY || (pointer === 'finger' && query === COARSE_QUERY),
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+  afterEach(() => vi.unstubAllGlobals());
+
+  test.each([
+    // The keyboard goes straight to the first field.
+    ['mouse', 'pos-x', 'paper'],
+    // A field would bring up the on-screen keyboard: the open tab instead.
+    ['finger', 'props-tab-piece', 'props-tab-project'],
+  ] as const)('with a %s, the focus goes to %s on Pieza and to %s on Proyecto', (pointer, onPiece, onProject) => {
+    narrow(pointer);
+    resetState({ items: threePieces(), selection: [1] });
+    render(<PropertiesPanel />);
+    act(() => showPropsTab('piece'));
+    act(() => openDrawer('props', { returnTo: null }));
+    expect(document.getElementById('props-panel')!.hidden).toBe(false);
+    expect(document.activeElement?.id).toBe(onPiece);
+    act(() => closeDrawer('props', { focus: 'none' }));
+    act(() => showPropsTab('project'));
+    act(() => openDrawer('props', { returnTo: null }));
+    expect(document.activeElement?.id).toBe(onProject);
   });
 });
 

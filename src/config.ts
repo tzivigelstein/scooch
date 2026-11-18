@@ -15,6 +15,8 @@ export const PINCH_THRESHOLD = 16; // px two fingers spread or close before they
 export const NARROW_QUERY = '(max-width: 799.98px)';
 /** From here down, the pieces panel collapses to a rail and opens as an overlay. */
 export const LEFT_DRAWER_QUERY = '(max-width: 1099.98px)';
+/** A finger is the main pointer: a touch screen. */
+export const COARSE_QUERY = '(pointer: coarse)';
 
 // ---------- Storage ----------
 

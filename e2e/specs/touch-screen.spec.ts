@@ -1,7 +1,9 @@
 // The editor on a touch screen (a coarse pointer), with what only a browser
 // shows: every text field and select at 16 px at least, so iOS doesn't zoom
 // the page into the one it focuses, with nothing overflowing at 390 px in any
-// language, while a mouse keeps the sizes it had. Touch is emulated through
+// language, while a mouse keeps the sizes it had; «Propiedades» opens with the
+// focus on its tab, not in a field (where it goes, with a mouse and with a
+// finger: tests/components/panels.test.tsx). Touch is emulated through
 // Chromium's DevTools; on a real iPhone, Safari's own zoom still needs a look.
 import type { Page } from '@playwright/test';
 import { LANGUAGES } from '../../src/core/language.js';
@@ -113,6 +115,16 @@ test.describe('on a phone, with a finger', () => {
     await expect(card.locator('.project-title-input')).toBeFocused();
     const moved = (await places()).map((v, i) => Math.abs(v - before[i]));
     expect(Math.max(...moved), 'px moved').toBeLessThan(0.5);
+  });
+
+  test('«Propiedades» opens with the focus on its tab, not in a field that would bring up the on-screen keyboard', async ({ app, page }) => {
+    test.skip(!(await coarse(page)), 'this engine doesn’t report a touch screen as a coarse pointer');
+    await app.addFiles(['small.jpg']);
+    await app.clickPiece(app.pieces().first());
+    await page.locator('#props-toggle').tap();
+    await expect(page.locator('#props-panel')).toBeVisible();
+    await expect(page.locator('#props-tab-piece')).toBeFocused();
+    await expect(page.locator('#pos-x')).toBeVisible();
   });
 
   test('the calculator’s fields on the site are 16 px at least', async ({ page }) => {
