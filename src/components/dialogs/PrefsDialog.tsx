@@ -10,7 +10,7 @@ import { UNITS, type Unit } from '../../core/units.js';
 import { choiceParts, keyLabel, t } from '../../copy/index.ts';
 import { LANGUAGE_NAMES } from '../../copy/languages.ts';
 import { SHORTCUTS } from '../../hooks/shortcuts.ts';
-import { browserLanguage } from '../../services/language.ts';
+import { browserLanguage, shownLanguage } from '../../services/language.ts';
 import { setLanguage, setPrinting, setSingleKeys, setTheme, usePrefs } from '../../state/prefs.ts';
 import { chooseUnit } from '../../state/actions/prefs.ts';
 import { setTipsOn, useTips } from '../../state/tips.ts';
@@ -18,7 +18,7 @@ import { IconButton } from '../ui/Button.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
 import { Switch } from '../ui/Switch.tsx';
 import { closeDialog } from './dialogs.ts';
-import { LEGAL_PATHS } from '../../site/paths.ts';
+import { sitePath } from '../../site/links.ts';
 import './PrefsDialog.css';
 
 export default function PrefsDialog() {
@@ -103,18 +103,19 @@ const singleKeyExamples = () =>
     .join('');
 
 /**
- * The site's terms and privacy policy (pages of their own: the project saves
- * itself before leaving). They exist only in Spanish: the links say so.
+ * The site's terms and privacy policy in the language on screen (pages of
+ * their own: the project saves itself before leaving).
  */
 function LegalLinks() {
+  const language = shownLanguage();
   return (
     <div className="dialog-foot">
       <p id="prefs-legal" className="dialog-note">
-        <a className="link-btn" href={LEGAL_PATHS.terms} hrefLang="es">
+        <a className="link-btn" href={sitePath(language, 'legal-terms')}>
           {t('legal.terms')}
         </a>
         {t('legal.separator')}
-        <a className="link-btn" href={LEGAL_PATHS.privacy} hrefLang="es">
+        <a className="link-btn" href={sitePath(language, 'legal-privacy')}>
           {t('legal.privacy')}
         </a>
       </p>

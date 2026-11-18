@@ -1,6 +1,7 @@
 // The addresses of the Spanish pages (the legal ones are in src/site/paths.ts,
-// which the app links to). Changing one breaks every link to it, and search
-// engines may have it: add a redirect in vercel.json.
+// which the translated legal pages link to as their reference). Changing one
+// breaks every link to it, and search engines may have it: add a redirect in
+// vercel.json.
 
 import { LEGAL_PATHS } from '../../paths.ts';
 import type { PageId } from '../../types.ts';

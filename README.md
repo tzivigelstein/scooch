@@ -116,8 +116,9 @@ On a phone:
   Images open if the browser can decode them: JPEG, PNG and WebP in every
   browser below; other formats, such as HEIC, depend on the browser.
   Password-protected PDFs are refused.
-- The translations other than Spanish still await review by native speakers.
-  The site's guides and legal pages are in Spanish only.
+- The translations other than Spanish still await review by native speakers,
+  the site's pages too; the translated terms and privacy policy say the
+  Spanish versions are the reference until a lawyer reviews them.
 
 ## Browsers
 

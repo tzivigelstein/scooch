@@ -760,8 +760,8 @@ const en: Catalogue = {
   },
 
   legal: {
-    terms: 'Terms of use (in Spanish)',
-    privacy: 'Privacy policy (in Spanish)',
+    terms: 'Terms of use',
+    privacy: 'Privacy policy',
     separator: ' · ',
   },
 

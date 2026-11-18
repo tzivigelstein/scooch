@@ -761,8 +761,8 @@ const fr: Catalogue = {
   },
 
   legal: {
-    terms: 'Conditions d’utilisation (en espagnol)',
-    privacy: 'Politique de confidentialité (en espagnol)',
+    terms: 'Conditions d’utilisation',
+    privacy: 'Politique de confidentialité',
     separator: ' · ',
   },
 

@@ -6,8 +6,8 @@
 // right `lang`, title and loading screen when this takes over.
 
 import { LANGUAGE_STORAGE } from '../config.ts';
-import { LANGUAGES, matchLanguage, resolveLanguage, type Language } from '../core/language.js';
-import { setTexts, t, type Catalogue } from '../copy/index.ts';
+import { isLanguage, LANGUAGES, matchLanguage, resolveLanguage, type Language } from '../core/language.js';
+import { setTexts, t, textsLanguage, type Catalogue } from '../copy/index.ts';
 import { loadCatalogue } from '../copy/load.ts';
 import { useLanguage } from '../state/language.ts';
 import { readStoredLanguage, usePrefs } from '../state/prefs.ts';
@@ -20,6 +20,12 @@ export const browserLanguage = () => matchLanguage(browserLanguages(), LANGUAGES
 
 /** The language the interface should show now. */
 export const wantedLanguage = () => resolveLanguage(usePrefs.getState().language, browserLanguages());
+
+/** The language on screen: the one whose texts are installed (before any, the one wanted). */
+export function shownLanguage(): Language {
+  const shown = textsLanguage();
+  return isLanguage(shown) ? shown : wantedLanguage();
+}
 
 /** Installs the texts and says the page's language, title and description in it. */
 export function applyTexts(language: Language, messages: Catalogue) {

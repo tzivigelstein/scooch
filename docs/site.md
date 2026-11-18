@@ -69,10 +69,12 @@ weighs little next to the title. French's are French without accents.
 | `legal-notices`, `legal-license` | `/zh-hans/third-party-licenses`, `/zh-hans/license` | `/fr/licences-tierces`, `/fr/licence` |
 
 - **Addresses don't change** once published: search engines may have them,
-  and the app links to `/es/terminos` and `/es/privacidad` (`LEGAL_PATHS`,
-  `src/site/paths.ts`). If one has to change, add a redirect in
-  `vercel.json`. They are lowercase ASCII letters, digits and hyphens
-  (`tests/site/languages.test.ts`), so they never need encoding.
+  and the editor links to the terms and the privacy policy of the language
+  it shows (`src/site/links.ts`, from each language's `paths.ts`;
+  `tests/site/editor-links.test.ts` checks the site builds them). If one has
+  to change, add a redirect in `vercel.json`. They are lowercase ASCII
+  letters, digits and hyphens (`tests/site/languages.test.ts`), so they never
+  need encoding.
 - **`/` is the editor**, whatever the language, and `404.html` (any missing
   address) is Spanish.
 - **The same page in every language shares its id.** Its indexable versions

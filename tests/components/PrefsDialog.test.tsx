@@ -1,13 +1,17 @@
 // @vitest-environment jsdom
 // «Preferencias»: a titled group only for two controls or more (Unidades,
 // Impresión, Tema); «Idioma» is a list and «Atajos de 1 tecla» and «Consejos
-// de uso» switches of their own, named by their labels. Choosing a unit (saved and announced) is in
+// de uso» switches of their own, named by their labels; at its foot, the
+// site's pages in the language on screen. Choosing a unit (saved and announced) is in
 // unit-preference.test.tsx; that the choice survives a reload, in
 // e2e/specs/keyboard-only.spec.ts.
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import PrefsDialog from '../../src/components/dialogs/PrefsDialog.tsx';
-import { LANGUAGES, matchLanguage } from '../../src/core/language.js';
+import { LANGUAGES, matchLanguage, type Language } from '../../src/core/language.js';
+import { CATALOGUES } from '../../src/copy/all.ts';
+import es from '../../src/copy/es.ts';
+import { setTexts } from '../../src/copy/index.ts';
 import { LANGUAGE_NAMES } from '../../src/copy/languages.ts';
 import { SHORTCUTS } from '../../src/hooks/shortcuts.ts';
 import { getPrefs, readStoredLanguage, readStoredTheme, setSingleKeys } from '../../src/state/prefs.ts';
@@ -201,15 +205,40 @@ describe('Preferences', () => {
   });
 });
 
-describe('the site’s legal pages', () => {
-  test('the foot of Preferencias links to the terms of use and the privacy policy, outside the groups, saying they are in Spanish', () => {
+describe('the site’s pages', () => {
+  afterEach(() => setTexts(es));
+
+  const FOOT: Record<Language, string[][]> = {
+    es: [
+      ['Términos de uso', '/es/terminos'],
+      ['Política de privacidad', '/es/privacidad'],
+    ],
+    en: [
+      ['Terms of use', '/en/terms'],
+      ['Privacy policy', '/en/privacy'],
+    ],
+    'zh-Hans': [
+      ['使用条款', '/zh-hans/terms'],
+      ['隐私政策', '/zh-hans/privacy'],
+    ],
+    hi: [
+      ['इस्तेमाल की शर्तें', '/hi/terms'],
+      ['निजता नीति', '/hi/privacy'],
+    ],
+    fr: [
+      ['Conditions d’utilisation', '/fr/conditions-utilisation'],
+      ['Politique de confidentialité', '/fr/confidentialite'],
+    ],
+  };
+
+  test.each(LANGUAGES)('in %s, the foot of Preferencias links to the terms of use and the privacy policy in that language, outside the groups', (language) => {
+    setTexts(CATALOGUES[language]);
     render(<PrefsDialog />);
     const foot = document.getElementById('prefs-legal')!;
     const links = within(foot).getAllByRole('link');
-    expect(links.map((a) => [a.textContent, a.getAttribute('href'), a.getAttribute('hreflang')])).toEqual([
-      ['Términos de uso', '/es/terminos', 'es'],
-      ['Política de privacidad', '/es/privacidad', 'es'],
-    ]);
+    expect(links.map((a) => [a.textContent, a.getAttribute('href')])).toEqual(FOOT[language]);
+    // In the page's own language: nothing to say about it.
+    expect(links.map((a) => a.getAttribute('hreflang'))).toEqual(links.map(() => null));
     expect(foot.closest('[role="group"], .dialog-body')).toBeNull();
   });
 });

@@ -731,8 +731,8 @@ const zhHans: Catalogue = {
   },
 
   legal: {
-    terms: '使用条款（西班牙语）',
-    privacy: '隐私政策（西班牙语）',
+    terms: '使用条款',
+    privacy: '隐私政策',
     separator: ' · ',
   },
 

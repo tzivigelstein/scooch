@@ -761,8 +761,8 @@ const hi: Catalogue = {
   },
 
   legal: {
-    terms: 'इस्तेमाल की शर्तें (स्पैनिश में)',
-    privacy: 'निजता नीति (स्पैनिश में)',
+    terms: 'इस्तेमाल की शर्तें',
+    privacy: 'निजता नीति',
     separator: ' · ',
   },
 
