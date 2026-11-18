@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { EPS, overlaps, overlapsAny, overlapping, nearestFree, nextFreeInDirection, maxGrowth, nextFreeForGroup, nearestFreeOffset, groupScaleRange } from '../../src/core/collide.js';
+import { EPS, overlaps, overlapsAny, nearestFree, maxGrowth, nextFreeForGroup, nearestFreeOffset, groupScaleRange } from '../../src/core/collide.js';
 
 // Exact cases of the collision helpers. The properties checked over
 // generated layouts are in tests/properties/collide.test.js.
@@ -22,10 +22,9 @@ describe('overlaps', () => {
     assert.equal(overlaps(r(0, 0, 10, 10), r(20, 0, 10, 10)), false);
     assert.equal(overlaps(r(0, 0, 10, 10), r(0, 11, 10, 10)), false);
   });
-  test('overlapsAny / overlapping', () => {
+  test('overlapsAny', () => {
     const others = [r(20, 0, 5, 5, 'a'), r(3, 3, 2, 2, 'b')];
     assert.equal(overlapsAny(r(0, 0, 10, 10), others), true);
-    assert.deepEqual(overlapping(r(0, 0, 10, 10), others).map((o) => o.id), ['b']);
     assert.equal(overlapsAny(r(0, 0, 10, 10), []), false);
   });
 });
@@ -67,40 +66,6 @@ describe('nearestFree', () => {
     assert.deepEqual(nearestFree(r(5, 10, 20, 20), [a], { bounds: area }), { x: 60, y: 10 });
     // No room inside: null.
     assert.equal(nearestFree(r(5, 10, 50, 20), [a], { bounds: area }), null);
-  });
-});
-
-describe('nextFreeInDirection', () => {
-  test('with nothing in the way, a normal step', () => {
-    assert.deepEqual(nextFreeInDirection(r(0, 0, 10, 10), [r(50, 0, 10, 10)], 1, 0), { x: 1, y: 0, jumped: [] });
-  });
-
-  test('touching another one, the next step jumps to its other side', () => {
-    const b = r(10, 0, 20, 10, 'b');
-    const res = nextFreeInDirection(r(0, 0, 10, 10), [b], 1, 0);
-    assert.equal(res.x, 30);
-    assert.equal(res.y, 0);
-    assert.deepEqual(res.jumped.map((o) => o.id), ['b']);
-  });
-
-  test('jumps several in a row when they touch', () => {
-    const others = [r(10, 0, 10, 10, 'a'), r(20, 0, 10, 10, 'b'), r(35, 0, 10, 10, 'c')];
-    const res = nextFreeInDirection(r(0, 0, 10, 10), others, 1, 0);
-    assert.equal(res.x, 45, 'passes a, b and, as it does not fit between b and c (5 mm) either, c too');
-    assert.deepEqual(res.jumped.map((o) => o.id), ['a', 'b', 'c']);
-  });
-
-  test('in the four directions', () => {
-    const b = r(20, 20, 10, 10);
-    assert.equal(nextFreeInDirection(r(30, 20, 10, 10), [b], -1, 0).x, 10);
-    assert.equal(nextFreeInDirection(r(20, 10, 10, 10), [b], 0, 1).y, 30);
-    assert.equal(nextFreeInDirection(r(20, 30, 10, 10), [b], 0, -10).y, 10);
-  });
-
-  test('gets out even when it already overlapped (imposed)', () => {
-    const b = r(0, 0, 40, 40, 'b');
-    const res = nextFreeInDirection(r(10, 10, 10, 10), [b], 1, 0);
-    assert.equal(res.x, 40);
   });
 });
 

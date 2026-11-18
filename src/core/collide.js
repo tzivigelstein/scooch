@@ -8,9 +8,6 @@ export function overlaps(a, b, eps = EPS) {
   return a.x < b.x + b.w - eps && b.x < a.x + a.w - eps && a.y < b.y + b.h - eps && b.y < a.y + a.h - eps;
 }
 
-/** Those of `others` that `rect` overlaps. */
-export const overlapping = (rect, others, eps = EPS) => others.filter((o) => overlaps(rect, o, eps));
-
 export const overlapsAny = (rect, others, eps = EPS) => others.some((o) => overlaps(rect, o, eps));
 
 const inside = (r, b, eps = EPS) =>
@@ -62,29 +59,6 @@ export function nearestFree(rect, others, { bounds = null, maxDistance = Infinit
   return null;
 }
 
-/**
- * Moves `rect` by (dx, dy) (one axis only). When it overlaps another there, it
- * jumps to the first free place in that same direction, right past what is in
- * the way, so it never gets stuck. Gives {x, y, jumped} with the rectangles
- * jumped over.
- */
-export function nextFreeInDirection(rect, others, dx, dy) {
-  let x = rect.x + dx;
-  let y = rect.y + dy;
-  const jumped = [];
-  // Each round leaves at least one rectangle behind, which can't block again.
-  for (let guard = 0; guard <= others.length; guard++) {
-    const blockers = overlapping({ x, y, w: rect.w, h: rect.h }, others);
-    if (!blockers.length || (!dx && !dy)) break;
-    for (const b of blockers) if (!jumped.includes(b)) jumped.push(b);
-    if (dx > 0) x = Math.max(...blockers.map((b) => b.x + b.w));
-    else if (dx < 0) x = Math.min(...blockers.map((b) => b.x - rect.w));
-    if (dy > 0) y = Math.max(...blockers.map((b) => b.y + b.h));
-    else if (dy < 0) y = Math.min(...blockers.map((b) => b.y - rect.h));
-  }
-  return { x, y, jumped };
-}
-
 // ---------- Groups moved rigidly (several pieces, on one or more sheets) ----------
 //
 // `layers`: [{rects, others, bounds?}], one per sheet: `rects` are the group's
@@ -102,10 +76,10 @@ function centerInside(r, bounds) {
 }
 
 /**
- * `nextFreeInDirection` for a group: moves it by (dx, dy) (one axis only)
- * and, while some piece overlaps another of its sheet, jumps in that
- * direction just enough to leave it behind. Gives {dx, dy, jumped}: the final
- * offset and those of `others` it jumped over (each once).
+ * Moves a group by (dx, dy) (one axis only) and, while some piece overlaps
+ * another of its sheet, jumps in that direction just enough to leave it
+ * behind, so it never gets stuck. Gives {dx, dy, jumped}: the final offset
+ * and those of `others` it jumped over (each once).
  */
 export function nextFreeForGroup(layers, dx, dy) {
   let ox = dx;

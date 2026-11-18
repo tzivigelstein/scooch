@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { EPS, overlaps, overlapsAny, nearestFree, nextFreeInDirection, maxGrowth, nextFreeForGroup, nearestFreeOffset, groupScaleRange } from '../../src/core/collide.js';
+import { EPS, overlaps, overlapsAny, nearestFree, maxGrowth, nextFreeForGroup, nearestFreeOffset, groupScaleRange } from '../../src/core/collide.js';
 import { prng } from '../support/prng.js';
 
 const r = (x, y, w, h, id) => ({ id, x, y, w, h });
@@ -29,27 +29,6 @@ describe('nearestFree', () => {
           );
         }
       }
-    }
-  });
-});
-
-describe('nextFreeInDirection', () => {
-  test('never gets stuck (fuzz)', () => {
-    const rnd = prng(11);
-    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1], [10, 0], [0, -10], [0.1, 0]];
-    for (let n = 0; n < 300; n++) {
-      const others = Array.from({ length: Math.floor(rnd() * 12) }, () =>
-        r(rnd() * 100, rnd() * 100, 1 + rnd() * 30, 1 + rnd() * 30)
-      );
-      const rect = r(rnd() * 100, rnd() * 100, 1 + rnd() * 20, 1 + rnd() * 20);
-      const [dx, dy] = dirs[n % dirs.length];
-      const res = nextFreeInDirection(rect, others, dx, dy);
-      assert.equal(overlapsAny({ x: res.x, y: res.y, w: rect.w, h: rect.h }, others), false, `case ${n}`);
-      // It moved at least the requested step, in that direction and only along that axis.
-      if (dx) assert.ok(Math.sign(res.x - rect.x) === Math.sign(dx) && Math.abs(res.x - rect.x) >= Math.abs(dx) - 1e-9);
-      if (dy) assert.ok(Math.sign(res.y - rect.y) === Math.sign(dy) && Math.abs(res.y - rect.y) >= Math.abs(dy) - 1e-9);
-      if (!dx) assert.equal(res.x, rect.x);
-      if (!dy) assert.equal(res.y, rect.y);
     }
   });
 });
