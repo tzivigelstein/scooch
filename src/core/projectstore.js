@@ -12,16 +12,16 @@
 
 import { DOC_VERSION, DEFAULT_CUTS, ProjectError, deserialize, fileKeys, counts } from './projectdoc.js';
 
-/** Largo máximo del nombre de un proyecto. */
+/** The longest a project's name can be. */
 export const NAME_MAX = 80;
 
-/** Id nuevo de proyecto («p» + tiempo + azar), único en la práctica. */
+/** A new project id («p» + time + random), unique in practice. */
 export const newProjectId = (now = Date.now(), random = Math.random) =>
   `p${now.toString(36)}${Math.floor(random() * 36 ** 6)
     .toString(36)
     .padStart(6, '0')}`;
 
-/** Nombre limpio: sin espacios de más y a lo sumo NAME_MAX caracteres; vacío → `fallback`. */
+/** A clean name: no extra spaces and at most NAME_MAX characters; empty → `fallback`. */
 export function cleanName(name, fallback) {
   const clean = String(name ?? '')
     .replace(/\s+/g, ' ')
@@ -31,7 +31,7 @@ export function cleanName(name, fallback) {
   return clean || fallback;
 }
 
-/** Documento de un proyecto nuevo: una hoja vacía con los ajustes dados. */
+/** A new project's document: one empty sheet with the given settings. */
 export function emptyDoc({ paper = 'A4', landscape = false, margin = 10, gap = 5, rotate = true, allowOverlap = false, cuts = DEFAULT_CUTS } = {}) {
   return { version: DOC_VERSION, paper, landscape, margin, gap, rotate, allowOverlap, cuts: { ...cuts }, sheets: [{ id: 1 }], items: [], assets: {} };
 }
@@ -141,7 +141,7 @@ export function openProblem(record) {
   }
 }
 
-/** ¿El documento del registro está dañado? (sin mirar los archivos) */
+/** Is the record's document damaged? (Without looking at its files.) */
 export const isDamaged = (record) => openProblem(record) === 'corrupt';
 
 /**
