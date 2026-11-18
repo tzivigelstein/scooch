@@ -36,6 +36,13 @@
     accent-color: var(--accent);
   }
 
+  /* A finger's size on a touch screen: only the row grows, not the box or the text. */
+  @media (pointer: coarse) {
+    .print-tip-never {
+      min-height: 2.75rem;
+    }
+  }
+
   /* The drawing of a print dialog. Without animation (reduced motion) it shows
      the end: «100 %» chosen, the pieces at real size. */
   .tip-drawing {

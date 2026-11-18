@@ -157,6 +157,9 @@ blockquote { margin: 0 0 1rem; padding: 0.25rem 1rem; border-left: 0.25rem solid
 .site-footer h2 { margin: 0 0 0.5rem; color: var(--text); font-size: 1rem; }
 .site-footer ul { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; margin: 0 0 1.5rem; padding: 0; list-style: none; }
 .site-footer li { margin: 0; }
+@media (pointer: coarse) {
+  .site-footer a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+}
 @media (max-width: 34rem) {
   body { font-size: 1rem; }
   .calc { padding: 1rem; }

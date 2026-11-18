@@ -40,6 +40,48 @@ type Fields = ReturnType<typeof readFields>;
 /** Of `fields`, those under 16 px. */
 const small = (fields: Fields) => Object.entries(fields).filter(([, f]) => f.size < 16).map(([id, f]) => `${id} ${f.size}px`);
 
+/**
+ * The boxes a finger aims at, in CSS px: a project card's actions, the
+ * dialog's close button and «Nuevo proyecto»; the advice before printing's
+ * buttons and its «No volver a mostrar» row (with its box and text). Opens
+ * and closes «Proyectos» and the advice (turned on for it).
+ */
+async function readTargets(app: App) {
+  const { page } = app;
+  const size = async (selector: string) => {
+    const box = (await page.locator(selector).first().boundingBox())!;
+    return [Math.round(box.width), Math.round(box.height)];
+  };
+  await page.locator('#projects-open').click();
+  await expect(page.locator('#projects')).toHaveAttribute('open', '');
+  const projects = {
+    duplicate: await size('#projects .project-card [data-act="duplicate"]'),
+    rename: await size('#projects .project-card [data-act="rename"]'),
+    delete: await size('#projects .project-card [data-act="delete"]'),
+    close: await size('#projects-close'),
+    create: (await size('#project-new'))[1],
+  };
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#projects')).not.toHaveAttribute('open', '');
+  await page.evaluate(() => localStorage.setItem('scooch:print-preferences', JSON.stringify({ v: 1, tip: true, summary: false })));
+  await page.reload();
+  await app.ready();
+  await page.locator('#print').click();
+  await expect(page.locator('#print-tip')).toHaveAttribute('open', '');
+  const advice = {
+    cancel: (await size('#print-tip-cancel'))[1],
+    go: (await size('#print-tip-go'))[1],
+    never: (await size('.print-tip-never'))[1],
+    box: await size('#print-tip-never'),
+    text: await page.locator('.print-tip-never span').evaluate((el) => getComputedStyle(el).fontSize),
+  };
+  await page.keyboard.press('Escape');
+  return { projects, advice };
+}
+
+/** The height of each link at the foot of a page of the site, in CSS px (rounded). */
+const readFooterLinks = () => [...new Set([...document.querySelectorAll('.site-footer a')].map((a) => Math.round(a.getBoundingClientRect().height)))];
+
 /** A two-page PDF and an image, the PDF selected, its tab shown («Pieza»: position, size, scale, photo size, copies, page). */
 async function pdfSelected(app: App) {
   await app.addFiles(['small.jpg', 'twopage.pdf']);
@@ -163,6 +205,16 @@ test.describe('on a phone, with a finger', () => {
     expect((await page.evaluate(readTouchActions)).zoomable, 'in a dialog').toEqual([]);
   });
 
+  test('a finger’s size, 44 px: a project card’s actions, the dialogs’ buttons, the «No volver a mostrar» row (its box and text as they were) and the links at the foot of the site', async ({ app, page }) => {
+    test.skip(!(await coarse(page)), 'this engine doesn’t report a touch screen as a coarse pointer');
+    await app.addFiles(['small.jpg']);
+    const { projects, advice } = await readTargets(app);
+    expect(projects).toEqual({ duplicate: [44, 44], rename: [44, 44], delete: [44, 44], close: [44, 44], create: 44 });
+    expect(advice).toEqual({ cancel: 44, go: 44, never: 44, box: [15, 15], text: '13px' });
+    await page.goto('./es/cuantas-fotos-caben-en-una-hoja');
+    expect(await page.evaluate(readFooterLinks)).toEqual([44]);
+  });
+
   test('the calculator’s fields on the site are 16 px at least', async ({ page }) => {
     await page.goto('./es/cuantas-fotos-caben-en-una-hoja');
     await page.locator('#calc-photo').selectOption('custom');
@@ -197,6 +249,15 @@ test.describe('on a phone, with a finger', () => {
 });
 
 test.describe('with a mouse', () => {
+  test('the targets look as they did: a project card’s actions 32 px, the dialogs’ buttons 36 px, the «No volver a mostrar» row 40 px, the site’s links their line', async ({ app, page }) => {
+    await app.addFiles(['small.jpg']);
+    const { projects, advice } = await readTargets(app);
+    expect(projects).toEqual({ duplicate: [32, 32], rename: [32, 32], delete: [32, 32], close: [36, 36], create: 36 });
+    expect(advice).toEqual({ cancel: 36, go: 36, never: 40, box: [15, 15], text: '13px' });
+    await page.goto('./es/cuantas-fotos-caben-en-una-hoja');
+    expect((await page.evaluate(readFooterLinks)).every((h) => h < 30)).toBe(true);
+  });
+
   test('the fields keep their sizes: 13.5 px, 14 px in the shortcuts’ search', async ({ app, page }) => {
     await pdfSelected(app);
     const piece = await page.evaluate(readFields);

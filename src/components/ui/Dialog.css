@@ -90,4 +90,17 @@
       max-height: calc(100dvh - 1rem);
     }
   }
+
+  /* A finger's size on a touch screen: 44 px, for the buttons and the icons
+     (closing, a project card's actions). */
+  @media (pointer: coarse) {
+    .dialog .btn {
+      min-height: 2.75rem;
+    }
+
+    .dialog .icon-btn {
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+    }
+  }
 }
