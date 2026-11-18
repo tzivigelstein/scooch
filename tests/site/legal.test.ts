@@ -192,7 +192,8 @@ describe('the documents in the repository', () => {
       // A key added to the registry needs its item in the policy, and its term here.
       expect(Object.keys(policy!.terms).sort(), lang).toEqual(keys);
       const stored = new RegExp(`## ${policy!.section}\\n([\\s\\S]*?)\\n## `).exec(doc('privacy', lang).markdown)![1];
-      for (const [key, term] of Object.entries(policy!.terms)) expect(stored, `${lang}: ${key}`).toContain(`- **${term}:**`);
+      // The colon is the language's: «:» or Chinese «：».
+      for (const [key, term] of Object.entries(policy!.terms)) expect([`- **${term}:**`, `- **${term}：**`].some((item) => stored.includes(item)), `${lang}: ${key}`).toBe(true);
     }
   });
 
