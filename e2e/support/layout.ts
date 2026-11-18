@@ -1,23 +1,12 @@
 // Readers for the panels, the «Propiedades» tabs and the floating bars, shared
-// by panels-and-tabs, reveal-from-list, piece-toolbar and context-menus. The
-// `read*` functions run inside the page (page.evaluate).
+// by panels-and-tabs, piece-toolbar and languages. The `read*` functions run
+// inside the page (page.evaluate).
 import type { Page } from '@playwright/test';
 
 export type Rect = { x: number; y: number; w: number; h: number };
 
 /** How many px the page scrolls sideways (0 or less: no horizontal scroll). */
 export const horizontalOverflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
-
-/** Waits until the browser has painted `n` more frames (after a scroll, the bars are placed on the next frame). */
-export const frames = (page: Page, n = 2) =>
-  page.evaluate(
-    (count) =>
-      new Promise<void>((done) => {
-        const step = (left: number) => (left ? requestAnimationFrame(() => step(left - 1)) : done());
-        step(count);
-      }),
-    n
-  );
 
 /** The «Propiedades» tabs: which is selected, which is the tab stop, which panels hide, and the focus. */
 export const readTabs = () => {

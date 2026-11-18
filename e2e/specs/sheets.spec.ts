@@ -7,10 +7,10 @@
 // keyboard path), and how far something held at an edge scrolls the stage.
 // What these actions do exactly is in tests/state/sheets.test.ts.
 import { expect, test, cards } from '../support/test.ts';
-import { frames, setZoom } from '../support/canvas.ts';
+import { frames, setZoom, stageBox } from '../support/canvas.ts';
 import { outsideMargin, overlapping } from '../support/geometry.ts';
 import { movesOutsideWindow, OUTSIDE_WINDOW } from '../support/pointer.ts';
-import { counts, holdPiece, lastSheetBottom, pageAt, pieceIds, placeholders, scrollOf, scrollStops, sheetIds, stageBox, toBelowLastSheet } from '../support/sheets.ts';
+import { counts, holdPiece, lastSheetBottom, pageAt, pieceIds, placeholders, scrollOf, scrollStops, sheetIds, toBelowLastSheet } from '../support/sheets.ts';
 
 test('«Acomodar» puts 20 equal cards back on 3 sheets, 9 + 9 + 2, and says so; each sheet is a group named after its visible label', async ({ app, page }) => {
   await app.addFiles(cards(0, 20));

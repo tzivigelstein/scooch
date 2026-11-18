@@ -1,9 +1,8 @@
 // Helpers for the editing specs (pointer-editing, files, clipboard): dragging a
-// piece by millimetres, dropping a file on the page, the grid settings and the
-// save status.
+// piece by millimetres, dropping a file on the page and the grid settings.
 import { readFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
-import { expect, fixture, type App } from './test.ts';
+import { fixture, type App } from './test.ts';
 
 /** A piece's geometry (mm) as the page shows it. */
 export async function pieceOf(app: App, id: number) {
@@ -19,11 +18,6 @@ export async function dragPieceTo(app: App, id: number, x: number, y: number) {
   const p = await pieceOf(app, id);
   await app.drag(app.piece(id), (x - p.x) * p.zoom, (y - p.y) * p.zoom, 16);
   return { x, y };
-}
-
-/** Waits until the project is saved («Guardado» next to its name). */
-export async function saved(page: Page) {
-  await expect(page.locator('#project')).toHaveAttribute('data-status', 'saved');
 }
 
 /** Turns «Imán» on or off and picks a grid size: a quick size (1, 5…) or one typed («2,5»). */

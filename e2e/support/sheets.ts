@@ -2,7 +2,7 @@
 // placeholders shown while dragging, and holding a piece with the pointer
 // while the stage scrolls by itself (and waiting until it stops).
 import type { Page } from '@playwright/test';
-import { frames } from './canvas.ts';
+import { frames, stageBox } from './canvas.ts';
 import { expect, type App } from './test.ts';
 
 /** Pieces per sheet, in order. */
@@ -78,9 +78,6 @@ export async function holdPiece(app: App, id: number) {
   await p.mouse.move(from.x + 4, from.y + 4, { steps: 2 });
   return from;
 }
-
-/** The stage's box on screen. */
-export const stageBox = async (p: Page) => (await p.locator('#stage').boundingBox())!;
 
 /** The stage's scroll and how far it reaches (px). */
 export const scrollOf = (p: Page) =>

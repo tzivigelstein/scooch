@@ -6,7 +6,7 @@
 // horizontal scroll or a scrolled sheet. (The list as a listbox is in
 // tests/components/PieceList.test.tsx.)
 import type { Page } from '@playwright/test';
-import { frames } from '../support/layout.ts';
+import { frames, scrollStage } from '../support/canvas.ts';
 import { cards, expect, test, type App } from '../support/test.ts';
 
 /** Where a piece is against what can be seen of the stage (left of an open drawer excluded), and the focus. */
@@ -43,7 +43,6 @@ const ROW_SEEN = (id: number) => {
 const NO_SIDEWAYS = { scrollLeft: 0, sheetScroll: false };
 
 const seen = (page: Page, id: number) => page.evaluate(SEEN, id);
-const scrollStage = (page: Page, top: number) => page.evaluate((y) => document.getElementById('stage')!.scrollTo(0, y), top);
 
 /** 20 business cards on 3 sheets; the ids of the first piece and of the first one on sheet 3. */
 async function threeSheets(app: App) {

@@ -5,10 +5,11 @@
 // pointer of. What the actions compute is in tests/state (overlap-and-snap,
 // placing-and-arranging).
 import type { Page } from '@playwright/test';
-import { frames } from '../support/canvas.ts';
+import { frames, stageBox } from '../support/canvas.ts';
 import { closerThan, near, onGrid, overlapping } from '../support/geometry.ts';
-import { dragPieceTo, dropFile, pieceOf, saved, setGrid } from '../support/editing.ts';
-import { counts, holdPiece, pieceIds, placeholders, scrollOf, scrollStops, stageBox } from '../support/sheets.ts';
+import { dragPieceTo, dropFile, pieceOf, setGrid } from '../support/editing.ts';
+import { saved } from '../support/projects.ts';
+import { counts, holdPiece, pieceIds, placeholders, scrollOf, scrollStops } from '../support/sheets.ts';
 import { expect, test, type App } from '../support/test.ts';
 
 test.describe('dragging a piece lands where the pointer leaves it, on the grid with «Imán»', () => {

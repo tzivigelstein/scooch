@@ -76,6 +76,9 @@ export const readStage = (): StageState => {
 
 export const stageState = (page: Page) => page.evaluate(readStage);
 
+/** Scrolls the stage to `top` px (and to its left edge). */
+export const scrollStage = (page: Page, top: number) => page.evaluate((y) => document.getElementById('stage')!.scrollTo(0, y), top);
+
 /** Resolves after `n` animation frames (what the app does on the next frame has happened). */
 export const frames = (page: Page, n = 2) =>
   page.evaluate(

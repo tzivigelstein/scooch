@@ -5,8 +5,8 @@
 // under the notice. (Which spot wins is decided by pickSpot, unit-tested in
 // tests/core/placement.test.js.)
 import type { Page } from '@playwright/test';
-import { zoomMenu } from '../support/canvas.ts';
-import { frames, hit, within, type Rect } from '../support/layout.ts';
+import { frames, zoomMenu } from '../support/canvas.ts';
+import { hit, within, type Rect } from '../support/layout.ts';
 import { cards, expect, test, type App } from '../support/test.ts';
 
 /** The toolbar and what it must avoid, in window px. */

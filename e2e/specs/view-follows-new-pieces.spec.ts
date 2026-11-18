@@ -4,7 +4,7 @@
 // the view. (Which sheet they land on, and what is announced, is in
 // tests/state/sheets.test.ts.)
 import type { Page } from '@playwright/test';
-import { frames } from '../support/canvas.ts';
+import { frames, scrollStage } from '../support/canvas.ts';
 import { clipboardKey } from '../support/keyboard.ts';
 import { cards, expect, test, type App } from '../support/test.ts';
 
@@ -21,7 +21,6 @@ const SEEN = (id: number) => {
 };
 
 const seen = (page: Page, id: number) => page.evaluate(SEEN, id);
-const scrollStage = (page: Page, top: number) => page.evaluate((y) => document.getElementById('stage')!.scrollTo(0, y), top);
 
 /** The ids of the pieces on the sheet at `index`. */
 const onSheet = (page: Page, index: number) =>

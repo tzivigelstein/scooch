@@ -4,7 +4,7 @@
 // focus back. (Moving through the items, typing to jump, disabled items and an
 // item acting in one undo step are in tests/components/Menu.test.tsx.)
 import type { Page } from '@playwright/test';
-import { frames } from '../support/layout.ts';
+import { frames } from '../support/canvas.ts';
 import { cards, expect, test, type App } from '../support/test.ts';
 
 /** The open menu (null if none): its name, role, box, item labels and the focused element. */
