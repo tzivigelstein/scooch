@@ -3,6 +3,7 @@
 // focus goes back to whoever opened them.
 
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { canHoldFocus } from '../../hooks/dom.ts';
 import { focusShown } from './focusShown.ts';
 import './Dialog.css';
 
@@ -27,7 +28,7 @@ export interface DialogProps {
 }
 
 const usable = (el: Element | null | undefined): el is HTMLElement =>
-  el instanceof HTMLElement && el.isConnected && el !== document.body && !el.closest('[hidden]') && !(el as HTMLButtonElement).disabled;
+  el instanceof HTMLElement && el !== document.body && canHoldFocus(el);
 
 export function Dialog({ id, className, labelledBy, describedBy, open, onClose, returnTo, fallback, initialFocus, focusTaken, onCancel, children }: DialogProps) {
   const dialog = useRef<HTMLDialogElement>(null);

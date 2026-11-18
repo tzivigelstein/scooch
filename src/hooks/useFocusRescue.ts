@@ -6,6 +6,7 @@ import { useDocument } from '../state/document.ts';
 import { useProject } from '../state/project.ts';
 import { useView } from '../state/view.ts';
 import { focusList, focusSheet } from '../state/actions/focus.ts';
+import { canHoldFocus } from './dom.ts';
 
 let lastFocus: Element | null = null;
 
@@ -13,7 +14,7 @@ function rescueFocus() {
   const active = document.activeElement;
   const candidate = active && active !== document.body ? active : lastFocus;
   if (!candidate) return;
-  const gone = !candidate.isConnected || (candidate as HTMLButtonElement).disabled || !!candidate.closest('[hidden]');
+  const gone = !canHoldFocus(candidate);
   if (!gone || (active && active !== document.body && active !== candidate)) return;
   lastFocus = null;
   const undo = document.getElementById('undo') as HTMLButtonElement | null;
