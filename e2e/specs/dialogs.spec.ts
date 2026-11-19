@@ -1,6 +1,7 @@
 // The modal dialogs as such: the focus going in when one opens and coming
 // back when it closes, also while a stylesheet is still loading (WebKit
-// doesn't restyle the page until it arrives). What each dialog holds and
+// doesn't restyle the page until it arrives); and what scrolls over the page
+// (dialogs, menus, lists) keeping its scroll to itself. What each dialog holds and
 // does: its own spec (command-palette, projects, print-and-download…).
 import type { Page } from '@playwright/test';
 import { expect, test } from '../support/test.ts';
@@ -59,4 +60,30 @@ test('a dialog closed while a stylesheet is loading gives the focus back to its 
   await expect(page.locator('#clear')).toBeFocused();
   await expect(app.pieces()).toHaveCount(1);
   arrive();
+});
+
+test('what scrolls over the page keeps its scroll to itself: a dialog’s body, a menu, a select’s list, the panels and the palette’s list', async ({ app }) => {
+  const page = app.page;
+  /** How `selector` (shown) lets a scroll that reaches its end go on to what is behind it. */
+  const overscroll = (selector: string) => page.locator(selector).evaluate((el) => getComputedStyle(el).overscrollBehaviorY);
+  await app.addFiles(['card01.png']);
+  await app.clickPiece(app.pieces().first());
+  await app.openMeasures();
+  expect(await overscroll('#props-panel'), 'Propiedades').toBe('contain');
+  expect(await overscroll('#pieces-panel'), 'Piezas (its list scrolls on to it)').toBe('contain');
+
+  await page.locator('#photo-size').click();
+  expect(await overscroll('#photo-size-list'), 'a select’s list').toBe('contain');
+  await page.keyboard.press('Escape');
+
+  await page.locator('#zoom-level').click();
+  expect(await overscroll('[role="menu"]'), 'a menu').toBe('contain');
+  await page.keyboard.press('Escape');
+
+  await page.locator('#prefs-open').click();
+  expect(await overscroll('#prefs .dialog-body'), 'a dialog’s body').toBe('contain');
+  await page.keyboard.press('Escape');
+
+  await page.locator('#palette-open').click();
+  expect(await overscroll('#palette-list'), 'the palette’s list').toBe('contain');
 });

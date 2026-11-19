@@ -7,6 +7,8 @@
     max-width: min(22rem, calc(100vw - 1rem));
     max-height: calc(100dvh - 1rem);
     overflow-y: auto;
+    /* Scrolled to its end, it doesn't scroll (or pull to refresh) what is behind. */
+    overscroll-behavior: contain;
     padding: 0.25rem;
     border: 1px solid var(--line);
     border-radius: 0.625rem;

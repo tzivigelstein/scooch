@@ -64,6 +64,8 @@
     max-width: min(24rem, calc(100vw - 1rem));
     margin: 0;
     overflow-y: auto;
+    /* Scrolled to its end, it doesn't scroll the panel behind. */
+    overscroll-behavior: contain;
     padding: 0.25rem;
     border: 1px solid var(--line);
     border-radius: 0.625rem;

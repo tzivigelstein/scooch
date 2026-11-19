@@ -52,6 +52,8 @@
     min-height: 0;
     padding: 0.25rem 1.25rem 1rem;
     overflow: auto;
+    /* Scrolled to its end, it doesn't scroll (or pull to refresh) the page behind. */
+    overscroll-behavior: contain;
   }
 
   .dialog-body > * {
