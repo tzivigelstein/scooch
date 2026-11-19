@@ -35,7 +35,7 @@ const en: Catalogue = {
     size: '{w} × {h} {unit}',
     scale: '{n}%',
     invalid: '“{text}” isn’t a valid measurement. Keeping {value}.',
-    unreadable: 'Enter a measurement in numbers, like 2.5 or 1/2 in',
+    unreadable: 'Enter a measurement in numbers, like 2.5 or 1/2 in',
     max: 'Maximum {value}',
     min: 'Minimum {value}',
   },

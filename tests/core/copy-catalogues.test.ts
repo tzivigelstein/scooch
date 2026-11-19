@@ -68,6 +68,9 @@ const SEARCH_ONLY = /^commands\.aliases\./;
 /** A number and its unit, and a measurement, never break: a no-break space in every language. */
 const UNBREAKABLE = ['units.length', 'units.size', 'props.gridChip', 'cuts.weightTip'];
 
+/** A number (or a parameter) and a unit, or the sides of a measurement, with a plain space between them: a line can break there. */
+const BREAKABLE = /[\d}] (?:mm|cm|in|po|pt|ppp|dpi|px|%|kB|MB|GB|ko|Mo|Go)(?![\p{L}\p{N}])|[\d}] ×|× [\d{]/u;
+
 describe.each(LANGUAGES.map((language) => [language, CATALOGUES[language]] as const))('%s', (language, catalogue: Catalogue) => {
   const own = leaves(catalogue as unknown as Tree, es as unknown as Tree);
 
@@ -114,6 +117,7 @@ describe.each(LANGUAGES.map((language) => [language, CATALOGUES[language]] as co
     for (const [key, value] of own) {
       if (SEARCH_ONLY.test(key)) continue;
       for (const text of forms(value)) for (const { rule, bad } of TYPOGRAPHY[language] ?? []) expect(bad.test(text), `${key}: ${rule}: «${text}»`).toBe(false);
+      for (const text of forms(value)) expect(BREAKABLE.test(text), `${key}: a no-break space between a number and its unit: «${text}»`).toBe(false);
     }
     for (const key of UNBREAKABLE) expect(own.get(key), key).not.toMatch(/\} \{| \{unit\}| pt$/);
   });

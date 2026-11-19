@@ -36,7 +36,7 @@ const zhHans: Catalogue = {
     size: '{w} × {h} {unit}',
     scale: '{n}%',
     invalid: '“{text}”不是有效的尺寸，仍为{value}。',
-    unreadable: '请用数字输入尺寸，例如2.5或1/2 in',
+    unreadable: '请用数字输入尺寸，例如2.5或1/2 in',
     max: '最大{value}',
     min: '最小{value}',
   },

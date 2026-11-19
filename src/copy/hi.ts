@@ -36,7 +36,7 @@ const hi: Catalogue = {
     size: '{w} × {h} {unit}',
     scale: '{n}%',
     invalid: '“{text}” मान्य माप नहीं है। {value} ही रहेगा।',
-    unreadable: 'माप अंकों में लिखें, जैसे 2.5 या 1/2 in',
+    unreadable: 'माप अंकों में लिखें, जैसे 2.5 या 1/2 in',
     max: 'अधिकतम {value}',
     min: 'न्यूनतम {value}',
   },

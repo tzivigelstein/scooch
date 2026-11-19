@@ -36,7 +36,7 @@ const fr: Catalogue = {
     size: '{w} × {h} {unit}',
     scale: '{n} %',
     invalid: '« {text} » n’est pas une mesure valide. La valeur reste {value}.',
-    unreadable: 'Saisissez une mesure en chiffres, par exemple 2,5 ou 1/2 po',
+    unreadable: 'Saisissez une mesure en chiffres, par exemple 2,5 ou 1/2 po',
     max: 'Maximum {value}',
     min: 'Minimum {value}',
   },

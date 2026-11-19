@@ -878,7 +878,7 @@ const es = {
     rows: {
       tab: 'Recorrer la barra, los paneles y las piezas; en la hoja, enfocar una pieza la selecciona',
       move: 'Mover la pieza {normal} (Shift: {coarse}; Alt: {fine}). Si choca con otra, salta al otro lado.',
-      scale: 'Agrandar o reducir 1 % (Shift: 10 %)',
+      scale: 'Agrandar o reducir 1 % (Shift: 10 %)',
       wheel: 'Acercar o alejar la vista (también pellizcando el trackpad)',
       pan: 'Mover la vista (también con el botón del medio o desplazando con dos dedos)',
       menu: 'Abrir el menú de la pieza o de la hoja (también con clic derecho o manteniendo presionado)',
@@ -910,7 +910,7 @@ const es = {
     clearAll: 'Quitar todas las piezas',
     grid: 'Mostrar u ocultar la grilla',
     snap: 'Activar o desactivar el imán',
-    zoom100: 'Zoom al 100 %',
+    zoom100: 'Zoom al 100 %',
     zoomIn: 'Acercar la vista',
     zoomOut: 'Alejar la vista',
     tabPiece: 'Ir a la pestaña Pieza',
