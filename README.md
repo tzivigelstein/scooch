@@ -246,11 +246,24 @@ open an issue first. Security problems go privately, as
 
 Scooch is source-available under the
 [PolyForm Noncommercial License 1.0.0](LICENSE). In plain words: anyone may
-use, read, change and share it for any noncommercial purpose, including
+use, read, change and share the code for any noncommercial purpose, including
 personal use and use by charities, schools, public research organizations and
-government institutions. Commercial use is not allowed. It is not an
-open-source license. The license text is what applies; this summary is not a
-substitute for it.
+government institutions. It is not an open-source license.
+
+Using the app at its official site is allowed for any purpose, commercial work
+included: a print shop, someone selling stickers or a business printing its
+own material may use it, and what they make with it (the PDFs, the prints) is
+theirs to use and sell, with no fee, credit or permission needed. The
+licensor gives that permission in
+[LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md), and the terms of use say the
+same. What is not allowed is commercializing Scooch itself: selling it,
+charging for access to it, hosting a copy with ads, including it in a paid
+product or service, or offering the code or a changed version commercially.
+Those, and any other commercial use of the code, need the licensor's written
+permission.
+
+The license text and the additional permission are what apply; this summary
+is not a substitute for them.
 
 The third-party software in the build, each under its own license, is listed
 in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

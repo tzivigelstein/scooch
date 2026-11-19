@@ -243,7 +243,9 @@ agree that:
    royalty-free and irrevocable permission to use, change, distribute and
    relicense your contribution under any other terms, including terms that
    allow commercial use. This lets the maintainer keep deciding how the
-   project is licensed.
+   project is licensed, and give permissions like the one in
+   [LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md), which lets anyone use the
+   app at its official site for commercial work.
 4. You keep the copyright of your contribution.
 
 If you don't agree with these terms, please don't send code. Describing the
