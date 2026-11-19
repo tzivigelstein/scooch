@@ -27,7 +27,7 @@ const texts = ({ ui }: Kit): Readonly<Record<LegalId, LegalPageTexts>> => ({
   license: {
     h1: '代码许可证',
     description: `PolyForm Noncommercial 1.0.0许可证的全文。${app}的源代码按这个许可证发布：可以出于非商业目的使用、研究和修改，但不允许商业用途。`,
-    intro: `${app}的源代码按PolyForm Noncommercial 1.0.0许可证发布。以下是许可证原文（英文）；<a href="${PATHS['legal-terms']}">使用条款</a>说明了它允许哪些用途。`,
+    intro: `${app}的源代码按PolyForm Noncommercial 1.0.0许可证发布。以下是许可证原文（英文）；<a href="${PATHS['legal-terms']}">使用条款</a>说明了它允许哪些用途，也说明了在本网站上可以将${app}用于任何目的，包括商业用途。`,
   },
 });
 

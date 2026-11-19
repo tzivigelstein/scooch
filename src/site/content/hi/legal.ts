@@ -29,7 +29,7 @@ const texts = ({ ui }: Kit): Readonly<Record<LegalId, LegalPageTexts>> => ({
   license: {
     h1: 'कोड का लाइसेंस',
     description: `PolyForm Noncommercial 1.0.0 लाइसेंस का टेक्स्ट, जिसके तहत ${app} का सोर्स कोड प्रकाशित किया जाता है।`,
-    intro: `${app} का सोर्स कोड PolyForm Noncommercial 1.0.0 लाइसेंस के तहत प्रकाशित किया जाता है। नीचे इसका टेक्स्ट है, अंग्रेज़ी में; <a href="${PATHS['legal-terms']}">${esc(ui('legal.terms'))}</a> बताती हैं कि यह किन बातों की अनुमति देता है।`,
+    intro: `${app} का सोर्स कोड PolyForm Noncommercial 1.0.0 लाइसेंस के तहत प्रकाशित किया जाता है। नीचे इसका टेक्स्ट है, अंग्रेज़ी में; <a href="${PATHS['legal-terms']}">${esc(ui('legal.terms'))}</a> बताती हैं कि यह किन बातों की अनुमति देता है, और यह भी कि इस साइट पर ${app} को किसी भी काम के लिए, व्यावसायिक काम के लिए भी, इस्तेमाल किया जा सकता है।`,
   },
 });
 

@@ -27,7 +27,7 @@ const texts = ({ ui }: Kit): Readonly<Record<LegalId, LegalPageTexts>> => ({
   license: {
     h1: 'Code license',
     description: `The text of the PolyForm Noncommercial 1.0.0 license, under which the source code of ${app} is published.`,
-    intro: `The source code of ${app} is published under the PolyForm Noncommercial 1.0.0 license. This is its text; the <a href="${PATHS['legal-terms']}">terms of use</a> explain what it allows.`,
+    intro: `The source code of ${app} is published under the PolyForm Noncommercial 1.0.0 license. This is its text; the <a href="${PATHS['legal-terms']}">terms of use</a> explain what it allows, and that using ${app} on this site is allowed for any purpose, commercial ones included.`,
   },
 });
 
