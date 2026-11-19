@@ -11,6 +11,7 @@ import { setTexts, t, textsLanguage, type Catalogue } from '../copy/index.ts';
 import { loadCatalogue } from '../copy/load.ts';
 import { useLanguage } from '../state/language.ts';
 import { readStoredLanguage, usePrefs } from '../state/prefs.ts';
+import { showTitle } from './title.ts';
 
 /** The browser's languages, most preferred first. */
 const browserLanguages = () => (navigator.languages?.length ? navigator.languages : [navigator.language]);
@@ -31,7 +32,7 @@ export function shownLanguage(): Language {
 export function applyTexts(language: Language, messages: Catalogue) {
   setTexts(messages);
   document.documentElement.lang = messages.meta.lang;
-  document.title = t('app.title');
+  showTitle();
   document.querySelector('meta[name="description"]')?.setAttribute('content', t('app.description'));
   useLanguage.setState({ language });
 }

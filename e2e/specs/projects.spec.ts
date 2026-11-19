@@ -797,6 +797,16 @@ test('the top bar renames the project the same way: text selected, Esc cancels, 
   await saved(page);
 });
 
+test('the tab’s title says the open project’s name once it has pieces, and follows a rename', async ({ page, app }) => {
+  await expect(page).toHaveTitle('Scooch — Acomoda imágenes y PDF en una hoja a tamaño real');
+  await app.addFiles(['small.jpg']);
+  await expect(page).toHaveTitle('Sin título — Scooch');
+  await page.locator('#project-name').click();
+  await page.locator('#project-name-input').fill('Tarjetas');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveTitle('Tarjetas — Scooch');
+});
+
 test('the top bar’s name field, opened again while a stylesheet is loading, keeps the focus and the typing', async ({ app }) => {
   const page = app.page;
   await renameInBar(page, 'Hojas');

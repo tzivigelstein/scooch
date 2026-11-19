@@ -6,9 +6,11 @@ import { showFocusMovedByKeys } from './hooks/keyboardFocus.ts';
 import { showBootFailure } from './services/bootFailure.ts';
 import { followLanguage } from './services/language.ts';
 import { followTheme } from './services/theme.ts';
+import { followTitle } from './services/title.ts';
 import { settleSavings } from './state/savings.ts';
 
 followTheme();
+followTitle();
 settleSavings();
 showFocusMovedByKeys();
 

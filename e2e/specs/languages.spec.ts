@@ -212,7 +212,9 @@ test('choosing a language in Preferences shows it at once, without a reload, kee
   expect(await app.selectedIds()).toEqual([2]);
   expect(await app.ids()).toEqual(before);
   await expect(other.locator('html')).toHaveAttribute('lang', 'fr');
-  await expect(other).toHaveTitle(textsFor(CATALOGUES.fr).t('app.title'));
+  // The page's own texts follow; the tab's title is the project's name, in no language.
+  await expect(other.locator('meta[name="description"]')).toHaveAttribute('content', textsFor(CATALOGUES.fr).t('app.description'));
+  await expect(other).toHaveTitle('Sin título — Scooch');
 
   await app.undo();
   await expect(app.piece(2)).not.toHaveAttribute('aria-label', /pivoté/);
