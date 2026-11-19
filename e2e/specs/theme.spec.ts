@@ -13,7 +13,7 @@ const LABELS = { auto: 'Automático', light: 'Claro', dark: 'Oscuro' } as const;
 /** What each theme looks like before the stylesheet's own rules matter. */
 const LOOKS = {
   light: { theme: 'light', scheme: 'light', background: 'rgb(255, 255, 255)', bar: ['#ffffff'] },
-  dark: { theme: 'dark', scheme: 'dark', background: 'rgb(21, 23, 28)', bar: ['#121418'] },
+  dark: { theme: 'dark', scheme: 'dark', background: 'rgb(21, 23, 28)', bar: ['#15171c'] },
 } as const;
 const WHITE = 'rgb(255, 255, 255)';
 
@@ -78,6 +78,21 @@ test('after a reload the chosen theme is on the page before the app’s script r
   expect(await page.evaluate(readTheme)).toEqual(mountedIn('dark'));
   await page.locator('#prefs-open').click();
   await expect(page.locator('#prefs').getByRole('radio', { name: LABELS.dark })).toBeChecked();
+});
+
+test('the browser’s bar takes the top bar’s color in each theme, so the two read as one', async ({ app: { page } }) => {
+  /** The color of the browser's bar that applies, and the top bar's, both as rgb(). */
+  const readBars = () => {
+    const [hex] = [...document.querySelectorAll('meta[name="theme-color"]')].filter((m) => matchMedia(m.getAttribute('media') ?? 'all').matches).map((m) => m.getAttribute('content')!);
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    return { browser: `rgb(${r}, ${g}, ${b})`, topbar: getComputedStyle(document.querySelector('.topbar')!).backgroundColor };
+  };
+  for (const theme of ['light', 'dark'] as const) {
+    await chooseTheme(page, theme);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+    const bars = await page.evaluate(readBars);
+    expect(bars.browser, theme).toBe(bars.topbar);
+  }
 });
 
 test('a theme chosen in one tab shows in the others at once', async ({ app: { page }, context }, testInfo) => {

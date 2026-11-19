@@ -51,8 +51,8 @@ const shown = () => ({
 });
 
 const SHOWS = {
-  light: { theme: 'light', colorScheme: 'light', bar: { '#ffffff': 'all', '#121418': 'not all' } },
-  dark: { theme: 'dark', colorScheme: 'dark', bar: { '#ffffff': 'not all', '#121418': 'all' } },
+  light: { theme: 'light', colorScheme: 'light', bar: { '#ffffff': 'all', '#15171c': 'not all' } },
+  dark: { theme: 'dark', colorScheme: 'dark', bar: { '#ffffff': 'not all', '#15171c': 'all' } },
 };
 
 /** Another tab stored `raw` (null: it cleared the storage) and this one hears of it. */
