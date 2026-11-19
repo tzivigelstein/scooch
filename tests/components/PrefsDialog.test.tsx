@@ -247,13 +247,13 @@ describe('the site’s pages', () => {
     expect(foot.closest('[role="group"], .dialog-body')).toBeNull();
   });
 
-  test('the questions open in a new tab, without a hold on the editor; the terms and the privacy policy in this one', () => {
+  test('the questions, the terms and the privacy policy open in a new tab, without a hold on the editor', () => {
     render(<PrefsDialog />);
     const links = within(document.getElementById('prefs-legal')!).getAllByRole('link');
     expect(links.map((a) => [a.getAttribute('target'), a.getAttribute('rel')])).toEqual([
       ['_blank', 'noopener'],
-      [null, null],
-      [null, null],
+      ['_blank', 'noopener'],
+      ['_blank', 'noopener'],
     ]);
   });
 });

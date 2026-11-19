@@ -103,9 +103,9 @@ const singleKeyExamples = () =>
     .join('');
 
 /**
- * The site's pages, in the language on screen: the questions, in a new tab
- * (whoever looks for help stays in the editor), and the terms and privacy
- * policy (pages of their own: the project saves itself before leaving).
+ * The site's pages, in the language on screen: the questions, the terms and
+ * the privacy policy, each in a new tab (whoever reads one stays in the
+ * editor).
  */
 function SiteLinks() {
   const language = shownLanguage();
@@ -116,11 +116,11 @@ function SiteLinks() {
           {t('prefs.faq')}
         </a>
         {t('legal.separator')}
-        <a className="link-btn" href={sitePath(language, 'legal-terms')}>
+        <a className="link-btn" href={sitePath(language, 'legal-terms')} target="_blank" rel="noopener">
           {t('legal.terms')}
         </a>
         {t('legal.separator')}
-        <a className="link-btn" href={sitePath(language, 'legal-privacy')}>
+        <a className="link-btn" href={sitePath(language, 'legal-privacy')} target="_blank" rel="noopener">
           {t('legal.privacy')}
         </a>
       </p>
