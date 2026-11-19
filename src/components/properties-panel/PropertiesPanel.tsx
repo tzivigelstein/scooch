@@ -6,6 +6,7 @@
 import { X } from 'lucide-react';
 import { NARROW_QUERY } from '../../config.ts';
 import { t } from '../../copy/index.ts';
+import { keepFocusBelowStickyHeader } from '../../hooks/dom.ts';
 import { useMediaQuery } from '../../hooks/useMediaQuery.ts';
 import { useShortcut } from '../../hooks/shortcuts.ts';
 import { useView } from '../../state/view.ts';
@@ -29,7 +30,7 @@ export function PropertiesPanel() {
   const projectKeys = useShortcut('tabProject');
   const className = `panel panel-right${collapsible ? ' is-drawer' : ''}${open ? ' is-open' : ''}`;
   return (
-    <aside id="props-panel" className={className} aria-label={t('props.title')} hidden={collapsible && !open} onBlur={open ? closeOnFocusOut('props') : undefined}>
+    <aside id="props-panel" className={className} aria-label={t('props.title')} hidden={collapsible && !open} onFocus={keepFocusBelowStickyHeader} onBlur={open ? closeOnFocusOut('props') : undefined}>
       <div className="panel-head drawer-head">
         <p className="panel-title">{t('props.title')}</p>
         <IconButton className="icon-btn small drawer-close" data-close-panel="" icon={X} label={t('props.close')} tip={t('app.close')} shortcut="closePanel" onClick={() => closeDrawer('props')} />
