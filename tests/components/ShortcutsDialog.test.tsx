@@ -61,6 +61,8 @@ describe('the shortcuts, by section', () => {
     const download = [...document.querySelectorAll('#shortcuts-rows tr')].find((tr) => /Descargar PDF/.test(tr.textContent ?? ''))!;
     expect(download.querySelector('th')?.getAttribute('scope')).toBe('row');
     expect([...download.querySelectorAll('kbd')].map((k) => k.textContent)).toEqual(['Ctrl+E', 'Ctrl+Shift+S']);
+    // A page the browser translates leaves the keys as the keyboard has them.
+    expect([...download.querySelectorAll('kbd')].map((k) => k.getAttribute('translate'))).toEqual(['no', 'no']);
   });
 
   test('every command with keys has its row, by its name, and every key of the shortcut table shows', () => {

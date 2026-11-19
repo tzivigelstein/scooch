@@ -98,7 +98,7 @@ ${head.join('\n')}
 </head>
 <body>
 <a class="skip" href="#main">${esc(chrome.skip)}</a>
-<header class="site-header"><div class="wrap"><a class="brand" href="/">${BRAND_MARK}<span>${esc(APP_NAME)}</span></a><a class="btn btn-primary btn-small" href="/">${esc(chrome.open)}</a></div></header>
+<header class="site-header"><div class="wrap"><a class="brand" href="/">${BRAND_MARK}<span translate="no">${esc(APP_NAME)}</span></a><a class="btn btn-primary btn-small" href="/">${esc(chrome.open)}</a></div></header>
 <main id="main" class="wrap">
 <nav class="crumbs" aria-label="${esc(chrome.crumbs)}"><ol><li><a href="/">${esc(APP_NAME)}</a></li><li aria-current="page">${esc(page.crumb)}</li></ol></nav>
 <h1>${esc(page.h1)}</h1>

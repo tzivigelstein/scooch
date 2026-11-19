@@ -126,6 +126,8 @@ describe('the skeleton in index.html', () => {
       for (const property of ['gap', 'padding']) expect(skeleton(layout, '.boot-bar', property), `${property} (${layout})`).toBe(app(layout, '.topbar', property));
     expect(skeleton('narrow', '.boot-bar', 'grid')).toBe(`${app('narrow', '.topbar', 'grid-template-rows')} / ${app('narrow', '.topbar', 'grid-template-columns')}`);
     for (const property of ['font-size', 'font-weight', 'letter-spacing']) expect(skeleton('desktop', '.boot-name', property), property).toBe(app('desktop', '.brand-name', property));
+    // The name stays as it is when the browser translates the page, as in the top bar.
+    expect(read('index.html')).toMatch(/<p class="boot-name"[^>]* translate="no">/);
   });
 
   test('the room it fits the sheet in is the stage’s scrolled area’s, less the sheet’s title and «Agregar hoja», in every layout', () => {

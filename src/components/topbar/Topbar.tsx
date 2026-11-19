@@ -48,7 +48,9 @@ export function Topbar() {
       {/* Not a link: here it would only reload the editor, losing the selection and a crop in progress. */}
       <div className="brand">
         <BrandMark />
-        <span className="brand-name">{t('app.name')}</span>
+        <span className="brand-name" translate="no">
+          {t('app.name')}
+        </span>
       </div>
 
       <ProjectBar />
@@ -69,7 +71,7 @@ export function Topbar() {
         {/* The way to the palette: its keys show (not only in the tooltip) so it can be found. */}
         <Button id="palette-open" className="tool palette-open" aria-haspopup="dialog" icon={Search} tip={t('palette.title')} shortcut="palette" onClick={control('palette', openPalette)}>
           <span className="sr-only">{t('palette.title')}</span>
-          <kbd className="palette-open-keys" aria-hidden="true">
+          <kbd className="palette-open-keys" aria-hidden="true" translate="no">
             {keyLabel(SHORTCUTS.palette.kbd)}
           </kbd>
         </Button>

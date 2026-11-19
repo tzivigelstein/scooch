@@ -56,9 +56,9 @@ describe('blocks', () => {
 });
 
 describe('inline', () => {
-  test('code, bold, italics and links', () => {
+  test('code (left as written when the page is translated), bold, italics and links', () => {
     expect(md('Vigente desde `<FECHA DE VIGENCIA>`. Cuando dice _nosotros_, **ojo**: [política](https://vercel.com/legal/privacy-notice).')).toBe(
-      '<p>Vigente desde <code>&lt;FECHA DE VIGENCIA&gt;</code>. Cuando dice <em>nosotros</em>, <strong>ojo</strong>: <a href="https://vercel.com/legal/privacy-notice">política</a>.</p>'
+      '<p>Vigente desde <code translate="no">&lt;FECHA DE VIGENCIA&gt;</code>. Cuando dice <em>nosotros</em>, <strong>ojo</strong>: <a href="https://vercel.com/legal/privacy-notice">política</a>.</p>'
     );
   });
 
@@ -68,7 +68,7 @@ describe('inline', () => {
 
   test('a link whose label is code, and an autolink', () => {
     expect(md('forks of [`afm`](https://github.com/chbrown/afm) and <https://polyformproject.org/licenses/>')).toBe(
-      '<p>forks of <a href="https://github.com/chbrown/afm"><code>afm</code></a> and <a href="https://polyformproject.org/licenses/">https://polyformproject.org/licenses/</a></p>'
+      '<p>forks of <a href="https://github.com/chbrown/afm"><code translate="no">afm</code></a> and <a href="https://polyformproject.org/licenses/">https://polyformproject.org/licenses/</a></p>'
     );
   });
 

@@ -49,7 +49,8 @@ function inline(text: string, link: (href: string) => MarkdownLink) {
   // and emphasis don't touch their contents.
   const held: string[] = [];
   const hold = (html: string) => `\u0000${held.push(html) - 1}\u0000`;
-  let s = text.replace(/`([^`]+)`/g, (_, code: string) => hold(`<code>${esc(code)}</code>`));
+  // A code token (a name, a placeholder) stays as written when the browser translates the page.
+  let s = text.replace(/`([^`]+)`/g, (_, code: string) => hold(`<code translate="no">${esc(code)}</code>`));
   s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label: string, href: string) => hold(anchor(link(href), emphasis(esc(label)))));
   s = s.replace(/<(https?:\/\/[^>\s]+)>/g, (_, href: string) => hold(anchor(link(href), esc(href))));
   s = emphasis(esc(s));

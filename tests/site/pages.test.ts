@@ -79,6 +79,7 @@ describe('every page', () => {
       expect(brand.tagName, page.path).toBe('A');
       expect(brand.getAttribute('href'), page.path).toBe('/');
       expect(brand.textContent, page.path).toBe('Scooch');
+      expect(brand.querySelector('[translate="no"]')?.textContent, `${page.path}: the name stays as it is when the page is translated`).toBe('Scooch');
     }
   });
 

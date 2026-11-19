@@ -144,7 +144,9 @@ export function Menu({ id, label, entries, at, onClose }: { id: string; label: s
             {entry.keys && (
               <span className="menu-keys" aria-hidden="true">
                 {entry.keys.split(' ').map((key) => (
-                  <kbd key={key}>{keyLabel(key)}</kbd>
+                  <kbd key={key} translate="no">
+                    {keyLabel(key)}
+                  </kbd>
                 ))}
               </span>
             )}

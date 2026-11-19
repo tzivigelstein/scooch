@@ -20,3 +20,10 @@ test('the brand reads as the app’s name and is neither a link, a button nor a 
   expect(brand.matches('a, button, [role], [tabindex]')).toBe(false);
   expect(brand.querySelector('a, button, [tabindex]')).toBeNull();
 });
+
+test('a page the browser translates leaves the app’s name and the keys as they are', () => {
+  resetState();
+  render(<Topbar />);
+  expect(document.querySelector('.brand-name')!.getAttribute('translate')).toBe('no');
+  expect([...document.querySelectorAll('.topbar kbd')].map((kbd) => kbd.getAttribute('translate'))).toEqual(['no']);
+});
