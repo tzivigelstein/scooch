@@ -1,18 +1,29 @@
 @layer ui {
+  /* The row is the switch's label, all of it: its text (and hint, under it)
+     on the left, the switch on the right. */
   .switch-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.875rem;
-    min-height: 2.125rem;
-  }
-
-  .switch-row label {
     display: grid;
-    gap: 1px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 0.875rem;
+    row-gap: 1px;
+    min-height: 2.125rem;
     font-size: 0.84375rem;
     font-weight: 500;
     cursor: pointer;
+  }
+
+  .switch-row > :not(input) {
+    grid-column: 1;
+  }
+
+  .switch-row > input[role="switch"] {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .switch-row > .switch-hint + input[role="switch"] {
+    grid-row: 1 / span 2;
   }
 
   .switch-hint {

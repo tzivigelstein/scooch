@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react';
 import './Switch.css';
 
-/** A labeled on/off switch, with an optional hint (a checkbox with role="switch"). */
+/**
+ * A labeled on/off switch, with an optional hint (a checkbox with
+ * role="switch"). The whole row is its label: a click or a tap anywhere on
+ * it toggles the switch, once, with no dead space between the text and it.
+ */
 export function Switch({
   id,
   label,
@@ -21,16 +25,14 @@ export function Switch({
   'data-kbd'?: string;
 }) {
   return (
-    <div className="switch-row">
-      <label htmlFor={id}>
-        {label}
-        {hint && (
-          <span className="switch-hint" id={`${id}-hint`}>
-            {hint}
-          </span>
-        )}
-      </label>
+    <label className="switch-row" htmlFor={id}>
+      {label}
+      {hint && (
+        <span className="switch-hint" id={`${id}-hint`}>
+          {hint}
+        </span>
+      )}
       <input type="checkbox" role="switch" id={id} aria-describedby={hint ? `${id}-hint` : undefined} checked={checked} onChange={(e) => onChange(e.target.checked)} {...rest} />
-    </div>
+    </label>
   );
 }

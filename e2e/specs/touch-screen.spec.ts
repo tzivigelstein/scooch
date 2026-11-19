@@ -215,6 +215,24 @@ test.describe('on a phone, with a finger', () => {
     expect(await page.evaluate(readFooterLinks)).toEqual([44]);
   });
 
+  test('a tap anywhere on a switch’s row toggles it once: on its text, between the text and the switch, and at the row’s edge', async ({ app, page }) => {
+    await app.openSetting('#allow-rotate');
+    const toggle = page.locator('#allow-rotate');
+    const row = page.locator('.switch-row:has(#allow-rotate)');
+    const r = (await row.boundingBox())!;
+    const s = (await toggle.boundingBox())!;
+    let on = await toggle.isChecked();
+    for (const spot of [
+      { x: r.x + 8, y: r.y + r.height / 2 },
+      { x: r.x + r.width * 0.6, y: r.y + r.height / 2 },
+      { x: s.x - 6, y: r.y + 2 },
+    ]) {
+      await page.touchscreen.tap(spot.x, spot.y);
+      on = !on;
+      await expect(toggle, `after a tap at ${Math.round(spot.x - r.x)}, ${Math.round(spot.y - r.y)} px in the row`).toBeChecked({ checked: on });
+    }
+  });
+
   test('the calculator’s fields on the site are 16 px at least', async ({ page }) => {
     await page.goto('./es/cuantas-fotos-caben-en-una-hoja');
     await page.locator('#calc-photo').selectOption('custom');
