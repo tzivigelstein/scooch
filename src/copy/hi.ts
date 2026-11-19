@@ -785,6 +785,7 @@ const hi: Catalogue = {
   shortcuts: {
     title: 'कीबोर्ड शॉर्टकट',
     singleKeysNote: 'एक कुंजी वाले शॉर्टकट <link>प्राथमिकताएं</link> में चालू होते हैं',
+    singleKeysNoteOn: 'एक कुंजी वाले शॉर्टकट <link>प्राथमिकताएं</link> में बंद होते हैं',
     search: 'शॉर्टकट खोजें',
     empty: '“{query}” से मेल खाता कोई शॉर्टकट नहीं है',
     off: 'बंद',

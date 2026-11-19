@@ -755,6 +755,7 @@ const zhHans: Catalogue = {
   shortcuts: {
     title: '键盘快捷键',
     singleKeysNote: '可在<link>偏好设置</link>中开启单键快捷键',
+    singleKeysNoteOn: '可在<link>偏好设置</link>中关闭单键快捷键',
     search: '搜索快捷键',
     empty: '没有与“{query}”匹配的快捷键',
     off: '已关闭',

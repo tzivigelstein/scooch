@@ -784,6 +784,7 @@ const en: Catalogue = {
   shortcuts: {
     title: 'Keyboard shortcuts',
     singleKeysNote: 'Turn on single-key shortcuts in <link>Preferences</link>',
+    singleKeysNoteOn: 'Turn off single-key shortcuts in <link>Preferences</link>',
     search: 'Search shortcuts',
     empty: 'No shortcuts match “{query}”',
     off: 'Off',

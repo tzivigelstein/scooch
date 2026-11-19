@@ -870,6 +870,7 @@ const es = {
     title: 'Atajos de teclado',
     // The part between <link> and </link> is a button that opens Preferencias (see splitLink).
     singleKeysNote: 'Los atajos de 1 tecla se activan en <link>Preferencias</link>',
+    singleKeysNoteOn: 'Los atajos de 1 tecla se desactivan en <link>Preferencias</link>',
     search: 'Buscar atajos',
     // Nothing matches what was typed ({query}: as typed)
     empty: 'No hay atajos que coincidan con «{query}»',

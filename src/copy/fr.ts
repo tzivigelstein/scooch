@@ -785,6 +785,7 @@ const fr: Catalogue = {
   shortcuts: {
     title: 'Raccourcis clavier',
     singleKeysNote: 'Les raccourcis à 1 touche s’activent dans les <link>Préférences</link>',
+    singleKeysNoteOn: 'Les raccourcis à 1 touche se désactivent dans les <link>Préférences</link>',
     search: 'Rechercher un raccourci',
     empty: 'Aucun raccourci ne correspond à « {query} »',
     off: 'Désactivé',

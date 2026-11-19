@@ -12,6 +12,7 @@ import ShortcutsDialog from '../../src/components/dialogs/ShortcutsDialog.tsx';
 import { useDialogs } from '../../src/components/dialogs/dialogs.ts';
 import { SHORTCUTS } from '../../src/hooks/shortcuts.ts';
 import { COMMAND_IDS, command } from '../../src/state/commands.ts';
+import { usePrefs } from '../../src/state/prefs.ts';
 import { resetState } from '../support/state.ts';
 import { keyLabel } from '../../src/copy/index.ts';
 
@@ -135,9 +136,12 @@ describe('searching', () => {
 });
 
 describe('the note and its link to Preferences', () => {
-  test('the note is one sentence with the link: «Los atajos de 1 tecla se activan en Preferencias»', () => {
+  test('the note is one sentence with the link, and says what Preferences would do: turn the single keys off while they are on, on while they are off', () => {
     render(<ShortcutsDialog />);
     const note = document.getElementById('shortcuts-note')!;
+    expect(usePrefs.getState().singleKeys).toBe(true);
+    expect(plain(note.textContent)).toBe('Los atajos de 1 tecla se desactivan en Preferencias');
+    act(() => usePrefs.setState({ singleKeys: false }));
     expect(plain(note.textContent)).toBe('Los atajos de 1 tecla se activan en Preferencias');
     const link = within(note).getByRole('button', { name: 'Preferencias' });
     expect(link.id).toBe('shortcuts-prefs');

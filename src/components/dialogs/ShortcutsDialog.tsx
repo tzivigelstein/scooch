@@ -40,7 +40,9 @@ export default function ShortcutsDialog() {
   const rows = shortcutRows(stepTexts());
   const found = query.trim() ? new Set(fuzzyFilter(query, rows.map(searchable)).map((r) => rows[r.index].id)) : null;
   const sections = SECTIONS.map((section) => ({ section, rows: rows.filter((row) => row.section === section && (!found || found.has(row.id))) })).filter((s) => s.rows.length);
-  const [before, link, after] = splitLink('shortcuts.singleKeysNote');
+  // The note says what Preferences would do now: turn them on, or off.
+  const singleKeys = usePrefs((s) => s.singleKeys);
+  const [before, link, after] = splitLink(singleKeys ? 'shortcuts.singleKeysNoteOn' : 'shortcuts.singleKeysNote');
   const close = () => closeDialog('shortcuts');
   return (
     <>
