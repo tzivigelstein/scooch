@@ -174,12 +174,8 @@ en Patreon se rige por su
 
 ### Analítica
 
-> **PENDIENTE: completar solo si se agrega analítica.** Hoy Scooch no usa
-> herramientas de analítica. Si se agrega alguna, esta sección tiene que decir
-> cuál es, qué datos recoge, para qué, si usa cookies u otros identificadores,
-> quién los procesa y dónde, cuánto tiempo se guardan y cómo desactivarla. Hay
-> que actualizar también [Lo que no hacemos](#lo-que-no-hacemos) y la fecha de
-> vigencia, antes de activarla.
+Scooch no usa herramientas de analítica. Si eso cambia, lo vamos a explicar en
+esta política antes de que pase.
 
 ## Menores de edad
 

@@ -9,7 +9,7 @@ import { legalPage as page, type LegalPageTexts } from '../../legal-page.ts';
 import type { SitePage } from '../../types.ts';
 import { PATHS } from './paths.ts';
 
-// «लंबित» (pending) starts the analytics reminder and appears nowhere else in the policy.
+// «लंबित» (pending) would start a reminder in the analytics section; the policy uses it nowhere.
 export const LEGAL_MARKERS: LegalMarkers = { draft: '_ड्राफ़्ट।', analytics: 'एनालिटिक्स', pending: 'लंबित' };
 
 const texts = ({ ui }: Kit): Readonly<Record<LegalId, LegalPageTexts>> => ({

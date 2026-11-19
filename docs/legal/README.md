@@ -29,10 +29,13 @@ tag and not show up), so replace them together with their backticks.
 | `<PAÍS / JURISDICCIÓN>` | Governing law and, if needed, courts | terms |
 | `<FECHA DE VIGENCIA>` | Date this version takes effect | both |
 
-The privacy policy's Analítica section is a placeholder too: there are no
-analytics today. Rewrite it before any analytics are turned on. While it only
-holds the PENDIENTE note, the published page leaves the section out («Lo que
-no hacemos» already says there are no analytics).
+The privacy policy's Analítica section says there are no analytics, and that
+the policy will say so before that changes. Before any analytics tool is
+turned on, rewrite that section in every language: which tool, what data it
+collects and what for, whether it uses cookies or other identifiers, who
+processes the data and where, how long it is kept and how to turn it off.
+Update «Lo que no hacemos» and the effective date too, and publish the new
+policy before the tool goes live.
 
 Before publishing, also remove the draft note. `LICENSE`'s
 `<COPYRIGHT HOLDER>` is a placeholder too.

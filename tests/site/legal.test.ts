@@ -38,14 +38,16 @@ const translations = SITE_LANGUAGES.filter((l) => l.lang !== 'es');
 /**
  * Where each language's privacy policy tells about each localStorage key of
  * the settings registry (src/state/settings.ts): the section that lists what
- * is stored, the bold term each item starts with, and the sentence that says
- * there is no analytics. A key added to the registry needs its item in every
+ * is stored, the bold term each item starts with; and the sentences that say
+ * there is no analytics, in what the policy says it doesn't do and at the start
+ * of its analytics section. A key added to the registry needs its item in every
  * policy, and its term here; a new translation needs its entry.
  */
-const POLICY: Partial<Record<Lang, { section: string; noAnalytics: RegExp; terms: Readonly<Record<string, string>> }>> = {
+const POLICY: Partial<Record<Lang, { section: string; noAnalytics: RegExp; analytics: RegExp; terms: Readonly<Record<string, string>> }>> = {
   es: {
     section: 'Qué se guarda en tu dispositivo',
     noAnalytics: /no usa cookies, publicidad, rastreadores ni herramientas de\s+analítica/,
+    analytics: /^Scooch no usa herramientas de analítica\./,
     terms: {
       [UNIT_STORAGE]: 'Unidades',
       [THEME_STORAGE]: 'Tema',
@@ -67,6 +69,7 @@ const POLICY: Partial<Record<Lang, { section: string; noAnalytics: RegExp; terms
   en: {
     section: 'What is stored on your device',
     noAnalytics: /doesn’t use cookies, advertising, trackers or analytics\s+tools/,
+    analytics: /^Scooch doesn’t use analytics tools\./,
     terms: {
       [UNIT_STORAGE]: 'Units',
       [THEME_STORAGE]: 'Theme',
@@ -88,6 +91,7 @@ const POLICY: Partial<Record<Lang, { section: string; noAnalytics: RegExp; terms
   'zh-Hans': {
     section: '设备上保存的内容',
     noAnalytics: /Scooch不使用Cookie、广告、跟踪器或数据分析工具/,
+    analytics: /^Scooch不使用任何数据分析工具。/,
     terms: {
       [UNIT_STORAGE]: '单位',
       [THEME_STORAGE]: '主题',
@@ -109,6 +113,7 @@ const POLICY: Partial<Record<Lang, { section: string; noAnalytics: RegExp; terms
   fr: {
     section: 'Ce qui est enregistré sur votre appareil',
     noAnalytics: /n’utilise ni cookies, ni publicité, ni traceurs, ni outils de\s+mesure d’audience/,
+    analytics: /^Scooch n’utilise aucun outil de mesure d’audience\./,
     // French writes a no-break space before the colon: «**Unités :**».
     terms: Object.fromEntries(
       Object.entries({
@@ -133,6 +138,7 @@ const POLICY: Partial<Record<Lang, { section: string; noAnalytics: RegExp; terms
   hi: {
     section: 'आपके डिवाइस पर क्या सेव होता है',
     noAnalytics: /कुकी, विज्ञापन, ट्रैकर या एनालिटिक्स\s+टूल इस्तेमाल नहीं करता/,
+    analytics: /^Scooch कोई एनालिटिक्स टूल इस्तेमाल नहीं करता।/,
     terms: {
       [UNIT_STORAGE]: 'इकाइयां',
       [THEME_STORAGE]: 'थीम',
@@ -233,11 +239,12 @@ describe('the documents in the repository', () => {
     }
   });
 
-  test('every published privacy policy has no analytics reminder, and still says there is no analytics', () => {
+  test('every published privacy policy keeps no analytics reminder, and says there is no analytics, in its analytics section and in what it doesn’t do', () => {
     for (const { lang, legalMarkers } of SITE_LANGUAGES) {
       const { markdown } = doc('privacy', lang);
       expect(markdown, lang).not.toContain(legalMarkers.pending);
-      expect(markdown, lang).not.toMatch(new RegExp(`#{2,}\\s+${legalMarkers.analytics}\\s*$`, 'm'));
+      const section = new RegExp(`^#{2,}\\s+${legalMarkers.analytics}\\s*\\n+([^#]+)`, 'm').exec(markdown);
+      expect(section?.[1].trim(), `${lang}: the analytics section`).toMatch(POLICY[lang]!.analytics);
       expect(markdown, lang).toMatch(POLICY[lang]!.noAnalytics);
     }
   });

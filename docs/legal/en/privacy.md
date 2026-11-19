@@ -176,12 +176,8 @@ receives nothing. What you do on Patreon is governed by its
 
 ### Analytics
 
-> **PENDING: fill in only if analytics are added.** Today Scooch doesn’t use
-> analytics tools. If one is added, this section has to say which one it is,
-> what data it collects, what for, whether it uses cookies or other
-> identifiers, who processes them and where, how long they are kept and how
-> to turn it off. [What we don’t do](#what-we-dont-do) and the effective date
-> have to be updated too, before turning it on.
+Scooch doesn’t use analytics tools. If that changes, we’ll explain it in this
+policy before it happens.
 
 ## Minors
 

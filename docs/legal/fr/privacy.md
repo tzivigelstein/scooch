@@ -195,13 +195,8 @@ faites sur Patreon est régi par sa
 
 ### Mesure d’audience
 
-> **À COMPLÉTER uniquement si une mesure d’audience est ajoutée.** Aujourd’hui,
-> Scooch n’utilise aucun outil de mesure d’audience. Si un outil est ajouté,
-> cette section doit indiquer lequel, quelles données il recueille, dans quel
-> but, s’il utilise des cookies ou d’autres identifiants, qui les traite et
-> où, combien de temps elles sont conservées et comment le désactiver. Il faut
-> aussi mettre à jour [Ce que nous ne faisons pas](#ce-que-nous-ne-faisons-pas)
-> et la date d’entrée en vigueur, avant de l’activer.
+Scooch n’utilise aucun outil de mesure d’audience. Si cela change, nous
+l’expliquerons dans cette politique avant que cela ne se produise.
 
 ## Mineurs
 

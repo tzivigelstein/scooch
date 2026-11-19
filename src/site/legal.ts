@@ -3,10 +3,11 @@
 // reference, and a translation of each in docs/legal/<lang>/terms.md and
 // privacy.md), LICENSE and THIRD_PARTY_NOTICES.md (English, the same file in
 // every language). Publishing only drops what is for whoever edits them
-// (comments, the privacy policy's reminder for when analytics are added, the
-// notices' «How to update this file») and points their links to each other at
-// the pages. Placeholders and the draft note stay visible: they keep a page
-// out of search engines, and stop a release (see config.ts).
+// (comments, an analytics section that only holds a reminder, the notices'
+// «How to update this file») and points their links to each other at the
+// pages. The texts are final today; a placeholder or a draft note put back
+// stays visible, keeps the page out of search engines and stops a release
+// (see config.ts).
 
 import type { Lang } from './langs.ts';
 import { findPlaceholders, stripComments, type MarkdownLink } from './markdown.ts';
@@ -98,8 +99,9 @@ const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&
 export function publishLegal(id: LegalId, text: string, { lang, markers }: { lang: Lang; markers: LegalMarkers }): LegalDoc {
   let lines = stripComments(text).replace(/\r\n?/g, '\n').split('\n');
   if (id === 'privacy') {
-    // The analytics section only says that there is none and what to write if
-    // some is added: true today, and «Lo que no hacemos» already says it to the reader.
+    // An analytics section that only holds a reminder for whoever edits the
+    // policy (a block quote starting with the pending word) is left out: it is
+    // not for readers, and «Lo que no hacemos» says whether there is analytics.
     const onlyTheNote = (section: string[]) => {
       const body = section.filter((line) => line.trim());
       return body.length > 0 && body.every((line) => line.startsWith('>')) && body.join(' ').includes(markers.pending);
