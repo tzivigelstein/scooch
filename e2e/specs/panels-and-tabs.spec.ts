@@ -2,7 +2,8 @@
 // the pieces drawer (1024) and the bottom sheet (390) — with what only a
 // browser shows: what is visible at each width, opening and closing the drawer
 // and the sheet, touch-sized targets, no horizontal scroll, a section kept
-// across a reload, and the tabs reached with the real pointer, keyboard and
+// across a reload, sticky headers that never cover the focused control, and
+// the tabs reached with the real pointer, keyboard and
 // focus. What the panels show and the tabs' semantics are tested in
 // tests/components (Tabs, panels, PieceList); which tab follows the selection
 // in tests/state/follow-selection.test.ts.
@@ -115,6 +116,70 @@ test.describe('panel layouts', () => {
       expect(bar.height).toBeGreaterThan(80);
       expect(bar.height).toBeLessThan(110);
     });
+  });
+});
+
+// What sticks to the top of a panel as it scrolls (the «Propiedades» tabs, a
+// sheet's header in the pieces list) never covers the control with the focus.
+test.describe('sticky headers', () => {
+  /**
+   * Where the focused element's top is, and how far down what sticks over its
+   * scroll box reaches (the tabs, or the sheet header stuck at the list's
+   * top), in px. Runs in the page.
+   */
+  const readCover = () => {
+    const el = document.activeElement as HTMLElement;
+    const inList = el.closest('#piece-list');
+    let cover: number;
+    if (inList) {
+      const top = inList.getBoundingClientRect().top;
+      const stuck = [...inList.querySelectorAll('.group-head')].map((head) => head.getBoundingClientRect()).filter((head) => head.top <= top + 1);
+      cover = Math.max(top, ...stuck.map((head) => head.bottom));
+    } else cover = document.querySelector('#props-panel .props-tabs')!.getBoundingClientRect().bottom;
+    // The focus ring is drawn 2 px off the element, 2 px wide.
+    return { id: el.id || el.dataset.id || el.className, ring: el.getBoundingClientRect().top - 4, cover, inTabs: !!el.closest('.props-tabs'), inPanel: !!el.closest('#props-panel') };
+  };
+
+  for (const [width, height] of [
+    [1440, 500],
+    [390, 844],
+  ]) {
+    test(`at ${width} × ${height}, Shift+Tab up through Pieza never leaves the focused control or its ring under the tabs`, async ({ app, page }) => {
+      await page.setViewportSize({ width, height });
+      await app.addFiles(['small.jpg', 'twopage.pdf']);
+      await app.clickPiece(app.pieceNamed('twopage.pdf'));
+      await app.openMeasures();
+      // From the last control of the tab, scrolled to the end, up to the tabs.
+      await page.evaluate(() => {
+        const controls = [...document.querySelectorAll<HTMLElement>('#props-piece :is(button, input, select, [tabindex="0"])')].filter((el) => el.getClientRects().length && !(el as HTMLButtonElement).disabled);
+        controls.at(-1)!.focus();
+        const panel = document.getElementById('props-panel')!;
+        panel.scrollTop = panel.scrollHeight;
+      });
+      const covered: string[] = [];
+      let steps = 0;
+      for (let at = await page.evaluate(readCover); at.inPanel && !at.inTabs; at = await page.evaluate(readCover)) {
+        if (at.ring < at.cover - 0.5) covered.push(`${at.id}: its ring at ${Math.round(at.ring)}, under the tabs down to ${Math.round(at.cover)}`);
+        await page.keyboard.press('Shift+Tab');
+        expect(++steps, 'the tabs reached').toBeLessThan(80);
+      }
+      expect(steps, 'controls gone through').toBeGreaterThan(10);
+      expect(covered).toEqual([]);
+    });
+  }
+
+  test('at 1440 × 500, the arrows up the pieces list of two sheets never leave the focused row under its sheet’s header', async ({ app, page }) => {
+    await page.setViewportSize({ width: 1440, height: 500 });
+    await app.addFiles(tiles(0, 30));
+    await expect(page.locator('#piece-list .group-head')).toHaveCount(2);
+    await page.locator('#piece-list [role="option"]').last().click();
+    const covered: string[] = [];
+    for (let i = 0; i < 16; i++) {
+      const at = await page.evaluate(readCover);
+      if (at.ring < at.cover - 0.5) covered.push(`row ${at.id}: its ring at ${Math.round(at.ring)}, under the header down to ${Math.round(at.cover)}`);
+      await page.keyboard.press('ArrowUp');
+    }
+    expect(covered).toEqual([]);
   });
 });
 

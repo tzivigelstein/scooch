@@ -1,4 +1,10 @@
 @layer components {
+  /* What gets the focus scrolls into view below the tabs, focus ring and
+     all, never under them (their height and half a rem). */
+  .panel-right {
+    scroll-padding-top: calc(3.375rem + 1px);
+  }
+
   /* The panel's tabs, «Pieza» and «Proyecto»: they stay at the top on scroll. */
   .props-tabs {
     position: sticky;

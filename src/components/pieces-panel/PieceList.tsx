@@ -233,13 +233,15 @@ export function PieceList() {
     }
   };
 
-  // The selected row scrolls into the list (only inside the list).
+  // The selected row scrolls into the list (only inside the list), below a
+  // sheet's header stuck at its top (the list's scroll-padding).
   useLayoutEffect(() => {
     const row = primary !== undefined ? list.current?.querySelector<HTMLElement>(`[role="option"][data-id="${primary}"]`) : null;
     if (row && primary !== lastScrolled.current) {
       const box = list.current!.getBoundingClientRect();
       const r = row.getBoundingClientRect();
-      if (r.top < box.top) list.current!.scrollTop -= box.top - r.top;
+      const top = box.top + (parseFloat(getComputedStyle(list.current!).scrollPaddingTop) || 0);
+      if (r.top < top) list.current!.scrollTop -= top - r.top;
       else if (r.bottom > box.bottom) list.current!.scrollTop += r.bottom - box.bottom;
     }
     lastScrolled.current = row ? (primary ?? null) : null;

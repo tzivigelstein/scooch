@@ -10,6 +10,11 @@
   }
 
   /* With several sheets: one group per sheet, with a header that sticks to the top on scroll. */
+  .piece-list:has(.group-head) {
+    /* A row brought into view (Tab, or the selection moving) stays below that header. */
+    scroll-padding-top: 2.25rem;
+  }
+
   .list-group {
     margin: 0;
     padding: 0;
