@@ -1,10 +1,11 @@
 // Projects saved in the browser, with the real IndexedDB: restoring on reload
 // (also the last-moment journal), the same PDF after restoring, the
 // «Proyectos» dialog (Ctrl+O, new, open, duplicate, delete), switching
-// projects without mixing them, two tabs, no storage, a full storage and a
-// damaged project; renaming in place (the card and the top bar) and the
-// tooltips and icon-only buttons. When autosave writes and what opening or
-// deleting does to the undo history: tests/services/projects.test.ts.
+// projects without mixing them, two tabs, no storage (and the browser asking
+// before the tab closes), a full storage and a damaged project; renaming in
+// place (the card and the top bar) and the tooltips and icon-only buttons.
+// When autosave writes, what opening or deleting does to the undo history and
+// when closing the tab asks first: tests/services/projects.test.ts.
 import type { Page } from '@playwright/test';
 import { App, expect, norm, test } from '../support/test.ts';
 import {
@@ -539,6 +540,21 @@ test.describe('when storage fails', () => {
     await expect(page.locator('#projects')).toHaveAttribute('open', '');
     await expect(page.locator('#projects-unavailable')).toBeVisible();
     await expect(page.locator('#projects .project-card')).toHaveCount(0);
+  });
+
+  test('without IndexedDB, closing the tab with pieces asks first, in the browser’s own words', async ({ page }, testInfo) => {
+    await page.addInitScript(() => Object.defineProperty(window, 'indexedDB', { value: undefined, configurable: true }));
+    const app = new App(page, testInfo);
+    await app.open();
+    await app.addFiles(['card08.png']);
+    // A click first: browsers ask only on a page someone used.
+    await app.clickPiece(app.pieces().first());
+    const asked = page.waitForEvent('dialog');
+    await page.close({ runBeforeUnload: true });
+    const dialog = await asked;
+    expect(dialog.type()).toBe('beforeunload');
+    await dialog.dismiss();
+    expect(page.isClosed(), 'it stays when the person says so').toBe(false);
   });
 
   test.describe('a full storage', () => {

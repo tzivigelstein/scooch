@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // The open project's service (src/services/projects.ts) on a storage in
 // memory (the same interface as IndexedDB) with fake timers: when autosave
-// writes, and what opening and deleting do to the undo history. The real
+// writes, when closing the tab asks first, and what opening and deleting do
+// to the undo history. The real
 // IndexedDB, reloads and other tabs are in e2e/specs/projects.spec.ts.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { MAX_UNDO } from '../../src/config.ts';
@@ -11,9 +12,13 @@ import { storedProject } from '../support/projects.ts';
 import { FakeBroadcastChannel, FakeLockManager } from '../support/tabs.ts';
 
 // The storage the service opens instead of IndexedDB (set by each test).
-const opened = vi.hoisted(() => ({ storage: null as ProjectStorage | null, legacyFails: false }));
+const opened = vi.hoisted(() => ({ storage: null as ProjectStorage | null, legacyFails: false, fails: false }));
 vi.mock('../../src/services/storage/idb.ts', () => ({
-  openIdbStorage: async () => opened.storage,
+  // `fails`: a browser that can't save projects (IndexedDB blocked).
+  openIdbStorage: async () => {
+    if (opened.fails) throw new Error('IndexedDB can’t be opened');
+    return opened.storage;
+  },
   // The database under the app's former name: none, or one that can't be read.
   openExistingIdbStorage: async () => {
     if (opened.legacyFails) throw new Error('the legacy database can’t be read');
@@ -62,6 +67,7 @@ async function start(storage: ProjectStorage = memoryStorage()) {
 
 beforeEach(() => {
   opened.legacyFails = false;
+  opened.fails = false;
   vi.useFakeTimers();
   // One tab: no other tab to ask for the project.
   vi.stubGlobal('BroadcastChannel', undefined);
@@ -129,6 +135,61 @@ describe('autosave', () => {
     app.undoLast();
     await vi.advanceTimersByTimeAsync(2000);
     expect((await app.stored()).modified).toBe(modified);
+  });
+});
+
+describe('closing or reloading the tab', () => {
+  /** Whether the browser would ask before the tab goes: a beforeunload whose default the page prevents. */
+  const asks = () => {
+    const leaving = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(leaving);
+    return leaving.defaultPrevented;
+  };
+  const listening = (spy: { mock: { calls: unknown[][] } }) => spy.mock.calls.filter(([type]) => type === 'beforeunload').length;
+  afterEach(() => vi.restoreAllMocks());
+
+  test('never asks while the project is saved, nor while a change waits its second to be saved: no listener at all', async () => {
+    const added = vi.spyOn(window, 'addEventListener');
+    const app = await start();
+    app.addPiece();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(app.status()).toBe('saved');
+    expect(asks()).toBe(false);
+    app.nudge(1, 0);
+    expect(app.status()).toBe('pending');
+    expect(asks()).toBe(false);
+    expect(listening(added), 'a beforeunload listener keeps the page out of the browser’s back-forward cache').toBe(0);
+  });
+
+  test('asks while a save failed («No se guardó»), and stops once «Reintentar» saves it', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    let full = false;
+    const app = await start(memoryStorage({ fail: (op: string) => (full && op === 'write' ? new DOMException('No room', 'QuotaExceededError') : null) }));
+    app.addPiece();
+    await vi.advanceTimersByTimeAsync(0);
+    full = true;
+    app.nudge(1, 0);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(app.status()).toBe('error');
+    expect(asks()).toBe(true);
+    full = false;
+    await app.projects.retry();
+    expect(app.status()).toBe('saved');
+    expect(asks()).toBe(false);
+  });
+
+  test('where projects can’t be saved («Sin guardar»), asks once there are pieces, and stops when they are all removed', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const removed = vi.spyOn(window, 'removeEventListener');
+    opened.fails = true;
+    const app = await start();
+    expect(app.status()).toBe('off');
+    expect(asks(), 'nothing to lose yet').toBe(false);
+    app.addPiece();
+    expect(asks()).toBe(true);
+    app.setDocument({ items: [], selection: [] });
+    expect(asks()).toBe(false);
+    expect(listening(removed), 'the listener goes').toBe(1);
   });
 });
 

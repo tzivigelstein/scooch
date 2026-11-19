@@ -106,7 +106,34 @@ function setStatus(status: SaveStatus, error: unknown = null) {
   session.status = status;
   session.error = error;
   publish();
+  guardUnsaved();
   hooks.statusChanged?.({ recovered });
+}
+
+// ---------- Leaving with work that isn't saved ----------
+
+/** The browser asks before closing or reloading the tab, in its own words. */
+function askBeforeLeaving(e: BeforeUnloadEvent) {
+  e.preventDefault();
+  // Chrome before 119 asks only with this.
+  e.returnValue = true;
+}
+
+let asking = false;
+
+/**
+ * Closing or reloading the tab asks first only while the project can't be
+ * saved («Sin guardar», «No se guardó») and has pieces to lose: never when
+ * it is saved, nor for a save waiting its second (it is written on leaving,
+ * and the journal keeps the rest). The listener is there only meanwhile: one
+ * keeps browsers from keeping the page to come back to.
+ */
+function guardUnsaved() {
+  const unsaved = (session.status === 'error' || session.status === 'off') && getDocument().items.length > 0;
+  if (unsaved === asking) return;
+  asking = unsaved;
+  if (unsaved) window.addEventListener('beforeunload', askBeforeLeaving);
+  else window.removeEventListener('beforeunload', askBeforeLeaving);
 }
 
 export const projectSession = () => session;
@@ -168,6 +195,7 @@ export async function initProjects(h: ProjectHooks, { start = null }: { start?: 
   hooks = h;
   channel?.addEventListener('message', onMessage);
   useDocument.subscribe(documentChanged);
+  useDocument.subscribe(guardUnsaved);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'hidden') return;
     writeJournal();
