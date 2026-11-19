@@ -153,13 +153,10 @@ const POLICY: Partial<Record<Lang, { section: string; noAnalytics: RegExp; terms
   },
 };
 
-/** The document with its placeholders filled in and its draft note gone, as the owner will leave it. */
-const finished = (text: string, draft: string) =>
-  text
-    .replace(/`?<[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ /]*>`?/g, 'Valor real')
-    .split(/\n\s*\n/)
-    .filter((block) => !block.trim().startsWith(draft))
-    .join('\n\n');
+/** A finished document as it would be with a placeholder back in it. */
+const withPlaceholder = (text: string) => `${text.trimEnd()}\n\nVigente desde \`<FECHA DE VIGENCIA>\`.\n`;
+/** A finished document as it would be with a draft note on top, in the language of `draft` (its first words). */
+const withDraftNote = (text: string, draft: string) => `${draft} …_\n\n${text}`;
 
 describe('publishing a legal document', () => {
   test('comments go, the first heading becomes the title, and links to the other documents point to their pages', () => {
@@ -245,17 +242,24 @@ describe('the documents in the repository', () => {
     }
   });
 
-  test('while they are drafts, the terms and the policy are kept out of search engines; once finished, they are listed', () => {
+  test('the terms and the policy are final, so they are listed; a placeholder or a draft note put back keeps one out of search engines and stops a release', () => {
     for (const { lang, legalMarkers } of SITE_LANGUAGES)
       for (const id of ['terms', 'privacy'] as const) {
-        expect(pageOf(doc(id, lang)).indexable, `${lang} ${id}`).toBe(false);
-        const done = publishLegal(id, finished(readFileSync(`${ROOT}${legalFile(lang, id)}`, 'utf8'), legalMarkers.draft), { lang, markers: legalMarkers });
-        expect(legalProblems(done), `${lang} ${id}`).toEqual([]);
-        expect(pageOf(done).indexable, `${lang} ${id}`).toBe(true);
+        expect(legalProblems(doc(id, lang)), `${lang} ${id}`).toEqual([]);
+        expect(pageOf(doc(id, lang)).indexable, `${lang} ${id}`).toBe(true);
+        const text = readFileSync(`${ROOT}${legalFile(lang, id)}`, 'utf8');
+        for (const [what, draft] of [
+          ['a placeholder', withPlaceholder(text)],
+          ['a draft note', withDraftNote(text, legalMarkers.draft)],
+        ]) {
+          const back = publishLegal(id, draft, { lang, markers: legalMarkers });
+          expect(legalProblems(back), `${lang} ${id} with ${what}`).toHaveLength(1);
+          expect(pageOf(back).indexable, `${lang} ${id} with ${what}`).toBe(false);
+        }
       }
   });
 
-  test('a translation is a draft while the Spanish one is, keeps its placeholders, and says the Spanish version is the reference', () => {
+  test('a translation is final when the Spanish one is, has the same placeholders (none), and links to the Spanish version, which prevails', () => {
     for (const { lang } of translations)
       for (const id of ['terms', 'privacy'] as const) {
         const d = doc(id, lang);

@@ -1,8 +1,5 @@
-_Draft. Not legal advice. A legal professional has to review it before it
-is published or relied on._
-
-_This is a translation of the [Spanish version](../terminos.md), which is the
-reference until a lawyer reviews this one._
+_If this translation and the [Spanish version](../terminos.md) differ, the
+Spanish version prevails._
 
 # Terms of use
 

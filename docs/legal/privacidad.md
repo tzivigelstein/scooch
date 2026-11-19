@@ -1,6 +1,3 @@
-_Borrador. No es asesoramiento legal. Tiene que revisarlo una persona
-profesional del derecho antes de publicarlo o de confiar en él._
-
 # Política de privacidad
 
 Vigente desde el 19 de noviembre de 2026.

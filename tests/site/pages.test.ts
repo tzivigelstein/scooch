@@ -153,10 +153,24 @@ describe('the photo ID guide', () => {
 });
 
 describe('the files for crawlers', () => {
-  test('the sitemap lists the editor and exactly the indexable pages, and no legal draft', () => {
+  test('the sitemap lists the editor and exactly the indexable pages: the terms and the policy, which are final, but never the license texts', () => {
     const locs = [...files.get('sitemap.xml')!.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
     expect(locs).toEqual([`${URL_}/`, ...pages.filter((p) => p.indexable).map((p) => `${URL_}${p.path}`)]);
-    for (const { paths } of SITE_LANGUAGES) expect(locs).not.toContain(`${URL_}${paths['legal-terms']}`);
+    for (const { paths } of SITE_LANGUAGES) {
+      expect(locs).toEqual(expect.arrayContaining([`${URL_}${paths['legal-terms']}`, `${URL_}${paths['legal-privacy']}`]));
+      expect(locs).not.toContain(`${URL_}${paths['legal-license']}`);
+      expect(locs).not.toContain(`${URL_}${paths['legal-notices']}`);
+    }
+  });
+
+  test('a legal page with a placeholder back in it carries noindex and stays out of the sitemap and llms.txt', () => {
+    const draft = legal.map((d) => (d.id === 'terms' && d.lang === 'es' ? { ...d, placeholders: ['<TITULAR>'] } : d));
+    const built = siteFiles({ url: URL_ }, draft, { calculator: '/assets/calculator-test.js' });
+    const path = language('es').paths['legal-terms'];
+    expect(built.get(pageFile({ path }))).toContain('<meta name="robots" content="noindex">');
+    expect(built.get('sitemap.xml')).not.toContain(`${URL_}${path}`);
+    expect(built.get('llms.txt')).not.toContain(`${URL_}${path}`);
+    expect(built.get('llms.txt')).toContain(`${URL_}${language('en').paths['legal-terms']}`);
   });
 
   test('robots.txt lets every crawler read everything and points to the sitemap', () => {
@@ -166,11 +180,12 @@ describe('the files for crawlers', () => {
     expect(robots).toContain(`Sitemap: ${URL_}/sitemap.xml`);
   });
 
-  test('llms.txt says what the tool is and links every indexable guide and the questions, in every language', () => {
+  test('llms.txt says what the tool is and links every indexable page (the guides, the questions, the terms and the policy) in every language, and never the license texts', () => {
     const llms = files.get('llms.txt')!;
     expect(llms).toMatch(/^# Scooch\n\n> .+herramienta web gratuita/);
-    for (const page of pages.filter((p) => p.indexable && p.kind !== 'legal')) expect(llms).toContain(`](${URL_}${page.path})`);
-    for (const { paths } of SITE_LANGUAGES) expect(llms).not.toContain(paths['legal-terms']);
+    for (const page of pages.filter((p) => p.indexable)) expect(llms).toContain(`](${URL_}${page.path})`);
+    for (const page of pages.filter((p) => p.id === 'legal-terms' || p.id === 'legal-privacy')) expect(page.indexable, page.path).toBe(true);
+    for (const { paths } of SITE_LANGUAGES) expect(llms).not.toContain(`${URL_}${paths['legal-license']})`);
   });
 });
 

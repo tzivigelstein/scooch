@@ -1,8 +1,5 @@
-_Brouillon. Ceci n’est pas un avis juridique. Un professionnel du droit doit
-le relire avant qu’il soit publié ou que l’on s’y fie._
-
-_Ceci est une traduction de la [version espagnole](../terminos.md), qui fait
-foi tant qu’un avocat n’a pas relu celle-ci._
+_En cas de divergence entre cette traduction et la
+[version espagnole](../terminos.md), c’est la version espagnole qui fait foi._
 
 # Conditions d’utilisation
 

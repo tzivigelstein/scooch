@@ -40,11 +40,12 @@ test.describe('the build', () => {
     }
   });
 
-  test('the sitemap lists the editor and exactly the indexable pages', () => {
+  test('the sitemap lists the editor and exactly the indexable pages, the final terms and policy among them', () => {
     const locs = [...html('sitemap.xml').matchAll(/<loc>https:\/\/[^/]+([^<]*)<\/loc>/g)].map((m) => m[1]);
     const expected = ['/', ...pageFiles().filter(indexable).map(pathOf)];
     expect([...locs].sort()).toEqual([...expected].sort());
-    expect(locs).not.toContain('/es/terminos');
+    expect(locs).toEqual(expect.arrayContaining(['/es/terminos', '/es/privacidad']));
+    expect(locs).not.toContain('/es/licencia');
   });
 
   test('robots.txt, llms.txt and the share image are there', () => {
