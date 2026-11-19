@@ -12,8 +12,8 @@ En vigueur à compter du 19 novembre 2026.
 - Il n’y a ni compte ni inscription.
 - Ce que Scooch enregistre reste sur votre appareil, et vous pouvez l’effacer
   quand vous voulez.
-- Comme pour tout site web, le prestataire qui héberge Scooch (Vercel) reçoit
-  des données techniques de chaque visite.
+- Comme pour tout site web, le prestataire qui héberge Scooch reçoit des
+  données techniques de chaque visite.
 
 ## Qui est responsable
 
@@ -173,14 +173,14 @@ place.
 
 ## Autres services
 
-### Hébergement : Vercel
+### Hébergement
 
-Le site est hébergé par Vercel. Comme pour tout serveur web, quand votre
-navigateur demande les pages et les fichiers de Scooch, Vercel reçoit des
-données techniques de chaque requête. Par exemple : votre adresse IP, le
-navigateur et le système que vous utilisez, la page demandée, la date et
-l’heure. Vercel traite ces données selon sa propre
-[politique de confidentialité](https://vercel.com/legal/privacy-notice).
+Comme pour tout serveur web, quand votre navigateur demande les pages et les
+fichiers de Scooch, le prestataire qui héberge le site reçoit des données
+techniques de chaque requête. Par exemple : votre adresse IP, le navigateur et
+le système que vous utilisez, la page demandée, la date et l’heure.
+
+Aujourd’hui, ce prestataire est Vercel, qui traite ces données selon sa propre [politique de confidentialité](https://vercel.com/legal/privacy-notice).
 
 Vos images, vos PDF et vos projets ne font jamais partie de ces requêtes.
 

@@ -12,8 +12,8 @@ In effect from November 19, 2026.
 - There are no accounts and no sign-up.
 - What Scooch saves stays on your device, and you can delete it whenever
   you want.
-- As with any website, the provider that hosts Scooch (Vercel) receives
-  technical data from each visit.
+- As with any website, the provider that hosts Scooch receives technical
+  data from each visit.
 
 ## Who is responsible
 
@@ -155,14 +155,14 @@ them, hand them over to you or delete them for you.
 
 ## Other services
 
-### Hosting: Vercel
+### Hosting
 
-The site is hosted on Vercel. As with any web server, when your browser
-requests Scooch’s pages and files, Vercel receives technical data from each
-request. For example: your IP address, the browser and the system you use,
-the page you requested, the date and the time. Vercel handles that data
-according to its own
-[privacy policy](https://vercel.com/legal/privacy-notice).
+As with any web server, when your browser requests Scooch’s pages and files,
+the provider that hosts the site receives technical data from each request.
+For example: your IP address, the browser and the system you use, the page
+you requested, the date and the time.
+
+Currently that provider is Vercel, which handles that data according to its own [privacy policy](https://vercel.com/legal/privacy-notice).
 
 Your images, your PDFs and your projects are never part of those requests.
 

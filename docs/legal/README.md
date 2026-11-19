@@ -65,7 +65,7 @@ change in every translation:
 | Any request to another server (fonts, CDNs, error reporting) | `index.html`, `src/` | privacy: Lo que no hacemos, Otros servicios |
 | Analytics | | privacy: Analítica, Lo que no hacemos |
 | The donation link | `DONATE_URL` in `src/config.ts` (empty today, so the summary after printing never asks for a donation) | privacy: Aportes; terms: sections 7 and 9 |
-| Hosting, or hosting features that add scripts, cookies or logs (analytics, toolbars, firewall challenges, log drains) | the hosting provider's dashboard: not visible in the repository | privacy: Alojamiento, Lo que no hacemos |
+| Hosting, or hosting features that add scripts, cookies or logs (analytics, toolbars, firewall challenges, log drains) | the hosting provider's dashboard: not visible in the repository | privacy: Alojamiento (the provider's name and the link to its privacy policy are one line in each language: «Hoy ese proveedor es Vercel…»), Lo que no hacemos |
 | Photo size presets | `src/core/crop.js`, `src/copy/es.ts` | terms: section 5 |
 | The license | `LICENSE` | terms: section 8 |
 | The app's name | `APP_NAME` in `src/config.ts` | both: the drafts write the name, Scooch, as text |

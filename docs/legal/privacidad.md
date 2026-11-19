@@ -9,8 +9,8 @@ Vigente desde el 19 de noviembre de 2026.
 - No hay cuentas ni registro.
 - Lo que Scooch guarda queda en tu dispositivo, y puedes borrarlo cuando
   quieras.
-- Como pasa con cualquier sitio web, el proveedor que aloja Scooch (Vercel)
-  recibe datos técnicos de cada visita.
+- Como pasa con cualquier sitio web, el proveedor que aloja Scooch recibe
+  datos técnicos de cada visita.
 
 ## Quién es responsable
 
@@ -153,14 +153,14 @@ verlos, entregártelos ni borrarlos por ti.
 
 ## Otros servicios
 
-### Alojamiento: Vercel
+### Alojamiento
 
-El sitio está alojado en Vercel. Como pasa con cualquier servidor web, cuando
-tu navegador pide las páginas y los archivos de Scooch, Vercel recibe datos
-técnicos de cada solicitud. Por ejemplo: tu dirección IP, el navegador y el
-sistema que usas, la página que pediste, la fecha y la hora. Vercel trata esos
-datos según su propia
-[política de privacidad](https://vercel.com/legal/privacy-notice).
+Como pasa con cualquier servidor web, cuando tu navegador pide las páginas y
+los archivos de Scooch, el proveedor que aloja el sitio recibe datos técnicos
+de cada solicitud. Por ejemplo: tu dirección IP, el navegador y el sistema que
+usas, la página que pediste, la fecha y la hora.
+
+Hoy ese proveedor es Vercel, que trata esos datos según su propia [política de privacidad](https://vercel.com/legal/privacy-notice).
 
 Tus imágenes, tus PDF y tus proyectos nunca forman parte de esas solicitudes.
 
