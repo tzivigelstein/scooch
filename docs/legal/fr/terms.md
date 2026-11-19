@@ -48,8 +48,6 @@ N’utilisez pas Scooch pour :
   valeurs ;
 - tromper d’autres personnes ou des institutions, ou vous faire passer pour
   quelqu’un d’autre ;
-- porter atteinte au droit d’auteur, au droit à l’image, aux marques ou à
-  d’autres droits de tiers ;
 - toute autre activité illégale.
 
 ## 5. Absence de garantie
@@ -95,7 +93,7 @@ l’impossibilité de l’utiliser. Cela comprend :
 
 Scooch est gratuit et ne demande pas de compte. Si l’option de soutenir
 Scooch sur Patreon apparaît, le soutien est volontaire et se fait sur
-Patreon, selon ses propres conditions.
+Patreon.
 
 ## 8. Licence du code
 
@@ -120,9 +118,8 @@ Chacun a ses propres conditions et sa propre politique de confidentialité.
 
 ## 10. Modifications de ces conditions
 
-Nous pouvons mettre à jour ces conditions, par exemple lorsque l’application
-change. La date d’entrée en vigueur indiquée plus haut précise quelle est la
-version actuelle. Si vous continuez à utiliser Scooch après une modification,
+Nous pouvons mettre à jour ces conditions. La date d’entrée en vigueur
+indiquée plus haut précise quelle est la version actuelle. Si vous continuez à utiliser Scooch après une modification,
 vous acceptez la nouvelle version.
 
 ## 11. Droit applicable

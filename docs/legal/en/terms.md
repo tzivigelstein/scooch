@@ -41,8 +41,6 @@ Don’t use Scooch to:
   certificates or seals;
 - counterfeit banknotes, coins, stamps or other valuables;
 - deceive other people or institutions, or impersonate someone else;
-- infringe copyright, image rights, trademarks or other third-party
-  rights;
 - any other illegal activity.
 
 ## 5. No warranties
@@ -82,8 +80,7 @@ result from using Scooch, or from not being able to use it. That includes:
 ## 7. Free and without an account
 
 Scooch is free and doesn’t ask for an account. If the option to support it
-on Patreon appears, the support is voluntary and happens on Patreon, under
-its own terms.
+on Patreon appears, the support is voluntary and happens on Patreon.
 
 ## 8. Code license
 
@@ -106,8 +103,8 @@ terms and its own privacy policy.
 
 ## 10. Changes to these terms
 
-We may update these terms, for example when the app changes. The effective
-date above shows which version is current. If you keep using Scooch after a
+We may update these terms. The effective date above shows which version is
+current. If you keep using Scooch after a
 change, you accept the new version.
 
 ## 11. Governing law

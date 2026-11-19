@@ -40,8 +40,6 @@ No uses Scooch para:
   pasaportes, certificados o sellos;
 - falsificar billetes, monedas, estampillas u otros valores;
 - engañar a otras personas o a instituciones, o hacerte pasar por otra persona;
-- infringir derechos de autor, derechos de imagen, marcas u otros derechos de
-  terceros;
 - cualquier otra actividad ilegal.
 
 ## 5. Sin garantías
@@ -80,7 +78,7 @@ pérdidas que resulten de usar Scooch, o de no poder hacerlo. Eso incluye:
 ## 7. Gratis y sin cuenta
 
 Scooch es gratis y no pide cuenta. Si aparece la opción de aportar en Patreon,
-el aporte es voluntario y se hace en Patreon, con sus propias condiciones.
+el aporte es voluntario y se hace en Patreon.
 
 ## 8. Licencia del código
 
@@ -103,8 +101,8 @@ condiciones y su propia política de privacidad.
 
 ## 10. Cambios en estos términos
 
-Podemos actualizar estos términos, por ejemplo cuando cambie la app. La fecha
-de vigencia de arriba indica cuál es la versión actual. Si sigues usando
+Podemos actualizar estos términos. La fecha de vigencia de arriba indica cuál
+es la versión actual. Si sigues usando
 Scooch después de un cambio, aceptas la nueva versión.
 
 ## 11. Ley aplicable
