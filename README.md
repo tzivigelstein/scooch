@@ -102,7 +102,7 @@ On a phone:
   outside their own origin (`e2e/specs/site-pages.spec.ts`). Every setting
   declares where it is kept (`src/state/settings.ts`, checked by
   `tests/state/settings-registry.test.ts`), and a test fails when a key the
-  app keeps in localStorage is missing from the privacy policy draft
+  app keeps in localStorage is missing from the privacy policy
   (`tests/site/legal.test.ts`). The editor has no code that sends data
   anywhere, but no test yet checks that it never contacts another origin: a
   change that adds any request elsewhere also has to update the privacy
@@ -117,8 +117,9 @@ On a phone:
   browser below; other formats, such as HEIC, depend on the browser.
   Password-protected PDFs are refused.
 - The translations other than Spanish still await review by native speakers,
-  the site's pages too; the translated terms and privacy policy say the
-  Spanish versions are the reference until a lawyer reviews them.
+  the site's pages and legal texts too; the translated terms and privacy
+  policy say the Spanish versions prevail where they differ. No lawyer has
+  reviewed the legal texts ([docs/legal/README.md](docs/legal/README.md)).
 
 ## Browsers
 
@@ -218,8 +219,9 @@ of them, how CI is organized and how to reproduce a failure.
 
 The build is static files in `dist/`. On Vercel, importing the repository
 needs no configuration; `vercel.json` adds clean URLs and long cache headers
-for the hashed assets. A production release needs `SITE_URL` and the legal
-texts completed: [docs/site.md](docs/site.md) explains what stops it.
+for the hashed assets. A production release needs `SITE_URL`, set on the
+host; it would also stop if a placeholder came back into the legal texts:
+[docs/site.md](docs/site.md) explains what stops it.
 
 ## Documentation
 
@@ -230,8 +232,8 @@ texts completed: [docs/site.md](docs/site.md) explains what stops it.
 - [docs/site.md](docs/site.md): the static pages and what a release needs.
 - [docs/deep-links.md](docs/deep-links.md): links that open the editor with a
   new project set up.
-- [docs/legal/README.md](docs/legal/README.md): the drafts of the terms and the
-  privacy policy, and how to keep them true.
+- [docs/legal/README.md](docs/legal/README.md): the terms and the privacy
+  policy, what the owner decided in them, and how to keep them true.
 
 ## Contributing
 

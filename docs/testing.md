@@ -120,8 +120,9 @@ every push to `main` and on every pull request, in jobs side by side, after
 | Browser tests (Firefox, `<group>`) | `E2E_FIREFOX=1 E2E_GROUP=<group> yarn e2e --project=firefox`, one job a group |
 
 - **CI builds as `yarn build` does locally.** `VERCEL_ENV` isn't set, so the
-  missing `SITE_URL` and the legal placeholders only warn; only a Vercel
-  production deployment stops on them ([site.md](site.md)).
+  missing `SITE_URL` only warns (as a placeholder back in a legal text
+  would); only a Vercel production deployment stops on them
+  ([site.md](site.md)).
 - **Clock budgets.** A shared runner is slower and noisier than the machines
   the budgets of `e2e/specs/performance.spec.ts` were set on, so CI multiplies
   each one (and the 50 ms long-task threshold) by `E2E_TIME_FACTOR`

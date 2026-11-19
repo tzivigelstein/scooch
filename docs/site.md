@@ -162,17 +162,20 @@ test's last group checks that).
 | `SCOOCH_ALLOW_DRAFT` | `1` lets a release go out anyway, as a draft. |
 
 A release **stops** with a list of what is missing while `SITE_URL` is
-unset or invalid, or a legal text (`docs/legal/terminos.md`,
+unset or invalid. It also stops if a legal text (`docs/legal/terminos.md`,
 `docs/legal/privacidad.md`, their translations in `docs/legal/<language>/`,
-`LICENSE`) still has a placeholder (`<TITULAR>`, `<CORREO DE CONTACTO>`,
-`<PAÍS / JURISDICCIÓN>`, `<FECHA DE VIGENCIA>`, `<COPYRIGHT HOLDER>`) or the
-draft note («_Borrador. …_», «_Draft. …_»). Any other build (local, CI,
-Vercel previews, the e2e suite) warns and goes on. While a legal page has a
-placeholder it carries `noindex` and stays out of the sitemap.
+`LICENSE`) has a placeholder again (words in capitals between angle
+brackets, as the drafts had for the owner's name, the contact, the law and
+the date) or a draft note (a paragraph starting with the language's
+`LEGAL_MARKERS.draft`: «_Borrador.», «_Draft.»…). The texts have neither
+today, so only `SITE_URL` is left for the host to set. Any other build
+(local, CI, Vercel previews, the e2e suite) warns and goes on. A legal page
+with a placeholder or a draft note carries `noindex` and stays out of the
+sitemap and `llms.txt`; the final ones are indexed like the other pages.
 
-The translations keep the Spanish placeholders, and say the Spanish version
-is the reference until a lawyer reviews them: fill them in, and remove their
-draft notes, together with the Spanish ones.
+A translation follows the Spanish text, the owner's details included, and
+starts with one sentence saying that the Spanish version prevails if they
+differ ([legal/README.md](legal/README.md)).
 
 The variables can also go in a `.env.local` file, which Vite reads (don't
 commit it).
@@ -223,7 +226,7 @@ editor's metadata, which no other language needs).
    | `index.ts` | The `SiteLanguage`: `lang`, `units` (what follows a measure: `mm`, `cm` and the word for inches; the kit puts a no-break space before it, so a language that writes no space before a unit word, like Chinese 厘米, uses the symbols, as its catalogue's measures do), `paths`, `legalMarkers`, `chrome`, `llms`, `pages` (same order as Spanish). |
    | `chrome.ts` | The frame: skip link, header button, breadcrumb label, footer headings (`languages` heads the links to other languages), the line about the tool, the questions' heading, the share image's description, the legal links' labels (the terms and the privacy policy by the catalogue's names, `ui('legal.terms')` and `ui('legal.privacy')`, as the editor names them; the two license pages typed); the sentences listing papers and photo sizes; the headings of `llms.txt`. |
    | `several-photos.ts`, `how-many.ts`, `photos-10x15.ts`, `id-photos.ts`, `same-photo.ts`, `actual-size.ts`, `faq.ts` | One per page. `how-many.ts` also has the calculator's texts (`calcTexts`: `locale` is the catalogue's `meta.numberLocale`; `count` and `figure` are plural forms chosen by the language's rules, so a language with a single form gives `one` and `other` the same text; `count` is shown under the number, on a line of its own; `noteSame.one` is for exactly one copy) and its labels. The calculator joins its pieces (the count and its words, the paper and its orientation, a note and the cap) with a space, or with none next to Chinese (`joinWords`, `src/site/html.ts`). |
-   | `legal.ts` | The legal pages' titles (the terms and the privacy policy by the catalogue's names, as in `chrome.ts`), descriptions and the license texts' introductions; `LEGAL_MARKERS`: the first words of the translated draft note, the analytics heading and the word its reminder starts with. |
+   | `legal.ts` | The legal pages' titles (the terms and the privacy policy by the catalogue's names, as in `chrome.ts`), descriptions and the license texts' introductions; `LEGAL_MARKERS`, the words publishing looks for: how a draft note would start in the language (a paragraph starting with it stops a release), the analytics heading, and the word a reminder for maintainers there would start with (a section holding only such a reminder is left out of the page). |
 
    Write the files in Unicode NFC, as the catalogues are: a nukta letter
    typed precomposed (U+095E) isn't the catalogue's «फ़» (फ + ़), so a
@@ -231,23 +234,25 @@ editor's metadata, which no other language needs).
    no-break space before its unit (U+00A0), as the kit's do. Where the
    catalogue's photo size names write a unit as a word, `units` uses that
    word, so a measure reads like the names next to it (Hindi «सेमी»,
-   «इंच»). The word the analytics reminder starts with (`LEGAL_MARKERS`)
-   must be one the rest of the policy doesn't use: the published policy
-   must not contain it.
+   «इंच»). The word an analytics reminder would start with (`LEGAL_MARKERS`)
+   must be one the policy doesn't use: the published policy must not
+   contain it.
 
-3. **Translate the legal drafts** from Spanish into
+3. **Translate the legal texts** from Spanish into
    `docs/legal/<lang>/terms.md` and `privacy.md`, faithfully, like
    `docs/legal/en/`: the same headings and lists in the same order, the
-   Spanish placeholders as they are (`<TITULAR>`…), the draft note
-   translated (it must start with `legalMarkers.draft`), the line saying the
-   Spanish version (`../terminos.md`, `../privacidad.md`) is the reference
-   until a lawyer reviews this one, the analytics section with its reminder,
-   links to `terms.md`, `privacy.md`, `../../../LICENSE` and
+   owner's details as the Spanish gives them, the effective date in the
+   language's long form (as `Intl.DateTimeFormat` writes it with
+   `dateStyle: 'long'`: the comparison reads it as one date), a first
+   sentence saying that if the translation and the Spanish version
+   (`../terminos.md`, `../privacidad.md`) differ, the Spanish version
+   prevails, links to `terms.md`, `privacy.md`, `../../../LICENSE` and
    `../../../THIRD_PARTY_NOTICES.md`, in-page links to the translated
    headings' ids, and the app's names for what the policy lists (its
-   catalogue's). Don't translate `LICENSE` or `THIRD_PARTY_NOTICES.md`.
+   catalogue's). Don't translate `LICENSE`, `LICENSE-EXCEPTION.md` or
+   `THIRD_PARTY_NOTICES.md`.
    The site's Markdown joins the lines of a paragraph or a list item with a
-   space, or with none where either side is Chinese, so a Chinese draft
+   space, or with none where either side is Chinese, so a Chinese text
    breaks its lines next to a Chinese character. Italics (`_nosotros_`) need
    a space or punctuation around them: Chinese marks such a term with “ ”
    instead.
@@ -268,8 +273,9 @@ editor's metadata, which no other language needs).
      marks, not letters: where a boundary matters there, use `\p{M}` with
      `\p{L}`;
    - `tests/site/legal.test.ts`: `POLICY` (the heading of the policy's list
-     of what is stored, the sentence that says there is no analytics, and
-     the bold term of each stored key). The test looks for `**term:**`,
+     of what is stored, the sentences that say there is no analytics, in
+     what it doesn't do and at the start of its analytics section, and the
+     bold term of each stored key). The test looks for `**term:**`,
      with `:` or Chinese `：` inside the bold (`- **单位：**`): a language
      that writes something before the colon (French, a no-break space:
      `**Unités :**`) ends each term with it;

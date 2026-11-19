@@ -62,7 +62,7 @@ docs/copy.md      copy guide for the interface texts (in Spanish), with a glossa
 docs/testing.md   test layers, running them and adding one
 docs/site.md      the static pages and what a release needs
 docs/deep-links.md links that open the editor with a new project set up
-docs/legal/       drafts of the terms and the privacy policy
+docs/legal/       the terms and the privacy policy (Spanish, with their translations)
 docs/images/      the README's screenshots (yarn screenshots)
 ```
 
