@@ -77,19 +77,38 @@ result from using Scooch, or from not being able to use it. That includes:
 - applications delayed or rejected because a photo doesn’t meet the
   requirements.
 
-## 7. Free and without an account
+## 7. Free, commercial use included
 
-Scooch is free and doesn’t ask for an account. If the option to support it
-on Patreon appears, the support is voluntary and happens on Patreon.
+Scooch is free and doesn’t ask for an account.
+
+You can use Scooch on this site for any purpose, paid or commercial work
+included: in a print shop, to print stickers you sell or your business’s own
+material. What you make with Scooch, such as the PDFs and the prints, is
+yours: you can use and sell it without paying us, crediting Scooch or asking
+for permission.
+
+We give this permission as the holders of Scooch’s rights, in addition to the
+code license (section 8). It only covers using Scooch on this site, as we
+offer it: it doesn’t cover copies published by other people, and it gives no
+rights over the code. The same permission is in the repository’s
+`LICENSE-EXCEPTION.md` file.
+
+If the option to support Scooch on Patreon appears, the support is voluntary
+and happens on Patreon.
 
 ## 8. Code license
 
 Scooch’s source code is published under the PolyForm Noncommercial license
-1.0.0. You can use, study and change it for noncommercial purposes. That
-license doesn’t allow commercial uses: for example, selling the app, offering
-it as a paid service or publishing copies with ads. The full text is in the
-repository’s [LICENSE](../../../LICENSE) file and, if there’s any difference, that text prevails.
-If you have doubts about a use, write to us.
+1.0.0: you can use, study and change it for noncommercial purposes. The full
+text is in the repository’s [LICENSE](../../../LICENSE) file and, if it
+differs from this summary, that text prevails.
+
+Using Scooch on this site for commercial work is allowed (section 7). What
+isn’t allowed is commercializing Scooch itself: selling it, charging for
+access to it, publishing a copy with ads, including it in a paid product or
+service, or offering its code or a modified version commercially. That, and
+any other commercial use of the code, needs our written permission. If you
+have doubts about a use, write to us.
 
 Scooch’s name and logo aren’t part of that license. The third-party libraries
 the app includes have their own licenses, listed in the repository’s

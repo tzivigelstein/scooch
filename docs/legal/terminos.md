@@ -75,19 +75,38 @@ pérdidas que resulten de usar Scooch, o de no poder hacerlo. Eso incluye:
 - la pérdida de proyectos o de otros datos guardados en tu navegador;
 - trámites demorados o rechazados porque una foto no cumple los requisitos.
 
-## 7. Gratis y sin cuenta
+## 7. Gratis, también para uso comercial
 
-Scooch es gratis y no pide cuenta. Si aparece la opción de aportar en Patreon,
-el aporte es voluntario y se hace en Patreon.
+Scooch es gratis y no pide cuenta.
+
+Puedes usar Scooch en este sitio para cualquier fin, también para trabajos
+pagos o comerciales: en una imprenta, para imprimir stickers que vendes o el
+material de tu negocio. Lo que hagas con Scooch, como los PDF y las
+impresiones, es tuyo: puedes usarlo y venderlo sin pagarnos, sin mencionar a
+Scooch y sin pedir permiso.
+
+Este permiso lo damos nosotros, como titulares de los derechos de Scooch, y se
+suma a la licencia del código (sección 8). Vale solo para usar Scooch en este
+sitio, tal como lo ofrecemos: no cubre copias publicadas por otras personas ni
+da derechos sobre el código. El mismo permiso está, en inglés, en el archivo
+`LICENSE-EXCEPTION.md` del repositorio.
+
+Si aparece la opción de aportar en Patreon, el aporte es voluntario y se hace
+en Patreon.
 
 ## 8. Licencia del código
 
 El código fuente de Scooch se publica bajo la licencia PolyForm Noncommercial
-1.0.0. Puedes usarlo, estudiarlo y modificarlo con fines no comerciales. Esa
-licencia no permite usos comerciales: por ejemplo, vender la app, ofrecerla
-como servicio pago o publicar copias con anuncios. El texto completo está en el
-archivo [LICENSE](../../LICENSE) del repositorio y, ante cualquier diferencia, vale ese texto.
-Si tienes dudas sobre un uso, escríbenos.
+1.0.0: puedes usarlo, estudiarlo y modificarlo con fines no comerciales. El
+texto completo está en el archivo [LICENSE](../../LICENSE) del repositorio y,
+ante cualquier diferencia con este resumen, vale ese texto.
+
+Usar Scooch en este sitio para trabajos comerciales sí está permitido
+(sección 7). Lo que no se permite es comercializar Scooch en sí: venderlo,
+cobrar por usarlo, publicar una copia con anuncios, incluirlo en un producto o
+servicio pago, u ofrecer su código o una versión modificada con fines
+comerciales. Para eso, o para cualquier otro uso comercial del código, hace
+falta nuestro permiso por escrito. Si tienes dudas sobre un uso, escríbenos.
 
 El nombre y el logo de Scooch no forman parte de esa licencia. Las bibliotecas
 de terceros que incluye la app tienen sus propias licencias, que se detallan
