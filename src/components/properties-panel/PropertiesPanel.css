@@ -31,7 +31,7 @@
       border-top: 1px solid var(--line);
       border-radius: 1rem 1rem 0 0;
       box-shadow: var(--shadow-lg);
-      padding-bottom: env(safe-area-inset-bottom);
+      padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       animation: sheet-in 180ms var(--ease);
     }
 

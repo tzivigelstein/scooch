@@ -70,7 +70,7 @@
   @media (max-width: 1099.98px) {
     .panel-left.is-drawer {
       position: absolute;
-      left: var(--rail-w);
+      left: calc(var(--rail-w) + env(safe-area-inset-left));
       top: 0;
       bottom: 0;
       z-index: 40;
@@ -89,7 +89,7 @@
 
   @media (max-width: 799.98px) {
     .panel-left.is-drawer {
-      left: 0;
+      left: env(safe-area-inset-left);
       width: min(20rem, 88vw);
     }
   }

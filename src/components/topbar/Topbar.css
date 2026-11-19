@@ -1,11 +1,13 @@
 @layer components {
+  /* Its background goes under a phone's notch and status bar; its content
+     stays out of them (the safe areas: viewport-fit=cover in index.html). */
   .topbar {
     flex: none;
-    height: var(--topbar-h);
+    height: calc(var(--topbar-h) + env(safe-area-inset-top));
     display: flex;
     align-items: center;
     gap: 1.125rem;
-    padding: 0 0.625rem 0 1rem;
+    padding: env(safe-area-inset-top) max(0.625rem, env(safe-area-inset-right)) 0 max(1rem, env(safe-area-inset-left));
     background: var(--bg);
     border-bottom: 1px solid var(--line);
     position: relative;
@@ -153,7 +155,7 @@
 
     .topbar {
       gap: 0.5rem;
-      padding: 0 0.375rem 0 0.75rem;
+      padding: env(safe-area-inset-top) max(0.375rem, env(safe-area-inset-right)) 0 max(0.75rem, env(safe-area-inset-left));
     }
 
     .bar-group {

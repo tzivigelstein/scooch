@@ -110,7 +110,9 @@
           position: fixed;
           inset: 0;
           display: grid;
-          grid: "bar bar bar" var(--topbar-h) "left canvas right" minmax(0, 1fr) / var(--left-w) minmax(0, 1fr) var(--right-w);
+          grid: "bar bar bar" calc(var(--topbar-h) + env(safe-area-inset-top)) "left canvas right" minmax(0, 1fr) / var(--left-w) minmax(0, 1fr) var(--right-w);
+          /* The safe areas beside a notch, as .workspace leaves them (the bar spans them). */
+          padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
           background: var(--canvas);
           color: var(--accent);
         }
@@ -119,16 +121,16 @@
         .boot-name {
           position: absolute;
           z-index: 1;
-          top: 0.90625rem;
-          left: 1rem;
+          top: calc(0.90625rem + env(safe-area-inset-top));
+          left: max(1rem, env(safe-area-inset-left));
         }
         .boot svg {
           width: 1.625rem;
           height: 1.625rem;
         }
         .boot-name {
-          top: 0.8125rem;
-          left: 3.125rem;
+          top: calc(0.8125rem + env(safe-area-inset-top));
+          left: calc(max(1rem, env(safe-area-inset-left)) + 2.125rem);
           margin: 0;
           color: var(--text);
           font-size: 1.25rem;
@@ -155,7 +157,8 @@
           display: flex;
           align-items: center;
           gap: 1.125rem;
-          padding: 0 0.625rem 0 1rem;
+          margin: 0 calc(-1 * env(safe-area-inset-right)) 0 calc(-1 * env(safe-area-inset-left));
+          padding: env(safe-area-inset-top) max(0.625rem, env(safe-area-inset-right)) 0 max(1rem, env(safe-area-inset-left));
           border-bottom: 1px solid var(--line);
           background: var(--bg);
         }
@@ -390,8 +393,8 @@
             padding: calc(4.25rem + 2.75rem) 1rem calc(8.25rem + 1.25rem - 0.375rem + 2.5rem);
           }
           .boot svg {
-            top: 0.625rem;
-            left: 0.75rem;
+            top: calc(0.625rem + env(safe-area-inset-top));
+            left: max(0.75rem, env(safe-area-inset-left));
           }
           .boot-left,
           .boot-right {
@@ -401,7 +404,7 @@
             display: grid;
             grid: 2.875rem 3rem / auto minmax(0, 1fr) auto;
             gap: 0.5rem;
-            padding: 0 0.375rem 0 0.75rem;
+            padding: env(safe-area-inset-top) max(0.375rem, env(safe-area-inset-right)) 0 max(0.75rem, env(safe-area-inset-left));
           }
           .boot-brand {
             width: 2.5rem;

@@ -266,6 +266,61 @@ test.describe('on a phone, with a finger', () => {
   }
 });
 
+test.describe('a phone with a notch', () => {
+  /** The phone's safe areas, through Chromium's DevTools (as an iPhone gives them, in CSS px). */
+  async function notch(page: Page, insets: { top: number; left: number; right: number; bottom: number }) {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets });
+  }
+
+  /** The controls, panels and dialogs shown that reach into the safe areas `insets` keeps clear (px). Runs in the page. */
+  const readUnsafe = (insets: { top: number; left: number; right: number }) =>
+    [...document.querySelectorAll<HTMLElement>('.topbar :is(button, input, .brand-mark), .rail button, .panel :is(button, input, select), .dock-btn, dialog[open]')]
+      .filter((el) => el.getClientRects().length && !el.closest('[hidden]'))
+      .map((el) => ({ el, r: el.getBoundingClientRect() }))
+      .filter(({ r }) => r.left < insets.left - 0.5 || r.right > innerWidth - insets.right + 0.5 || r.top < insets.top - 0.5)
+      .map(({ el, r }) => `${el.id || el.className} ${Math.round(r.left)}–${Math.round(r.right)} × ${Math.round(r.top)}`);
+
+  // A notch, and a Dynamic Island (wider sides), as iPhones report them in landscape.
+  for (const [width, height, side] of [
+    [844, 390, 47],
+    [852, 393, 59],
+  ]) {
+    test.describe(`in landscape at ${width} px, ${side} px on each side`, () => {
+      test.use({ viewport: { width, height }, hasTouch: true });
+
+      test('the top bar’s controls, the rail, Propiedades and a dialog keep out of the sides of the notch', async ({ app, page, browserName }) => {
+        test.skip(browserName !== 'chromium', 'the safe areas are emulated through Chromium’s DevTools');
+        const insets = { top: 0, left: side, right: side, bottom: 21 };
+        await notch(page, insets);
+        await app.addFiles(['small.jpg']);
+        await app.clickPiece(app.pieces().first());
+        await expect(page.locator('#props-panel #pos-x')).toBeVisible();
+        await expect.poll(() => page.evaluate(readUnsafe, insets)).toEqual([]);
+        await page.locator('#projects-open').tap();
+        await expect(page.locator('#projects')).toHaveAttribute('open', '');
+        expect(await page.evaluate(readUnsafe, insets)).toEqual([]);
+      });
+    });
+  }
+
+  test.describe('in portrait, under a status bar', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+    test('the top bar’s controls keep below it, and Propiedades and the dock beside the edges', async ({ app, page, browserName }) => {
+      test.skip(browserName !== 'chromium', 'the safe areas are emulated through Chromium’s DevTools');
+      // An app added to the home screen: its page starts under the status bar.
+      const insets = { top: 47, left: 0, right: 0, bottom: 34 };
+      await notch(page, insets);
+      await app.addFiles(['small.jpg']);
+      await expect.poll(() => page.evaluate(readUnsafe, insets)).toEqual([]);
+      await page.locator('#props-toggle').tap();
+      await expect(page.locator('#props-panel')).toBeVisible();
+      expect(await page.evaluate(readUnsafe, insets)).toEqual([]);
+    });
+  });
+});
+
 test.describe('with a mouse', () => {
   test('the targets look as they did: a project card’s actions 32 px, the dialogs’ buttons 36 px, the «No volver a mostrar» row 40 px, the site’s links their line', async ({ app, page }) => {
     await app.addFiles(['small.jpg']);

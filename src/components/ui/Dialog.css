@@ -1,6 +1,8 @@
 @layer ui {
   .dialog {
     width: min(37.5rem, calc(100vw - 1.5rem));
+    /* The browser's own limit for a modal dialog, kept out of a notch too. */
+    max-width: calc(100% - 6px - 2em - env(safe-area-inset-left) - env(safe-area-inset-right));
     max-height: calc(100dvh - 3rem);
     padding: 0;
     border: 1px solid var(--line);

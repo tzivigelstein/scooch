@@ -1,11 +1,13 @@
 @layer components {
-  /* Open project: editable name, save status and «Proyectos». */
+  /* Open project: editable name, save status and «Proyectos». When the bar
+     is short of room (beside a notch, in landscape), the name gives way
+     first, cut with «…», before the actions' groups. */
   .project-group {
     display: flex;
     align-items: center;
     gap: 0.125rem;
     min-width: 0;
-    flex: 0 1 auto;
+    flex: 0 1000 auto;
   }
 
   .project {
