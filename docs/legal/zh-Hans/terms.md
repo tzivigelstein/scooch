@@ -1,20 +1,3 @@
-<!--
-DRAFT. Placeholders to fill in before publishing (they appear between
-backticks in the text; replace the backticks too). They are the same as in
-the Spanish version, docs/legal/terminos.md:
-
-  <TITULAR>               Name of the person or entity offering the app.
-  <CORREO DE CONTACTO>    Email for questions about these terms.
-  <PAÍS / JURISDICCIÓN>   Law that governs the terms and, if needed, courts.
-  <FECHA DE VIGENCIA>     Date this version takes effect.
-
-This is a translation into Simplified Chinese: the Spanish version is the
-reference. The site joins the lines of a paragraph without a space where
-either side is Chinese, so lines may break anywhere next to a Chinese
-character. See docs/legal/README.md for what to check again when the app
-changes.
--->
-
 _草稿。本文不构成法律建议。发布或依据本文行事之前，须由法律专业人士审阅。_
 
 _本文是[西班牙语版本](../terminos.md)的译文。在律师审阅本译文之前，
@@ -22,14 +5,14 @@ _本文是[西班牙语版本](../terminos.md)的译文。在律师审阅本译�
 
 # 使用条款
 
-自`<FECHA DE VIGENCIA>`起生效。
+自2026年11月19日起生效。
 
 ## 1. 什么是Scooch
 
 Scooch是一款免费的网页工具，用于按实际尺寸把图片和PDF页面排到纸上，
 并下载或打印排好的结果。
 
-由`<TITULAR>`提供Scooch。本条款中的“我们”是指`<TITULAR>`。
+由Tzivi Santiago Gelstein提供Scooch。本条款中的“我们”是指他。
 
 使用Scooch即表示你接受本条款。如果你不同意，请不要使用Scooch。
 
@@ -115,11 +98,12 @@ Scooch可能包含指向其他网站（例如Patreon）的链接。我们无法�
 
 ## 11. 适用法律
 
-本条款受`<PAÍS / JURISDICCIÓN>`的法律管辖。这不影响你所在国家或地区的法律赋予
+本条款受阿根廷共和国法律管辖。这不影响你所在国家或地区的法律赋予
 你、且不可放弃的权利。
 
 如果本条款的某一部分无效，其余部分仍然有效。
 
 ## 12. 联系方式
 
-如对本条款有疑问，请发送邮件至`<CORREO DE CONTACTO>`。
+如对本条款有疑问，请发送邮件至
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com)。

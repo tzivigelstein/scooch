@@ -1,18 +1,3 @@
-<!--
-DRAFT. Placeholders to fill in before publishing (they appear between
-backticks in the text; replace the backticks too). They are the same as in
-the Spanish version, docs/legal/privacidad.md:
-
-  <TITULAR>               Name of the person or entity responsible.
-  <CORREO DE CONTACTO>    Email for privacy questions.
-  <FECHA DE VIGENCIA>     Date this version takes effect.
-
-Also, the Analytics section is a placeholder: there are no analytics today.
-If some are added, it has to be rewritten before they are turned on (see
-docs/legal/README.md). This is a translation: the Spanish version is the
-reference.
--->
-
 _Draft. Not legal advice. A legal professional has to review it before it
 is published or relied on._
 
@@ -21,7 +6,7 @@ the reference until a lawyer reviews this one._
 
 # Privacy policy
 
-In effect from `<FECHA DE VIGENCIA>`.
+In effect from November 19, 2026.
 
 ## In short
 
@@ -35,8 +20,9 @@ In effect from `<FECHA DE VIGENCIA>`.
 
 ## Who is responsible
 
-`<TITULAR>` offers Scooch. When this policy says _we_, it means
-`<TITULAR>`. You can write to us at `<CORREO DE CONTACTO>`.
+Tzivi Santiago Gelstein offers Scooch. When this policy says _we_, it means
+him. You can write to us at
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com).
 
 ## Your files
 
@@ -214,4 +200,5 @@ stored or what is sent, we’ll explain it on this page.
 
 ## Contact
 
-For privacy questions, write to `<CORREO DE CONTACTO>`.
+For privacy questions, write to
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com).

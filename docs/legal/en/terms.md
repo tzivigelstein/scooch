@@ -1,17 +1,3 @@
-<!--
-DRAFT. Placeholders to fill in before publishing (they appear between
-backticks in the text; replace the backticks too). They are the same as in
-the Spanish version, docs/legal/terminos.md:
-
-  <TITULAR>               Name of the person or entity offering the app.
-  <CORREO DE CONTACTO>    Email for questions about these terms.
-  <PAÍS / JURISDICCIÓN>   Law that governs the terms and, if needed, courts.
-  <FECHA DE VIGENCIA>     Date this version takes effect.
-
-This is a translation: the Spanish version is the reference. See
-docs/legal/README.md for what to check again when the app changes.
--->
-
 _Draft. Not legal advice. A legal professional has to review it before it
 is published or relied on._
 
@@ -20,15 +6,15 @@ reference until a lawyer reviews this one._
 
 # Terms of use
 
-In effect from `<FECHA DE VIGENCIA>`.
+In effect from November 19, 2026.
 
 ## 1. What Scooch is
 
 Scooch is a free web tool. It arranges images and PDF pages on sheets of
 paper at actual size, and lets you download or print the result.
 
-`<TITULAR>` offers Scooch. When these terms say _we_, they mean
-`<TITULAR>`.
+Tzivi Santiago Gelstein offers Scooch. When these terms say _we_, they mean
+him.
 
 By using Scooch, you accept these terms. If you don’t agree, don’t use Scooch.
 
@@ -129,11 +115,12 @@ change, you accept the new version.
 
 ## 11. Governing law
 
-These terms are governed by the laws of `<PAÍS / JURISDICCIÓN>`. This doesn’t
+These terms are governed by the laws of the Argentine Republic. This doesn’t
 take away the rights the law of your country gives you that can’t be waived.
 
 If a part of these terms isn’t valid, the rest remains in effect.
 
 ## 12. Contact
 
-For questions about these terms, write to `<CORREO DE CONTACTO>`.
+For questions about these terms, write to
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com).

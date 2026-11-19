@@ -1,19 +1,3 @@
-<!--
-DRAFT. Placeholders to fill in before publishing (they appear between
-backticks in the text; replace the backticks too). They are the same as in
-the Spanish version, docs/legal/privacidad.md:
-
-  <TITULAR>               Name of the person or entity responsible.
-  <CORREO DE CONTACTO>    Email for privacy questions.
-  <FECHA DE VIGENCIA>     Date this version takes effect.
-
-Also, the एनालिटिक्स (analytics) section is a placeholder: there are no
-analytics today. If some are added, it has to be rewritten before they are
-turned on (see docs/legal/README.md). Its reminder starts with «लंबित»
-(pending), a word the rest of the policy doesn't use: publishing looks for it.
-This is a Hindi translation: the Spanish version is the reference.
--->
-
 _ड्राफ़्ट। यह कानूनी सलाह नहीं है। इसे प्रकाशित करने या इस पर भरोसा करने से
 पहले किसी कानूनी विशेषज्ञ को इसकी समीक्षा करनी होगी।_
 
@@ -22,7 +6,7 @@ _यह [स्पैनिश वर्शन](../privacidad.md) का अन�
 
 # निजता नीति
 
-`<FECHA DE VIGENCIA>` से लागू।
+19 नवंबर 2026 से लागू।
 
 ## संक्षेप में
 
@@ -36,8 +20,9 @@ _यह [स्पैनिश वर्शन](../privacidad.md) का अन�
 
 ## कौन ज़िम्मेदार है
 
-Scooch `<TITULAR>` की ओर से उपलब्ध कराया जाता है। जब यह नीति _हम_ कहती है, तो
-उसका मतलब `<TITULAR>` से है। आप हमें `<CORREO DE CONTACTO>` पर लिख सकते हैं।
+Scooch, Tzivi Santiago Gelstein की ओर से उपलब्ध कराया जाता है। जब यह नीति
+_हम_ कहती है, तो उसका मतलब Tzivi Santiago Gelstein से है। आप हमें
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com) पर लिख सकते हैं।
 
 ## आपकी फ़ाइलें
 
@@ -212,4 +197,5 @@ Scooch किसी से भी निजी जानकारी नही�
 
 ## संपर्क
 
-निजता से जुड़े सवालों के लिए `<CORREO DE CONTACTO>` पर लिखें।
+निजता से जुड़े सवालों के लिए
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com) पर लिखें।

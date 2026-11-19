@@ -1,21 +1,9 @@
-<!--
-BORRADOR. Marcadores a completar antes de publicar (aparecen entre comillas
-invertidas en el texto; reemplaza también las comillas invertidas):
-
-  <TITULAR>               Nombre de la persona o entidad que ofrece la app.
-  <CORREO DE CONTACTO>    Correo para consultas sobre estos términos.
-  <PAÍS / JURISDICCIÓN>   Ley que rige los términos y, si corresponde, tribunales.
-  <FECHA DE VIGENCIA>     Fecha desde la que rige esta versión.
-
-Ver docs/legal/README.md para lo que hay que volver a revisar cuando cambie la app.
--->
-
 _Borrador. No es asesoramiento legal. Tiene que revisarlo una persona
 profesional del derecho antes de publicarlo o de confiar en él._
 
 # Términos de uso
 
-Vigentes desde `<FECHA DE VIGENCIA>`.
+Vigentes desde el 19 de noviembre de 2026.
 
 ## 1. Qué es Scooch
 
@@ -23,8 +11,8 @@ Scooch es una herramienta web gratuita. Sirve para acomodar imágenes y páginas
 de PDF en hojas de papel a tamaño real, y para descargar o imprimir el
 resultado.
 
-`<TITULAR>` ofrece Scooch. Cuando estos términos dicen _nosotros_, se refieren a
-`<TITULAR>`.
+Tzivi Santiago Gelstein ofrece Scooch. Cuando estos términos dicen
+_nosotros_, se refieren a él.
 
 Al usar Scooch, aceptas estos términos. Si no estás de acuerdo, no uses Scooch.
 
@@ -124,7 +112,7 @@ Scooch después de un cambio, aceptas la nueva versión.
 
 ## 11. Ley aplicable
 
-Estos términos se rigen por las leyes de `<PAÍS / JURISDICCIÓN>`. Esto no te
+Estos términos se rigen por las leyes de la República Argentina. Esto no te
 quita los derechos que la ley de tu país te reconozca y que no se puedan
 renunciar.
 
@@ -132,4 +120,5 @@ Si una parte de estos términos no es válida, el resto sigue vigente.
 
 ## 12. Contacto
 
-Para consultas sobre estos términos, escribe a `<CORREO DE CONTACTO>`.
+Para consultas sobre estos términos, escribe a
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com).

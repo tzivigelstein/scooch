@@ -1,17 +1,3 @@
-<!--
-DRAFT. Placeholders to fill in before publishing (they appear between
-backticks in the text; replace the backticks too). They are the same as in
-the Spanish version, docs/legal/terminos.md:
-
-  <TITULAR>               Name of the person or entity offering the app.
-  <CORREO DE CONTACTO>    Email for questions about these terms.
-  <PAÍS / JURISDICCIÓN>   Law that governs the terms and, if needed, courts.
-  <FECHA DE VIGENCIA>     Date this version takes effect.
-
-This is a French translation: the Spanish version is the reference. See
-docs/legal/README.md for what to check again when the app changes.
--->
-
 _Brouillon. Ceci n’est pas un avis juridique. Un professionnel du droit doit
 le relire avant qu’il soit publié ou que l’on s’y fie._
 
@@ -20,7 +6,7 @@ foi tant qu’un avocat n’a pas relu celle-ci._
 
 # Conditions d’utilisation
 
-En vigueur à compter du `<FECHA DE VIGENCIA>`.
+En vigueur à compter du 19 novembre 2026.
 
 ## 1. Ce qu’est Scooch
 
@@ -28,8 +14,8 @@ Scooch est un outil web gratuit. Il permet de disposer des images et des
 pages de PDF sur des feuilles de papier en taille réelle, et de télécharger ou
 d’imprimer le résultat.
 
-`<TITULAR>` propose Scooch. Lorsque ces conditions disent _nous_, elles
-désignent `<TITULAR>`.
+Tzivi Santiago Gelstein propose Scooch. Lorsque ces conditions disent _nous_,
+elles le désignent.
 
 En utilisant Scooch, vous acceptez ces conditions. Si vous n’êtes pas
 d’accord, n’utilisez pas Scooch.
@@ -144,7 +130,7 @@ vous acceptez la nouvelle version.
 
 ## 11. Droit applicable
 
-Ces conditions sont régies par le droit de `<PAÍS / JURISDICCIÓN>`. Cela ne
+Ces conditions sont régies par le droit de la République argentine. Cela ne
 vous prive pas des droits que la loi de votre pays vous reconnaît et
 auxquels il n’est pas possible de renoncer.
 
@@ -153,4 +139,5 @@ vigueur.
 
 ## 12. Contact
 
-Pour toute question sur ces conditions, écrivez à `<CORREO DE CONTACTO>`.
+Pour toute question sur ces conditions, écrivez à
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com).

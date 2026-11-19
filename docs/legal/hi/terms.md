@@ -1,17 +1,3 @@
-<!--
-DRAFT. Placeholders to fill in before publishing (they appear between
-backticks in the text; replace the backticks too). They are the same as in
-the Spanish version, docs/legal/terminos.md:
-
-  <TITULAR>               Name of the person or entity offering the app.
-  <CORREO DE CONTACTO>    Email for questions about these terms.
-  <PAÍS / JURISDICCIÓN>   Law that governs the terms and, if needed, courts.
-  <FECHA DE VIGENCIA>     Date this version takes effect.
-
-This is a Hindi translation: the Spanish version is the reference. See
-docs/legal/README.md for what to check again when the app changes.
--->
-
 _ड्राफ़्ट। यह कानूनी सलाह नहीं है। इसे प्रकाशित करने या इस पर भरोसा करने से
 पहले किसी कानूनी विशेषज्ञ को इसकी समीक्षा करनी होगी।_
 
@@ -20,7 +6,7 @@ _यह [स्पैनिश वर्शन](../terminos.md) का अनु
 
 # इस्तेमाल की शर्तें
 
-`<FECHA DE VIGENCIA>` से लागू।
+19 नवंबर 2026 से लागू।
 
 ## 1. Scooch क्या है
 
@@ -28,8 +14,8 @@ Scooch एक मुफ़्त वेब टूल है। इससे इ�
 असली आकार में व्यवस्थित किया जा सकता है, और नतीजे को डाउनलोड या प्रिंट किया जा
 सकता है।
 
-Scooch `<TITULAR>` की ओर से उपलब्ध कराया जाता है। जब ये शर्तें _हम_ कहती हैं,
-तो उनका मतलब `<TITULAR>` से है।
+Scooch, Tzivi Santiago Gelstein की ओर से उपलब्ध कराया जाता है। जब ये शर्तें
+_हम_ कहती हैं, तो उनका मतलब Tzivi Santiago Gelstein से है।
 
 Scooch इस्तेमाल करके आप ये शर्तें स्वीकार करते हैं। अगर आप इनसे सहमत नहीं हैं,
 तो Scooch इस्तेमाल न करें।
@@ -133,11 +119,12 @@ Scooch में दूसरी साइटों के लिंक हो �
 
 ## 11. लागू कानून
 
-ये शर्तें `<PAÍS / JURISDICCIÓN>` के कानूनों के तहत आती हैं। इससे आपके वे अधिकार
+ये शर्तें अर्जेंटीना गणराज्य के कानूनों के तहत आती हैं। इससे आपके वे अधिकार
 खत्म नहीं होते जो आपके देश का कानून आपको देता है और जिन्हें छोड़ा नहीं जा सकता।
 
 अगर इन शर्तों का कोई हिस्सा मान्य नहीं है, तो बाकी हिस्सा लागू रहता है।
 
 ## 12. संपर्क
 
-इन शर्तों के बारे में सवालों के लिए `<CORREO DE CONTACTO>` पर लिखें।
+इन शर्तों के बारे में सवालों के लिए
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com) पर लिखें।

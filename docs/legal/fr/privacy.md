@@ -1,18 +1,3 @@
-<!--
-DRAFT. Placeholders to fill in before publishing (they appear between
-backticks in the text; replace the backticks too). They are the same as in
-the Spanish version, docs/legal/privacidad.md:
-
-  <TITULAR>               Name of the person or entity responsible.
-  <CORREO DE CONTACTO>    Email for privacy questions.
-  <FECHA DE VIGENCIA>     Date this version takes effect.
-
-Also, the Mesure d’audience (analytics) section is a placeholder: there are
-no analytics today. If some are added, it has to be rewritten before they are
-turned on (see docs/legal/README.md). This is a French translation: the
-Spanish version is the reference.
--->
-
 _Brouillon. Ceci n’est pas un avis juridique. Un professionnel du droit doit
 le relire avant qu’il soit publié ou que l’on s’y fie._
 
@@ -21,7 +6,7 @@ fait foi tant qu’un avocat n’a pas relu celle-ci._
 
 # Politique de confidentialité
 
-En vigueur à compter du `<FECHA DE VIGENCIA>`.
+En vigueur à compter du 19 novembre 2026.
 
 ## En bref
 
@@ -35,8 +20,9 @@ En vigueur à compter du `<FECHA DE VIGENCIA>`.
 
 ## Qui est responsable
 
-`<TITULAR>` propose Scooch. Lorsque cette politique dit _nous_, elle désigne
-`<TITULAR>`. Vous pouvez nous écrire à `<CORREO DE CONTACTO>`.
+Tzivi Santiago Gelstein propose Scooch. Lorsque cette politique dit _nous_,
+elle le désigne. Vous pouvez nous écrire à
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com).
 
 ## Vos fichiers
 
@@ -235,4 +221,5 @@ est envoyé, nous l’expliquerons sur cette page.
 
 ## Contact
 
-Pour toute question sur la confidentialité, écrivez à `<CORREO DE CONTACTO>`.
+Pour toute question sur la confidentialité, écrivez à
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com).

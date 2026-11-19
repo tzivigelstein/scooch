@@ -1,21 +1,9 @@
-<!--
-BORRADOR. Marcadores a completar antes de publicar (aparecen entre comillas
-invertidas en el texto; reemplaza también las comillas invertidas):
-
-  <TITULAR>               Nombre de la persona o entidad responsable.
-  <CORREO DE CONTACTO>    Correo para consultas sobre privacidad.
-  <FECHA DE VIGENCIA>     Fecha desde la que rige esta versión.
-
-Además, la sección Analítica es un marcador: hoy no hay analítica. Si se
-agrega, hay que reescribirla antes de activarla (ver docs/legal/README.md).
--->
-
 _Borrador. No es asesoramiento legal. Tiene que revisarlo una persona
 profesional del derecho antes de publicarlo o de confiar en él._
 
 # Política de privacidad
 
-Vigente desde `<FECHA DE VIGENCIA>`.
+Vigente desde el 19 de noviembre de 2026.
 
 ## En resumen
 
@@ -29,8 +17,9 @@ Vigente desde `<FECHA DE VIGENCIA>`.
 
 ## Quién es responsable
 
-`<TITULAR>` ofrece Scooch. Cuando esta política dice _nosotros_, se refiere a
-`<TITULAR>`. Puedes escribirnos a `<CORREO DE CONTACTO>`.
+Tzivi Santiago Gelstein ofrece Scooch. Cuando esta política dice _nosotros_,
+se refiere a él. Puedes escribirnos a
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com).
 
 ## Tus archivos
 
@@ -209,4 +198,5 @@ se guarda o lo que se envía, lo vamos a explicar en esta página.
 
 ## Contacto
 
-Para consultas sobre privacidad, escribe a `<CORREO DE CONTACTO>`.
+Para consultas sobre privacidad, escribe a
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com).

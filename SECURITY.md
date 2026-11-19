@@ -4,7 +4,7 @@
 
 Please report security problems privately, not in a public issue.
 
-- Email `<CONTACT EMAIL>` with "Security" in the subject.
+- Email gelsteintzivisantiago@gmail.com with "Security" in the subject.
 - Or, if the repository has GitHub's private vulnerability reporting turned
   on, use **Report a vulnerability** in the Security tab.
 

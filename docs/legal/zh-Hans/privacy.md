@@ -1,20 +1,3 @@
-<!--
-DRAFT. Placeholders to fill in before publishing (they appear between
-backticks in the text; replace the backticks too). They are the same as in
-the Spanish version, docs/legal/privacidad.md:
-
-  <TITULAR>               Name of the person or entity responsible.
-  <CORREO DE CONTACTO>    Email for privacy questions.
-  <FECHA DE VIGENCIA>     Date this version takes effect.
-
-Also, the 数据分析 (Analytics) section is a placeholder: there are no
-analytics today. If some are added, it has to be rewritten before they are
-turned on (see docs/legal/README.md). This is a translation into Simplified
-Chinese: the Spanish version is the reference. The site joins the lines of a
-paragraph without a space where either side is Chinese, so lines may break
-anywhere next to a Chinese character.
--->
-
 _草稿。本文不构成法律建议。发布或依据本文行事之前，须由法律专业人士审阅。_
 
 _本文是[西班牙语版本](../privacidad.md)的译文。在律师审阅本译文之前，
@@ -22,7 +5,7 @@ _本文是[西班牙语版本](../privacidad.md)的译文。在律师审阅本�
 
 # 隐私政策
 
-自`<FECHA DE VIGENCIA>`起生效。
+自2026年11月19日起生效。
 
 ## 概要
 
@@ -33,8 +16,8 @@ _本文是[西班牙语版本](../privacidad.md)的译文。在律师审阅本�
 
 ## 谁是责任方
 
-由`<TITULAR>`提供Scooch。本政策中的“我们”是指`<TITULAR>`。
-你可以发送邮件至`<CORREO DE CONTACTO>`联系我们。
+由Tzivi Santiago Gelstein提供Scooch。本政策中的“我们”是指他。
+你可以发送邮件至[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com)联系我们。
 
 ## 你的文件
 
@@ -176,4 +159,5 @@ Scooch不向任何人索取个人数据，未成年人也不例外。如果你�
 
 ## 联系方式
 
-如对隐私有疑问，请发送邮件至`<CORREO DE CONTACTO>`。
+如对隐私有疑问，请发送邮件至
+[gelsteintzivisantiago@gmail.com](mailto:gelsteintzivisantiago@gmail.com)。

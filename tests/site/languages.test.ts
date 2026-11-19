@@ -162,10 +162,34 @@ const textOf = (html: string) => parse(`<body>${html.replace(/<script[\s\S]*?<\/
 
 const decimalOf = (lang: Lang) => new Intl.NumberFormat(CATALOGUES[lang].meta.numberLocale).formatToParts(1.5).find((p) => p.type === 'decimal')!.value;
 
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * A text with each date written in its language's long form, as Intl writes
+ * it («19 de noviembre de 2026», «November 19, 2026», «2026年11月19日»),
+ * turned into one mark of its day («⟦date:2026-11-19⟧»): a translation's date
+ * is compared whole, whatever the order and the month names of its language.
+ */
+function markDates(text: string, lang: Lang) {
+  const format = new Intl.DateTimeFormat(CATALOGUES[lang].meta.numberLocale, { dateStyle: 'long', timeZone: 'UTC' });
+  const months = Array.from({ length: 12 }, (_, m) => format.formatToParts(Date.UTC(2000, m, 1)).find((p) => p.type === 'month')!.value);
+  // Longest first, so «1» never stands for the start of «11».
+  const monthNames = [...months].sort((a, b) => b.length - a.length).map(escapeRegExp).join('|');
+  const source = format
+    .formatToParts(Date.UTC(2000, 0, 1))
+    .map(({ type, value }) => (type === 'day' ? '(?<day>\\d{1,2})' : type === 'year' ? '(?<year>\\d{4})' : type === 'month' ? `(?<month>${monthNames})` : escapeRegExp(value).replace(/\s+/g, '\\s+')))
+    .join('');
+  return text.replace(new RegExp(source, 'g'), (...args) => {
+    const { day, month, year } = args.at(-1) as Record<'day' | 'month' | 'year', string>;
+    return ` ⟦date:${year}-${String(months.indexOf(month) + 1).padStart(2, '0')}-${day.padStart(2, '0')}⟧ `;
+  });
+}
+
 /**
  * The facts a page writes with its kit (in probe mode, createKit: numbers,
- * measures, paper and photo names) and the numbers typed by hand, read with
- * the language's decimal separator. Interface names are words: left out.
+ * measures, paper and photo names), the dates it writes out, and the numbers
+ * typed by hand, read with the language's decimal separator. Interface names
+ * are words: left out.
  */
 function numbersOf(page: SitePage) {
   // A legal document's bold terms name the interface («Atajos de 1 tecla», «Single-key shortcuts»): words too.
@@ -173,7 +197,7 @@ function numbersOf(page: SitePage) {
   // A text in another language (a license text, in English) is read as that language writes numbers.
   const foreign = /<div class="doc-lang" lang="([\w-]+)">([\s\S]*)<\/div>$/.exec(body);
   if (foreign) body = body.slice(0, foreign.index);
-  const text = textOf([page.title, page.description, page.h1, page.crumb, body, ...(page.faq ?? []).flatMap(({ q, a }) => [q, a])].join(' \n '));
+  const text = markDates(textOf([page.title, page.description, page.h1, page.crumb, body, ...(page.faq ?? []).flatMap(({ q, a }) => [q, a])].join(' \n ')), page.lang);
   const facts = [...new Set((text.match(PROBE) ?? []).filter((mark) => !mark.startsWith('⟦ui:')))].sort();
   const typed = [...new Set([...typedNumbers(text.replace(PROBE, ' '), page.lang), ...(foreign ? typedNumbers(textOf(foreign[2]), foreign[1] as Lang) : [])])].sort();
   return { facts, typed };
@@ -328,5 +352,12 @@ describe('the comparison of a translation with the Spanish page', () => {
     const numbers = numbersOf(probe);
     expect(numbersOf({ ...probe, body: probe.body.replaceAll('⟦mm:10⟧', '') })).not.toEqual(numbers);
     expect(numbersOf({ ...probe, faq: probe.faq!.map((q) => ({ ...q, q: q.q.replace('4 ', '5 ') })) })).not.toEqual(numbers);
+  });
+
+  test('reads a date in each language’s long form as that day, and finds a date that changed', () => {
+    const written: Partial<Record<Lang, string>> = { es: '19 de noviembre de 2026', en: 'November 19, 2026', 'zh-Hans': '2026年11月19日', hi: '19 नवंबर 2026', fr: '19 novembre 2026' };
+    for (const { lang } of SITE_LANGUAGES) expect(markDates(`(${written[lang]})`, lang), lang).toBe('( ⟦date:2026-11-19⟧ )');
+    const privacy = versionOf(probes, 'legal-privacy', 'es')!;
+    expect(numbersOf({ ...privacy, body: privacy.body.replace('19 de noviembre', '20 de noviembre') })).not.toEqual(numbersOf(privacy));
   });
 });

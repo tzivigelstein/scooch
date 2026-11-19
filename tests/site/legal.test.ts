@@ -212,13 +212,10 @@ describe('publishing a legal document', () => {
 });
 
 describe('the documents in the repository', () => {
-  test('every document renders, every link of theirs has a page, and the drafts say what is missing', () => {
-    for (const d of docs) expect(() => pageOf(d), d.file).not.toThrow();
-    for (const { lang } of SITE_LANGUAGES) {
-      expect(doc('terms', lang).placeholders, lang).toEqual(expect.arrayContaining(['<TITULAR>', '<CORREO DE CONTACTO>', '<PAÍS / JURISDICCIÓN>', '<FECHA DE VIGENCIA>']));
-      expect(doc('privacy', lang).placeholders, lang).toEqual(expect.arrayContaining(['<TITULAR>', '<CORREO DE CONTACTO>', '<FECHA DE VIGENCIA>']));
-      expect(doc('license', lang).placeholders, lang).toEqual(['<COPYRIGHT HOLDER>']);
-      expect(doc('notices', lang).placeholders, lang).toEqual([]);
+  test('every document renders, every link of theirs has a page, and none has a placeholder left', () => {
+    for (const d of docs) {
+      expect(() => pageOf(d), d.file).not.toThrow();
+      expect(d.placeholders, d.file).toEqual([]);
     }
   });
 
