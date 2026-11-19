@@ -25,6 +25,10 @@ export function faqPage(k: Kit): SitePage {
       },
       { q: 'How much does it cost?', a: `Nothing. ${app} is free, needs no account, and adds no watermarks or ads.` },
       {
+        q: `Can I use ${app} for paid work or in my business?`,
+        a: `Yes. You can use ${app} on this site for any purpose, commercial ones included: in a print shop, to print stickers you sell or your business’s own material. The PDFs and prints you make are yours: you can use and sell them without paying, crediting ${app} or asking for permission. What isn’t allowed is commercializing the tool itself: for example, selling it, charging for access to it or publishing a copy with ads. There’s more in the ${link(PATHS['legal-terms'], 'terms of use')}.`,
+      },
+      {
         q: 'Are my files uploaded to a server?',
         a: `No. Images and PDFs are opened and processed in your browser, and the PDF is created there too. There’s more in the ${link(PATHS['legal-privacy'], 'privacy policy')}.`,
       },

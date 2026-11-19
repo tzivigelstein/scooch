@@ -25,6 +25,10 @@ export function faqPage(k: Kit): SitePage {
       },
       { q: 'Combien ça coûte ?', a: `Rien. ${app} est gratuit, ne demande aucun compte et n’ajoute ni filigrane ni publicité.` },
       {
+        q: `Puis-je utiliser ${app} pour un travail payant ou dans mon entreprise ?`,
+        a: `Oui. Vous pouvez utiliser ${app} sur ce site à toutes fins, y compris commerciales : dans une imprimerie, pour imprimer des autocollants que vous vendez ou les supports de votre entreprise. Les PDF et les impressions que vous réalisez vous appartiennent : vous pouvez les utiliser et les vendre sans payer, sans mentionner ${app} et sans demander d’autorisation. Ce qui n’est pas autorisé, c’est de commercialiser l’outil lui-même : par exemple le vendre, faire payer son accès ou publier une copie avec des publicités. Plus de détails dans les ${link(PATHS['legal-terms'], 'conditions d’utilisation')}.`,
+      },
+      {
         q: 'Mes fichiers sont-ils envoyés sur un serveur ?',
         a: `Non. Les images et les PDF sont ouverts et traités dans votre navigateur, et le PDF y est créé aussi. Plus de détails dans la ${link(PATHS['legal-privacy'], 'politique de confidentialité')}.`,
       },

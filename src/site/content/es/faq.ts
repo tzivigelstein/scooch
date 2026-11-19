@@ -25,6 +25,10 @@ export function faqPage(k: Kit): SitePage {
       },
       { q: '¿Cuánto cuesta?', a: `Nada. ${app} es gratis, no pide cuenta y no agrega marcas de agua ni anuncios.` },
       {
+        q: `¿Puedo usar ${app} para trabajos pagos o en mi negocio?`,
+        a: `Sí. Puedes usar ${app} en este sitio para cualquier fin, también comercial: en una imprenta, para imprimir stickers que vendes o el material de tu negocio. Los PDF y las impresiones que hagas son tuyos: puedes usarlos y venderlos sin pagar, sin mencionar a ${app} y sin pedir permiso. Lo que no se permite es comercializar la herramienta en sí: por ejemplo, venderla, cobrar por usarla o publicar una copia con anuncios. Más detalles en los ${link(PATHS['legal-terms'], ui('legal.terms'))}.`,
+      },
+      {
         q: '¿Mis archivos se suben a algún servidor?',
         a: `No. Las imágenes y los PDF se abren y se procesan en tu navegador, y el PDF también se crea ahí. Más detalles en la ${link(PATHS['legal-privacy'], ui('legal.privacy'))}.`,
       },
