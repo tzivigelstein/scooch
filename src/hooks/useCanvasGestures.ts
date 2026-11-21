@@ -729,14 +729,15 @@ function finish(e: PointerEvent | null) {
   if (g.kind === 'marquee') return endMarquee(g, done);
   if (g.kind === 'group-move' || g.kind === 'group-resize') {
     const focused = pieceNode(getDocument().selection.at(-1));
-    endGroupGesture(g, done, !!focused && (active === focused || active === document.body));
+    endGroupGesture(g, done, !!focused && (active === focused || active === document.body), held.length > 0);
   } else {
-    endPieceGesture(g, done, active === g.node || active === document.body);
+    endPieceGesture(g, done, active === g.node || active === document.body, held.length > 0);
   }
   settle(held);
 }
 
-function endPieceGesture(g: MoveGesture | ResizeGesture, done: boolean, hadFocus: boolean) {
+/** `glides`: the piece stays on its sheet, so a refused drop can animate its way from where it was let go. */
+function endPieceGesture(g: MoveGesture | ResizeGesture, done: boolean, hadFocus: boolean, glides: boolean) {
   let result: 'moved-aside' | 'reverted' | null = null;
   let sheetChanged = false;
   if (g.kind === 'move' && g.spot && g.moved && done && findItem(g.item.id) === g.item) {
@@ -754,7 +755,7 @@ function endPieceGesture(g: MoveGesture | ResizeGesture, done: boolean, hadFocus
         new Set([box.id]),
         groupOptions()
       );
-      animateNext();
+      if (glides) animateNext();
       const spot = drop.rects?.get(box.id);
       if (spot) {
         ({ x, y } = fromBox(spot.x, spot.y));
@@ -781,7 +782,8 @@ function endPieceGesture(g: MoveGesture | ResizeGesture, done: boolean, hadFocus
   }
 }
 
-function endGroupGesture(g: GroupMoveGesture | GroupResizeGesture, done: boolean, hadFocus: boolean) {
+/** `glides`: some of its pieces stay on their sheet, so a refused drop can animate their way from where they were let go. */
+function endGroupGesture(g: GroupMoveGesture | GroupResizeGesture, done: boolean, hadFocus: boolean, glides: boolean) {
   const primary = getDocument().selection.at(-1);
   let result: 'moved' | 'moved-aside' | 'reverted' | 'scaled' | null = null;
   let sheetChanged = false;
@@ -793,7 +795,7 @@ function endGroupGesture(g: GroupMoveGesture | GroupResizeGesture, done: boolean
     dropOnNewSheet(g.spot, g.items, g.delta);
   } else if (done && alive && g.kind === 'group-move' && g.drag) {
     const before = g.item.sheet;
-    if (!g.drag.plan.ok) animateNext();
+    if (!g.drag.plan.ok && glides) animateNext();
     result = dropGroup(g.drag, g.dropTarget);
     sheetChanged = result !== 'reverted' && result !== null && findItem(g.item.id)!.sheet !== before;
   } else if (done && alive && g.kind === 'group-resize' && Math.abs(g.k - 1) > 1e-9) {

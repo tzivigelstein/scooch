@@ -6,7 +6,7 @@
 // pointer of. What the actions compute is in tests/state (overlap-and-snap,
 // placing-and-arranging).
 import type { Page } from '@playwright/test';
-import { frames, stageBox } from '../support/canvas.ts';
+import { frames, setZoom, stageBox } from '../support/canvas.ts';
 import { closerThan, near, onGrid, overlapping } from '../support/geometry.ts';
 import { dragPieceTo, dropFile, pieceOf, setGrid } from '../support/editing.ts';
 import { saved } from '../support/projects.ts';
@@ -291,6 +291,25 @@ test.describe('dropping a piece on another one', () => {
       const back = await pieceOf(app, corner.id);
       expect(near(back.x, corner.x) && near(back.y, corner.y), 'back in its place').toBe(true);
       expectGlide(noted, 0);
+      expectFrameOnPiece(noted);
+    });
+
+    test('moved aside on another sheet it shows up there at once with its frame which never flies from its old place', async ({ app, page }) => {
+      await app.addFiles(cards(0, 12));
+      await setZoom(page, 25);
+      await page.locator('#stage').evaluate((el) => el.scrollTo(0, 0));
+      const [[a], [b]] = await pieceIds(app);
+      await animationsOver(page);
+      const from = (await app.piece(a).boundingBox())!;
+      const onto = (await app.piece(b).boundingBox())!;
+      await noteDrop(page, [a]);
+      await app.drag(app.piece(a), onto.x - from.x + 3, onto.y - from.y + 3, 16);
+      const noted = await dropNoted(page);
+      await expect.poll(() => counts(app)).toEqual([8, 4]);
+      expect(overlapping((await app.geometry()).pieces)).toEqual([]);
+      expect(noted.transitions[0], 'nothing glides: the piece is drawn anew on that sheet').toEqual([]);
+      const to = noted.frames.at(-1)!.pieces[0];
+      expect(noted.frames.every((f) => Math.abs(f.pieces[0].x - to.x) <= TOL && Math.abs(f.pieces[0].y - to.y) <= TOL), 'there from the first frame').toBe(true);
       expectFrameOnPiece(noted);
     });
   });
