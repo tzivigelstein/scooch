@@ -14,6 +14,12 @@ material.
 
 What you make with it, such as the PDFs and the prints, is yours to use and
 to sell. You don't need to pay, to credit Scooch or to ask for permission.
+It is also yours to answer for: the terms of use make you responsible for
+what you load, put together, print or share with Scooch.
+
+This permission is not withdrawn for what was already made: whatever you
+make with Scooch while it is in force stays yours, even if the terms of use
+or this file change later.
 
 The official site is the website where Tzivi Santiago Gelstein runs Scooch
 and publishes its terms of use. Those terms give this same permission.

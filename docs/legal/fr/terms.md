@@ -98,14 +98,17 @@ travaux payants ou commerciaux : dans une imprimerie, pour imprimer des
 autocollants que vous vendez ou les supports de votre entreprise. Ce que vous
 faites avec Scooch, comme les PDF et les impressions, vous appartient : vous
 pouvez l’utiliser et le vendre sans nous payer, sans mentionner Scooch et sans
-demander d’autorisation.
+demander d’autorisation. Cela relève aussi de votre responsabilité, comme
+l’indique la section 3.
 
 Cette autorisation, nous la donnons en tant que titulaires des droits sur
 Scooch, en plus de la licence du code (section 8). Elle couvre uniquement
 l’utilisation de Scooch sur ce site, tel que nous le proposons : elle ne
 couvre pas les copies publiées par d’autres personnes et ne donne aucun droit
-sur le code. La même autorisation figure, en anglais, dans le fichier
-`LICENSE-EXCEPTION.md` du dépôt.
+sur le code. Elle n’est pas retirée pour ce que vous avez déjà fait : ce
+que vous faites avec Scooch tant qu’elle est en vigueur reste à vous, même si
+ces conditions changent par la suite. La même autorisation figure, en anglais,
+dans le fichier `LICENSE-EXCEPTION.md` du dépôt.
 
 Si l’option de soutenir Scooch sur Patreon apparaît, le soutien est volontaire
 et se fait sur Patreon.

@@ -51,7 +51,7 @@
     "*": {
       "kB": 7.8,
       "measured": 7.4,
-      "what": "Each static page (every .html of the build but the editor's index.html), its HTML with its inline CSS, in every language; it applies to new pages too. Set on the largest one, the calculator (es/cuantas-fotos-caben-en-una-hoja; 7.2 kB in English); the other guides are 5.5 to 6.1 kB and the legal pages 6.1 to 7.6 kB (the terms are the largest: they say what commercial use is allowed). Each carries its hreflang links and the links to its other languages (about 0.3 kB)."
+      "what": "Each static page (every .html of the build but the editor's index.html), its HTML with its inline CSS, in every language; it applies to new pages too. Set on the largest one, the calculator (es/cuantas-fotos-caben-en-una-hoja; 7.2 kB in English); the other guides are 5.5 to 6.1 kB and the legal pages 6.1 to 7.7 kB (the terms are the largest: they say what commercial use is allowed). Each carries its hreflang links and the links to its other languages (about 0.3 kB)."
     },
     "es/privacidad.html": {
       "kB": 8.4,

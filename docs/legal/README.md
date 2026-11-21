@@ -46,6 +46,10 @@ The texts put these decisions of the owner into words:
   must not reach copies hosted by anyone else. The terms say it in section 7
   and say what stays forbidden in section 8; README's License section, the
   questions page and the code license page's introduction say it too.
+  What people make is theirs «for better and for worse», in his words: the
+  permission is not withdrawn for what was made while it was in force, even
+  if the terms change, and what they make is theirs to answer for (section 3,
+  which section 7 points to). `LICENSE-EXCEPTION.md` says both.
 
 ## Not reviewed by a lawyer
 

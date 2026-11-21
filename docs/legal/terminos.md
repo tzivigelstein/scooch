@@ -83,12 +83,15 @@ Puedes usar Scooch en este sitio para cualquier fin, también para trabajos
 pagos o comerciales: en una imprenta, para imprimir stickers que vendes o el
 material de tu negocio. Lo que hagas con Scooch, como los PDF y las
 impresiones, es tuyo: puedes usarlo y venderlo sin pagarnos, sin mencionar a
-Scooch y sin pedir permiso.
+Scooch y sin pedir permiso. También es tu responsabilidad, como dice la
+sección 3.
 
 Este permiso lo damos nosotros, como titulares de los derechos de Scooch, y se
 suma a la licencia del código (sección 8). Vale solo para usar Scooch en este
 sitio, tal como lo ofrecemos: no cubre copias publicadas por otras personas ni
-da derechos sobre el código. El mismo permiso está, en inglés, en el archivo
+da derechos sobre el código. No se retira para lo que ya hiciste: lo que hagas
+con Scooch mientras rija sigue siendo tuyo, aunque estos términos cambien
+después. El mismo permiso está, en inglés, en el archivo
 `LICENSE-EXCEPTION.md` del repositorio.
 
 Si aparece la opción de aportar en Patreon, el aporte es voluntario y se hace
