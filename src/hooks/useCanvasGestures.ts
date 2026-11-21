@@ -197,18 +197,56 @@ function toDragLayer(node: HTMLElement) {
   place(el('drag-layer'), node, null);
 }
 
-/** Puts the dragged pieces back where React rendered them, and how. */
-function restore() {
+/**
+ * Puts the dragged pieces back where React rendered them, and how. `held`:
+ * live copies of dropped pieces that stay where they were let go, on their
+ * own sheet, until the drop is settled (settle).
+ */
+function restore(held: readonly Piece[] = []) {
   for (const { node, parent, next } of travels.reverse()) {
     if (parent.isConnected) place(parent, node, next && next.parentNode === parent ? next : null);
   }
   travels = [];
-  const { items, selection } = getDocument();
-  const marked = selection.length > 1 || getView().pinned;
+  const live = new Map(held.map((draft) => [draft.id, draft]));
+  paintAsRendered(getDocument().items, live);
+  // Styled there now, so a drop that animates starts from where they were let
+  // go: not from where they were in the drag layer (whose coordinates are the
+  // whole column of sheets'), nor from where they were before the drag.
+  for (const id of live.keys()) pieceNode(id)?.getBoundingClientRect();
+}
+
+/**
+ * The dropped pieces of `held` go where the drop left them: once the drop is
+ * rendered (with the animation's class, when it animates), each is painted
+ * as React rendered it (React writes only what changed since its last render,
+ * and they were painted elsewhere meanwhile), and the frames follow them.
+ */
+function settle(held: readonly Piece[]) {
+  if (!held.length) return;
+  flushUi();
+  paintAsRendered(held.flatMap(({ id }) => findItem(id) ?? []));
+  gestureStore.setState({ drafts: null });
+}
+
+/** Paints `items` as React renders them, or as their live copy in `live`. */
+function paintAsRendered(items: readonly Piece[], live: ReadonlyMap<number, Piece> = new Map()) {
+  const { selection } = getDocument();
   for (const item of items) {
     const node = pieceNode(item.id);
-    if (node) paintPiece(node, pieceView(item, getAsset(item.asset), viewZoom(), marked && selection.includes(item.id)));
+    if (node) paintPiece(node, pieceView(live.get(item.id) ?? item, getAsset(item.asset), viewZoom(), marked() && selection.includes(item.id)));
   }
+}
+
+/**
+ * The live copies of the pieces a drop moves on their own sheet (their node
+ * stays where it is), which stay where they were let go until it is settled.
+ * Not those that change sheet: React renders them anew on the other one.
+ */
+function droppedOnTheirSheet(g: Gesture): Piece[] {
+  if (!g.moved) return [];
+  if (g.kind === 'move') return !g.spot && g.draft.sheet === g.item.sheet ? [g.draft] : [];
+  if (g.kind === 'group-move' && !g.spot && g.drag) return g.items.map((item) => g.drafts.get(item.id)!).filter((draft, i) => draft.sheet === g.items[i].sheet);
+  return [];
 }
 
 function capture(e: PointerEvent) {
@@ -682,14 +720,20 @@ function finish(e: PointerEvent | null) {
   paintNewSheetSpot(false);
   const done = e !== null;
   const active = document.activeElement;
-  restore();
-  gestureStore.setState({ drafts: null, dragging: false, moving: false });
+  // Dropped, the pieces stay where they were let go (their frame too: the
+  // live values stay meanwhile) and go from there to where the drop leaves
+  // them, in one movement when it animates.
+  const held = done ? droppedOnTheirSheet(g) : [];
+  restore(held);
+  gestureStore.setState({ dragging: false, moving: false, ...(held.length ? {} : { drafts: null }) });
   if (g.kind === 'marquee') return endMarquee(g, done);
   if (g.kind === 'group-move' || g.kind === 'group-resize') {
     const focused = pieceNode(getDocument().selection.at(-1));
-    return endGroupGesture(g, done, !!focused && (active === focused || active === document.body));
+    endGroupGesture(g, done, !!focused && (active === focused || active === document.body));
+  } else {
+    endPieceGesture(g, done, active === g.node || active === document.body);
   }
-  endPieceGesture(g, done, active === g.node || active === document.body);
+  settle(held);
 }
 
 function endPieceGesture(g: MoveGesture | ResizeGesture, done: boolean, hadFocus: boolean) {

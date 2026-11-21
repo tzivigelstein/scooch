@@ -1,5 +1,6 @@
 // Editing with the pointer, where only a real browser tells: dragging a piece
-// onto the grid («Imán»), dropping it on another piece, the resize handle, the
+// onto the grid («Imán»), dropping it on another piece (and the way it goes
+// from where it was let go, frame by frame), the resize handle, the
 // scale slider, G and the grid layer, files dropped on the canvas, the
 // overlap and grid preferences after a reload, and a drag the page loses the
 // pointer of. What the actions compute is in tests/state (overlap-and-snap,
@@ -10,7 +11,7 @@ import { closerThan, near, onGrid, overlapping } from '../support/geometry.ts';
 import { dragPieceTo, dropFile, pieceOf, setGrid } from '../support/editing.ts';
 import { saved } from '../support/projects.ts';
 import { counts, holdPiece, pieceIds, placeholders, scrollOf, scrollStops } from '../support/sheets.ts';
-import { expect, test, type App } from '../support/test.ts';
+import { cards, expect, test, type App } from '../support/test.ts';
 
 test.describe('dragging a piece lands where the pointer leaves it, on the grid with «Imán»', () => {
   const CASES = [
@@ -119,6 +120,196 @@ test.describe('dropping a piece on another one', () => {
     await page.locator('#allow-overlap').uncheck();
     await expect.poll(() => app.notice()).toMatchObject({ text: 'Hay piezas superpuestas', action: 'Acomodar' });
     await expect(badges).toHaveCount(2);
+  });
+
+  // What the pieces do on screen after the drop, frame by frame: from where
+  // they were let go straight to where they end, never back towards where
+  // they started (they used to show up there first and glide from there).
+  type Box = { x: number; y: number; w: number; h: number };
+  interface Noted {
+    /** Where each piece was when the pointer was let go. */
+    from: Box[];
+    /** Every frame after that: where each piece and the selection frame were. */
+    frames: { pieces: Box[]; frame: Box | null }[];
+    /** What each piece had CSS transitions on at the first frame after the drop. */
+    transitions: string[][];
+    on: boolean;
+  }
+
+  /** From the moment the pointer is let go, notes at every frame where pieces `ids` (and the selection frame) are. */
+  const noteDrop = (page: Page, ids: number[]) =>
+    page.evaluate((ids) => {
+      const w = window as unknown as { noted: Noted };
+      const nodes = () => ids.map((id) => document.querySelector<HTMLElement>(`#sheets .piece[data-id="${id}"]`)!);
+      const box = (el: HTMLElement | null) => {
+        if (!el || el.hidden) return null;
+        const r = el.getBoundingClientRect();
+        return { x: r.x, y: r.y, w: r.width, h: r.height };
+      };
+      const noted: Noted = (w.noted = { from: [], frames: [], transitions: [], on: true });
+      const note = () => {
+        if (!noted.on) return;
+        if (!noted.frames.length) noted.transitions = nodes().map((n) => n.getAnimations().map((a) => (a as CSSTransition).transitionProperty).sort());
+        noted.frames.push({ pieces: nodes().map((n) => box(n)!), frame: box(document.getElementById('frame')) });
+        requestAnimationFrame(note);
+      };
+      // Before the app hears it: where the drag left them.
+      const release = () => {
+        noted.from = nodes().map((n) => box(n)!);
+        requestAnimationFrame(note);
+      };
+      addEventListener('pointerup', release, { capture: true, once: true });
+    }, ids);
+
+  /** Waits until the pieces have kept still for 10 frames and returns what was noted. */
+  async function dropNoted(page: Page) {
+    const still = () =>
+      page.evaluate(() => {
+        const f = (window as unknown as { noted: Noted }).noted.frames.map((frame) => JSON.stringify(frame));
+        let n = 0;
+        while (n < f.length - 1 && f[f.length - 2 - n] === f.at(-1)) n++;
+        return n;
+      });
+    await expect.poll(still, { message: 'the pieces come to rest' }).toBeGreaterThanOrEqual(10);
+    return page.evaluate(() => {
+      const w = window as unknown as { noted: Noted };
+      w.noted.on = false;
+      return w.noted;
+    });
+  }
+
+  /** Until the last change's animation is over (it would make the drag glide behind the pointer too). */
+  const animationsOver = (page: Page) => expect(page.locator('#sheets')).not.toHaveClass(/\bis-animating\b/);
+
+  /** px: a piece on its way may be this far off the straight line, or back. */
+  const TOL = 1;
+
+  /**
+   * The way piece `i` went: the farthest it strayed from the straight line
+   * between where it was let go and where it rests, how far it ever went back
+   * from where it rests after having been closer, and whether it was ever
+   * somewhere in between.
+   */
+  function wayOf(noted: Noted, i: number) {
+    const from = noted.from[i];
+    const at = noted.frames.map((f) => f.pieces[i]);
+    const to = at.at(-1)!;
+    const dist = (a: Box, b: Box) => Math.hypot(a.x - b.x, a.y - b.y);
+    const off = (p: Box) => {
+      const [vx, vy] = [to.x - from.x, to.y - from.y];
+      const len2 = vx * vx + vy * vy;
+      const k = len2 ? Math.min(1, Math.max(0, ((p.x - from.x) * vx + (p.y - from.y) * vy) / len2)) : 0;
+      return Math.hypot(p.x - from.x - k * vx, p.y - from.y - k * vy);
+    };
+    let closest = dist(from, to);
+    let back = 0;
+    for (const p of at) {
+      back = Math.max(back, dist(p, to) - closest);
+      closest = Math.min(closest, dist(p, to));
+    }
+    const round = (p: Box) => [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10];
+    return {
+      strayed: Math.max(...at.map(off)),
+      back,
+      between: at.some((p) => dist(p, to) > TOL && dist(p, from) > TOL),
+      travel: dist(from, to),
+      seen: `${JSON.stringify(round(from))} let go → ${JSON.stringify(at.map(round))}`,
+    };
+  }
+
+  /** It went straight from where it was let go to where it rests, gliding. */
+  function expectGlide(noted: Noted, i: number) {
+    const way = wayOf(noted, i);
+    expect(way.travel, `it had a way to go: ${way.seen}`).toBeGreaterThan(10 * TOL);
+    expect(noted.transitions[i].filter((p) => p === 'left' || p === 'top'), 'its position glides').not.toEqual([]);
+    expect(way.back, `never away from where it ends: ${way.seen}`).toBeLessThanOrEqual(TOL);
+    expect(way.strayed, `straight from where it was let go: ${way.seen}`).toBeLessThanOrEqual(TOL);
+    expect(way.between, `seen on its way: ${way.seen}`).toBe(true);
+  }
+
+  /** The selection frame was on the piece at every frame. */
+  function expectFrameOnPiece(noted: Noted) {
+    const apart = noted.frames.map((f) => (f.frame ? Math.max(Math.abs(f.frame.x - f.pieces[0].x), Math.abs(f.frame.y - f.pieces[0].y)) : Infinity));
+    expect(Math.max(...apart), `the frame with the piece (px apart at each frame: ${apart.map((d) => Math.round(d)).join(', ')})`).toBeLessThanOrEqual(TOL);
+  }
+
+  test.describe('with motion', () => {
+    test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+    test('moved aside to a free spot of its sheet it glides straight there and never back towards where it started; its frame with it', async ({ app, page }) => {
+      await app.addFiles(['card00.png', 'card01.png']);
+      await page.locator('#arrange').click();
+      await page.keyboard.press('Escape');
+      const [a, b] = await app.ids();
+      const pa = await pieceOf(app, a);
+      const pb = await pieceOf(app, b);
+      await animationsOver(page);
+      await noteDrop(page, [a]);
+      await dragPieceTo(app, a, pb.x, pb.y);
+      const noted = await dropNoted(page);
+      const moved = await pieceOf(app, a);
+      expect(overlapping((await app.geometry()).pieces)).toEqual([]);
+      expect(near(moved.x, pa.x, 1) && near(moved.y, pa.y, 1), 'not back where it was').toBe(false);
+      expectGlide(noted, 0);
+      expectFrameOnPiece(noted);
+    });
+
+    test('two selected and moved aside together glide straight there', async ({ app, page }) => {
+      await app.addFiles(cards(0, 3));
+      await page.locator('#arrange').click();
+      const [a, b, c] = await app.ids();
+      await app.selectIds([a, c]);
+      const pb = await pieceOf(app, b);
+      await animationsOver(page);
+      await noteDrop(page, [a, c]);
+      await dragPieceTo(app, a, pb.x + 4, pb.y + 4);
+      const noted = await dropNoted(page);
+      expect(overlapping((await app.geometry()).pieces)).toEqual([]);
+      expectGlide(noted, 0);
+      expectGlide(noted, 1);
+    });
+
+    test('with no free spot nearby it glides straight back to its place; its frame with it', async ({ app, page }) => {
+      // A 45 × 50 mm tile: the sheet fills with 15 copies and no gap near any of them.
+      await app.addFiles(['tile000.png']);
+      const [first] = await app.ids();
+      await app.selectIds([first]);
+      await app.openMeasures();
+      await page.locator('#fill-details summary').click();
+      await page.locator('#fill').click();
+      await expect.poll(() => app.pieces().count()).toBeGreaterThan(10);
+      await app.closePopover();
+      const g = await app.geometry();
+      const d = (p: (typeof g.pieces)[number]) => Math.hypot(p.x + p.w / 2 - g.W / 2, p.y + p.h / 2 - g.H / 2);
+      const mid = g.pieces.reduce((m, p) => (d(p) < d(m) ? p : m));
+      const corner = g.pieces.reduce((m, p) => (p.x + p.y < m.x + m.y ? p : m));
+      await animationsOver(page);
+      await noteDrop(page, [corner.id]);
+      await dragPieceTo(app, corner.id, mid.x + 1, mid.y + 1);
+      const noted = await dropNoted(page);
+      await app.heard(/No hay espacio ahí\. La pieza volvió a su lugar/);
+      const back = await pieceOf(app, corner.id);
+      expect(near(back.x, corner.x) && near(back.y, corner.y), 'back in its place').toBe(true);
+      expectGlide(noted, 0);
+      expectFrameOnPiece(noted);
+    });
+  });
+
+  test('with reduced motion a piece moved aside is in its free spot from the first frame after the drop', async ({ app, page }) => {
+    await app.addFiles(['card00.png', 'card01.png']);
+    await page.locator('#arrange').click();
+    await page.keyboard.press('Escape');
+    const [a, b] = await app.ids();
+    const pb = await pieceOf(app, b);
+    await animationsOver(page);
+    await noteDrop(page, [a]);
+    await dragPieceTo(app, a, pb.x, pb.y);
+    const noted = await dropNoted(page);
+    const to = noted.frames.at(-1)!.pieces[0];
+    expect(wayOf(noted, 0).travel, 'it was moved aside').toBeGreaterThan(10 * TOL);
+    expect(noted.transitions[0]).toEqual([]);
+    expect(noted.frames.every((f) => Math.abs(f.pieces[0].x - to.x) <= TOL && Math.abs(f.pieces[0].y - to.y) <= TOL), 'there from the first frame').toBe(true);
+    expectFrameOnPiece(noted);
   });
 });
 
