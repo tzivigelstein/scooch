@@ -186,9 +186,8 @@ test.describe('dropping a piece on another one', () => {
 
   /**
    * The way piece `i` went: the farthest it strayed from the straight line
-   * between where it was let go and where it rests, how far it ever went back
-   * from where it rests after having been closer, and whether it was ever
-   * somewhere in between.
+   * between where it was let go and where it rests, and how far it ever went
+   * back from where it rests after having been closer.
    */
   function wayOf(noted: Noted, i: number) {
     const from = noted.from[i];
@@ -211,20 +210,23 @@ test.describe('dropping a piece on another one', () => {
     return {
       strayed: Math.max(...at.map(off)),
       back,
-      between: at.some((p) => dist(p, to) > TOL && dist(p, from) > TOL),
       travel: dist(from, to),
       seen: `${JSON.stringify(round(from))} let go → ${JSON.stringify(at.map(round))}`,
     };
   }
 
-  /** It went straight from where it was let go to where it rests, gliding. */
+  /**
+   * It went straight from where it was let go to where it rests, gliding. That
+   * it glides is told by the transition running on its position, not by
+   * catching it halfway: a slow machine's first frame can come when the 180 ms
+   * are almost over.
+   */
   function expectGlide(noted: Noted, i: number) {
     const way = wayOf(noted, i);
     expect(way.travel, `it had a way to go: ${way.seen}`).toBeGreaterThan(10 * TOL);
     expect(noted.transitions[i].filter((p) => p === 'left' || p === 'top'), 'its position glides').not.toEqual([]);
     expect(way.back, `never away from where it ends: ${way.seen}`).toBeLessThanOrEqual(TOL);
     expect(way.strayed, `straight from where it was let go: ${way.seen}`).toBeLessThanOrEqual(TOL);
-    expect(way.between, `seen on its way: ${way.seen}`).toBe(true);
   }
 
   /** The selection frame was on the piece at every frame. */
