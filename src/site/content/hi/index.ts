@@ -12,6 +12,7 @@ import { PATHS } from './paths.ts';
 import { tenByFifteen } from './photos-10x15.ts';
 import { samePhoto } from './same-photo.ts';
 import { severalPhotos } from './several-photos.ts';
+import { stickers } from './stickers.ts';
 
 // Measures as the app's Hindi names write photo sizes («आईडी 4 × 4 सेमी», «4 × 6 इंच»); millimeters as its fields do.
 export const hi: SiteLanguage = {
@@ -21,5 +22,5 @@ export const hi: SiteLanguage = {
   legalMarkers: LEGAL_MARKERS,
   chrome,
   llms: llmsSections,
-  pages: (k, legal) => [severalPhotos(k), howMany(k), tenByFifteen(k), idPhotos(k), samePhoto(k), actualSize(k), faqPage(k), ...legal.map((doc) => legalPage(k, doc))],
+  pages: (k, legal) => [severalPhotos(k), howMany(k), tenByFifteen(k), idPhotos(k), samePhoto(k), actualSize(k), stickers(k), faqPage(k), ...legal.map((doc) => legalPage(k, doc))],
 };
