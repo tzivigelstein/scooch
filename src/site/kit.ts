@@ -14,7 +14,7 @@ import { getPaper, sizeOf } from '../core/papers.js';
 import type { PaperId } from '../core/types.ts';
 import { CATALOGUES } from '../copy/all.ts';
 import { textsFor, type CopyKey, type CopyParams } from '../copy/index.ts';
-import { sheetSvg } from './drawing.ts';
+import { shapesSheetSvg, sheetSvg } from './drawing.ts';
 import { esc, tableHtml } from './html.ts';
 import type { Lang } from './langs.ts';
 
@@ -164,6 +164,20 @@ export function sheetFigure({ piece, layout, fill = false }: Figure, caption: st
   const sheet = sizeOf(layout.paper, layout.landscape)!;
   const placements = fill ? gridPlacements(piece, layout) : capacity(piece, layout).placements;
   const svg = sheetSvg({ w: sheet.w, h: sheet.h, margin: layout.margin, placements, label: caption });
+  return `<figure class="sheet-figure">${svg}<figcaption>${esc(caption)}</figcaption></figure>`;
+}
+
+/** A drawing of a sheet of stickers with their cut lines (facts/stickers.ts works them out): the same in every language. */
+export interface ShapesFigure {
+  layout: Layout;
+  shapes: readonly { fill: string; cut: string }[];
+  placements: readonly { x: number; y: number; shape: number }[];
+}
+
+/** A figure: a sheet of stickers, each with the cut line that follows its shape, with its caption. */
+export function shapesFigure({ layout, shapes, placements }: ShapesFigure, caption: string) {
+  const sheet = sizeOf(layout.paper, layout.landscape)!;
+  const svg = shapesSheetSvg({ w: sheet.w, h: sheet.h, margin: layout.margin, shapes, placements, label: caption });
   return `<figure class="sheet-figure">${svg}<figcaption>${esc(caption)}</figcaption></figure>`;
 }
 
