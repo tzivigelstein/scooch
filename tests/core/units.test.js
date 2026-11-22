@@ -6,7 +6,9 @@ import {
   toMm,
   fromMm,
   decimalsFor,
+  formatDecimal,
   formatLength,
+  parseDecimal,
   parseLength,
   stepFor,
   stepLabel,
@@ -14,6 +16,7 @@ import {
   gridPresets,
   unitLabel,
 } from '../../src/core/units.js';
+import { CATALOGUES } from '../../src/copy/all.ts';
 
 // Exact cases of the length units. The round trips over generated lengths
 // are in tests/properties/units.test.js.
@@ -102,6 +105,59 @@ describe('formatLength', () => {
     assert.equal(formatLength(1e21, 'mm', { withUnit: false }), '1000000000000000000000');
     assert.equal(parseLength(formatLength(1e21, 'mm'), 'mm'), 1e21);
     assert.equal(formatLength(Number.MAX_VALUE, 'mm').endsWith(`${NB}mm`), true);
+  });
+});
+
+describe('plain numbers in each language', () => {
+  // Each interface language's number locale (meta.numberLocale) and the decimal separator it writes.
+  const SEPARATORS = { es: ',', fr: ',', en: '.', 'zh-Hans': '.', hi: '.' };
+  const locale = (language) => CATALOGUES[language].meta.numberLocale;
+
+  test('every language is in the table', () => {
+    assert.deepEqual(Object.keys(SEPARATORS).sort(), Object.keys(CATALOGUES).sort());
+  });
+
+  test('formatDecimal: the language’s decimal separator, digits 0–9, no grouping, up to 1 decimal by default', () => {
+    for (const [language, sep] of Object.entries(SEPARATORS)) {
+      const options = { locale: locale(language) };
+      assert.equal(formatDecimal(147.6, options), `147${sep}6`, language);
+      assert.equal(formatDecimal(147.64, options), `147${sep}6`, language);
+      assert.equal(formatDecimal(0.05, options), `0${sep}1`, language);
+      assert.equal(formatDecimal(100, options), '100', language);
+      assert.equal(formatDecimal(1000, options), '1000', language);
+      assert.equal(formatDecimal(-2.5, options), `-2${sep}5`, language);
+      assert.equal(formatDecimal(2.345, { ...options, decimals: 2 }), `2${sep}35`, language);
+    }
+  });
+
+  test('formatDecimal: a value that isn’t a finite number gives an empty string', () => {
+    for (const v of [NaN, Infinity, -Infinity, undefined, null, '10']) assert.equal(formatDecimal(v), '');
+  });
+
+  test('parseDecimal reads a comma or a point whatever the language, and reads back what formatDecimal writes in each', () => {
+    const cases = [
+      ['147,6', 147.6],
+      ['147.6', 147.6],
+      [' 120,5 ', 120.5],
+      [',5', 0.5],
+      ['.5', 0.5],
+      ['12,', 12],
+      ['-2,5', -2.5],
+      ['+3', 3],
+      ['−1.5', -1.5],
+      ['１４７．６', 147.6],
+      ['１４７，６', 147.6],
+      ['१४७.६', 147.6],
+      ['1000', 1000],
+      ['1.000', 1],
+    ];
+    for (const [text, expected] of cases) assert.equal(parseDecimal(text), expected, text);
+    for (const language of Object.keys(SEPARATORS)) for (const v of [147.6, 0.1, 1000, -2.5]) assert.equal(parseDecimal(formatDecimal(v, { locale: locale(language) })), v, `${language} ${v}`);
+  });
+
+  test('parseDecimal: thousands separators, exponents, units and anything else → null; never -0', () => {
+    for (const text of ['', ' ', '-', ',', '1.000,5', '1,000.5', '1 000', '1e3', '12 %', '12abc', 'abc', '1..2', '0x10', null, undefined, 12]) assert.equal(parseDecimal(text), null, String(text));
+    assert.equal(Object.is(parseDecimal('-0'), 0), true);
   });
 });
 

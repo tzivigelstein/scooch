@@ -9,6 +9,10 @@ export function fromMm(mm: number, unit: Unit): number;
 export function decimalsFor(unit: Unit): number;
 export function unitLabel(unit: Unit): Unit;
 
+/** «147,6» (es, fr), «147.6» (en, zh-Hans, hi): up to `decimals` (1) decimals, no grouping; re-readable with parseDecimal. */
+export function formatDecimal(value: number, options?: { locale?: string; decimals?: number }): string;
+/** A typed number, either decimal separator; null when it can't be read. */
+export function parseDecimal(text: string): number | null;
 /** «10,5 mm», «2,54 cm», «4 in»; re-readable with parseLength. */
 export function formatLength(mm: number, unit: Unit, options?: { locale?: string; withUnit?: boolean }): string;
 /** A typed length in mm, or null when it can't be read. */

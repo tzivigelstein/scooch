@@ -57,6 +57,18 @@ function numberFormat(locale, decimals) {
 }
 
 /**
+ * A number as a field shows it: up to `decimals` decimals (1 by default),
+ * without trailing zeros, with the decimal separator of `locale` («147,6» in
+ * Spanish and French, «147.6» in English, Chinese and Hindi), always digits
+ * 0–9 and no thousands grouping, so parseDecimal reads it back. A value that
+ * isn't finite gives ''.
+ */
+export function formatDecimal(value, { locale = 'es', decimals = 1 } = {}) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+  return numberFormat(locale, decimals).format(roundTo(value, decimals));
+}
+
+/**
  * A length in mm shown in `unit`: «10,5 mm», «2,54 cm», «4 in». Up to 1
  * decimal in mm, 2 in cm and 3 in in, without trailing zeros; the decimal
  * separator follows `locale`; always digits 0–9 and no thousands grouping (so
@@ -64,9 +76,8 @@ function numberFormat(locale, decimals) {
  * space (U+00A0). A value that isn't finite gives ''.
  */
 export function formatLength(mm, unit, { locale = 'es', withUnit = true } = {}) {
-  const decimals = decimalsFor(unit);
-  if (typeof mm !== 'number' || !Number.isFinite(mm)) return '';
-  const text = numberFormat(locale, decimals).format(roundTo(fromMm(mm, unit), decimals));
+  const text = typeof mm === 'number' ? formatDecimal(fromMm(mm, unit), { locale, decimals: decimalsFor(unit) }) : '';
+  if (!text) return '';
   return withUnit ? `${text}\u00a0${unit}` : text;
 }
 
@@ -168,6 +179,26 @@ export function parseLength(text, unit) {
   if (value === null || !Number.isFinite(value)) return null;
   const mm = sign * value * MM_PER[target];
   return Number.isFinite(mm) ? mm || 0 : null;
+}
+
+/**
+ * A typed number, or null when it can't be read: a decimal comma or point
+ * whatever the interface language («147,6», «147.6», «,5»), spaces around, a
+ * sign (+, - or −), full-width or Devanagari numerals. Rejects thousands
+ * separators («1.000,5»), exponents and anything else. The plain-number
+ * counterpart of parseLength, which reads a length the same way.
+ */
+export function parseDecimal(text) {
+  if (typeof text !== 'string') return null;
+  let s = tidy(text);
+  let sign = 1;
+  if (s[0] === '-' || s[0] === '+') {
+    if (s[0] === '-') sign = -1;
+    s = s.slice(1).trimStart();
+  }
+  if (!DECIMAL.test(s)) return null;
+  const value = sign * Number(s.replace(',', '.'));
+  return Number.isFinite(value) ? value || 0 : null;
 }
 
 // The beginning of some suffix of SUFFIXES («p», «pul», «i», «c»…), or nothing.
