@@ -123,6 +123,45 @@ export const notePress = (page: Page, ids: number[]) => notePieces(page, ids, 'p
 /** From the next click (a button's: «Arrange»…), notes at every frame where pieces `ids` and the selection frame are. */
 export const noteClick = (page: Page, ids: number[]) => notePieces(page, ids, 'click');
 
+export interface NotedToolbar {
+  /** At every frame: the piece toolbar's opacity and box, whether a list of options was open, and whether the canvas showed what a control does. */
+  frames: { opacity: number; box: Box; open: boolean; preview: boolean }[];
+  /** Each CSS transition the toolbar started (`opacity`, `transform`), and whether a list of options was open then. */
+  transitions: { property: string; open: boolean }[];
+  on: boolean;
+}
+
+/** From now on, notes at every frame how the piece toolbar shows (and which transitions it starts). */
+export const noteToolbar = (page: Page) =>
+  page.evaluate(() => {
+    const w = window as unknown as { toolbar: NotedToolbar };
+    const bar = () => document.getElementById('piecebar')!;
+    const open = () => !!document.querySelector('[role="combobox"][aria-expanded="true"]');
+    const noted: NotedToolbar = (w.toolbar = { frames: [], transitions: [], on: true });
+    addEventListener(
+      'transitionrun',
+      (e) => {
+        if (noted.on && e.target === bar()) noted.transitions.push({ property: e.propertyName, open: open() });
+      },
+      true
+    );
+    const note = () => {
+      if (!noted.on) return;
+      const r = bar().getBoundingClientRect();
+      noted.frames.push({ opacity: Number(getComputedStyle(bar()).opacity), box: { x: r.x, y: r.y, w: r.width, h: r.height }, open: open(), preview: !!document.querySelector('.preview') });
+      requestAnimationFrame(note);
+    };
+    requestAnimationFrame(note);
+  });
+
+/** Stops noting the toolbar and returns what was noted. */
+export const toolbarNoted = (page: Page) =>
+  page.evaluate(() => {
+    const w = window as unknown as { toolbar: NotedToolbar };
+    w.toolbar.on = false;
+    return w.toolbar;
+  });
+
 /** Waits until the pieces have kept still for 10 frames and returns what was noted. */
 export async function dropNoted(page: Page) {
   const still = () =>

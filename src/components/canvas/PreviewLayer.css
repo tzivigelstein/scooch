@@ -187,8 +187,12 @@
     bottom: 0.5rem;
   }
 
-  /* The piece's toolbar steps aside meanwhile (unless it is what shows it). */
-  .canvas:has(.preview) .piecebar:not(:hover, :focus-within) {
+  /* The piece's toolbar steps aside meanwhile (unless it is what shows it), and
+     for as long as the control that shows it is in use: while its list of
+     options is open (the chosen option shows nothing, nor one that would
+     change nothing) or the pointer is on its row of buttons (the gap between
+     two shows nothing). It doesn't come back for a moment in between. */
+  :root:has(.preview, [data-preview] > [role="combobox"][aria-expanded="true"], [role="group"]:hover > button[data-preview]) .piecebar:not(:hover, :focus-within) {
     opacity: 0;
     pointer-events: none;
   }
