@@ -1,4 +1,5 @@
-// Several sheets in the browser: «Acomodar» across sheets, the sheets as named
+// Several sheets in the browser: «Acomodar» across sheets (and how a piece it
+// takes to another sheet gets there, frame by frame), the sheets as named
 // groups, removing a sheet (at once, with «Deshacer» in the notice, and where the
 // focus goes), dragging a piece to another sheet (the stage scrolls by itself, the
 // target sheet is marked, dropping onto a piece there), which sheet is the
@@ -6,9 +7,10 @@
 // placeholders, by mouse, touch and zoomed in, and the context menu's
 // keyboard path), and how far something held at an edge scrolls the stage.
 // What these actions do exactly is in tests/state/sheets.test.ts.
-import { expect, test, cards } from '../support/test.ts';
+import { expect, test, cards, type App } from '../support/test.ts';
 import { frames, setZoom, stageBox } from '../support/canvas.ts';
 import { outsideMargin, overlapping } from '../support/geometry.ts';
+import { animationsOver, dropNoted, expectFrameOnPiece, expectGlide, noteClick, TOL, wayOf } from '../support/motion.ts';
 import { movesOutsideWindow, OUTSIDE_WINDOW } from '../support/pointer.ts';
 import { counts, holdPiece, lastSheetBottom, pageAt, pieceIds, placeholders, scrollOf, scrollStops, sheetIds, toBelowLastSheet } from '../support/sheets.ts';
 
@@ -47,6 +49,58 @@ test('«Acomodar» puts 20 equal cards back on 3 sheets, 9 + 9 + 2, and says so;
   const boxes = await page.locator('#sheets .sheet-box').evaluateAll((list) => list.map((b) => (b as HTMLElement).style.width + ' × ' + (b as HTMLElement).style.height));
   expect(boxes).toHaveLength(3);
   expect(new Set(boxes).size).toBe(1);
+});
+
+test.describe('«Arrange» taking the selected piece to another sheet, frame by frame (support/motion.ts)', () => {
+  /**
+   * Twelve cards on two sheets (9 + 3), seen whole at 25 %, and one of the
+   * first sheet removed: arranged again, the first of the second sheet goes up
+   * to the first. Returns that one, selected.
+   */
+  async function oneGoingUp(app: App) {
+    const page = app.page;
+    await app.addFiles(cards(0, 12));
+    await setZoom(page, 25);
+    await page.locator('#stage').evaluate((el) => el.scrollTo(0, 0));
+    const [[first], [up]] = await pieceIds(app);
+    await app.selectIds([first]);
+    await page.keyboard.press('Delete');
+    await expect(app.pieces()).toHaveCount(11);
+    await app.selectIds([up]);
+    await animationsOver(page);
+    return up;
+  }
+
+  test.describe('with motion', () => {
+    test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+    test('it slides over the sheets straight from where it was, its frame with it, and shows once all along', async ({ app, page }) => {
+      const up = await oneGoingUp(app);
+      await noteClick(page, [up]);
+      await page.locator('#arrange').click();
+      const noted = await dropNoted(page);
+      expect((await pieceIds(app))[0], 'on the first sheet').toContain(up);
+      expectGlide(noted, 0);
+      expectFrameOnPiece(noted);
+      expect(noted.frames.filter((f) => f.twice), 'never where it lands as well as on its way').toEqual([]);
+      await expect(page.locator('#sheets .piece-flight')).toHaveCount(0);
+      await expect(app.piece(up)).toHaveCSS('opacity', '1');
+    });
+  });
+
+  test('with reduced motion it is on the other sheet from the first frame, with its frame', async ({ app, page }) => {
+    const up = await oneGoingUp(app);
+    await noteClick(page, [up]);
+    await page.locator('#arrange').click();
+    const noted = await dropNoted(page);
+    expect((await pieceIds(app))[0], 'on the first sheet').toContain(up);
+    const to = noted.frames.at(-1)!.pieces[0];
+    expect(wayOf(noted, 0).travel, 'it went up').toBeGreaterThan(10 * TOL);
+    expect(noted.transitions[0]).toEqual([]);
+    expect(noted.frames.every((f) => Math.abs(f.pieces[0].x - to.x) <= TOL && Math.abs(f.pieces[0].y - to.y) <= TOL), 'there from the first frame').toBe(true);
+    expectFrameOnPiece(noted);
+    await expect(page.locator('#sheets .piece-flight')).toHaveCount(0);
+  });
 });
 
 test('removing a sheet: an empty one goes at once and its place takes the focus; one with pieces too, with «Deshacer» in the notice; the last one has no remove button', async ({ app, page }) => {

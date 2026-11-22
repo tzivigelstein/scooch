@@ -26,6 +26,7 @@ import { addSheet, removeSheet, showPaperSettings } from '../../state/actions/sh
 import { Icon } from '../ui/Icon.tsx';
 import { CropContent } from './cropMode.ts';
 import { CutLayer } from './CutLayer.tsx';
+import { flyDepartures, landAll, noteDepartures } from './flights.ts';
 import { Piece } from './Piece.tsx';
 import { PreviewLayer } from './PreviewLayer.tsx';
 import { fitZoom, sheetsAreWide, syncStageBars } from './viewport.ts';
@@ -214,6 +215,20 @@ export function Stage() {
 
   useCanvasGestures(stage);
   usePreviewTriggers();
+  // Pieces another sheet draws anew fly over meanwhile (flights.ts). Their way
+  // is measured: the zoom or the layout changing lands them.
+  useEffect(
+    () =>
+      useDocument.subscribe((state, previous) => {
+        if (state.items !== previous.items) noteDepartures(previous.items, state.items);
+      }),
+    []
+  );
+  useLayoutEffect(() => landAll, [zoom, layout]);
+  useLayoutEffect(() => {
+    if (!animating) landAll();
+    flyDepartures(animating);
+  }, [items, animating]);
   // The scrollbars come and go with the zoom and the window: what floats over the stage avoids them.
   useLayoutEffect(syncStageBars);
 

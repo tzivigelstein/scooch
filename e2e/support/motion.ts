@@ -11,12 +11,20 @@ export type Box = { x: number; y: number; w: number; h: number };
 export type Point = { x: number; y: number };
 
 export interface Noted {
-  /** Where each piece was when the noting started: when the pointer was pressed, or let go. */
+  /**
+   * Where each piece was when the noting started: when the pointer was
+   * pressed, or let go. Where a piece shows: its copy while it flies over to
+   * another sheet (src/components/canvas/flights.ts), else the piece.
+   */
   from: Box[];
   /** Where the pointer was then. */
   pointer: Point;
-  /** Every frame after that: where each piece, the selection frame and the pointer were, and whether its button was held. */
-  frames: { pieces: Box[]; frame: Box | null; pointer: Point; held: boolean }[];
+  /**
+   * Every frame after that: where each piece, the selection frame and the
+   * pointer were, whether its button was held, and whether some piece showed
+   * twice (in flight and where it lands).
+   */
+  frames: { pieces: Box[]; frame: Box | null; pointer: Point; held: boolean; twice: boolean }[];
   /** Where each piece was when the pointer was let go (noted from the press: null until then). */
   released: Box[] | null;
   /**
@@ -33,15 +41,18 @@ export interface Noted {
 }
 
 /**
- * From the moment the pointer is pressed (or let go), before the app hears
- * it, notes at every frame where pieces `ids`, the selection frame and the
- * pointer are.
+ * From the moment the pointer is pressed (or let go, or clicks), before the
+ * app hears it, notes at every frame where pieces `ids`, the selection frame
+ * and the pointer are.
  */
-const notePieces = (page: Page, ids: number[], start: 'pointerdown' | 'pointerup') =>
+const notePieces = (page: Page, ids: number[], start: 'pointerdown' | 'pointerup' | 'click') =>
   page.evaluate(
     ([ids, start]) => {
       const w = window as unknown as { noted: Noted };
-      const nodes = () => ids.map((id) => document.querySelector<HTMLElement>(`#sheets .piece[data-id="${id}"]`)!);
+      const piece = (id: number) => document.querySelector<HTMLElement>(`#sheets .piece[data-id="${id}"]`);
+      const flight = (id: number) => document.querySelector<HTMLElement>(`#sheets .piece-flight[data-flight="${id}"]`);
+      const nodes = () => ids.map((id) => flight(id) ?? piece(id)!);
+      const twice = () => ids.some((id) => flight(id) && getComputedStyle(piece(id)!).opacity !== '0');
       const box = (el: HTMLElement | null) => {
         if (!el || el.hidden) return null;
         const r = el.getBoundingClientRect();
@@ -76,25 +87,25 @@ const notePieces = (page: Page, ids: number[], start: 'pointerdown' | 'pointerup
           const target = e.target as HTMLElement;
           if (!noted.on || !noted.from.length || (e.propertyName !== 'left' && e.propertyName !== 'top')) return;
           if (target.id === 'frame') noted.frameTransitions = [...new Set([...noted.frameTransitions, e.propertyName])].sort();
-          const i = ids.indexOf(Number(target.dataset?.id));
-          if (i < 0 || !target.matches('#sheets .piece')) return;
+          const i = ids.indexOf(Number(target.dataset?.id ?? target.dataset?.flight));
+          if (i < 0 || !target.matches('#sheets .piece, #sheets .piece-flight')) return;
           noted.transitions[i] = [...new Set([...noted.transitions[i], e.propertyName])].sort();
         },
         true
       );
       const note = () => {
         if (!noted.on) return;
-        noted.frames.push({ pieces: nodes().map((n) => box(n)!), frame: box(document.getElementById('frame')), pointer, held });
+        noted.frames.push({ pieces: nodes().map((n) => box(n)!), frame: box(document.getElementById('frame')), pointer, held, twice: twice() });
         requestAnimationFrame(note);
       };
       addEventListener(
         start,
-        (e) => {
-          pointer = { x: e.clientX, y: e.clientY };
+        (e: Event) => {
+          pointer = { x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY };
           noted.from = nodes().map((n) => box(n)!);
           noted.pointer = pointer;
           noted.animating = document.getElementById('sheets')!.classList.contains('is-animating');
-          if (start === 'pointerup') noted.released = noted.from;
+          if (start !== 'pointerdown') noted.released = noted.from;
           requestAnimationFrame(note);
         },
         { capture: true, once: true }
@@ -108,6 +119,9 @@ export const noteDrop = (page: Page, ids: number[]) => notePieces(page, ids, 'po
 
 /** From the moment the pointer is pressed, notes at every frame where pieces `ids`, the selection frame and the pointer are. */
 export const notePress = (page: Page, ids: number[]) => notePieces(page, ids, 'pointerdown');
+
+/** From the next click (a button's: «Arrange»…), notes at every frame where pieces `ids` and the selection frame are. */
+export const noteClick = (page: Page, ids: number[]) => notePieces(page, ids, 'click');
 
 /** Waits until the pieces have kept still for 10 frames and returns what was noted. */
 export async function dropNoted(page: Page) {

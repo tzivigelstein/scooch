@@ -21,7 +21,16 @@
     box-shadow: 0 0 0 1px rgb(0 102 255 / 0.6);
   }
 
-  .piece img {
+  /* A piece flying over to another sheet (flights.ts): drawn as it was, out of the pointer's way. */
+  .piece-flight {
+    position: absolute;
+    overflow: hidden;
+    overflow: clip;
+    pointer-events: none;
+  }
+
+  .piece img,
+  .piece-flight img {
     position: absolute;
     left: 50%;
     top: 50%;
@@ -43,6 +52,7 @@
   /* Several selected: each with an inner ring (the sheet doesn't clip it) and,
      around those of each sheet, a dashed frame with its handle. */
   .piece.is-grouped::after,
+  .piece-flight.is-grouped::after,
   .piece.is-marked::after,
   .piece:focus-visible:not(.is-selected)::after {
     content: "";
@@ -68,13 +78,15 @@
     outline-offset: -0.1875rem;
   }
 
-  .sheets.is-animating .piece {
+  .sheets.is-animating .piece,
+  .sheets.is-animating .piece-flight {
     transition-property: left, top, width, height;
     transition-duration: 180ms;
     transition-timing-function: var(--ease);
   }
 
-  .sheets.is-animating .piece img {
+  .sheets.is-animating .piece img,
+  .sheets.is-animating .piece-flight img {
     transition: transform 180ms var(--ease), width 180ms var(--ease), height 180ms var(--ease);
   }
 
