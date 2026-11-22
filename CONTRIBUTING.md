@@ -10,7 +10,10 @@ the approach before you put time into it.
 
 ## Setup
 
-You need Node.js 24 (`.nvmrc` pins the major: `nvm use`) and Yarn 1 (classic).
+You need Node.js 24 (`.nvmrc` pins the major: `nvm use`) and any Yarn on the
+path: the project runs its own pinned Yarn 4, committed in `.yarn/releases`
+(`.yarnrc.yml`), with packages in `node_modules`. With no Yarn installed,
+`corepack enable` adds it. To change the version: `yarn set version <x.y.z> --yarn-path`.
 
 ```sh
 yarn install

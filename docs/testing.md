@@ -64,7 +64,7 @@ viewer), and a drag released outside the window in Firefox (see below).
 
 Without root, or without a Mac, Playwright's Docker image has every browser
 and its libraries. Its version must be the project's Playwright version. From
-the repository, after `yarn install --frozen-lockfile` (the image runs the
+the repository, after `yarn install --immutable` (the image runs the
 same `node_modules`):
 
 ```sh
@@ -109,7 +109,7 @@ docker run --rm --init --ipc=host --user "$(id -u):$(id -g)" -e HOME=/tmp \
 
 GitHub Actions (`.github/workflows/ci.yml`) runs what `yarn verify` runs on
 every push to `main` and on every pull request, in jobs side by side, after
-`yarn install --frozen-lockfile` with the Node version of `.nvmrc`:
+`yarn install --immutable` with the Node version of `.nvmrc`:
 
 | Job | Runs |
 |---|---|
@@ -147,7 +147,7 @@ every push to `main` and on every pull request, in jobs side by side, after
 - A newer push to the same pull request or branch cancels the run in progress.
 
 **Reproducing a failure.** Each step of a job is a command you can run the
-same way locally, after `yarn install --frozen-lockfile`. `CI` is set on the
+same way locally, after `yarn install --immutable`. `CI` is set on the
 runner: Playwright then refuses `test.only` and also writes a JUnit file, so
 `CI=1 yarn e2e` is the closest local run. A failed browser job uploads an
 artifact (`playwright-chromium`, `playwright-webkit-<group>` or

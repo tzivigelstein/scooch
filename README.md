@@ -151,10 +151,12 @@ device; reports from Safari, iOS and Android are welcome.
 
 ## Development
 
-Requires Node.js 24 (`.nvmrc` pins the major: `nvm use`) and Yarn 1.22.
+Requires Node.js 24 (`.nvmrc` pins the major: `nvm use`) and any Yarn on the
+path: the project runs its own pinned Yarn 4 (`.yarn/releases`), so `yarn`
+always means that version. With no Yarn installed, `corepack enable` adds it.
 
 ```sh
-yarn install                       # dependencies (CI uses --frozen-lockfile)
+yarn install                       # dependencies (CI uses --immutable)
 yarn playwright install chromium   # once, for the browser tests and the screenshots
 yarn dev                           # development server with hot reload
 yarn build                         # production build in dist/
