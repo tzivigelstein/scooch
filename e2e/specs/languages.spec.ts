@@ -4,7 +4,11 @@
 // top bar, both tabs, the list of photo sizes, Preferences, the shortcuts, the palette, the summary
 // after downloading and a usage tip) show no Spanish, scroll nothing sideways and cut no
 // control's text, at 1440 and 390 px; axe finds nothing in one state. And
-// choosing a language in Preferences, once, end to end. The rest of the suite
+// choosing a language in Preferences, once, end to end; and the scale field
+// writing and reading the decimal separator of the language on screen (a
+// number input would take the browser's: what each language writes and
+// reads is in tests/core/units.test.js and
+// tests/components/PieceSection.test.tsx). The rest of the suite
 // runs in Spanish (playwright.config.ts). How texts are chosen, switched and
 // kept, without a browser: tests/services/language.test.ts and
 // tests/components/language-switch.test.tsx.
@@ -221,4 +225,25 @@ test('choosing a language in Preferences shows it at once, without a reload, kee
   await page.reload();
   await app.ready();
   await expect(page.locator('#undo')).toHaveAttribute('aria-label', 'Annuler');
+});
+
+test('the scale field writes and reads the decimal separator of the language on screen', async ({ app, page }) => {
+  await app.addFiles(['small.jpg']);
+  await app.clickPiece(app.pieceNamed('small.jpg'));
+  await app.openMeasures();
+  const scale = page.locator('#scale');
+  const said = async () => (await page.locator('#slider').getAttribute('aria-valuetext'))?.replace(/\u00a0/g, ' ');
+  await scale.fill('147.6');
+  await scale.press('Enter');
+  await expect(scale).toHaveValue('147,6');
+  expect(await said()).toBe('147,6 %');
+
+  await page.locator('#prefs-open').click();
+  await page.locator('#language').selectOption('en');
+  await page.keyboard.press('Escape');
+  await expect(scale).toHaveValue('147.6');
+  await scale.fill('120,5');
+  await scale.press('Enter');
+  await expect(scale).toHaveValue('120.5');
+  expect(await said()).toBe('120.5%');
 });

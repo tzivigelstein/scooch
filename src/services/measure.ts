@@ -1,9 +1,10 @@
-// Lengths for display in the unit chosen in «Preferencias» (mm, cm or in).
-// The model is always mm: this only formats (core/units.js does the math).
+// Lengths for display in the unit chosen in «Preferencias» (mm, cm or in),
+// and the plain numbers of the fields next to them, in the language on
+// screen. The model is always mm: this only formats (core/units.js does the math).
 
 import { describe } from '../core/papers.js';
 import type { PaperId } from '../core/types.ts';
-import { formatLength, stepLabel, type StepSize } from '../core/units.js';
+import { formatDecimal, formatLength, stepLabel, type StepSize } from '../core/units.js';
 import { slug } from '../core/util.js';
 import { numberLocale, t } from '../copy/index.ts';
 import { OUTPUT_TEXTS, outputText } from '../copy/output.ts';
@@ -20,6 +21,9 @@ export const unitName = () => t(`units.names.${unit()}`);
 
 /** Just the number, for a field: «10,5». */
 export const lengthValue = (mm: number) => formatLength(mm, unit(), { locale: numberLocale(), withUnit: false });
+
+/** A plain number for a field, such as the scale in percent: «147,6» in Spanish, «147.6» in English. */
+export const decimalValue = (value: number) => formatDecimal(value, { locale: numberLocale() });
 
 /** Number and unit: «10,5 mm». */
 export const lengthText = (mm: number) => t('units.length', { value: lengthValue(mm), unit: unitSymbol() });

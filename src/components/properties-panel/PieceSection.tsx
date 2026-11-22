@@ -32,13 +32,14 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefO
 import type { AlignMode } from '../../core/align.js';
 import { PHOTO_SIZES } from '../../core/crop.js';
 import { common, SCALE_RANGE } from '../../core/group.js';
-import { clamp, num } from '../../core/util.js';
+import { parseDecimal } from '../../core/units.js';
+import { clamp } from '../../core/util.js';
 import { t, type CopyKey } from '../../copy/index.ts';
 import { MAX_ITEMS } from '../../config.ts';
 import { useNativeEvents } from '../../hooks/useNativeEvents.ts';
 import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';
 import type { ShortcutName } from '../../hooks/shortcuts.ts';
-import { lengthText, sizeText, unitName, unitSymbol } from '../../services/measure.ts';
+import { decimalValue, lengthText, sizeText, unitName, unitSymbol } from '../../services/measure.ts';
 import { getAsset } from '../../state/assets.ts';
 import { getDocument, useDocument, type Piece } from '../../state/document.ts';
 import { gestureStore } from '../../state/gesture.ts';
@@ -190,10 +191,8 @@ function shown(list: readonly Piece[]) {
   return { x: item.x, y: item.y, width: w, height: h, scale: item.scale as number | null, slider: clamp(item.scale, 1, 200) };
 }
 
-const parseNumber = (text: string) => {
-  const v = parseFloat(text.replace(',', '.'));
-  return Number.isFinite(v) ? v : null;
-};
+/** The scale as typed: a comma or a point whatever the language, and a percent sign if one is typed («150 %»). */
+const parseScale = (text: string) => parseDecimal(text.replace(/[%％]\s*$/, ''));
 
 /** The scale the field shows: the piece's, or the shared one of several (null: «Mixta»). */
 function scaleValue() {
@@ -244,7 +243,7 @@ export function PieceSection() {
   const paintNumbers = (v: ReturnType<typeof shown>, liveList: readonly Piece[]) => {
     const scale = scaleInput.current;
     const range = slider.current;
-    if (scale && document.activeElement !== scale) scale.value = v.scale === null ? '' : num(v.scale);
+    if (scale && document.activeElement !== scale) scale.value = v.scale === null ? '' : decimalValue(v.scale);
     if (range && document.activeElement !== range) range.value = String(v.slider);
     range?.setAttribute('aria-valuetext', v.scale === null ? t('props.mixed') : t('units.scale', { n: v.scale }));
     if (liveList.length === 1 && resolutionText.current) resolutionText.current.textContent = resolution(liveList[0]).text;
@@ -342,11 +341,11 @@ export function PieceSection() {
             <NumberField
               inputRef={scaleInput}
               id="scale"
-              type="number"
-              min="1"
-              max="1000"
-              step="0.1"
+              // Text, not a number input: a browser writes those with its own decimal separator, not the interface's.
+              type="text"
               inputMode="decimal"
+              autoComplete="off"
+              spellCheck={false}
               aria-label={t('props.scaleLabel')}
               data-tip={t('props.scaleTip')}
               placeholder={group && values?.scale === null ? t('props.mixed') : ''}
@@ -354,9 +353,10 @@ export function PieceSection() {
               disabled={busyOff(busy, '#scale')}
               value={scaleValue}
               range={() => SCALE_RANGE}
-              parse={parseNumber}
+              parse={parseScale}
               isPartial={(text) => !text.trim()}
-              format={num}
+              format={decimalValue}
+              stepBy={() => 0.1}
               describe={(v) => t('units.scale', { n: v })}
               editKey={() => scaleFieldKey('scale')}
               busy={() => getDocument().busy || !getDocument().selection.length}
@@ -542,7 +542,7 @@ export function PieceSection() {
                 value={() => copies.current}
                 range={() => ({ min: 1, max: Math.max(1, maxCopies()) })}
                 parse={(text) => {
-                  const v = parseNumber(text);
+                  const v = parseDecimal(text);
                   return v === null ? null : Math.floor(v);
                 }}
                 isPartial={(text) => !text.trim()}

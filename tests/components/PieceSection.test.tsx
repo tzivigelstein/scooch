@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
-// The «Pieza» tab with one piece: the rotation note, the page of a PDF, the
-// print resolution of an image, «Tamaño de foto», «Traer al frente» and «Rellenar con copias».
+// The «Pieza» tab with one piece: the rotation note, the scale field in each
+// language, the page of a PDF, the print resolution of an image, «Tamaño de
+// foto», «Traer al frente» and «Rellenar con copias».
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { PieceSection } from '../../src/components/properties-panel/PieceSection.tsx';
-import { setDocument, type Piece } from '../../src/state/document.ts';
+import { CATALOGUES } from '../../src/copy/all.ts';
+import { setTexts, textsFor } from '../../src/copy/index.ts';
+import { getDocument, setDocument, type Piece } from '../../src/state/document.ts';
 import { historyDepth } from '../../src/state/history.ts';
 import { dims } from '../../src/state/selectors.ts';
 import { fakeImage, fakePdf, piece, resetState } from '../support/state.ts';
@@ -48,6 +51,55 @@ describe('the piece’s measures', () => {
     show([piece(1, photo, 30, 30)]);
     expect($('rotation-note').hidden).toBe(true);
     for (const id of ['width', 'height']) expect($(id).getAttribute('aria-describedby')!.split(' ')).not.toContain('rotation-note');
+  });
+});
+
+describe('the scale field, in the language on screen', () => {
+  // The decimal separator of each language (docs/copy.md and docs/copy/*.md).
+  const SEPARATORS = { es: ',', fr: ',', en: '.', 'zh-Hans': '.', hi: '.' } as const;
+  const scale = () => $<HTMLInputElement>('scale');
+  const scaleOf = () => getDocument().items[0].scale;
+  /** Types `text` in the field and confirms it, as Enter or leaving the field does. */
+  const type = (text: string) =>
+    act(() => {
+      fireEvent.input(scale(), { target: { value: text } });
+      fireEvent.change(scale());
+    });
+  afterEach(() => setTexts(CATALOGUES.es));
+
+  test('is a text field for decimals, so the browser writes no separator of its own', () => {
+    show([piece(1, photo, 30, 30)]);
+    expect(scale().type).toBe('text');
+    expect(scale().inputMode).toBe('decimal');
+    expect(scale().value).toBe('100');
+  });
+
+  for (const [language, separator] of Object.entries(SEPARATORS) as [keyof typeof SEPARATORS, string][]) {
+    test(`${language}: shows the scale and its slider’s value with «${separator}», and reads a comma or a point typed`, () => {
+      setTexts(CATALOGUES[language]);
+      show([piece(1, photo, 30, 30, { scale: 147.6 })]);
+      expect(scale().value).toBe(`147${separator}6`);
+      expect($('slider').getAttribute('aria-valuetext')).toBe(textsFor(CATALOGUES[language]).t('units.scale', { n: 147.6 }));
+      expect($('slider').getAttribute('aria-valuetext')).toContain(`147${separator}6`);
+      for (const [typed, read] of [
+        ['120,5', 120.5],
+        ['120.5', 120.5],
+        ['80', 80],
+      ] as const) {
+        type(typed);
+        expect(scaleOf(), typed).toBe(read);
+        expect(scale().value, typed).toBe(String(read).replace('.', separator));
+      }
+    });
+  }
+
+  test('reads a percent sign typed after the number; what isn’t a number leaves the scale as it was', () => {
+    show([piece(1, photo, 30, 30)]);
+    type('150 %');
+    expect(scaleOf()).toBe(150);
+    type('1.000,5');
+    expect(scaleOf()).toBe(150);
+    expect(scale().value).toBe('150');
   });
 });
 

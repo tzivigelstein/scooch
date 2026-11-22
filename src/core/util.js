@@ -6,9 +6,6 @@ export const tidy = (v) => Math.round(v * 100) / 100 || 0;
 /** Rounds to 0.0001: drops floating point noise without drifting steps such as 1/16 in. */
 export const fine = (v) => Math.round(v * 1e4) / 1e4 || 0;
 
-/** For numeric inputs: «41.6» (for display, t() in src/copy). */
-export const num = (v) => String(round1(v));
-
 /** Equal but for floating point noise. */
 export const sameNumber = (a, b) => Math.abs(a - b) < 1e-9;
 
