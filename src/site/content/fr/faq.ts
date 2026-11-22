@@ -53,6 +53,10 @@ export function faqPage(k: Kit): SitePage {
         a: `Oui, pour les recadrer et les imprimer au bon format. Mais chaque démarche fixe ses propres exigences (format, fond, cadrage) et ${app} ne les vérifie pas : renseignez-vous toujours auprès de l’organisme qui demande la photo. Consultez le guide ${link(PATHS['id-photos'], 'photo d’identité à imprimer')}.`,
       },
       {
+        q: 'Peut-on s’en servir pour faire des stickers ?',
+        a: `Oui. Avec l’option ${ui('cuts.modes.contour')} des ${ui('cuts.title').toLowerCase()}, chaque image à fond transparent reçoit un trait de coupe qui suit sa forme, pour la découper à la main. Consultez le guide ${link(PATHS.stickers, 'faire ses stickers soi-même')}.`,
+      },
+      {
         q: 'Puis-je ouvrir l’éditeur déjà configuré depuis un lien ?',
         a: `Oui. Les guides ont des boutons qui ouvrent l’éditeur avec le papier, la marge et le format photo déjà réglés. Un nouveau projet est toujours créé : ceux que vous aviez restent enregistrés dans ${ui('projects.title')}.`,
       },

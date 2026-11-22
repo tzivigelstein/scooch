@@ -53,6 +53,10 @@ export function faqPage(k: Kit): SitePage {
         a: `Sí, para recortarlas e imprimirlas a la medida. Pero cada trámite define sus requisitos (medida, fondo, encuadre) y ${app} no los revisa: consulta siempre a la entidad que pide la foto. Mira la guía de ${link(PATHS['id-photos'], 'foto carnet para imprimir')}.`,
       },
       {
+        q: '¿Sirve para hacer stickers?',
+        a: `Sí. Con la opción ${ui('cuts.modes.contour')} de las ${ui('cuts.title').toLowerCase()}, cada imagen con fondo transparente lleva una línea de corte que sigue su forma, para recortarla a mano. Mira la guía para ${link(PATHS.stickers, 'hacer stickers en casa')}.`,
+      },
+      {
         q: `¿Puedo abrir ${app} ya configurado desde un enlace?`,
         a: `Sí. Las guías tienen botones que abren el editor con el papel, el margen y el tamaño de foto listos. Siempre se crea un proyecto nuevo: los que tenías siguen guardados en ${ui('projects.title')}.`,
       },

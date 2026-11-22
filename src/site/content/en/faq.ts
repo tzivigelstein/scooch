@@ -53,6 +53,10 @@ export function faqPage(k: Kit): SitePage {
         a: `Yes, to crop and print them at size. But each application sets its own requirements (size, background, framing) and ${app} doesn’t check them: always check with the office that asks for the photo. See the guide to ${link(PATHS['id-photos'], 'printing passport photos at home')}.`,
       },
       {
+        q: 'Can I make stickers with it?',
+        a: `Yes. With the ${ui('cuts.modes.contour')} option of the ${ui('cuts.title').toLowerCase()}, each image with a transparent background gets a cut line that follows its shape, to cut out by hand. See the guide to ${link(PATHS.stickers, 'printing stickers at home')}.`,
+      },
+      {
         q: `Can I open ${app} already set up from a link?`,
         a: `Yes. The guides have buttons that open the editor with the paper, the margin and the photo size ready. A new project is always created: the ones you had stay saved in ${ui('projects.title')}.`,
       },
