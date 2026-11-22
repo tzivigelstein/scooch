@@ -270,6 +270,30 @@ const pointer = (e: PointerEvent): Pointer => ({
   moved: false,
 });
 
+/**
+ * A gesture starts with the last change's animation (Arrange, Undo, a refused
+ * drop…) over. Left on, it would go on with what the gesture paints: the
+ * dragged piece would lag behind the pointer and jump by its sheet's offset
+ * on release, as it goes into the drag layer and back, and the frame would
+ * trail behind it. What the gesture paints (the frames, the selected pieces
+ * and `pressed`, the one under the pointer) is put where it was heading
+ * rather than where it is: that is where the document has it, what the
+ * gesture works from, and a piece still on its way is nearly there (the
+ * transitions ease out, and the class stays on well after they end). The
+ * class off isn't enough: a running transition whose end doesn't change goes
+ * on (`all`, with no duration, still matches it). The other pieces are left
+ * to end their way.
+ */
+function endAnimation(pressed: Element | null = null) {
+  if (!getView().animating) return;
+  setView({ animating: false });
+  // Off before the press paints anything.
+  flushUi();
+  const nodes = [...document.querySelectorAll('#frame, #sheets > .group-frame, #sheets .piece.is-selected'), ...(pressed ? [pressed] : [])];
+  // No Web Animations in jsdom (the hooks' tests).
+  for (const node of nodes) for (const run of node.getAnimations?.({ subtree: true }) ?? []) if (run instanceof CSSTransition) run.finish();
+}
+
 function begin(next: Gesture) {
   gesture = next;
   // A change to the document mid-gesture (a shortcut, another tab…) cancels it.
@@ -293,6 +317,7 @@ function onPointerDown(e: PointerEvent) {
   if (e.pointerType === 'touch') startLongPress(e);
   const target = e.target as Element;
   if (target.closest('.dropzone, .page-head, .sheets-foot')) return;
+  endAnimation(target.closest('.piece'));
   const additive = e.shiftKey || e.ctrlKey || e.metaKey;
   const handle = target.closest<HTMLElement>('.handle');
   if (handle) return startResize(e, handle);
@@ -431,7 +456,11 @@ function updateGesture() {
   if (!g.moved && Math.hypot(px, py) < DRAG_THRESHOLD) return;
   const first = !g.moved;
   g.moved = true;
-  if (first) gestureStore.setState({ dragging: true, moving: g.kind === 'move' || g.kind === 'group-move' });
+  if (first) {
+    gestureStore.setState({ dragging: true, moving: g.kind === 'move' || g.kind === 'group-move' });
+    // One that started after the press (an Undo with the button held) ends too, before anything moves.
+    endAnimation();
+  }
   if (g.kind === 'marquee') return updateMarquee(g, first);
   if (first) {
     el('canvas').classList.add('is-dragging');

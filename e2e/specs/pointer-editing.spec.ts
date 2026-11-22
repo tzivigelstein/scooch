@@ -1,6 +1,7 @@
 // Editing with the pointer, where only a real browser tells: dragging a piece
 // onto the grid («Imán»), dropping it on another piece (and the way it goes
-// from where it was let go, frame by frame), the resize handle, the
+// from where it was let go, frame by frame), a drag started while the last
+// change still animates (frame by frame too), the resize handle, the
 // scale slider, G and the grid layer, files dropped on the canvas, the
 // overlap and grid preferences after a reload, and a drag the page loses the
 // pointer of. What the actions compute is in tests/state (overlap-and-snap,
@@ -9,7 +10,7 @@ import type { Page } from '@playwright/test';
 import { frames, setZoom, stageBox } from '../support/canvas.ts';
 import { closerThan, near, onGrid, overlapping } from '../support/geometry.ts';
 import { dragPieceTo, dropFile, pieceOf, setGrid } from '../support/editing.ts';
-import { animationsOver, dropNoted, expectFrameOnPiece, expectGlide, noteDrop, TOL, wayOf } from '../support/motion.ts';
+import { animationsOver, dropNoted, expectFrameOnPiece, expectGlide, noteDrop, notePress, TOL, wayOf } from '../support/motion.ts';
 import { saved } from '../support/projects.ts';
 import { counts, holdPiece, pieceIds, placeholders, scrollOf, scrollStops } from '../support/sheets.ts';
 import { cards, expect, test, type App } from '../support/test.ts';
@@ -223,6 +224,49 @@ test.describe('dropping a piece on another one', () => {
     expect(wayOf(noted, 0).travel, 'it was moved aside').toBeGreaterThan(10 * TOL);
     expect(noted.transitions[0]).toEqual([]);
     expect(noted.frames.every((f) => Math.abs(f.pieces[0].x - to.x) <= TOL && Math.abs(f.pieces[0].y - to.y) <= TOL), 'there from the first frame').toBe(true);
+    expectFrameOnPiece(noted);
+  });
+});
+
+test.describe('with motion, a drag started while the last change still animates', () => {
+  test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+  test('right after Undo the piece follows the pointer from the first move and stays where it is let go; its frame with it', async ({ app, page }) => {
+    await app.addFiles(['card00.png', 'card01.png']);
+    await page.locator('#arrange').click();
+    await page.keyboard.press('Escape');
+    // Without «Imán», the piece is exactly as far from the pointer all along.
+    await setGrid(app, { snap: false });
+    const [a, b] = await app.ids();
+    // The other one away first, so that undoing that animates.
+    const pb = await pieceOf(app, b);
+    await dragPieceTo(app, b, pb.x, pb.y + 100);
+    await expect.poll(async () => (await pieceOf(app, b)).y).not.toBe(pb.y);
+    await animationsOver(page);
+    const box = (await app.piece(a).boundingBox())!;
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    await page.mouse.move(at.x, at.y);
+    await notePress(page, [a]);
+    await page.keyboard.press('Control+z');
+    // As a person's press comes: after the undone piece and its frame have started gliding back.
+    await frames(page, 2);
+    await page.mouse.down();
+    for (let i = 1; i <= 12; i++) await page.mouse.move(at.x + 5 * i, at.y + 15 * i);
+    await page.mouse.up();
+    const noted = await dropNoted(page);
+    await expect.poll(async () => (await pieceOf(app, b)).y, 'undone').toBe(pb.y);
+    // Pressed within the 320 ms the animation lasts: only a machine slower than that between two keystrokes misses it.
+    if (!noted.animating) test.info().annotations.push({ type: 'note', description: 'pressed after the animation was over: this run could not have seen the bug' });
+    const offset = { x: noted.from[0].x - noted.pointer.x, y: noted.from[0].y - noted.pointer.y };
+    const dragged = noted.frames.filter((f) => f.held && Math.hypot(f.pointer.x - noted.pointer.x, f.pointer.y - noted.pointer.y) > 3);
+    const behind = dragged.map((f) => Math.max(Math.abs(f.pieces[0].x - f.pointer.x - offset.x), Math.abs(f.pieces[0].y - f.pointer.y - offset.y)));
+    expect(dragged.length, 'frames while it was dragged').toBeGreaterThan(0);
+    expect(Math.max(...behind), `under the pointer from the first move (px off at each frame: ${behind.map((d) => Math.round(d)).join(', ')})`).toBeLessThanOrEqual(TOL);
+    const letGo = noted.released![0];
+    const after = noted.frames.filter((f) => !f.held).map((f) => Math.max(Math.abs(f.pieces[0].x - letGo.x), Math.abs(f.pieces[0].y - letGo.y)));
+    expect(Math.max(...after), `where it was let go from then on (px off at each frame: ${after.map((d) => Math.round(d)).join(', ')})`).toBeLessThanOrEqual(TOL);
+    expect(noted.transitions[0], 'the piece never glides').toEqual([]);
+    expect(noted.frameTransitions, 'nor its frame').toEqual([]);
     expectFrameOnPiece(noted);
   });
 });

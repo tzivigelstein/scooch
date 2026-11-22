@@ -1,61 +1,113 @@
 // Helpers for the specs that follow pieces on screen frame by frame, with
-// motion on: where each piece and the selection frame are at every frame
-// after the pointer is let go, which CSS transitions started meanwhile (told
-// by the browser's own event, never by catching a frame halfway: on a slow
-// machine the first frame can come when the 180 ms are over), and the way a
-// piece went from where it was to where it rests.
+// motion on: where each piece, the selection frame and the pointer are at
+// every frame after the pointer is pressed or let go, which CSS transitions
+// started meanwhile (told by the browser's own event, never by catching a
+// frame halfway: on a slow machine the first frame can come when the 180 ms
+// are over), and the way a piece went from where it was to where it rests.
 import { expect, type Page } from '@playwright/test';
 
 /** A rectangle in window px. */
 export type Box = { x: number; y: number; w: number; h: number };
+export type Point = { x: number; y: number };
 
 export interface Noted {
-  /** Where each piece was when the pointer was let go. */
+  /** Where each piece was when the noting started: when the pointer was pressed, or let go. */
   from: Box[];
-  /** Every frame after that: where each piece and the selection frame were. */
-  frames: { pieces: Box[]; frame: Box | null }[];
+  /** Where the pointer was then. */
+  pointer: Point;
+  /** Every frame after that: where each piece, the selection frame and the pointer were, and whether its button was held. */
+  frames: { pieces: Box[]; frame: Box | null; pointer: Point; held: boolean }[];
+  /** Where each piece was when the pointer was let go (noted from the press: null until then). */
+  released: Box[] | null;
   /**
-   * Which of left and top each piece started a CSS transition on after the
-   * pointer was let go. Told by the browser's own event, not read at a
-   * frame: on a slow machine the first frame can come when the 180 ms are over.
+   * Which of left and top each piece started a CSS transition on since the
+   * noting started. Told by the browser's own event, not read at a frame: on
+   * a slow machine the first frame can come when the 180 ms are over.
    */
   transitions: string[][];
+  /** The same for the selection frame. */
+  frameTransitions: string[];
+  /** Whether the last change still animated when the noting started (#sheets.is-animating). */
+  animating: boolean;
   on: boolean;
 }
 
+/**
+ * From the moment the pointer is pressed (or let go), before the app hears
+ * it, notes at every frame where pieces `ids`, the selection frame and the
+ * pointer are.
+ */
+const notePieces = (page: Page, ids: number[], start: 'pointerdown' | 'pointerup') =>
+  page.evaluate(
+    ([ids, start]) => {
+      const w = window as unknown as { noted: Noted };
+      const nodes = () => ids.map((id) => document.querySelector<HTMLElement>(`#sheets .piece[data-id="${id}"]`)!);
+      const box = (el: HTMLElement | null) => {
+        if (!el || el.hidden) return null;
+        const r = el.getBoundingClientRect();
+        return { x: r.x, y: r.y, w: r.width, h: r.height };
+      };
+      const noted: Noted = (w.noted = {
+        from: [],
+        pointer: { x: 0, y: 0 },
+        frames: [],
+        released: null,
+        transitions: ids.map(() => []),
+        frameTransitions: [],
+        animating: false,
+        on: true,
+      });
+      let pointer = { x: 0, y: 0 };
+      let held = false;
+      addEventListener('pointermove', (e) => (pointer = { x: e.clientX, y: e.clientY }), true);
+      addEventListener('pointerdown', () => (held = true), true);
+      addEventListener(
+        'pointerup',
+        () => {
+          held = false;
+          // Before the app hears it: where the drag left them.
+          if (noted.from.length && !noted.released) noted.released = nodes().map((n) => box(n)!);
+        },
+        true
+      );
+      addEventListener(
+        'transitionrun',
+        (e) => {
+          const target = e.target as HTMLElement;
+          if (!noted.on || !noted.from.length || (e.propertyName !== 'left' && e.propertyName !== 'top')) return;
+          if (target.id === 'frame') noted.frameTransitions = [...new Set([...noted.frameTransitions, e.propertyName])].sort();
+          const i = ids.indexOf(Number(target.dataset?.id));
+          if (i < 0 || !target.matches('#sheets .piece')) return;
+          noted.transitions[i] = [...new Set([...noted.transitions[i], e.propertyName])].sort();
+        },
+        true
+      );
+      const note = () => {
+        if (!noted.on) return;
+        noted.frames.push({ pieces: nodes().map((n) => box(n)!), frame: box(document.getElementById('frame')), pointer, held });
+        requestAnimationFrame(note);
+      };
+      addEventListener(
+        start,
+        (e) => {
+          pointer = { x: e.clientX, y: e.clientY };
+          noted.from = nodes().map((n) => box(n)!);
+          noted.pointer = pointer;
+          noted.animating = document.getElementById('sheets')!.classList.contains('is-animating');
+          if (start === 'pointerup') noted.released = noted.from;
+          requestAnimationFrame(note);
+        },
+        { capture: true, once: true }
+      );
+    },
+    [ids, start] as const
+  );
+
 /** From the moment the pointer is let go, notes at every frame where pieces `ids` (and the selection frame) are. */
-export const noteDrop = (page: Page, ids: number[]) =>
-  page.evaluate((ids) => {
-    const w = window as unknown as { noted: Noted };
-    const nodes = () => ids.map((id) => document.querySelector<HTMLElement>(`#sheets .piece[data-id="${id}"]`)!);
-    const box = (el: HTMLElement | null) => {
-      if (!el || el.hidden) return null;
-      const r = el.getBoundingClientRect();
-      return { x: r.x, y: r.y, w: r.width, h: r.height };
-    };
-    const noted: Noted = (w.noted = { from: [], frames: [], transitions: ids.map(() => []), on: true });
-    addEventListener(
-      'transitionrun',
-      (e) => {
-        const i = ids.indexOf(Number((e.target as HTMLElement).dataset?.id));
-        const moves = e.propertyName === 'left' || e.propertyName === 'top';
-        if (!noted.on || !noted.from.length || i < 0 || !moves || !(e.target as HTMLElement).matches('#sheets .piece')) return;
-        noted.transitions[i] = [...new Set([...noted.transitions[i], e.propertyName])].sort();
-      },
-      true
-    );
-    const note = () => {
-      if (!noted.on) return;
-      noted.frames.push({ pieces: nodes().map((n) => box(n)!), frame: box(document.getElementById('frame')) });
-      requestAnimationFrame(note);
-    };
-    // Before the app hears it: where the drag left them.
-    const release = () => {
-      noted.from = nodes().map((n) => box(n)!);
-      requestAnimationFrame(note);
-    };
-    addEventListener('pointerup', release, { capture: true, once: true });
-  }, ids);
+export const noteDrop = (page: Page, ids: number[]) => notePieces(page, ids, 'pointerup');
+
+/** From the moment the pointer is pressed, notes at every frame where pieces `ids`, the selection frame and the pointer are. */
+export const notePress = (page: Page, ids: number[]) => notePieces(page, ids, 'pointerdown');
 
 /** Waits until the pieces have kept still for 10 frames and returns what was noted. */
 export async function dropNoted(page: Page) {
