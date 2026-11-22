@@ -40,6 +40,7 @@ export const SPEC_GROUPS = {
     'paper',
     'print-and-download',
     'print-summary',
+    'privacy',
     'projects',
     'segmented-controls',
     'site-links',
