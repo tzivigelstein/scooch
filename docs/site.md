@@ -31,6 +31,7 @@ with the words people search for:
 | `id-photos` | `/es/foto-carnet-para-imprimir` | `/en/print-passport-photos-at-home` |
 | `same-photo` | `/es/imprimir-misma-foto-varias-veces` | `/en/print-same-picture-multiple-times` |
 | `actual-size` | `/es/imprimir-imagen-tamano-real` | `/en/print-image-actual-size` |
+| `stickers` | `/es/hacer-stickers-en-casa` | `/en/print-stickers-at-home` |
 | `faq` | `/es/preguntas-frecuentes` | `/en/faq` |
 | `legal-terms`, `legal-privacy` | `/es/terminos`, `/es/privacidad` | `/en/terms`, `/en/privacy` |
 | `legal-notices`, `legal-license` | `/es/licencias-de-terceros`, `/es/licencia` | `/en/third-party-licenses`, `/en/license` |
@@ -48,6 +49,7 @@ has no settled spelling.
 | `id-photos` | `/hi/passport-size-photo-a4-sheet` |
 | `same-photo` | `/hi/print-same-photo-multiple-times` |
 | `actual-size` | `/hi/print-image-actual-size-in-cm` |
+| `stickers` | `/hi/print-stickers-at-home` |
 | `faq` | `/hi/faq` |
 | `legal-terms`, `legal-privacy` | `/hi/terms`, `/hi/privacy` |
 | `legal-notices`, `legal-license` | `/hi/third-party-licenses`, `/hi/license` |
@@ -64,6 +66,7 @@ weighs little next to the title. French's are French without accents.
 | `id-photos` | `/zh-hans/id-photo-layout` | `/fr/photo-identite-a-imprimer` |
 | `same-photo` | `/zh-hans/same-photo-multiple-copies` | `/fr/imprimer-plusieurs-fois-la-meme-photo` |
 | `actual-size` | `/zh-hans/print-image-actual-size` | `/fr/imprimer-image-taille-reelle` |
+| `stickers` | `/zh-hans/print-stickers` | `/fr/faire-ses-stickers-soi-meme` |
 | `faq` | `/zh-hans/faq` | `/fr/questions-frequentes` |
 | `legal-terms`, `legal-privacy` | `/zh-hans/terms`, `/zh-hans/privacy` | `/fr/conditions-utilisation`, `/fr/confidentialite` |
 | `legal-notices`, `legal-license` | `/zh-hans/third-party-licenses`, `/zh-hans/license` | `/fr/licences-tierces`, `/fr/licence` |
@@ -114,7 +117,10 @@ A page is the same facts in other words:
   layouts the buttons open (`editorHref`), every count and drawing (worked
   out with the real packer: `capacity`, `sheetFigure`), the rows of the
   tables. A sentence that relies on a particular count checks it with
-  `expect(...)`, so the build stops if the packer ever says otherwise.
+  `expect(...)`, so the build stops if the packer ever says otherwise. The
+  stickers guide draws its sheet with `shapesFigure`: a few shapes, each
+  traced once by the app's own tracer (`core/contour.js`, from a mask the
+  facts draw) with the cut margin it states, where the packer puts them.
 - **Words**, in `src/site/content/<language>/<page>.ts`: a function that
   takes the language's kit (`createKit`, `src/site/kit.ts`) and returns the
   page (`guide({...})`, `src/site/guide.ts`). The kit writes everything that
@@ -225,7 +231,7 @@ editor's metadata, which no other language needs).
    | `paths.ts` | One address per page id, under `/<lang in lowercase>/`: lowercase ASCII letters, digits and hyphens, with the words people search for. A language in another script writes them in Latin letters: the words people type in that market if they search in Latin letters (much of India searches this in English or romanized Hindi: «passport-size-photo»), otherwise short English words (the address weighs little next to the title). |
    | `index.ts` | The `SiteLanguage`: `lang`, `units` (what follows a measure: `mm`, `cm` and the word for inches; the kit puts a no-break space before it, so a language that writes no space before a unit word, like Chinese 厘米, uses the symbols, as its catalogue's measures do), `paths`, `legalMarkers`, `chrome`, `llms`, `pages` (same order as Spanish). |
    | `chrome.ts` | The frame: skip link, header button, breadcrumb label, footer headings (`languages` heads the links to other languages), the line about the tool, the questions' heading, the share image's description, the legal links' labels (the terms and the privacy policy by the catalogue's names, `ui('legal.terms')` and `ui('legal.privacy')`, as the editor names them; the two license pages typed); the sentences listing papers and photo sizes; the headings of `llms.txt`. |
-   | `several-photos.ts`, `how-many.ts`, `photos-10x15.ts`, `id-photos.ts`, `same-photo.ts`, `actual-size.ts`, `faq.ts` | One per page. `how-many.ts` also has the calculator's texts (`calcTexts`: `locale` is the catalogue's `meta.numberLocale`; `count` and `figure` are plural forms chosen by the language's rules, so a language with a single form gives `one` and `other` the same text; `count` is shown under the number, on a line of its own; `noteSame.one` is for exactly one copy) and its labels. The calculator joins its pieces (the count and its words, the paper and its orientation, a note and the cap) with a space, or with none next to Chinese (`joinWords`, `src/site/html.ts`). |
+   | `several-photos.ts`, `how-many.ts`, `photos-10x15.ts`, `id-photos.ts`, `same-photo.ts`, `actual-size.ts`, `stickers.ts`, `faq.ts` | One per page. `how-many.ts` also has the calculator's texts (`calcTexts`: `locale` is the catalogue's `meta.numberLocale`; `count` and `figure` are plural forms chosen by the language's rules, so a language with a single form gives `one` and `other` the same text; `count` is shown under the number, on a line of its own; `noteSame.one` is for exactly one copy) and its labels. The calculator joins its pieces (the count and its words, the paper and its orientation, a note and the cap) with a space, or with none next to Chinese (`joinWords`, `src/site/html.ts`). |
    | `legal.ts` | The legal pages' titles (the terms and the privacy policy by the catalogue's names, as in `chrome.ts`), descriptions and the license texts' introductions; `LEGAL_MARKERS`, the words publishing looks for: how a draft note would start in the language (a paragraph starting with it stops a release), the analytics heading, and the word a reminder for maintainers there would start with (a section holding only such a reminder is left out of the page). |
 
    Write the files in Unicode NFC, as the catalogues are: a nukta letter
@@ -282,8 +288,8 @@ editor's metadata, which no other language needs).
    - `tests/site/table.test.ts`: its photos-10x15 page and third-party
      licenses page, which carry the stacked-table CSS;
    - `e2e/specs/site-pages.spec.ts`: its pages in `SHOWN`;
-   - `scripts/size-budgets.json`: its privacy policy and third-party
-     licenses, which are over the budget for any page (and any other page
+   - `scripts/size-budgets.json`: its privacy policy, third-party
+     licenses and stickers guide, which are over the budget for any page (and any other page
      `yarn size` finds over it or right at it: a script that takes three
      bytes a letter in UTF-8, like Devanagari, puts the calculator and the
      terms there too);
@@ -294,6 +300,11 @@ editor's metadata, which no other language needs).
    - The photo ID guide names no country and calls no size the usual one:
      it tells readers to check the requirement of the office that asks for
      the photo. Keep that in every language.
+   - The stickers guide names no cutting machine, paper or printer and
+     claims no machine can use the PDF: it says what the PDF has (each
+     contour as a vector stroke on the page, with no layer of its own and no
+     registration marks), that the app was tested with no machine, and that
+     the line is meant for cutting by hand. Keep that in every language.
    - Numbers and measures come from the kit; a translation types by hand
      only what the Spanish page types (above). Measures stay in millimeters,
      as the editor shows them; inches appear only where the size really is
