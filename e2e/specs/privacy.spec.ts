@@ -8,10 +8,13 @@
 // for the page's own origin, Playwright's routing that aborts it, and
 // watches inside each page and each worker. A request elsewhere, a body, a
 // WebSocket, a cookie or a worker the test couldn't see into fails the
-// test. The second test checks that each watch catches what it should, in
+// test, and so does a request for anything but a file of the build (data
+// carried in an address, even to the site itself). The second test checks that each watch catches what it should, in
 // the engine it runs in: a check that can't fail tests nothing. That the
 // code has no address of another server in it is in
 // tests/build/other-origins.test.ts.
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { clipboardKey } from '../support/keyboard.ts';
 import { dragPieceTo, dropFile } from '../support/editing.ts';
@@ -20,6 +23,10 @@ import { expect, openedUrls, printCalls, printsInFrame, test as printing } from 
 import { card, openProjects, renameInBar, saved } from '../support/projects.ts';
 
 const PATREON = 'https://www.patreon.com/ejemplo';
+const QUERY = `?donar=${encodeURIComponent(PATREON)}`;
+
+/** Every file the build serves, as a path from the site's root (playwright.config.ts builds it there). */
+const served = () => new Set((readdirSync(join(process.env.E2E_OUT ?? 'e2e/out', 'build'), { recursive: true }) as string[]).map((file) => `/${file.replace(/\\/g, '/')}`));
 
 const test = printing.extend<{ recorder: Recorder & { watch: NetworkWatch }; network: NetworkWatch }>({
   recorder: async ({ baseURL }, use) => {
@@ -62,7 +69,7 @@ async function inPreferences(page: Page, inside: () => Promise<void>) {
 
 test.describe('a whole session in the editor', () => {
   // The summary after printing asks for a donation with a link to Patreon: shown, never followed.
-  test.use({ printSpy: 'record', appQuery: `?donar=${encodeURIComponent(PATREON)}` });
+  test.use({ printSpy: 'record', appQuery: QUERY });
 
   test('sends no request to another origin, none with a body, opens no WebSocket and sets no cookie', async ({ app, page, context, network }, info) => {
     test.slow();
@@ -242,6 +249,10 @@ test.describe('a whole session in the editor', () => {
       ),
     });
     expect(network.problems(), 'every request for the page’s own origin, a body-less GET, and every worker watched').toEqual([]);
+    // Nor anything carried in an address: each request is for a file of the build, the page aside.
+    const files = served();
+    const asked = [...new Set(network.requested())].filter((url) => /^https?:/.test(url)).map((url) => new URL(url));
+    expect(asked.filter((url) => !(url.pathname === '/' && ['', QUERY].includes(url.search)) && !(files.has(url.pathname) && url.search === '')).map(String), 'only files the build serves').toEqual([]);
     expect(cookies).toEqual({ context: [], page: '' });
     expect(serviceWorkers).toEqual([]);
     expect(context.serviceWorkers()).toEqual([]);
