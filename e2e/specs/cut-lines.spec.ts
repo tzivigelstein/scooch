@@ -100,7 +100,8 @@ test.describe('the cut layer', () => {
       const noted = await dropNoted(page);
       expectGlide(noted, 0);
       const rest = noted.frames.at(-1)!.pieces[0];
-      const away = noted.frames.filter((f) => Math.hypot(f.pieces[0].x - rest.x, f.pieces[0].y - rest.y) > 2);
+      // Until its last stretch: they fade in as it gets there, and an engine may start them a frame apart.
+      const away = noted.frames.filter((f) => Math.hypot(f.pieces[0].x - rest.x, f.pieces[0].y - rest.y) > wayOf(noted, 0).travel / 10);
       expect(away.map((f) => Math.max(...f.cuts)), 'hidden while the piece is on its way').toEqual(away.map(() => 0));
       expect(noted.frames.at(-1)!.cuts, 'and back once it is there').toEqual([1]);
     });

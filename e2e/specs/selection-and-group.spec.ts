@@ -163,7 +163,8 @@ test.describe('pieces on several sheets', () => {
     await app.piece(a).evaluate((el) => el.scrollIntoView({ block: 'center' }));
     const w0 = (await app.geometry()).pieces.find((p) => p.id === a)!.w;
     const box = (await app.piece(a).boundingBox())!;
-    // The handle at the bottom right corner of the frame around it, taken to the piece's middle: half its size.
+    // The handle at the bottom right corner of the frame around it, taken to the piece's middle: half its size
+    // (within what whole-pixel pointers allow; by the other sheet's frame it was a third).
     const handles = await page.locator('#sheets > .group-frame .handle').evaluateAll((list) =>
       list.map((h) => {
         const r = h.getBoundingClientRect();
@@ -176,7 +177,7 @@ test.describe('pieces on several sheets', () => {
     await page.mouse.down();
     await page.mouse.move(handle.x - box.width / 2, handle.y - box.height / 2, { steps: 6 });
     await page.mouse.up();
-    await expect.poll(async () => (await app.geometry()).pieces.find((p) => p.id === a)!.w / w0).toBeCloseTo(0.5, 2);
+    await expect.poll(async () => (await app.geometry()).pieces.find((p) => p.id === a)!.w / w0).toBeCloseTo(0.5, 1);
   });
 });
 
