@@ -117,6 +117,31 @@
       "kB": 15.7,
       "measured": 14.9,
       "what": "The third-party licenses page in Hindi, the same THIRD_PARTY_NOTICES.md with a Hindi introduction and frame: it grows with each dependency the build ships."
+    },
+    "es/hacer-stickers-en-casa.html": {
+      "kB": 9.0,
+      "measured": 8.5,
+      "what": "The stickers guide: its drawing of a sheet of stickers, each shape with the cut line the app's tracer draws around it (about 1.5 kB), and more to say than the other guides (what the contour line needs, what the PDF's line is and isn't, its limits)."
+    },
+    "en/print-stickers-at-home.html": {
+      "kB": 8.8,
+      "measured": 8.4,
+      "what": "The stickers guide in English: the same drawing and text as the Spanish one."
+    },
+    "zh-hans/print-stickers.html": {
+      "kB": 9.7,
+      "measured": 9.2,
+      "what": "The stickers guide in Simplified Chinese: the same drawing as the Spanish one, and Chinese takes three bytes a character in UTF-8."
+    },
+    "hi/print-stickers-at-home.html": {
+      "kB": 10,
+      "measured": 9.5,
+      "what": "The stickers guide in Hindi: the same drawing as the Spanish one, and Devanagari takes three bytes a letter in UTF-8."
+    },
+    "fr/faire-ses-stickers-soi-meme.html": {
+      "kB": 9.3,
+      "measured": 8.8,
+      "what": "The stickers guide in French: the same drawing as the Spanish one, and French takes more words to say the same."
     }
   }
 }
