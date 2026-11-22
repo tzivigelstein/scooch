@@ -3,3 +3,12 @@ dist/
 .DS_Store
 *.log
 e2e/out/
+
+# Yarn 4: only the pinned release is kept; its cache and state are not.
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
