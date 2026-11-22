@@ -43,7 +43,7 @@ describe('the languages', () => {
     for (const { lang, paths } of SITE_LANGUAGES) for (const path of Object.values(paths)) expect(path, lang).toMatch(new RegExp(`^${pathPrefix(lang)}/[a-z0-9]+(-[a-z0-9]+)*$`));
   });
 
-  test('the Spanish addresses are still the ones published before there were other languages', () => {
+  test('the Spanish addresses are still the ones published, a new page’s added at its place', () => {
     expect(Object.values(language('es').paths)).toEqual([
       '/es/imprimir-varias-fotos-en-una-hoja',
       '/es/cuantas-fotos-caben-en-una-hoja',
@@ -51,6 +51,7 @@ describe('the languages', () => {
       '/es/foto-carnet-para-imprimir',
       '/es/imprimir-misma-foto-varias-veces',
       '/es/imprimir-imagen-tamano-real',
+      '/es/hacer-stickers-en-casa',
       '/es/preguntas-frecuentes',
       '/es/terminos',
       '/es/privacidad',

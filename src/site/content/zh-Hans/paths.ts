@@ -12,6 +12,7 @@ export const PATHS: Readonly<Record<PageId, string>> = Object.freeze({
   'id-photos': '/zh-hans/id-photo-layout',
   'same-photo': '/zh-hans/same-photo-multiple-copies',
   'actual-size': '/zh-hans/print-image-actual-size',
+  stickers: '/zh-hans/print-stickers',
   faq: '/zh-hans/faq',
   'legal-terms': '/zh-hans/terms',
   'legal-privacy': '/zh-hans/privacy',

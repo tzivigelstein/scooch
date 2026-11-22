@@ -14,6 +14,7 @@ export const PATHS: Readonly<Record<PageId, string>> = Object.freeze({
   'id-photos': '/hi/passport-size-photo-a4-sheet',
   'same-photo': '/hi/print-same-photo-multiple-times',
   'actual-size': '/hi/print-image-actual-size-in-cm',
+  stickers: '/hi/print-stickers-at-home',
   faq: '/hi/faq',
   'legal-terms': '/hi/terms',
   'legal-privacy': '/hi/privacy',

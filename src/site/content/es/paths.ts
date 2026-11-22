@@ -13,6 +13,7 @@ export const PATHS: Readonly<Record<PageId, string>> = Object.freeze({
   'id-photos': '/es/foto-carnet-para-imprimir',
   'same-photo': '/es/imprimir-misma-foto-varias-veces',
   'actual-size': '/es/imprimir-imagen-tamano-real',
+  stickers: '/es/hacer-stickers-en-casa',
   faq: '/es/preguntas-frecuentes',
   'legal-terms': LEGAL_PATHS.terms,
   'legal-privacy': LEGAL_PATHS.privacy,

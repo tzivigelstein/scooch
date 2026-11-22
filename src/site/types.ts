@@ -19,6 +19,7 @@ export const PAGE_IDS = Object.freeze([
   'id-photos',
   'same-photo',
   'actual-size',
+  'stickers',
   'faq',
   'legal-terms',
   'legal-privacy',

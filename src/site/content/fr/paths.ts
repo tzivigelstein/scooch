@@ -11,6 +11,7 @@ export const PATHS: Readonly<Record<PageId, string>> = Object.freeze({
   'id-photos': '/fr/photo-identite-a-imprimer',
   'same-photo': '/fr/imprimer-plusieurs-fois-la-meme-photo',
   'actual-size': '/fr/imprimer-image-taille-reelle',
+  stickers: '/fr/faire-ses-stickers-soi-meme',
   faq: '/fr/questions-frequentes',
   'legal-terms': '/fr/conditions-utilisation',
   'legal-privacy': '/fr/confidentialite',
