@@ -131,7 +131,11 @@ test.describe('dropping a piece on another one', () => {
     from: Box[];
     /** Every frame after that: where each piece and the selection frame were. */
     frames: { pieces: Box[]; frame: Box | null }[];
-    /** What each piece had CSS transitions on at the first frame after the drop. */
+    /**
+     * Which of left and top each piece started a CSS transition on after the
+     * pointer was let go. Told by the browser's own event, not read at a
+     * frame: on a slow machine the first frame can come when the 180 ms are over.
+     */
     transitions: string[][];
     on: boolean;
   }
@@ -146,10 +150,19 @@ test.describe('dropping a piece on another one', () => {
         const r = el.getBoundingClientRect();
         return { x: r.x, y: r.y, w: r.width, h: r.height };
       };
-      const noted: Noted = (w.noted = { from: [], frames: [], transitions: [], on: true });
+      const noted: Noted = (w.noted = { from: [], frames: [], transitions: ids.map(() => []), on: true });
+      addEventListener(
+        'transitionrun',
+        (e) => {
+          const i = ids.indexOf(Number((e.target as HTMLElement).dataset?.id));
+          const moves = e.propertyName === 'left' || e.propertyName === 'top';
+          if (!noted.on || !noted.from.length || i < 0 || !moves || !(e.target as HTMLElement).matches('#sheets .piece')) return;
+          noted.transitions[i] = [...new Set([...noted.transitions[i], e.propertyName])].sort();
+        },
+        true
+      );
       const note = () => {
         if (!noted.on) return;
-        if (!noted.frames.length) noted.transitions = nodes().map((n) => n.getAnimations().map((a) => (a as CSSTransition).transitionProperty).sort());
         noted.frames.push({ pieces: nodes().map((n) => box(n)!), frame: box(document.getElementById('frame')) });
         requestAnimationFrame(note);
       };
@@ -217,14 +230,14 @@ test.describe('dropping a piece on another one', () => {
 
   /**
    * It went straight from where it was let go to where it rests, gliding. That
-   * it glides is told by the transition running on its position, not by
-   * catching it halfway: a slow machine's first frame can come when the 180 ms
-   * are almost over.
+   * it glides is told by the transition the browser started on its position,
+   * not by catching it halfway: a slow machine's first frame can come when the
+   * 180 ms are over.
    */
   function expectGlide(noted: Noted, i: number) {
     const way = wayOf(noted, i);
     expect(way.travel, `it had a way to go: ${way.seen}`).toBeGreaterThan(10 * TOL);
-    expect(noted.transitions[i].filter((p) => p === 'left' || p === 'top'), 'its position glides').not.toEqual([]);
+    expect(noted.transitions[i], 'its position glides').not.toEqual([]);
     expect(way.back, `never away from where it ends: ${way.seen}`).toBeLessThanOrEqual(TOL);
     expect(way.strayed, `straight from where it was let go: ${way.seen}`).toBeLessThanOrEqual(TOL);
   }
