@@ -102,7 +102,7 @@ change in every translation:
 | What changes | Where to look | What to update |
 | --- | --- | --- |
 | Anything saved in the browser | `src/state/settings.ts` (every setting and where it lives), `src/config.ts` (storage keys), `src/services/storage/` (the IndexedDB stores), `src/services/projects.ts`, `src/state/prefs.ts`, `src/state/view.ts`, `src/state/savings.ts` | privacy: Qué se guarda en tu dispositivo, Cómo borrar estos datos |
-| Any request to another server (fonts, CDNs, error reporting) | `index.html`, `src/` | privacy: Lo que no hacemos, Otros servicios |
+| Any request to another server (fonts, CDNs, error reporting), or anything sent anywhere | `index.html`, `src/`; `tests/build/other-origins.test.ts` and `e2e/specs/privacy.spec.ts` fail on it (see below) | privacy: Tus archivos, Lo que no hacemos, Otros servicios |
 | Analytics | | privacy: Analítica, Lo que no hacemos (see below) |
 | The donation link | `DONATE_URL` in `src/config.ts` (empty today, so the summary after printing never asks for a donation) | privacy: Aportes; terms: sections 7 and 9 |
 | Hosting, or hosting features that add scripts, cookies or logs (analytics, toolbars, firewall challenges, log drains) | the hosting provider's dashboard: not visible in the repository | privacy: Alojamiento (the provider's name and the link to its privacy policy are one line in each language: «Hoy ese proveedor es Vercel…»), Lo que no hacemos |
@@ -125,6 +125,22 @@ dispositivo, or in the same section of a translation: a new key needs its
 item in every policy, and its term in the test's `POLICY`, for each
 language. What lives in IndexedDB isn't checked that way. The same test
 checks that every policy still says there are no analytics.
+
+What backs Tus archivos, «Scooch no guarda cookies» and Lo que no hacemos:
+`e2e/specs/privacy.spec.ts` runs a whole session in the editor, in
+Chromium, WebKit and Firefox, and fails on any request to another origin,
+any request with a body (to the site itself too), any request for anything
+but a file of the build, any WebSocket or cookie, or a worker it can't see
+into. The session's summary after printing shows the Patreon link (through
+`?donar=`, as on localhost) without anything reaching Patreon.
+`tests/build/other-origins.test.ts` fails when the editor's code calls an
+API that sends or connects, or when the build (libraries and workers
+included) names another server other than a few addresses that are never
+fetched, each listed there with its reason, or one of its pages loads
+anything from elsewhere. Neither can see what the hosting provider adds or
+logs (the Alojamiento row above), nor code the session doesn't reach
+beyond what the unit test reads; links to other sites (the policies' own
+links to Vercel and Patreon) are links, not requests, and aren't checked.
 
 The links to Vercel's and Patreon's privacy policies were checked on
 2026-11-13. Vercel's brand guidelines (vercel.com/geist/brands, read on

@@ -98,15 +98,32 @@ On a phone:
   them. Where the browser allows no storage (some private windows), the app
   still works, says that it can't save, and the work is gone when the tab
   closes.
-- **How this is checked.** The static pages are tested to make no request
-  outside their own origin (`e2e/specs/site-pages.spec.ts`). Every setting
-  declares where it is kept (`src/state/settings.ts`, checked by
-  `tests/state/settings-registry.test.ts`), and a test fails when a key the
-  app keeps in localStorage is missing from the privacy policy
-  (`tests/site/legal.test.ts`). The editor has no code that sends data
-  anywhere, but no test yet checks that it never contacts another origin: a
-  change that adds any request elsewhere also has to update the privacy
-  policy ([docs/legal/README.md](docs/legal/README.md) lists what to check).
+- **How this is checked.** A browser test runs a whole session in the
+  editor (images and a PDF, editing, crop, cut lines, every dialog, language
+  and theme, projects, the clipboard, downloading and printing the PDF, a
+  reload) and fails on any request to another origin, any request with a
+  body (even to the site itself), any request for something other than a
+  file of the build, any WebSocket or cookie, and any worker it can't see
+  into (`e2e/specs/privacy.spec.ts`). It watches from the network (the
+  browser's proxy is a server in the test), from Playwright and from inside
+  each page and worker, because each browser hides part of it from
+  Playwright (`e2e/support/network.ts` says what each one shows), and it runs
+  in Chromium, WebKit and Firefox. Before the browser, a unit test fails
+  when the editor's code calls an API that sends or connects, or when the
+  build, its libraries and workers included, names another server other
+  than a few addresses that are never fetched (namespaces, links in error
+  messages), or one of its pages loads anything from elsewhere
+  (`tests/build/other-origins.test.ts`). The static pages are tested in the
+  browser to make no request outside their own origin
+  (`e2e/specs/site-pages.spec.ts`). Every setting declares where it is kept
+  (`src/state/settings.ts`, checked by `tests/state/settings-registry.test.ts`),
+  and a test fails when a key the app keeps in localStorage is missing from
+  the privacy policy (`tests/site/legal.test.ts`). What the tests can't see:
+  code the session doesn't reach (only the unit test reads all of it), and
+  whatever the hosting provider adds or logs, which isn't in the repository.
+  A change that adds a request elsewhere fails these tests, and also has to
+  update the privacy policy ([docs/legal/README.md](docs/legal/README.md)
+  lists what to check).
 
 ## Limits
 
