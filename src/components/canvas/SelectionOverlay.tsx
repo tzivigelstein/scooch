@@ -9,7 +9,7 @@ import { gestureStore } from '../../state/gesture.ts';
 import { usePrefs } from '../../state/prefs.ts';
 import { useView } from '../../state/view.ts';
 import { useCurrentNotice } from '../feedback/NoticePill.tsx';
-import { paintCommittedSelection, paintSelection } from './selection.ts';
+import { groupFrames, paintCommittedSelection, paintSelection } from './selection.ts';
 import './SelectionOverlay.css';
 
 export function SelectionOverlay({ layout }: { layout: number }) {
@@ -27,11 +27,10 @@ export function SelectionOverlay({ layout }: { layout: number }) {
   const notice = useCurrentNotice();
   const noticeShown = notice ? [notice.text, notice.action?.label ?? '', !!notice.flash].join('|') : '';
 
-  // One frame per sheet with selected pieces (only with several selected).
-  const frameSheets =
-    selection.length > 1
-      ? sheets.map((sheet) => sheet.id).filter((id) => items.some((item) => item.sheet === id && selection.includes(item.id)))
-      : [];
+  // One frame per sheet with selected pieces (only with several selected),
+  // known by what it frames, the first of them: when they all go to another
+  // sheet together (Arrange, Undo), it goes along with them.
+  const frames = selection.length > 1 ? groupFrames(items, selection) : [];
 
   useLayoutEffect(() => {
     // During a gesture its live values are painted (below); a notice that comes or goes meanwhile waits for its end.
@@ -52,9 +51,9 @@ export function SelectionOverlay({ layout }: { layout: number }) {
 
   return (
     <>
-      {frameSheets.map((id) => (
-        <div key={id} className="group-frame" aria-hidden="true">
-          <span className="handle" data-sheet={id} />
+      {frames.map(({ piece, sheet }) => (
+        <div key={piece} className="group-frame" data-piece={piece} aria-hidden="true">
+          <span className="handle" data-sheet={sheet} />
         </div>
       ))}
       <div id="frame" className="frame" aria-hidden="true" hidden>

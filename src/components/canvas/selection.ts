@@ -26,6 +26,21 @@ export function groupBoxes(list: readonly Piece[]) {
   return new Map([...bySheet].map(([id, rects]) => [id, bounds(rects)!]));
 }
 
+/**
+ * The dashed frames of a selection of several: one per sheet with selected
+ * pieces, known by the first of them (the smallest id) and sorted by it, so
+ * that a frame keeps its element while its pieces change sheet.
+ */
+export function groupFrames(items: readonly Piece[], selection: readonly number[]) {
+  const chosen = new Set(selection);
+  const first = new Map<number, number>();
+  for (const item of items) {
+    const known = first.get(item.sheet);
+    if (chosen.has(item.id) && (known === undefined || item.id < known)) first.set(item.sheet, item.id);
+  }
+  return [...first].map(([sheet, piece]) => ({ sheet, piece })).sort((a, b) => a.piece - b.piece);
+}
+
 export interface SelectionTarget extends Rect {
   sheet: number;
   ids: Set<number>;
@@ -63,11 +78,15 @@ export function paintSelection(list: readonly Piece[], { place = true } = {}) {
     if (cut) frame.style.setProperty('--cut', `${mmToPx(margin)}px`);
   }
   const bySheet = group ? groupBoxes(list) : new Map<number, Rect>();
-  const frames = [...document.querySelectorAll<HTMLElement>('#sheets > .group-frame')];
-  [...bySheet].forEach(([sheet, rect], i) => {
-    const groupStyle = layerStyle(sheet, rect);
-    if (groupStyle && frames[i]) Object.assign(frames[i].style, groupStyle);
-  });
+  // Each dashed frame around the pieces on the sheet of the one it is known by
+  // (during a drag, the sheet they are taken to).
+  const sheetOf = new Map(list.map((item) => [item.id, item.sheet]));
+  for (const node of document.querySelectorAll<HTMLElement>('#sheets > .group-frame')) {
+    const sheet = sheetOf.get(Number(node.dataset.piece));
+    const rect = sheet === undefined ? undefined : bySheet.get(sheet);
+    const groupStyle = rect && layerStyle(sheet!, rect);
+    if (groupStyle) Object.assign(node.style, groupStyle);
+  }
   const target = selectionTarget(list, bySheet);
   const size = document.getElementById('piece-size');
   if (target && size) size.textContent = group ? t('pieces.count', { n: list.length }) : sizeText(target.w, target.h);
@@ -169,6 +188,14 @@ export function placeBar(bar: HTMLElement, target: Pick<SelectionTarget, 'sheet'
   // notice and the zoom control when it would sit on them.
   const over = { side: 'over', x: inX(xs[0]), y: clamp(above, edge, canvas.height - h - edge), w, h };
   const spot = pickSpot(candidates, { bounds: area, covers, blocked: panels }) ?? liftOff(over, { bounds: area, blocked: panels, gap }) ?? over;
+  // Out of sight (after a drag, or stepped aside), it shows up where it goes
+  // instead of sliding there from where it was; its fading in goes on.
+  const unseen = getComputedStyle(bar).opacity === '0';
+  if (unseen) bar.style.transitionProperty = 'opacity';
   bar.style.transform = `translate(${Math.round(spot.x)}px, ${Math.round(spot.y)}px)`;
+  if (unseen) {
+    bar.getBoundingClientRect();
+    bar.style.transitionProperty = '';
+  }
   bar.dataset.side = spot.side;
 }

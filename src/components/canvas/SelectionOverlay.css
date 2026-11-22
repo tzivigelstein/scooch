@@ -77,7 +77,8 @@
     display: none;
   }
 
-  .sheets.is-animating .frame {
+  .sheets.is-animating .frame,
+  .sheets.is-animating .group-frame {
     transition-property: left, top, width, height;
     transition-duration: 180ms;
     transition-timing-function: var(--ease);

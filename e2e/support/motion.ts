@@ -20,11 +20,12 @@ export interface Noted {
   /** Where the pointer was then. */
   pointer: Point;
   /**
-   * Every frame after that: where each piece, the selection frame and the
-   * pointer were, whether its button was held, and whether some piece showed
-   * twice (in flight and where it lands).
+   * Every frame after that: where each piece, the selection frame, the
+   * dashed frames of a selection of several and the pointer were, whether its
+   * button was held, whether some piece showed twice (in flight and where it
+   * lands), and how much each sheet's cut lines showed (their opacity).
    */
-  frames: { pieces: Box[]; frame: Box | null; pointer: Point; held: boolean; twice: boolean }[];
+  frames: { pieces: Box[]; frame: Box | null; groups: Box[]; pointer: Point; held: boolean; twice: boolean; cuts: number[] }[];
   /** Where each piece was when the pointer was let go (noted from the press: null until then). */
   released: Box[] | null;
   /**
@@ -95,7 +96,15 @@ const notePieces = (page: Page, ids: number[], start: 'pointerdown' | 'pointerup
       );
       const note = () => {
         if (!noted.on) return;
-        noted.frames.push({ pieces: nodes().map((n) => box(n)!), frame: box(document.getElementById('frame')), pointer, held, twice: twice() });
+        noted.frames.push({
+          pieces: nodes().map((n) => box(n)!),
+          frame: box(document.getElementById('frame')),
+          groups: [...document.querySelectorAll<HTMLElement>('#sheets > .group-frame')].map((n) => box(n)!),
+          pointer,
+          held,
+          twice: twice(),
+          cuts: [...document.querySelectorAll('#sheets .cut-layer')].map((n) => Number(getComputedStyle(n).opacity)),
+        });
         requestAnimationFrame(note);
       };
       addEventListener(
@@ -228,6 +237,20 @@ export function expectGlide(noted: Noted, i: number) {
   expect(noted.transitions[i], 'its position glides').not.toEqual([]);
   expect(way.back, `never away from where it ends: ${way.seen}`).toBeLessThanOrEqual(TOL);
   expect(way.strayed, `straight from where it was let go: ${way.seen}`).toBeLessThanOrEqual(TOL);
+}
+
+/** The noted pieces (all selected, on one sheet) had one dashed frame, around them, at every frame. */
+export function expectGroupFrameOnPieces(noted: Noted) {
+  const apart = noted.frames.map(({ pieces, groups }) => {
+    if (groups.length !== 1) return Infinity;
+    const [g] = groups;
+    const x = Math.min(...pieces.map((p) => p.x));
+    const y = Math.min(...pieces.map((p) => p.y));
+    const right = Math.max(...pieces.map((p) => p.x + p.w));
+    const bottom = Math.max(...pieces.map((p) => p.y + p.h));
+    return Math.max(Math.abs(g.x - x), Math.abs(g.y - y), Math.abs(g.x + g.w - right), Math.abs(g.y + g.h - bottom));
+  });
+  expect(Math.max(...apart), `the dashed frame around the pieces (px off at each frame: ${apart.map((d) => Math.round(d)).join(', ')})`).toBeLessThanOrEqual(TOL);
 }
 
 /** The selection frame was on the piece at every frame. */

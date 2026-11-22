@@ -1,11 +1,14 @@
 // Cut lines in a real browser: the layer over the pieces lets the pointer
-// through, hides while dragging, follows the cut margin while typing, the
+// through, hides while dragging, waits while the pieces glide to where a
+// change leaves them (frame by frame), follows the cut margin while typing, the
 // selected piece shows its cut box, and the choice survives a reload. Which
 // lines and which stroke are tested lower (tests/components/CutLayer.test.tsx,
 // tests/components/CutsSection.test.tsx, tests/core/cutmarks.test.js,
 // tests/services/pdf.test.js); the PDF against the screen, in export-parity.spec.ts.
 import type { Page } from '@playwright/test';
-import { expect, test, type App } from '../support/test.ts';
+import { dragPieceTo, pieceOf } from '../support/editing.ts';
+import { animationsOver, dropNoted, expectGlide, noteClick, TOL, wayOf } from '../support/motion.ts';
+import { cards, expect, test, type App } from '../support/test.ts';
 
 /** The first sheet's cut lines (mm, as the SVG draws them) and its stroke. */
 const screenLines = (page: Page) =>
@@ -72,6 +75,44 @@ test.describe('the cut layer', () => {
     expect(await layer.evaluate((svg) => getComputedStyle(svg).visibility)).toBe('hidden');
     await page.mouse.up();
     await expect(layer).toBeVisible();
+  });
+
+  /** Three cards arranged with outline cut lines, one dragged away: «Arrange» takes it back. Returns its id. */
+  async function oneAway(app: App) {
+    await app.addFiles(cards(0, 3));
+    await app.page.locator('#arrange').click();
+    await chooseCuts(app, 'outline');
+    const [id] = await app.ids();
+    const p = await pieceOf(app, id);
+    await dragPieceTo(app, id, p.x, p.y + 150);
+    await expect.poll(async () => (await pieceOf(app, id)).y).not.toBe(p.y);
+    await animationsOver(app.page);
+    return id;
+  }
+
+  test.describe('with motion', () => {
+    test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+    test('while the pieces glide to where «Arrange» leaves them, the lines, already where they end, wait for them, frame by frame', async ({ app, page }) => {
+      const id = await oneAway(app);
+      await noteClick(page, [id]);
+      await page.locator('#arrange').click();
+      const noted = await dropNoted(page);
+      expectGlide(noted, 0);
+      const rest = noted.frames.at(-1)!.pieces[0];
+      const away = noted.frames.filter((f) => Math.hypot(f.pieces[0].x - rest.x, f.pieces[0].y - rest.y) > 2);
+      expect(away.map((f) => Math.max(...f.cuts)), 'hidden while the piece is on its way').toEqual(away.map(() => 0));
+      expect(noted.frames.at(-1)!.cuts, 'and back once it is there').toEqual([1]);
+    });
+  });
+
+  test('with reduced motion, the lines are there at every frame after «Arrange»', async ({ app, page }) => {
+    const id = await oneAway(app);
+    await noteClick(page, [id]);
+    await page.locator('#arrange').click();
+    const noted = await dropNoted(page);
+    expect(wayOf(noted, 0).travel, 'it went back').toBeGreaterThan(10 * TOL);
+    expect(noted.frames.map((f) => f.cuts), 'shown at every frame').toEqual(noted.frames.map(() => [1]));
   });
 });
 

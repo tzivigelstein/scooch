@@ -10,7 +10,7 @@ import type { Page } from '@playwright/test';
 import { frames, setZoom, stageBox } from '../support/canvas.ts';
 import { closerThan, near, onGrid, overlapping } from '../support/geometry.ts';
 import { dragPieceTo, dropFile, pieceOf, setGrid } from '../support/editing.ts';
-import { animationsOver, dropNoted, expectFrameOnPiece, expectGlide, noteDrop, notePress, TOL, wayOf } from '../support/motion.ts';
+import { animationsOver, dropNoted, expectFrameOnPiece, expectGlide, expectGroupFrameOnPieces, noteDrop, notePress, noteToolbar, TOL, toolbarNoted, wayOf } from '../support/motion.ts';
 import { saved } from '../support/projects.ts';
 import { counts, holdPiece, pieceIds, placeholders, scrollOf, scrollStops } from '../support/sheets.ts';
 import { cards, expect, test, type App } from '../support/test.ts';
@@ -150,7 +150,7 @@ test.describe('dropping a piece on another one', () => {
       expectFrameOnPiece(noted);
     });
 
-    test('two selected and moved aside together glide straight there', async ({ app, page }) => {
+    test('two selected and moved aside together glide straight there; their dashed frame with them', async ({ app, page }) => {
       await app.addFiles(cards(0, 3));
       await page.locator('#arrange').click();
       const [a, b, c] = await app.ids();
@@ -163,6 +163,7 @@ test.describe('dropping a piece on another one', () => {
       expect(overlapping((await app.geometry()).pieces)).toEqual([]);
       expectGlide(noted, 0);
       expectGlide(noted, 1);
+      expectGroupFrameOnPieces(noted);
     });
 
     test('with no free spot nearby it glides straight back to its place; its frame with it', async ({ app, page }) => {
@@ -268,6 +269,35 @@ test.describe('with motion, a drag started while the last change still animates'
     expect(noted.transitions[0], 'the piece never glides').toEqual([]);
     expect(noted.frameTransitions, 'nor its frame').toEqual([]);
     expectFrameOnPiece(noted);
+  });
+});
+
+test.describe('with motion, after a drag', () => {
+  test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+  test('the piece toolbar shows up next to where the piece was let go, never sliding there from where it was', async ({ app, page }) => {
+    await app.addFiles(['card00.png']);
+    const [id] = await app.ids();
+    await app.clickPiece(app.piece(id));
+    const bar = page.locator('#piecebar');
+    await expect(bar).toHaveCSS('opacity', '1');
+    const before = (await bar.boundingBox())!;
+    const box = (await app.piece(id).boundingBox())!;
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    await page.mouse.move(at.x, at.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 8; i++) await page.mouse.move(at.x + 15 * i, at.y + 25 * i);
+    await expect(bar).toHaveCSS('opacity', '0');
+    await noteToolbar(page);
+    await page.mouse.up();
+    await expect(bar).toHaveCSS('opacity', '1');
+    const noted = await toolbarNoted(page);
+    const shown = noted.frames.filter((f) => f.opacity > 0).map((f) => f.box);
+    const to = shown.at(-1)!;
+    expect(Math.hypot(to.x - before.x, to.y - before.y), 'it moved with the piece').toBeGreaterThan(50);
+    const off = shown.map((b) => Math.max(Math.abs(b.x - to.x), Math.abs(b.y - to.y)));
+    expect(Math.max(...off), `where it ends whenever it shows (px off at each frame: ${off.map((d) => Math.round(d)).join(', ')})`).toBeLessThanOrEqual(TOL);
+    expect(noted.transitions.map((t) => t.property), 'it only fades in').toEqual(['opacity']);
   });
 });
 

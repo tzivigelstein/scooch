@@ -5,7 +5,7 @@
 // matrix and the copies are tested on the stores (tests/state/align-and-
 // distribute, group-transforms, group-operations-matrix, duplicate-and-
 // select-same) and the panel's controls in tests/components.
-import { frames } from '../support/canvas.ts';
+import { frames, setZoom } from '../support/canvas.ts';
 import { boundsOf, centersOutside, onGrid, overlapping } from '../support/geometry.ts';
 import { placeThree, positions } from '../support/selection.ts';
 import { expect, norm, test, tiles } from '../support/test.ts';
@@ -149,6 +149,34 @@ test.describe('pieces on several sheets', () => {
     }
     await page.locator('label:has(#width)').hover();
     await expect(page.locator('.preview-dimension')).toHaveCount(1);
+  });
+
+  test('the handle of each sheet’s dashed frame scales by that frame, also when the document lists the second sheet’s piece first', async ({ app, page }) => {
+    await app.addFiles(['wide.png', 'small.jpg']);
+    const [a, b] = await app.ids();
+    // The first piece to the second sheet: the document still lists it first.
+    await app.piece(a).focus();
+    await page.keyboard.press('Shift+PageDown');
+    await expect.poll(async () => (await app.geometry()).pieces.map((p) => p.sheetIndex)).toEqual([1, 0]);
+    await app.selectIds([a, b]);
+    await setZoom(page, 50);
+    await app.piece(a).evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    const w0 = (await app.geometry()).pieces.find((p) => p.id === a)!.w;
+    const box = (await app.piece(a).boundingBox())!;
+    // The handle at the bottom right corner of the frame around it, taken to the piece's middle: half its size.
+    const handles = await page.locator('#sheets > .group-frame .handle').evaluateAll((list) =>
+      list.map((h) => {
+        const r = h.getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      })
+    );
+    const corner = { x: box.x + box.width, y: box.y + box.height };
+    const handle = handles.reduce((m, h) => (Math.hypot(h.x - corner.x, h.y - corner.y) < Math.hypot(m.x - corner.x, m.y - corner.y) ? h : m));
+    await page.mouse.move(handle.x, handle.y);
+    await page.mouse.down();
+    await page.mouse.move(handle.x - box.width / 2, handle.y - box.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(async () => (await app.geometry()).pieces.find((p) => p.id === a)!.w / w0).toBeCloseTo(0.5, 2);
   });
 });
 

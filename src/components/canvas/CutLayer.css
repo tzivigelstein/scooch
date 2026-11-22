@@ -14,6 +14,19 @@
     visibility: hidden;
   }
 
+  /* While the pieces glide to where a change leaves them, the lines, already
+     where they end, wait for them, and fade in as they get there. */
+  .sheets.is-animating .cut-layer {
+    animation: cut-lines-wait 320ms var(--ease);
+  }
+
+  @keyframes cut-lines-wait {
+    0%,
+    56% {
+      opacity: 0;
+    }
+  }
+
   /* The cut lines, emphasized while their settings are hovered or focused. */
   .cut-layer .cut-emphasis {
     stroke: rgb(0 102 255 / 0.5);

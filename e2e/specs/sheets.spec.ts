@@ -10,7 +10,7 @@
 import { expect, test, cards, type App } from '../support/test.ts';
 import { frames, setZoom, stageBox } from '../support/canvas.ts';
 import { outsideMargin, overlapping } from '../support/geometry.ts';
-import { animationsOver, dropNoted, expectFrameOnPiece, expectGlide, noteClick, TOL, wayOf } from '../support/motion.ts';
+import { animationsOver, dropNoted, expectFrameOnPiece, expectGlide, expectGroupFrameOnPieces, noteClick, TOL, wayOf } from '../support/motion.ts';
 import { movesOutsideWindow, OUTSIDE_WINDOW } from '../support/pointer.ts';
 import { counts, holdPiece, lastSheetBottom, pageAt, pieceIds, placeholders, scrollOf, scrollStops, sheetIds, toBelowLastSheet } from '../support/sheets.ts';
 
@@ -51,31 +51,31 @@ test('«Acomodar» puts 20 equal cards back on 3 sheets, 9 + 9 + 2, and says so;
   expect(new Set(boxes).size).toBe(1);
 });
 
-test.describe('«Arrange» taking the selected piece to another sheet, frame by frame (support/motion.ts)', () => {
+test.describe('«Arrange» taking selected pieces to another sheet, frame by frame (support/motion.ts)', () => {
   /**
-   * Twelve cards on two sheets (9 + 3), seen whole at 25 %, and one of the
-   * first sheet removed: arranged again, the first of the second sheet goes up
-   * to the first. Returns that one, selected.
+   * Twelve cards on two sheets (9 + 3), seen whole at 25 %, and `n` of the
+   * first sheet removed: arranged again, the first `n` of the second sheet go
+   * up to the first. Returns those, selected.
    */
-  async function oneGoingUp(app: App) {
+  async function goingUp(app: App, n: number) {
     const page = app.page;
     await app.addFiles(cards(0, 12));
     await setZoom(page, 25);
     await page.locator('#stage').evaluate((el) => el.scrollTo(0, 0));
-    const [[first], [up]] = await pieceIds(app);
-    await app.selectIds([first]);
+    const [first, second] = await pieceIds(app);
+    await app.selectIds(first.slice(0, n));
     await page.keyboard.press('Delete');
-    await expect(app.pieces()).toHaveCount(11);
-    await app.selectIds([up]);
+    await expect(app.pieces()).toHaveCount(12 - n);
+    await app.selectIds(second.slice(0, n));
     await animationsOver(page);
-    return up;
+    return second.slice(0, n);
   }
 
   test.describe('with motion', () => {
     test.use({ contextOptions: { reducedMotion: 'no-preference' } });
 
     test('it slides over the sheets straight from where it was, its frame with it, and shows once all along', async ({ app, page }) => {
-      const up = await oneGoingUp(app);
+      const [up] = await goingUp(app, 1);
       await noteClick(page, [up]);
       await page.locator('#arrange').click();
       const noted = await dropNoted(page);
@@ -86,10 +86,21 @@ test.describe('«Arrange» taking the selected piece to another sheet, frame by 
       await expect(page.locator('#sheets .piece-flight')).toHaveCount(0);
       await expect(app.piece(up)).toHaveCSS('opacity', '1');
     });
+
+    test('two selected that go up together slide there together, their dashed frame with them', async ({ app, page }) => {
+      const ids = await goingUp(app, 2);
+      await noteClick(page, ids);
+      await page.locator('#arrange').click();
+      const noted = await dropNoted(page);
+      expect((await pieceIds(app))[0], 'on the first sheet').toEqual(expect.arrayContaining(ids));
+      expectGlide(noted, 0);
+      expectGlide(noted, 1);
+      expectGroupFrameOnPieces(noted);
+    });
   });
 
   test('with reduced motion it is on the other sheet from the first frame, with its frame', async ({ app, page }) => {
-    const up = await oneGoingUp(app);
+    const [up] = await goingUp(app, 1);
     await noteClick(page, [up]);
     await page.locator('#arrange').click();
     const noted = await dropNoted(page);
