@@ -1,7 +1,7 @@
 {
   "$comment": [
     "Bundle size budgets, checked by `yarn size` (scripts/check-size.mjs) on what `yarn build` writes to dist/.",
-    "Sizes are gzip at level 9, in kB of 1000 bytes; a group of files is the sum of each file's size, as each one is sent apart.",
+    "Sizes are gzip at level 9, in kB of 1000 bytes; a font (.woff2) counts as it is, compressed already and sent so; a group of files is the sum of each file's size, as each one is sent apart.",
     "«measured» is the size when the budget was set; the budget is that plus about 5 %, rounded up (to 0.1 kB under 100 kB, to 1 kB above).",
     "Raising a budget needs a reason in the commit message: see docs/testing.md."
   ],
@@ -143,5 +143,10 @@
       "measured": 9.4,
       "what": "The stickers guide in French: the same drawing as the Spanish one, and French takes more words to say the same."
     }
+  },
+  "pageFirstVisit": {
+    "kB": 67.0,
+    "measured": 63.8,
+    "what": "What a first visit to a static page downloads: its HTML, the fonts it preloads (a woff2 counts as it is) and its scripts; the budget applies to each page, set on the largest, the third-party licenses in Hindi (15.6 kB of HTML and Inter's Latin file, 48.3 kB, the same file and address as the editor's). A guide is about 55 kB, a calculator about 63 kB. Catches a page that starts loading another subset of Inter (Latin Extended is 85 kB) or another font."
   }
 }

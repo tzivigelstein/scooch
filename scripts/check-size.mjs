@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Bundle size budgets (`yarn size`, after `yarn build`): the gzip sizes of what
-// the production build serves, against scripts/size-budgets.json. Prints a
-// table of every size against its budget and fails when one is over.
+// the production build serves (a font as it is), against
+// scripts/size-budgets.json. Prints a table of every size against its budget
+// and fails when one is over.
 // docs/testing.md says how to update a budget.
 //
 //   node scripts/check-size.mjs [build folder, dist by default]
@@ -21,6 +22,9 @@ const KEYED = Object.freeze({ 'page:': 'pages', 'language:': 'languages' });
 
 /** Bytes after gzip at its highest level, as a server that compresses ahead of time sends them. */
 export const gzipSize = (bytes) => gzipSync(bytes, { level: 9 }).length;
+
+/** A file's bytes as served: gzipped, but a font as it is (woff2 is compressed already, and servers send it so). */
+export const servedSize = (path, bytes) => (/\.woff2$/i.test(path) ? bytes.length : gzipSize(bytes));
 
 // An attribute: a name, optionally `=` and a value in double, single or no quotes.
 const ATTRIBUTE = /([^\s"'=<>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
@@ -52,6 +56,10 @@ export const eagerScripts = (html) =>
     if (tag === 'link' && attrs.get('href') && rels(attrs).includes('modulepreload')) return [attrs.get('href')];
     return [];
   });
+
+/** The fonts a page preloads (`<link rel="preload" as="font">`), in order. */
+export const preloadedFonts = (html) =>
+  parseTags(html).flatMap(({ tag, attrs }) => (tag === 'link' && attrs.get('href') && rels(attrs).includes('preload') && attrs.get('as')?.toLowerCase() === 'font' ? [attrs.get('href')] : []));
 
 /** The stylesheets a page links (what blocks its first paint), in order. */
 export const eagerStyles = (html) => parseTags(html).flatMap(({ tag, attrs }) => (tag === 'link' && attrs.get('href') && rels(attrs).includes('stylesheet') ? [attrs.get('href')] : []));
@@ -139,7 +147,7 @@ export function measureBuild(dir) {
     if (!sizes.has(path)) {
       const full = join(dir, path);
       if (!existsSync(full)) throw new Error(`${path} is referenced by the build but isn't in ${dir}`);
-      sizes.set(path, { path, bytes: gzipSize(readFileSync(full)) });
+      sizes.set(path, { path, bytes: servedSize(path, readFileSync(full)) });
     }
     return sizes.get(path);
   };
@@ -147,6 +155,14 @@ export function measureBuild(dir) {
   const all = filesUnder(dir);
   const pages = all.filter((p) => p.endsWith('.html') && p !== 'index.html');
   const editor = readFileSync(join(dir, 'index.html'), 'utf8');
+  // What a first visit to each static page downloads: its HTML, the fonts it
+  // preloads and its scripts. One budget covers them all: the largest's.
+  const visits = pages.map((p) => {
+    const html = readFileSync(join(dir, p), 'utf8');
+    const files = [file(p), ...local([...preloadedFonts(html), ...scriptSources(html)])];
+    return { page: p, files, bytes: files.reduce((sum, f) => sum + f.bytes, 0) };
+  });
+  const largest = visits.reduce((a, b) => (a && a.bytes >= b.bytes ? a : b), null);
   return [
     { id: 'editorHtml', label: 'editor: index.html', files: [file('index.html')] },
     { id: 'initialJs', label: 'editor: JS loaded at start', files: local(eagerScripts(editor)) },
@@ -156,6 +172,7 @@ export function measureBuild(dir) {
     { id: 'totalCss', label: 'CSS, every file', files: all.filter((p) => p.endsWith('.css')).map(file) },
     { id: 'pageScripts', label: 'static pages: their scripts', files: local(pages.flatMap((p) => scriptSources(readFileSync(join(dir, p), 'utf8')))) },
     ...pages.map((p) => ({ id: `page:${p}`, label: p, files: [file(p)] })),
+    ...(largest ? [{ id: 'pageFirstVisit', label: `static pages: first visit, the largest (${largest.page})`, files: largest.files }] : []),
   ];
 }
 
