@@ -79,6 +79,26 @@ describe('the fake IndexedDB is as strict as a browser', () => {
     await expect(new Promise((resolve) => (cursor.onsuccess = () => resolve(cursor.result?.key)))).resolves.toBe('p1');
     db.close();
   });
+
+  test('a Blob read from a row can’t be read once the row is rewritten, unless its bytes were read before, as in WebKit', async () => {
+    await seedLayout(NAME, { version: 2, projects: [], files: [], blobs: [{ hash: 'h', blob: new Blob(['old']) }] });
+    const db = await openRaw(NAME);
+    const read = () =>
+      new Promise<Blob>((resolve) => {
+        const r = db.transaction('blobs').objectStore('blobs').get('h');
+        r.onsuccess = () => resolve(r.result.blob);
+      });
+    const [first, second] = [await read(), await read()];
+    expect(new TextDecoder().decode(await first.arrayBuffer())).toBe('old');
+    await new Promise((resolve) => {
+      const tx = db.transaction('blobs', 'readwrite');
+      tx.objectStore('blobs').put({ hash: 'h', bytes: new ArrayBuffer(3), type: '' });
+      tx.oncomplete = resolve;
+    });
+    await expect(second.arrayBuffer()).rejects.toMatchObject({ name: 'NotReadableError' });
+    expect(new TextDecoder().decode(await first.arrayBuffer())).toBe('old');
+    db.close();
+  });
 });
 
 describe('what it stores', () => {

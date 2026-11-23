@@ -24,10 +24,17 @@
 // its callbacks still run until then. (In WebKit a small one that finishes
 // before the page is torn down is kept too: this is the case where it doesn't.)
 //
+// And on one that broke opening what earlier layouts stored in WebKit: a Blob
+// read from a row (layouts 1 and 2 stored Blobs) can't be read any more once
+// that row is rewritten or deleted, unless its bytes were read before: reading
+// it fails with NotReadableError (WebKit also logs «Failed to load resource»
+// for its internal blob: URL, and an <img> of it doesn't draw). There it
+// happens most of the time, not always; here always.
+//
 // It relies on fake-indexeddb's internals (pinned in package.json): a
 // transaction's `_state`, `_requests`, `_start` and `_execRequestAsync`, a
 // cursor's `_iterate`, `_position` and its index's `_rawIndex.records`.
-import { IDBCursor, IDBDatabase, IDBFactory, IDBKeyRange, IDBObjectStore, IDBTransaction } from 'fake-indexeddb';
+import { IDBCursor, IDBDatabase, IDBFactory, IDBIndex, IDBKeyRange, IDBObjectStore, IDBTransaction } from 'fake-indexeddb';
 import { afterAll, beforeEach } from 'vitest';
 
 interface FakeTransaction extends IDBTransaction {
@@ -71,10 +78,45 @@ const containsBlob = (value: unknown, seen = new Set<unknown>()): boolean => {
   return Object.values(value).some((v) => containsBlob(v, seen));
 };
 
+// Each row's writes so far (by database, store and key) and each store's deletes
+// by key range; and, for each Blob read from a row and not read yet, which row
+// and how many writes it had then.
+const rowWrites = new Map<string, number>();
+const rangeDeletes = new Map<string, number>();
+const readFrom = new WeakMap<Blob, { row: string; store: string; writes: number; ranges: number }>();
+
+const storeId = (store: IDBObjectStore) => `${store.transaction.db.name}\u0000${store.name}`;
+const rowId = (store: IDBObjectStore, key: unknown) => `${storeId(store)}\u0000${JSON.stringify(key)}`;
+function keyOf(store: IDBObjectStore, value: unknown, key?: IDBValidKey): unknown {
+  if (key !== undefined || store.keyPath === null) return key;
+  const at = (path: string) => path.split('.').reduce<unknown>((v, part) => (v as Record<string, unknown> | undefined)?.[part], value);
+  return Array.isArray(store.keyPath) ? store.keyPath.map(at) : at(store.keyPath);
+}
+const bump = (map: Map<string, number>, id: string) => map.set(id, (map.get(id) ?? 0) + 1);
+
+/** Marks the Blobs in rows just read from `store` as read from their rows, as they are now. */
+function tagBlobs(store: IDBObjectStore, rows: unknown[]) {
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    const id = rowId(store, keyOf(store, row));
+    const stamp = { row: id, store: storeId(store), writes: rowWrites.get(id) ?? 0, ranges: rangeDeletes.get(storeId(store)) ?? 0 };
+    const walk = (value: unknown) => {
+      if (value instanceof Blob) readFrom.set(value, stamp);
+      else if (value && typeof value === 'object' && !ArrayBuffer.isView(value) && !(value instanceof ArrayBuffer)) Object.values(value).forEach(walk);
+    };
+    walk(row);
+  }
+}
+
 const originals = {
   transaction: IDBDatabase.prototype.transaction,
   put: IDBObjectStore.prototype.put,
   add: IDBObjectStore.prototype.add,
+  delete: IDBObjectStore.prototype.delete,
+  storeGet: IDBObjectStore.prototype.get,
+  storeGetAll: IDBObjectStore.prototype.getAll,
+  indexGet: IDBIndex.prototype.get,
+  indexGetAll: IDBIndex.prototype.getAll,
   arrayBuffer: Blob.prototype.arrayBuffer,
   digest: crypto.subtle.digest,
   iterate: (IDBCursor.prototype as FakeCursor)._iterate,
@@ -105,6 +147,7 @@ IDBDatabase.prototype.transaction = function (this: IDBDatabase, ...args: Parame
 
 for (const method of ['put', 'add'] as const) {
   IDBObjectStore.prototype[method] = function (this: IDBObjectStore, value: unknown, key?: IDBValidKey) {
+    bump(rowWrites, rowId(this, keyOf(this, value, key)));
     if (blobsAllowed || !containsBlob(value)) return originals[method].call(this, value, key);
     // As WebKit: the request is accepted, then fails, and the transaction aborts unless the error is handled.
     return (this.transaction as FakeTransaction)._execRequestAsync({
@@ -116,7 +159,39 @@ for (const method of ['put', 'add'] as const) {
   };
 }
 
+IDBObjectStore.prototype.delete = function (this: IDBObjectStore, query: IDBValidKey | IDBKeyRange) {
+  if (query instanceof IDBKeyRange) bump(rangeDeletes, storeId(this));
+  else bump(rowWrites, rowId(this, query));
+  return originals.delete.call(this, query);
+};
+
+// Reads: the Blobs in the rows they give are marked (before the caller's own handler runs).
+function tagging<T>(request: IDBRequest<T>, store: IDBObjectStore, rows: (result: T) => unknown[]) {
+  request.addEventListener('success', () => tagBlobs(store, rows(request.result)));
+  return request;
+}
+IDBObjectStore.prototype.get = function (this: IDBObjectStore, query: IDBValidKey | IDBKeyRange) {
+  return tagging(originals.storeGet.call(this, query), this, (row) => [row]);
+};
+IDBObjectStore.prototype.getAll = function (this: IDBObjectStore, ...args: Parameters<IDBObjectStore['getAll']>) {
+  return tagging(originals.storeGetAll.apply(this, args), this, (rows) => rows);
+};
+IDBIndex.prototype.get = function (this: IDBIndex, query: IDBValidKey | IDBKeyRange) {
+  return tagging(originals.indexGet.call(this, query), this.objectStore, (row) => [row]);
+};
+IDBIndex.prototype.getAll = function (this: IDBIndex, ...args: Parameters<IDBIndex['getAll']>) {
+  return tagging(originals.indexGetAll.apply(this, args), this.objectStore, (rows) => rows);
+};
+
 Blob.prototype.arrayBuffer = function (this: Blob) {
+  const from = readFrom.get(this);
+  if (from && ((rowWrites.get(from.row) ?? 0) !== from.writes || (rangeDeletes.get(from.store) ?? 0) !== from.ranges)) {
+    return inLaterTask(null).then(() => {
+      throw new DOMException('The I/O read operation failed.', 'NotReadableError');
+    });
+  }
+  // Its bytes read, it stays readable.
+  readFrom.delete(this);
   return originals.arrayBuffer.call(this).then(inLaterTask);
 };
 crypto.subtle.digest = function (this: SubtleCrypto, ...args: Parameters<SubtleCrypto['digest']>) {
@@ -127,6 +202,11 @@ afterAll(() => {
   IDBDatabase.prototype.transaction = originals.transaction;
   IDBObjectStore.prototype.put = originals.put;
   IDBObjectStore.prototype.add = originals.add;
+  IDBObjectStore.prototype.delete = originals.delete;
+  IDBObjectStore.prototype.get = originals.storeGet;
+  IDBObjectStore.prototype.getAll = originals.storeGetAll;
+  IDBIndex.prototype.get = originals.indexGet;
+  IDBIndex.prototype.getAll = originals.indexGetAll;
   Blob.prototype.arrayBuffer = originals.arrayBuffer;
   crypto.subtle.digest = originals.digest;
   (IDBCursor.prototype as FakeCursor)._iterate = originals.iterate;
@@ -138,6 +218,8 @@ beforeEach(() => {
   live.clear();
   blobsAllowed = false;
   leaving = gone = false;
+  rowWrites.clear();
+  rangeDeletes.clear();
   Object.assign(globalThis, { indexedDB: new IDBFactory(), IDBKeyRange });
 });
 
