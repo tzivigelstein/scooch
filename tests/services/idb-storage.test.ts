@@ -44,6 +44,24 @@ async function projectWithImage() {
 
 const storedHashes = async () => ((await dump(NAME)).blobs as { hash: string }[]).map((row) => row.hash);
 
+/** Resolves after `n` tasks of the event loop. */
+const tasks = async (n: number) => {
+  for (let i = 0; i < n; i++) await new Promise((resolve) => setImmediate(resolve));
+};
+
+/** The first Blob read from now on waits for `meanwhile` (something else that happens while it is being read). */
+function interruptFirstRead(meanwhile: () => Promise<unknown>) {
+  const read = Blob.prototype.arrayBuffer;
+  let first = true;
+  vi.spyOn(Blob.prototype, 'arrayBuffer').mockImplementation(async function (this: Blob) {
+    if (first) {
+      first = false;
+      await meanwhile();
+    }
+    return read.call(this);
+  });
+}
+
 describe('the fake IndexedDB is as strict as a browser', () => {
   test('a transaction used after awaiting a Blob’s bytes throws TransactionInactiveError', async () => {
     (await open()).close();
@@ -396,6 +414,39 @@ describe('a database of layout 2 (binaries and thumbnails as Blobs), recorded fr
     for (const file of files.values()) expect(sha256(new Uint8Array(await file.blob.arrayBuffer()))).toBe(file.hash);
   });
 
+  test('while the background conversion runs, what else reads the same binaries (the cut pieces, the saved undo steps, a project opened meanwhile) gets their bytes, and the conversion finishes without errors', async () => {
+    await seedLayout(NAME, withBlobs(V2));
+    const storage = await open();
+    const clip = (await storage.clip())!;
+    const steps = (await storage.history(V2.projects[0].id))!;
+    const [converted, cut, undo, opened] = await Promise.all([storage.convertAll(), storage.blobs(clip.hashes), storage.blobs(steps.hashes), storage.files(V2.projects[2].id)]);
+    expect(converted).toBeGreaterThan(0);
+    for (const [hash, blob] of [...cut, ...undo]) expect(sha256(new Uint8Array(await blob.arrayBuffer())), hash).toBe(hash);
+    for (const file of opened.values()) expect(sha256(new Uint8Array(await file.blob.arrayBuffer()))).toBe(file.hash);
+    expect(await everyBinaryIsBytesOfItsHash()).toEqual(V2.blobs.map((row) => contentHash(row.blob)).sort());
+  });
+
+  test('another tab converting the binaries while this one reads them: this one reads them again from their rows', async () => {
+    await seedLayout(NAME, withBlobs(V2));
+    const [here, other] = [await open(), await open()];
+    const clip = (await here.clip())!;
+    interruptFirstRead(() => other.convertAll());
+    const cut = await here.blobs(clip.hashes);
+    vi.restoreAllMocks();
+    for (const [hash, blob] of cut) expect(sha256(new Uint8Array(await blob.arrayBuffer())), hash).toBe(hash);
+  });
+
+  test('the thumbnails the list of projects gives stay readable (drawable) when the background conversion rewrites their records', async () => {
+    await seedLayout(NAME, withBlobs(V2));
+    const storage = await open();
+    const listed = await storage.list();
+    await storage.convertAll();
+    for (const record of listed) {
+      const seed = V2.projects.find((project) => project.id === record.id)!;
+      expect(Buffer.from(await record.thumb!.arrayBuffer()).toString('base64'), record.name).toBe(seed.thumb.$blob);
+    }
+  });
+
   test('opening a project (its record touched) first turns its Blob thumbnail into bytes: WebKit loses a Blob read from IndexedDB and written back', async () => {
     await seedLayout(NAME, withBlobs(V2));
     const storage = await open();
@@ -453,5 +504,31 @@ describe('a database of layout 1 (each binary inside its file row), recorded fro
     const rows = (await dump(NAME)).files as { hash?: string; blob?: Blob }[];
     expect(rows.every((row) => row.hash && !row.blob)).toBe(true);
     expect(await everyBinaryIsBytesOfItsHash()).toEqual([...new Set(V1.files.map((row) => contentHash(row.blob)))].sort());
+  });
+
+  test('the background conversion reaching the rows of a project while it opens waits for them, and finishes without errors', async () => {
+    await seedLayout(NAME, withBlobs(V1));
+    const storage = await open();
+    const project = V1.projects[0].id;
+    let converting: Promise<number> | undefined;
+    // While opening reads the first binary, the background conversion starts (and is given a while).
+    interruptFirstRead(() => Promise.race([(converting = storage.convertAll()), tasks(50)]));
+    const files = await storage.files(project);
+    vi.restoreAllMocks();
+    await expect(converting).resolves.toBeGreaterThan(0);
+    expect(files.size).toBe(V1.files.filter((row) => row.project === project).length);
+    for (const file of files.values()) expect(sha256(new Uint8Array(await file.blob.arrayBuffer()))).toBe(file.hash);
+    expect(await everyBinaryIsBytesOfItsHash()).toEqual([...new Set(V1.files.map((row) => contentHash(row.blob)))].sort());
+  });
+
+  test('another tab converting the rows of a project while this one opens it: this one reads them again', async () => {
+    await seedLayout(NAME, withBlobs(V1));
+    const [here, other] = [await open(), await open()];
+    const project = V1.projects[0].id;
+    interruptFirstRead(() => other.convertAll());
+    const files = await here.files(project);
+    vi.restoreAllMocks();
+    expect(files.size).toBe(V1.files.filter((row) => row.project === project).length);
+    for (const file of files.values()) expect(sha256(new Uint8Array(await file.blob.arrayBuffer()))).toBe(file.hash);
   });
 });

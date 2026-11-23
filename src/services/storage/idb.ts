@@ -48,6 +48,14 @@
 // transaction can't wait for it. Each row is converted in a transaction of
 // its own that reads it again and rewrites it only if it is still in the old
 // shape, so an interruption leaves every row whole, old or new.
+// WebKit invalidates every Blob read from a row once the row is rewritten
+// (unless its bytes were read before): reading it fails, logging «Failed to
+// load resource», and an <img> of it doesn't draw. So nothing given out is a
+// Blob from a row of an earlier layout: binaries and thumbnails are read into
+// memory and converted first; and the binaries, rows and thumbnail of one
+// thing are converted once at a time (whoever needs one while it is under
+// way, the background conversion or opening a project, waits for it). One
+// converted meanwhile by another tab is read again from its row.
 
 import { PROJECTS_DB } from '../../config.ts';
 import { ProjectError } from '../../core/projectdoc.js';
@@ -291,12 +299,35 @@ function idbStorage(db: IDBDatabase): IdbStorage {
   const layout2 = has('blobs');
 
   const readRows = async (id: string) => promised<FileRow[]>(db.transaction('files').objectStore('files').index('project').getAll(IDBKeyRange.only(id)));
+  const isLegacy = (row: FileRow) => !!row.blob && !row.hash;
+
+  // Conversions under way, by what they convert (see above).
+  const underway = new Map<string, Promise<unknown>>();
+  function once<T>(key: string, work: () => Promise<T>): Promise<T> {
+    const pending = underway.get(key);
+    if (pending) return pending as Promise<T>;
+    const started = work().finally(() => underway.delete(key));
+    underway.set(key, started);
+    return started;
+  }
+  // `work` again if reading a Blob failed the first time (another tab
+  // converted that row meanwhile: `work` reads the row again).
+  async function twice<T>(work: () => Promise<T>): Promise<T> {
+    try {
+      return await work();
+    } catch {
+      return work();
+    }
+  }
+
+  // A project's layout 1 rows as references (see convert).
+  const convertRows = (project: string) => once(`files ${project}`, () => twice(async () => convert(await readRows(project))));
 
   // Layout 1 rows of these: read and hashed, then each binary stored once and
   // its row rewritten as a reference, in one transaction (a row converted
   // meanwhile by another tab, or deleted, is left as it is).
   async function convert(rows: readonly FileRow[]) {
-    const legacy = rows.filter((row) => row.blob && !row.hash);
+    const legacy = rows.filter(isLegacy);
     if (!legacy.length || !layout2) return 0;
     const read = await Promise.all(
       legacy.map(async (row) => {
@@ -344,11 +375,6 @@ function idbStorage(db: IDBDatabase): IdbStorage {
     if (!hashes.length || !layout2) return out;
     const store = db.transaction('blobs').objectStore('blobs');
     const rows = await Promise.all([...new Set(hashes)].map((hash) => promised<BlobRow | undefined>(store.get(hash))));
-    // A layout 2 binary is read into memory and converted right away: WebKit
-    // invalidates a Blob read from IndexedDB once its row is rewritten (by
-    // converting it, here, in the background or in another tab). One that
-    // can't be read is given as it is.
-    const read = new Map<string, Bytes>();
     for (const row of rows) {
       if (!row) continue;
       if (!('blob' in row)) {
@@ -356,56 +382,78 @@ function idbStorage(db: IDBDatabase): IdbStorage {
         if (blob) out.set(row.hash, blob);
         continue;
       }
+      // A layout 2 binary: in memory, converted (see above). One whose Blob
+      // can't be read at all is given as it is.
       try {
-        const stored = await bytesOf(row.blob);
-        read.set(row.hash, stored);
-        out.set(row.hash, blobOf(stored));
+        const { stored } = await convertBlobRow(row.hash);
+        if (stored) out.set(row.hash, blobOf(stored));
       } catch {
         out.set(row.hash, row.blob);
       }
     }
-    if (read.size) await storeAsBytes(read).catch(() => {});
     return out;
   }
 
-  // A layout 2 binary as bytes, unless it was converted or deleted meanwhile.
-  async function convertBlobRow(hash: string) {
-    const row = await promised<BlobRow | undefined>(db.transaction('blobs').objectStore('blobs').get(hash));
-    if (!row || !('blob' in row)) return 0;
-    await storeAsBytes(new Map([[hash, await bytesOf(row.blob)]]));
-    return 1;
-  }
+  // A layout 2 binary's bytes, its row rewritten as bytes unless it was
+  // converted or deleted meanwhile; null if there is none (see above).
+  const convertBlobRow = (hash: string) =>
+    once(`blob ${hash}`, () =>
+      twice(async () => {
+        const row = await promised<BlobRow | undefined>(db.transaction('blobs').objectStore('blobs').get(hash));
+        if (!row) return { stored: null, converted: false };
+        if (!('blob' in row)) return { stored: isBytes(row) ? row : null, converted: false };
+        const stored = await bytesOf(row.blob);
+        await storeAsBytes(new Map([[hash, stored]])).catch(() => {});
+        return { stored, converted: true };
+      })
+    );
 
-  // A record's Blob thumbnail as bytes, unless it changed meanwhile.
-  async function convertThumb(id: string) {
-    const row = await promised<RecordRow | undefined>(db.transaction('projects').objectStore('projects').get(id));
-    if (!(row?.thumb instanceof Blob)) return 0;
-    const stored = await bytesOf(row.thumb);
-    const tx = db.transaction('projects', 'readwrite');
-    const finished = done(tx);
-    const fail: Failure = { error: null };
-    const projects = tx.objectStore('projects');
-    projects.get(id).onsuccess = (e) =>
-      guarded(tx, fail, () => {
-        const current = (e.target as IDBRequest<RecordRow | undefined>).result;
-        if (current?.thumb instanceof Blob) projects.put({ ...current, thumb: stored } satisfies RecordRow);
-      });
-    await settled(finished, fail);
-    return 1;
+  // A record's thumbnail as bytes, the record rewritten if it had a Blob
+  // (unless it changed meanwhile); null if it has none (see above).
+  const convertThumb = (id: string) =>
+    once(`thumb ${id}`, () =>
+      twice(async () => {
+        const row = await promised<RecordRow | undefined>(db.transaction('projects').objectStore('projects').get(id));
+        if (!(row?.thumb instanceof Blob)) return { stored: isBytes(row?.thumb) ? row.thumb : null, converted: false };
+        const stored = await bytesOf(row.thumb);
+        const tx = db.transaction('projects', 'readwrite');
+        const finished = done(tx);
+        const fail: Failure = { error: null };
+        const projects = tx.objectStore('projects');
+        projects.get(id).onsuccess = (e) =>
+          guarded(tx, fail, () => {
+            const current = (e.target as IDBRequest<RecordRow | undefined>).result;
+            if (current?.thumb instanceof Blob) projects.put({ ...current, thumb: stored } satisfies RecordRow);
+          });
+        await settled(finished, fail);
+        return { stored, converted: true };
+      })
+    );
+
+  // A record as given out: a thumbnail still stored as a Blob as bytes first
+  // (see above); without it if that can't be read.
+  async function given(row: RecordRow): Promise<ProjectRecord> {
+    if (!(row.thumb instanceof Blob)) return recordOf(row);
+    const thumb = await convertThumb(row.id).then(({ stored }) => stored, () => null);
+    return { ...row, thumb: thumbOf(thumb) };
   }
 
   return {
     close: () => db.close(),
     async list() {
-      return (await promised<RecordRow[]>(db.transaction('projects').objectStore('projects').getAll())).map(recordOf);
+      return Promise.all((await promised<RecordRow[]>(db.transaction('projects').objectStore('projects').getAll())).map(given));
     },
     async get(id) {
       const row = await promised<RecordRow | undefined>(db.transaction('projects').objectStore('projects').get(id));
-      return row ? recordOf(row) : null;
+      return row ? given(row) : null;
     },
     async files(id) {
       let rows = await readRows(id);
-      if (await convert(rows)) rows = await readRows(id);
+      // (Converted here, by the background conversion or by another tab: read again.)
+      if (rows.some(isLegacy)) {
+        await convertRows(id);
+        rows = await readRows(id);
+      }
       const blobs = await readBlobs(rows.filter((row) => row.hash).map((row) => row.hash!));
       const out = new Map<string, StoredFile>();
       for (const row of rows) {
@@ -527,7 +575,7 @@ function idbStorage(db: IDBDatabase): IdbStorage {
           guarded(tx, fail, () => {
             if (!source) throw new ProjectError('missing', id);
             const rows = (r.target as IDBRequest<FileRow[]>).result;
-            if (rows.some((row) => row.blob && !row.hash)) {
+            if (rows.some(isLegacy)) {
               out.legacy = true;
               return;
             }
@@ -545,7 +593,7 @@ function idbStorage(db: IDBDatabase): IdbStorage {
       };
       let result = await attempt();
       if (result.legacy) {
-        await convert(await readRows(id));
+        await convertRows(id);
         result = await attempt();
       }
       if (!result.copy) throw new Error('the project’s files could not be converted to be copied');
@@ -646,9 +694,8 @@ function idbStorage(db: IDBDatabase): IdbStorage {
       };
       // Layout 1: the binaries inside «files» rows, project by project.
       const rows = await promised<FileRow[]>(db.transaction('files').objectStore('files').getAll());
-      for (const project of new Set(rows.filter((row) => row.blob && !row.hash).map((row) => row.project))) {
-        await attempt(async () => convert(await readRows(project)));
-      }
+      for (const project of new Set(rows.filter(isLegacy).map((row) => row.project))) await attempt(() => convertRows(project));
+      const counted = async (work: Promise<{ converted: boolean }>) => ((await work).converted ? 1 : 0);
       // Layout 2: the binaries the index «type» doesn't list (they are Blobs), and the Blob thumbnails.
       const tx = db.transaction(['blobs', 'projects']);
       const blobs = tx.objectStore('blobs');
@@ -659,8 +706,8 @@ function idbStorage(db: IDBDatabase): IdbStorage {
           promised<RecordRow[]>(tx.objectStore('projects').getAll()),
         ]);
         const asBytes = new Set(typed);
-        for (const hash of hashes) if (!asBytes.has(hash)) await attempt(() => convertBlobRow(hash as string));
-        for (const record of records) if (record.thumb instanceof Blob) await attempt(() => convertThumb(record.id));
+        for (const hash of hashes) if (!asBytes.has(hash)) await attempt(() => counted(convertBlobRow(hash as string)));
+        for (const record of records) if (record.thumb instanceof Blob) await attempt(() => counted(convertThumb(record.id)));
       }
       if (errors.length) throw errors[0];
       return converted;
