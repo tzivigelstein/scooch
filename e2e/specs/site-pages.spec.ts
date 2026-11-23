@@ -2,9 +2,11 @@
 // in every language (what each page says is checked in tests/site): every page is
 // a file of its own with what search engines read and nothing of the editor;
 // the sitemap lists exactly the indexable ones; axe finds nothing in light or
-// dark; nothing moves while loading; few, small, same-origin requests; no page
-// or table scrolls sideways at phone, tablet and desktop widths; the
-// calculator answers; the editor's page carries its metadata.
+// dark; nothing moves while loading; few, small, same-origin requests, the
+// font among them: the editor's own Inter file, which sets every language's
+// text, with Chinese and Devanagari left to their own fonts; no page or table
+// scrolls sideways at phone, tablet and desktop widths; the calculator
+// answers; the editor's page carries its metadata.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -54,6 +56,21 @@ test.describe('the build', () => {
     expect(existsSync(join(BUILD, 'share.png'))).toBe(true);
   });
 
+  test('every page, the error page too, loads Inter from the editor’s own Latin file: the address its stylesheet and its preload use, and no other font file', () => {
+    const index = html('index.html');
+    const latin = /<link rel="preload" href="(\/assets\/inter-latin-wght-normal-[\w-]+\.woff2)" as="font"/.exec(index)![1];
+    const editorCss = [...index.matchAll(/<link rel="stylesheet"[^>]*href="\/([^"]+)"/g)].map((m) => html(m[1])).join('');
+    expect(editorCss).toContain(`src:url(${latin})`);
+    expect(existsSync(join(BUILD, latin))).toBe(true);
+    for (const file of [...pageFiles(), '404.html']) {
+      const text = html(file);
+      // The preload, then the @font-face that uses it.
+      expect([...text.matchAll(/(?:href="|url\()([^")]+\.woff2)/g)].map((m) => m[1]), file).toEqual([latin, latin]);
+      expect(text, file).toContain(`<link rel="preload" href="${latin}" as="font" type="font/woff2" crossorigin>`);
+      expect(text, file).toMatch(/@font-face \{ font-family: "Inter Fallback Arial"; src: local\("Arial"\)[^}]*size-adjust: [\d.]+%; ascent-override: [\d.]+%; descent-override: [\d.]+%; line-gap-override: 0%; \}/);
+    }
+  });
+
   test('a content page weighs little: its HTML and its script together, gzipped', () => {
     // The license texts are as long as they are.
     for (const file of pageFiles().filter((f) => !/licen[cs]/.test(f))) {
@@ -93,6 +110,9 @@ const SHOWN = [
   ...['imprimer-plusieurs-photos-sur-une-feuille', 'combien-de-photos-sur-une-feuille', 'imprimer-photos-10x15-sur-a4', 'photo-identite-a-imprimer', 'imprimer-plusieurs-fois-la-meme-photo', 'imprimer-image-taille-reelle', 'faire-ses-stickers-soi-meme', 'questions-frequentes', 'conditions-utilisation', 'confidentialite', 'licences-tierces', 'licence'].map((name) => `fr/${name}.html`),
 ];
 
+/** A guide in each language. */
+const GUIDES = ['es/fotos-10x15-en-hoja-a4', 'en/print-4x6-photos-on-a4', 'zh-hans/6-inch-photos-on-a4', 'hi/print-4x6-photos-on-a4', 'fr/imprimer-photos-10x15-sur-a4'];
+
 test.describe('in the browser', () => {
   for (const file of SHOWN) {
     test(`${pathOf(file)}: axe finds nothing in light and dark, nothing moves while loading, and every request stays on the site`, async ({ page, baseURL }) => {
@@ -101,6 +121,8 @@ test.describe('in the browser', () => {
       const origin = new URL(baseURL!).origin;
       expect(requests.filter((url) => !url.startsWith(origin) && !url.startsWith('data:'))).toEqual([]);
       expect(requests.filter((url) => /\.js$/.test(url)).every((url) => /\/assets\/calculator-[\w-]+\.js$/.test(url))).toBe(true);
+      // One font: Inter's Latin file, from the site (WebKit may fetch it twice).
+      expect([...new Set(requests.filter((url) => /\.woff2$/.test(url)))]).toEqual([expect.stringMatching(new RegExp(`^${origin}/assets/inter-latin-wght-normal-[\\w-]+\\.woff2$`))]);
       for (const scheme of ['light', 'dark'] as const) {
         await page.emulateMedia({ colorScheme: scheme });
         const { violations } = await scan(page);
@@ -108,6 +130,69 @@ test.describe('in the browser', () => {
       }
     });
   }
+
+  test('in every language, once loaded, the text is set in Inter, with the language’s own fonts behind it; Chinese and Devanagari are left to them', async ({ page }) => {
+    for (const path of GUIDES) {
+      await page.goto(`./${path}`);
+      const fonts = await page.evaluate(async () => {
+        await document.fonts.ready;
+        const unquote = (family: string) => family.replace(/^"(.*)"$/, '$1');
+        const inter = [...document.fonts].filter((f) => unquote(f.family) === 'Inter Variable');
+        const covers = (cp: number) =>
+          inter.some((f) =>
+            f.unicodeRange.split(',').some((range) => {
+              const [first, last = first] = range.trim().replace(/^U\+/i, '').split('-');
+              return cp >= parseInt(first, 16) && cp <= parseInt(last, 16);
+            })
+          );
+        const heading = document.querySelector('h1')!;
+        return {
+          faces: inter.map((f) => f.status),
+          check: document.fonts.check('700 40px "Inter Variable"', heading.textContent!),
+          family: getComputedStyle(heading).fontFamily.replace(/"/g, ''),
+          // What Inter leaves to the fonts behind it.
+          left: [...heading.textContent!].filter((c) => !covers(c.codePointAt(0)!)).join(''),
+        };
+      });
+      expect(fonts.faces, path).toEqual(['loaded']);
+      expect(fonts.check, path).toBe(true);
+      expect(fonts.family, path).toMatch(/^Inter Variable, Inter Fallback Arial, Inter Fallback Roboto, /);
+      if (path.startsWith('zh-hans/')) {
+        expect(fonts.family, path).toContain('PingFang SC, Microsoft YaHei, Noto Sans CJK SC');
+        expect(fonts.left, path).toMatch(/^\p{Script=Han}+$/u);
+      } else if (path.startsWith('hi/')) {
+        expect(fonts.family, path).toContain('Nirmala UI, Kohinoor Devanagari, Noto Sans Devanagari');
+        expect(fonts.left, path).toMatch(/^\p{Script=Devanagari}+$/u);
+      } else {
+        expect(fonts.left, path).toBe('');
+      }
+    }
+  });
+
+  test('Inter draws the brand and every Latin letter and digit of the headings, and the system’s Chinese font draws the Chinese', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'only the Chrome DevTools Protocol says which font draws each glyph');
+    const cdp = await page.context().newCDPSession(page);
+    for (const path of GUIDES) {
+      await page.goto(`./${path}`);
+      await page.evaluate(() => document.fonts.ready);
+      await cdp.send('DOM.enable');
+      await cdp.send('CSS.enable');
+      const { root } = await cdp.send('DOM.getDocument');
+      const drawnBy = async (selector: string) => {
+        const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector });
+        const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+        // Inter is the page's only web font: the fallbacks are local() faces.
+        return { inter: fonts.filter((f) => f.isCustomFont).reduce((n, f) => n + f.glyphCount, 0), others: fonts.filter((f) => !f.isCustomFont).reduce((n, f) => n + f.glyphCount, 0) };
+      };
+      expect(await drawnBy('.brand span'), path).toEqual({ inter: 6, others: 0 });
+      const heading = (await page.locator('h1').textContent())!;
+      // Devanagari has no glyph count to compare: a system without a font for
+      // it draws boxes with the first font's empty glyph, Inter's.
+      if (path.startsWith('hi/')) continue;
+      const han = [...heading].filter((c) => /\p{Script=Han}/u.test(c)).length;
+      expect(await drawnBy('h1'), path).toEqual({ inter: [...heading].length - han, others: han });
+    }
+  });
 
   test('at 390, 768 and 1440 px no page scrolls sideways, and every table fits without scrolling (on a phone, one block per row where needed)', async ({ page }) => {
     for (const width of [390, 768, 1440]) {
