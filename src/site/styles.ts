@@ -1,8 +1,13 @@
 // The content pages' stylesheet, inlined in each page (one request per page,
 // nothing to wait for). Plain CSS that follows the system's color scheme;
-// the colors are the app's (src/styles/tokens.css). System fonts: no font
-// file to download, so no swap and no layout shift. A table too wide for its
-// box scrolls inside it, with a shadow on each side that has more to see
+// the colors are the app's (src/styles/tokens.css). The font is the editor's
+// too: Inter, from the same file at the same address (each page adds the
+// @font-face of the subsets it uses and preloads them, see fonts.ts), with
+// each language's own font behind it as in tokens.css, and the editor's
+// rendering (font smoothing, tabular numbers in tables). Chinese and Hindi
+// use the system's font for their script (none is downloaded: docs/site.md
+// says why). Code stays in the system's monospace font. A table too wide for
+// its box scrolls inside it, with a shadow on each side that has more to see
 // (covers that move with the content hide the shadow at its ends).
 
 /**
@@ -46,9 +51,11 @@ export const SITE_CSS = `
   --note-text: #6b3800;
   --note-line: #c98a1e;
   --scroll-shadow: rgba(14, 16, 20, 0.3);
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
+:root:lang(zh-Hans) { --font: "Inter Variable", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
+:root:lang(hi) { --font: "Inter Variable", "Nirmala UI", "Kohinoor Devanagari", "Noto Sans Devanagari", system-ui, sans-serif; }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #15171c;
@@ -72,7 +79,7 @@ export const SITE_CSS = `
 }
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 1.0625rem/1.6 var(--font); overflow-wrap: break-word; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 1.0625rem/1.6 var(--font); overflow-wrap: break-word; -webkit-font-smoothing: antialiased; }
 a { color: var(--link); text-underline-offset: 0.15em; }
 a:hover { text-decoration-thickness: 0.125em; }
 :focus-visible { outline: 0.125rem solid var(--focus); outline-offset: 0.125rem; }

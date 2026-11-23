@@ -1,5 +1,6 @@
 // The shapes of the site's pages and of a language's content.
 
+import type { SiteFonts } from './fonts.ts';
 import type { Kit, Units } from './kit.ts';
 import type { Lang } from './langs.ts';
 import type { Chrome } from './layout.ts';
@@ -58,7 +59,12 @@ export interface SiteContext {
   pages: readonly SitePage[];
   /** Script name → its address. */
   scripts: Readonly<Record<string, string>>;
+  /** Inter's faces and where each file is served (fonts.ts). */
+  fonts: SiteFonts;
 }
+
+/** What the pages load besides themselves: their scripts and Inter's files. */
+export type PageAssets = Pick<SiteContext, 'scripts' | 'fonts'>;
 
 /**
  * A language's content (src/site/content/<lang>/index.ts): its pages, the

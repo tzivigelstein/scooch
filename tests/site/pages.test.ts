@@ -8,6 +8,7 @@ import { describe, expect, test } from 'vitest';
 import { PHOTO_SIZES } from '../../src/core/crop.js';
 import { deepLinkSearch, parseDeepLink, setsUp } from '../../src/core/deeplink.js';
 import { SITE_LANGUAGES } from '../../src/site/content/index.ts';
+import { devFonts } from '../../src/site/fonts.ts';
 import { createKit } from '../../src/site/kit.ts';
 import type { Lang } from '../../src/site/langs.ts';
 import { pageFile, readLegal, sitePages, siteFiles } from '../../src/site/site.ts';
@@ -17,8 +18,9 @@ import type { SitePage } from '../../src/site/types.ts';
 const ROOT = process.cwd();
 const URL_ = 'https://example.com';
 const legal = readLegal(ROOT);
+const fonts = devFonts(ROOT);
 const pages = sitePages(legal);
-const files = siteFiles({ url: URL_ }, legal, { calculator: '/assets/calculator-test.js' });
+const files = siteFiles({ url: URL_ }, legal, { scripts: { calculator: '/assets/calculator-test.js' }, fonts });
 const doc = (page: SitePage) => new DOMParser().parseFromString(files.get(pageFile(page))!, 'text/html');
 const addressed = pages.filter((p) => p.kind !== 'error');
 const language = (lang: Lang) => SITE_LANGUAGES.find((l) => l.lang === lang)!;
@@ -51,7 +53,11 @@ describe('every page', () => {
     expect(html).not.toMatch(/assets\/index-|src\/main|rel="(modulepreload|stylesheet)"/);
     const d = doc(page);
     const loaded = [...d.querySelectorAll('script[src], link[rel="preload"], img[src], iframe[src]')].map((el) => el.getAttribute('src') ?? el.getAttribute('href')!);
-    expect(loaded).toEqual(page.scripts?.length ? ['/assets/calculator-test.js'] : []);
+    // Inter's Latin file, from the site itself (tests/site/fonts.test.ts), and the calculator's script on its page.
+    const latin = fonts.urls['./files/inter-latin-wght-normal.woff2'];
+    expect(loaded).toEqual([latin, ...(page.scripts?.length ? ['/assets/calculator-test.js'] : [])]);
+    // The stylesheet fetches that file and nothing else (its other fonts are local()).
+    expect([...d.querySelector('style')!.textContent!.matchAll(/url\(([^)]*)\)/g)].map((m) => m[1])).toEqual([latin]);
   });
 
   test.each(addressed.map((p) => [p.path, p]))('%s: share tags point to the page and the share image', (_, page) => {
@@ -165,7 +171,7 @@ describe('the files for crawlers', () => {
 
   test('a legal page with a placeholder back in it carries noindex and stays out of the sitemap and llms.txt', () => {
     const draft = legal.map((d) => (d.id === 'terms' && d.lang === 'es' ? { ...d, placeholders: ['<TITULAR>'] } : d));
-    const built = siteFiles({ url: URL_ }, draft, { calculator: '/assets/calculator-test.js' });
+    const built = siteFiles({ url: URL_ }, draft, { scripts: { calculator: '/assets/calculator-test.js' }, fonts });
     const path = language('es').paths['legal-terms'];
     expect(built.get(pageFile({ path }))).toContain('<meta name="robots" content="noindex">');
     expect(built.get('sitemap.xml')).not.toContain(`${URL_}${path}`);

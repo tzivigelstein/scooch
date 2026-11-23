@@ -10,6 +10,7 @@ import { CATALOGUES } from '../../src/copy/all.ts';
 import { calc, type CalcState, type CalcTexts } from '../../src/site/calc.ts';
 import { SITE_LANGUAGES } from '../../src/site/content/index.ts';
 import { CALC_START } from '../../src/site/facts/how-many.ts';
+import { devFonts } from '../../src/site/fonts.ts';
 import { PROBE } from '../../src/site/kit.ts';
 import { LANGUAGES, pathPrefix, type Lang } from '../../src/site/langs.ts';
 import { renderPage, type Chrome } from '../../src/site/layout.ts';
@@ -20,9 +21,10 @@ import type { PageId, SitePage } from '../../src/site/types.ts';
 const ROOT = process.cwd();
 const URL_ = 'https://example.com';
 const legal = readLegal(ROOT);
+const fonts = devFonts(ROOT);
 const pages = sitePages(legal);
 const probes = sitePages(legal, { probe: true });
-const files = siteFiles({ url: URL_ }, legal, { calculator: '/assets/calculator-test.js' });
+const files = siteFiles({ url: URL_ }, legal, { scripts: { calculator: '/assets/calculator-test.js' }, fonts });
 const parse = (html: string) => new DOMParser().parseFromString(html, 'text/html');
 const doc = (page: SitePage) => parse(files.get(pageFile(page))!);
 const language = (lang: Lang) => SITE_LANGUAGES.find((l) => l.lang === lang)!;
@@ -123,7 +125,7 @@ describe('the links between languages', () => {
   const chrome = { skip: '', open: '', crumbs: '', guides: '', legal: '', languages: 'Idioma', about: '', faq: '', imageAlt: '', legalLinks: [] } satisfies Chrome;
   const es: SitePage = { id: 'x', lang: 'es', path: '/es/x', title: 'X', description: 'X', h1: 'X', crumb: 'X', kind: 'guide', indexable: true, body: '' };
   const en: SitePage = { ...es, lang: 'en', path: '/en/x', indexable: false };
-  const footer = (page: SitePage, all: SitePage[]) => parse(renderPage(page, { url: URL_, pages: all, scripts: {} }, chrome)).querySelector('nav[aria-labelledby="footer-languages"]');
+  const footer = (page: SitePage, all: SitePage[]) => parse(renderPage(page, { url: URL_, pages: all, scripts: {}, fonts }, chrome)).querySelector('nav[aria-labelledby="footer-languages"]');
 
   test('the footer links every version of the page, indexed or not, each named in its own language, the current one marked', () => {
     const nav = footer(es, [en, es])!;

@@ -13,7 +13,7 @@ import type { Lang } from './langs.ts';
 import { LEGAL_IDS, legalFile, legalProblems, publishLegal, type LegalDoc } from './legal.ts';
 import { renderPage } from './layout.ts';
 import { llmsTxt, robotsTxt, shareTags, sitemapXml, webAppLd, type LlmsSection } from './seo.ts';
-import type { SiteLanguage, SitePage } from './types.ts';
+import type { PageAssets, SiteLanguage, SitePage } from './types.ts';
 
 const languageOf = (lang: Lang) => SITE_LANGUAGES.find((l) => l.lang === lang)!;
 
@@ -49,14 +49,15 @@ export const publishProblems = (site: Site, legal: readonly LegalDoc[]) => [...n
 
 /**
  * Every text file of the site: the pages (as .html), sitemap.xml, robots.txt
- * and llms.txt. `scripts`: each page script's address.
+ * and llms.txt. `assets`: each page script's address, and Inter's faces with
+ * where each file is served.
  */
-export function siteFiles(site: Pick<Site, 'url'>, legal: readonly LegalDoc[], scripts: Readonly<Record<string, string>>): Map<string, string> {
+export function siteFiles(site: Pick<Site, 'url'>, legal: readonly LegalDoc[], assets: PageAssets): Map<string, string> {
   const pages = sitePages(legal);
   const kits = siteKits();
   const chromes = new Map(SITE_LANGUAGES.map((language) => [language.lang, language.chrome(kits.get(language.lang)!)]));
   const files = new Map<string, string>();
-  for (const page of pages) files.set(pageFile(page), renderPage(page, { url: site.url, pages, scripts }, chromes.get(page.lang)!));
+  for (const page of pages) files.set(pageFile(page), renderPage(page, { url: site.url, pages, ...assets }, chromes.get(page.lang)!));
   files.set('sitemap.xml', sitemapXml(site.url, pages));
   files.set('robots.txt', robotsTxt(site.url));
   const intro = llmsIntro(kits.get('es')!);

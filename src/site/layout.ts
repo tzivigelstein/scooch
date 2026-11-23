@@ -1,8 +1,9 @@
-// The frame of every content page: <head> with its metadata, the header with
-// a way back to the editor, the breadcrumb, the page and the footer, with the
-// links to the same page in the other languages.
+// The frame of every content page: <head> with its metadata and the font its
+// text needs, the header with a way back to the editor, the breadcrumb, the
+// page and the footer, with the links to the same page in the other languages.
 
 import { APP_NAME } from '../config.ts';
+import { drawnText, fontsFor } from './fonts.ts';
 import { esc, scriptJson } from './html.ts';
 import { hreflangOf, LANGUAGES, languageName } from './langs.ts';
 import { alternates, breadcrumbLd, faqLd, shareTags } from './seo.ts';
@@ -67,36 +68,12 @@ export function renderPage(page: SitePage, ctx: SiteContext, chrome: Chrome) {
     { name: APP_NAME, path: '/' },
     { name: page.crumb, path: page.path },
   ];
-  const head = [
-    '<meta charset="utf-8">',
-    '<meta name="viewport" content="width=device-width,initial-scale=1">',
-    `<title>${esc(page.title)}</title>`,
-    meta('name', 'description', page.description),
-    addressed ? `<link rel="canonical" href="${esc(`${ctx.url}${page.path}`)}">` : '',
-    ...alternates(page, ctx.pages).map((a) => `<link rel="alternate" hreflang="${esc(a.hreflang)}" href="${esc(`${ctx.url}${a.path}`)}">`),
-    page.indexable ? '' : meta('name', 'robots', 'noindex'),
-    meta('name', 'color-scheme', 'light dark'),
-    '<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">',
-    '<meta name="theme-color" content="#15171c" media="(prefers-color-scheme: dark)">',
-    `<link rel="icon" href="${FAVICON}">`,
-    ...(addressed ? shareTags(ctx.url, { title: page.title, description: page.description, path: page.path, imageAlt: chrome.imageAlt }) : []).map(([attr, name, content]) => meta(attr, name, content)),
-    addressed ? ldScript(breadcrumbLd(ctx.url, crumbs)) : '',
-    page.faq?.length ? ldScript(faqLd(page.faq)) : '',
-    `<style>${SITE_CSS.trim()}${page.body.includes('table-stack') ? STACKED_CSS.trimEnd() : ''}</style>`,
-  ].filter(Boolean);
-
   const guides = ctx.pages.filter((p) => p.lang === page.lang && p.kind === 'guide');
   const faqPage = ctx.pages.find((p) => p.lang === page.lang && p.kind === 'faq');
   const footerLinks = [...guides, ...(faqPage ? [faqPage] : [])].map((p) => `<li><a href="${esc(p.path)}"${p.path === page.path ? ' aria-current="page"' : ''}>${esc(p.crumb)}</a></li>`).join('');
   const legalLinks = chrome.legalLinks.map(([label, path]) => `<li><a href="${esc(path)}"${path === page.path ? ' aria-current="page"' : ''}>${esc(label)}</a></li>`).join('');
   const scripts = (page.scripts ?? []).map((name) => `<script type="module" src="${esc(ctx.scripts[name])}"></script>`).join('');
-
-  return `<!doctype html>
-<html lang="${esc(page.lang)}">
-<head>
-${head.join('\n')}
-</head>
-<body>
+  const body = `<body>
 <a class="skip" href="#main">${esc(chrome.skip)}</a>
 <header class="site-header"><div class="wrap"><a class="brand" href="/">${BRAND_MARK}<span translate="no">${esc(APP_NAME)}</span></a><a class="btn btn-primary btn-small" href="/">${esc(chrome.open)}</a></div></header>
 <main id="main" class="wrap">
@@ -111,7 +88,36 @@ ${faqSection(page, chrome)}
 <p>${esc(chrome.about)}</p>
 </div></footer>
 ${scripts}
-</body>
+</body>`;
+  const css = `${SITE_CSS.trim()}${page.body.includes('table-stack') ? STACKED_CSS.trimEnd() : ''}`;
+  // Inter's subsets that the page's text uses: declared and preloaded, so the
+  // browser fetches them at once, alongside the page, and nothing else.
+  const fonts = fontsFor(ctx.fonts, drawnText(body, css), page.path);
+  const head = [
+    '<meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width,initial-scale=1">',
+    `<title>${esc(page.title)}</title>`,
+    ...fonts.map((font) => `<link rel="preload" href="${esc(font.url)}" as="font" type="font/woff2" crossorigin>`),
+    meta('name', 'description', page.description),
+    addressed ? `<link rel="canonical" href="${esc(`${ctx.url}${page.path}`)}">` : '',
+    ...alternates(page, ctx.pages).map((a) => `<link rel="alternate" hreflang="${esc(a.hreflang)}" href="${esc(`${ctx.url}${a.path}`)}">`),
+    page.indexable ? '' : meta('name', 'robots', 'noindex'),
+    meta('name', 'color-scheme', 'light dark'),
+    '<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">',
+    '<meta name="theme-color" content="#15171c" media="(prefers-color-scheme: dark)">',
+    `<link rel="icon" href="${FAVICON}">`,
+    ...(addressed ? shareTags(ctx.url, { title: page.title, description: page.description, path: page.path, imageAlt: chrome.imageAlt }) : []).map(([attr, name, content]) => meta(attr, name, content)),
+    addressed ? ldScript(breadcrumbLd(ctx.url, crumbs)) : '',
+    page.faq?.length ? ldScript(faqLd(page.faq)) : '',
+    `<style>${fonts.map((font) => `${font.rule}\n`).join('')}${css}</style>`,
+  ].filter(Boolean);
+
+  return `<!doctype html>
+<html lang="${esc(page.lang)}">
+<head>
+${head.join('\n')}
+</head>
+${body}
 </html>
 `;
 }

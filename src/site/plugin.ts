@@ -1,6 +1,7 @@
 // The site in the build: the content pages are rendered to static HTML next
 // to the app (which stays rendered in the browser), with their own small
-// script where they need one, built apart so it never pulls in the editor.
+// script where they need one, built apart so it never pulls in the editor,
+// and the editor's own Inter files (the same assets its stylesheet uses).
 // The editor's index.html gets its canonical URL, share tags and structured
 // data. `vite` (dev) serves the same pages, rendered on each request.
 // docs/site.md explains the pages, the environment variables and the checks.
@@ -10,6 +11,7 @@ import { resolve } from 'node:path';
 import { build, loadEnv, type Plugin, type ResolvedConfig } from 'vite';
 import { ENV_PREFIXES, publishVerdict, siteFromEnv, type Site } from './config.ts';
 import { SITE_LANGUAGES } from './content/index.ts';
+import { builtFontUrls, devFonts, readInterFonts, type BuiltAsset, type InterFonts } from './fonts.ts';
 import { pathPrefix } from './langs.ts';
 import { editorHead, publishProblems, readLegal, siteFiles } from './site.ts';
 
@@ -57,11 +59,13 @@ const TYPES: Record<string, string> = { html: 'text/html; charset=utf-8', xml: '
 export function sitePages(): Plugin {
   let config: ResolvedConfig;
   let site: Site;
+  let inter: InterFonts;
   return {
     name: 'site-pages',
     configResolved(resolved) {
       config = resolved;
       site = siteFromEnv(loadEnv(resolved.mode, typeof resolved.envDir === 'string' ? resolved.envDir : resolved.root, ENV_PREFIXES));
+      inter = readInterFonts(resolved.root);
     },
     buildStart() {
       if (config.command !== 'build') return;
@@ -85,7 +89,7 @@ export function sitePages(): Plugin {
         }
         const name = path.slice(1).replace(/\.html$/, '');
         if (!SITE_FILE.test(name)) return next();
-        const files = siteFiles(site, readLegal(config.root), { calculator: `/${CALCULATOR}` });
+        const files = siteFiles(site, readLegal(config.root), { scripts: { calculator: `/${CALCULATOR}` }, fonts: devFonts(config.root) });
         const file = name.includes('.') ? name : `${name}.html`;
         const body = files.get(file);
         if (body === undefined) return next();
@@ -93,10 +97,12 @@ export function sitePages(): Plugin {
         res.end(body);
       });
     },
-    async generateBundle() {
+    async generateBundle(_options, bundle) {
       const calculator = await buildCalculator(config);
       this.emitFile({ type: 'asset', fileName: calculator.fileName, source: calculator.code });
-      for (const [fileName, source] of siteFiles(site, readLegal(config.root), { calculator: `/${calculator.fileName}` })) this.emitFile({ type: 'asset', fileName, source });
+      // Inter's files as the editor's stylesheet made them (already in the bundle).
+      const fonts = { faces: inter.faces, urls: builtFontUrls(config.root, inter, bundle as unknown as Record<string, BuiltAsset>) };
+      for (const [fileName, source] of siteFiles(site, readLegal(config.root), { scripts: { calculator: `/${calculator.fileName}` }, fonts })) this.emitFile({ type: 'asset', fileName, source });
       this.emitFile({ type: 'asset', fileName: 'share.png', source: readFileSync(resolve(config.root, SHARE_IMAGE)) });
     },
   };

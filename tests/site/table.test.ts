@@ -3,6 +3,7 @@
 // the CSS for it. How they fit on real screens is in
 // e2e/specs/site-pages.spec.ts.
 import { describe, expect, test } from 'vitest';
+import { devFonts } from '../../src/site/fonts.ts';
 import { STACK_COLUMNS, tableHtml } from '../../src/site/html.ts';
 import { readLegal, sitePages, siteFiles, pageFile } from '../../src/site/site.ts';
 import { STACKED_CSS } from '../../src/site/styles.ts';
@@ -28,7 +29,8 @@ describe('a table too wide for a phone', () => {
 
   test('only the pages with such a table carry the CSS that stacks it', () => {
     const legal = readLegal(process.cwd());
-    const files = siteFiles({ url: 'https://example.com' }, legal, { calculator: '/assets/calculator-test.js' });
+    const fonts = devFonts(process.cwd());
+    const files = siteFiles({ url: 'https://example.com' }, legal, { scripts: { calculator: '/assets/calculator-test.js' }, fonts });
     const carrying = sitePages(legal)
       .filter((page) => files.get(pageFile(page))!.includes(STACKED_CSS.trim()))
       .map((page) => page.path);
