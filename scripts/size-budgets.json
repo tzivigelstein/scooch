@@ -49,98 +49,98 @@
   },
   "pages": {
     "*": {
-      "kB": 8.6,
-      "measured": 8.1,
-      "what": "Each static page (every .html of the build but the editor's index.html), its HTML with its inline CSS, in every language; it applies to new pages too. Set on the largest one, the terms in Simplified Chinese (zh-hans/terms: they say what commercial use is allowed; the French calculator is 8.1 kB too); the other pages are 6.1 to 8.0 kB. Each carries its hreflang links and the links to its other languages (about 0.3 kB), and the @font-face rule and preload of Inter's Latin file (about 0.4 kB; the font itself is the editor's)."
+      "kB": 8.8,
+      "measured": 8.3,
+      "what": "Each static page (every .html of the build but the editor's index.html), its HTML with its inline CSS, in every language; it applies to new pages too. Set on the largest one, the terms in Simplified Chinese (zh-hans/terms: they say what commercial use is allowed; the French calculator is 8.3 kB too); the other pages are 6.3 to 8.2 kB. Each carries its hreflang links and the links to its other languages (about 0.3 kB), and the @font-face rule and preload of Inter's Latin file with the fallback faces that keep the text still while it loads (about 0.6 kB; the font itself is the editor's)."
     },
     "es/privacidad.html": {
-      "kB": 9,
-      "measured": 8.5,
+      "kB": 9.3,
+      "measured": 8.8,
       "what": "The privacy policy, from docs/legal/privacidad.md: it lists every key the app stores in the browser, so it grows with each new setting."
     },
     "en/privacy.html": {
-      "kB": 8.8,
-      "measured": 8.3,
+      "kB": 9,
+      "measured": 8.5,
       "what": "The privacy policy in English, from docs/legal/en/privacy.md: like the Spanish one, it grows with each new setting."
     },
     "es/licencias-de-terceros.html": {
-      "kB": 15.7,
-      "measured": 14.9,
+      "kB": 15.9,
+      "measured": 15.1,
       "what": "The third-party licenses page, from THIRD_PARTY_NOTICES.md: it grows with each dependency the build ships."
     },
     "en/third-party-licenses.html": {
-      "kB": 15.6,
-      "measured": 14.8,
+      "kB": 15.8,
+      "measured": 15,
       "what": "The third-party licenses page in English, the same THIRD_PARTY_NOTICES.md: it grows with each dependency the build ships."
     },
     "zh-hans/photos-per-sheet-calculator.html": {
-      "kB": 8.9,
-      "measured": 8.4,
+      "kB": 9.1,
+      "measured": 8.6,
       "what": "The calculator in Simplified Chinese: Chinese takes three bytes a character in UTF-8, and the page carries the calculator's texts twice (in its HTML and as the script's JSON), so it weighs a little more than the Spanish one."
     },
     "zh-hans/privacy.html": {
-      "kB": 9.8,
-      "measured": 9.3,
+      "kB": 10,
+      "measured": 9.5,
       "what": "The privacy policy in Simplified Chinese, from docs/legal/zh-Hans/privacy.md: like the Spanish one, it grows with each new setting, and Chinese takes three bytes a character in UTF-8."
     },
     "zh-hans/third-party-licenses.html": {
-      "kB": 16.1,
-      "measured": 15.3,
+      "kB": 16.4,
+      "measured": 15.6,
       "what": "The third-party licenses page in Simplified Chinese, the same THIRD_PARTY_NOTICES.md with a Chinese introduction: it grows with each dependency the build ships."
     },
     "fr/confidentialite.html": {
-      "kB": 9.5,
-      "measured": 9,
+      "kB": 9.8,
+      "measured": 9.3,
       "what": "The privacy policy in French, from docs/legal/fr/privacy.md: like the Spanish one, it grows with each new setting, and French takes more words to say the same."
     },
     "fr/licences-tierces.html": {
-      "kB": 15.8,
-      "measured": 15,
+      "kB": 16,
+      "measured": 15.2,
       "what": "The third-party licenses page in French, the same THIRD_PARTY_NOTICES.md with a French introduction: it grows with each dependency the build ships."
     },
     "hi/how-many-photos-in-a4-sheet.html": {
-      "kB": 9.3,
-      "measured": 8.8,
+      "kB": 9.5,
+      "measured": 9,
       "what": "The calculator page in Hindi: Devanagari takes three bytes a letter in UTF-8, so the same page and calculator texts weigh about 0.7 kB more than in Spanish."
     },
     "hi/terms.html": {
-      "kB": 9.2,
-      "measured": 8.7,
+      "kB": 9.4,
+      "measured": 8.9,
       "what": "The terms of use in Hindi, from docs/legal/hi/terms.md: Devanagari takes three bytes a letter in UTF-8, so they weigh about 1.2 kB more than the Spanish ones."
     },
     "hi/privacy.html": {
-      "kB": 10.4,
-      "measured": 9.9,
+      "kB": 10.7,
+      "measured": 10.1,
       "what": "The privacy policy in Hindi, from docs/legal/hi/privacy.md: like the Spanish one, it grows with each new setting, and Devanagari takes three bytes a letter in UTF-8."
     },
     "hi/third-party-licenses.html": {
-      "kB": 16.2,
-      "measured": 15.4,
+      "kB": 16.4,
+      "measured": 15.6,
       "what": "The third-party licenses page in Hindi, the same THIRD_PARTY_NOTICES.md with a Hindi introduction and frame: it grows with each dependency the build ships."
     },
     "es/hacer-stickers-en-casa.html": {
-      "kB": 9.4,
-      "measured": 8.9,
+      "kB": 9.6,
+      "measured": 9.1,
       "what": "The stickers guide: its drawing of a sheet of stickers, each shape with the cut line the app's tracer draws around it (about 1.5 kB), and more to say than the other guides (what the contour line needs, what the PDF's line is and isn't, its limits)."
     },
     "en/print-stickers-at-home.html": {
-      "kB": 9.2,
-      "measured": 8.7,
+      "kB": 9.4,
+      "measured": 8.9,
       "what": "The stickers guide in English: the same drawing and text as the Spanish one."
     },
     "zh-hans/print-stickers.html": {
-      "kB": 10.1,
-      "measured": 9.6,
+      "kB": 10.3,
+      "measured": 9.8,
       "what": "The stickers guide in Simplified Chinese: the same drawing as the Spanish one, and Chinese takes three bytes a character in UTF-8."
     },
     "hi/print-stickers-at-home.html": {
-      "kB": 10.3,
-      "measured": 9.8,
+      "kB": 10.5,
+      "measured": 10,
       "what": "The stickers guide in Hindi: the same drawing as the Spanish one, and Devanagari takes three bytes a letter in UTF-8."
     },
     "fr/faire-ses-stickers-soi-meme.html": {
-      "kB": 9.7,
-      "measured": 9.2,
+      "kB": 9.9,
+      "measured": 9.4,
       "what": "The stickers guide in French: the same drawing as the Spanish one, and French takes more words to say the same."
     }
   }

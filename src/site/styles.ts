@@ -4,11 +4,15 @@
 // too: Inter, from the same file at the same address (each page adds the
 // @font-face of the subsets it uses and preloads them, see fonts.ts), with
 // each language's own font behind it as in tokens.css, and the editor's
-// rendering (font smoothing, tabular numbers in tables). Chinese and Hindi
-// use the system's font for their script (none is downloaded: docs/site.md
-// says why). Code stays in the system's monospace font. A table too wide for
-// its box scrolls inside it, with a shadow on each side that has more to see
+// rendering (font smoothing, tabular numbers in tables). Until Inter
+// arrives, a system font resized to take its room draws the text
+// (FALLBACK_FACES), so nothing moves when it swaps in. Chinese and Hindi use
+// the system's font for their script (none is downloaded: docs/site.md says
+// why). Code stays in the system's monospace font. A table too wide for its
+// box scrolls inside it, with a shadow on each side that has more to see
 // (covers that move with the content hide the shadow at its ends).
+
+import { FALLBACK_FACES, INTER_STACK } from './fonts.ts';
 
 /**
  * Only on pages with a table too wide for a phone (html.ts tableHtml, which
@@ -32,6 +36,7 @@ export const STACKED_CSS = `
 `;
 
 export const SITE_CSS = `
+${FALLBACK_FACES}
 :root {
   color-scheme: light dark;
   --bg: #ffffff;
@@ -51,11 +56,11 @@ export const SITE_CSS = `
   --note-text: #6b3800;
   --note-line: #c98a1e;
   --scroll-shadow: rgba(14, 16, 20, 0.3);
-  --font: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font: ${INTER_STACK}, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
-:root:lang(zh-Hans) { --font: "Inter Variable", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
-:root:lang(hi) { --font: "Inter Variable", "Nirmala UI", "Kohinoor Devanagari", "Noto Sans Devanagari", system-ui, sans-serif; }
+:root:lang(zh-Hans) { --font: ${INTER_STACK}, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
+:root:lang(hi) { --font: ${INTER_STACK}, "Nirmala UI", "Kohinoor Devanagari", "Noto Sans Devanagari", system-ui, sans-serif; }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #15171c;

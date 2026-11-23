@@ -3,7 +3,8 @@
 // the addresses the build gave them for the editor, so going from a guide to
 // the editor, or back, downloads no font twice. Each page declares and
 // preloads only the subsets whose characters its text uses (every page today:
-// Latin).
+// Latin), and falls back meanwhile on a system font resized to take Inter's
+// room (FALLBACK_FACES), so nothing moves when Inter arrives.
 
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -140,3 +141,55 @@ export function drawnText(body: string, css: string) {
       hex ? String.fromCodePoint(parseInt(hex, 16)) : dec ? String.fromCodePoint(Number(dec)) : (DECODE[name] ?? entity)
     );
 }
+
+/**
+ * Inter's metric-compatible fallbacks: what draws the text until Inter
+ * arrives (font-display: swap), resized so that each line takes the room it
+ * will take in Inter and nothing rewraps or moves when it does.
+ *
+ * One family per kind of system, each with its regular and bold (the bold
+ * face draws weights from 600 up, the weights the site sets: 600, 700, 800):
+ *
+ * - «Inter Fallback Arial»: Arial, on Windows, macOS, iOS, and its
+ *   metric-compatible clones elsewhere, which have the very same advance
+ *   widths: Liberation Sans (most Linux desktops), Arimo (ChromeOS), Nimbus
+ *   Sans (Ghostscript's fonts, on many Linux systems).
+ * - «Inter Fallback Roboto»: Roboto, Android's font, where there is no Arial.
+ *
+ * San Francisco and Segoe UI, the system-ui of Apple and Windows, aren't
+ * used: Safari doesn't let local() reach San Francisco, and those systems
+ * have Arial. A system with none of these fonts draws the stack behind them
+ * (system-ui…), unadjusted, as before.
+ *
+ * How the numbers were obtained (scripts outside the repository: fontTools
+ * 4.53, and Chromium 1223 through Playwright). Inter is the latin subset of
+ * @fontsource-variable/inter 5.3.0 (Inter 4.001, 2048 units per em; hhea and
+ * OS/2 typo agree, with USE_TYPO_METRICS: ascender 1984, descender −494, line
+ * gap 0; tests/site/fonts.test.ts reads them from the file and checks the
+ * overrides below). size-adjust started as Inter's average advance width over
+ * the fallback's, at the weight the face stands for (Inter instanced at wght
+ * 400 and 700), each character weighted by how often it appears in the
+ * visible text of the Spanish, English and French pages (each page counting
+ * the same; space 18 %, «e» 9 %, «o» 6 %…): Arial 7.07 and Arial Bold from
+ * Windows 11, 106.36 % and 102.06 % (Nimbus Sans: the same); Roboto 2.001
+ * (Android up to 11) and Roboto Bold, 107.29 % and 108.38 % (the variable
+ * Roboto 3.015 of Android 12 on, at wght 400 and 700: 107.20 % and
+ * 108.43 %). Then every paragraph, list item and cell (400), heading (700)
+ * and button, label and table head (600) of those 36 pages was set on one
+ * line, kerned, in Inter and in each face: Inter came out 0.23 % wider than
+ * Arial and 0.26 % narrower than Arial Bold, hence 106.6 % and 101.8 %;
+ * Roboto's were already within 0.05 % (107.2 %, 108.4 %). At 600, drawn by
+ * the bold face, Inter is 0.7 % narrower than Arial Bold, 0.4 % than Roboto
+ * Bold. Each override is Inter's metric over size-adjust (the browser scales
+ * it by size-adjust, as next/font and Capsize compute it), so a line's ascent
+ * and descent are Inter's: the baseline doesn't move either.
+ */
+export const FALLBACK_FACES = [
+  `@font-face { font-family: "Inter Fallback Arial"; src: local("Arial"), local("Liberation Sans"), local("Arimo-Regular"), local("NimbusSans-Regular"); size-adjust: 106.6%; ascent-override: 90.88%; descent-override: 22.63%; line-gap-override: 0%; }`,
+  `@font-face { font-family: "Inter Fallback Arial"; font-weight: 700; src: local("Arial Bold"), local("Liberation Sans Bold"), local("Arimo-Bold"), local("NimbusSans-Bold"); size-adjust: 101.8%; ascent-override: 95.16%; descent-override: 23.69%; line-gap-override: 0%; }`,
+  `@font-face { font-family: "Inter Fallback Roboto"; src: local("Roboto"), local("Roboto-Regular"); size-adjust: 107.2%; ascent-override: 90.37%; descent-override: 22.5%; line-gap-override: 0%; }`,
+  `@font-face { font-family: "Inter Fallback Roboto"; font-weight: 700; src: local("Roboto Bold"), local("Roboto-Bold"); size-adjust: 108.4%; ascent-override: 89.37%; descent-override: 22.25%; line-gap-override: 0%; }`,
+].join('\n');
+
+/** Inter, then its fallbacks: the start of every language's font stack. */
+export const INTER_STACK = '"Inter Variable", "Inter Fallback Arial", "Inter Fallback Roboto"';
