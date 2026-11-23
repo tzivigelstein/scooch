@@ -5,8 +5,9 @@ pages for search engines and AI assistants: guides for each use, the
 questions, the legal pages, `sitemap.xml`, `robots.txt` and `llms.txt`. The
 Vite plugin in `src/site/plugin.ts` renders them from `src/site` while
 building (and on each request in `yarn dev`). They are plain HTML with their
-CSS inline and no font to download; the calculator's page loads one small
-script, built on its own so it never pulls in the editor.
+CSS inline, set in the editor's font, Inter, from the editor's own file
+(«Fonts» below); the calculator's page loads one small script, built on its
+own so it never pulls in the editor.
 
 The editor's `index.html` gets its canonical URL, share tags and the
 tool's structured data (`WebApplication`) from the same plugin, and a line
@@ -101,13 +102,80 @@ weighs little next to the title. French's are French without accents.
   editor opens in the language chosen in «Preferencias» or, on
   «Automático», the browser's. Someone reading the English pages with an
   English browser gets the editor in English.
-- **Fonts.** The pages use the system's fonts (no font to download), also
-  for Devanagari and Chinese: Windows (Nirmala UI, Microsoft YaHei), macOS
-  and iOS (Kohinoor Devanagari, PingFang SC) and Android (Noto) have them.
-  In Playwright's Docker image, Chromium, Firefox and WebKit render both
-  scripts with its fallback fonts (FreeSans, WenQuanYi Zen Hei), conjuncts
-  included; a Linux system without any Devanagari or Chinese font would show
-  boxes. `<html lang="zh-Hans">` lets the browser choose simplified glyphs.
+- **Fonts.** Every page is set in Inter, as the editor is, with each
+  language's own fonts behind it («Fonts» below). Chinese and Devanagari,
+  which Inter doesn't have, are left to the system's fonts: Windows
+  (Microsoft YaHei, Nirmala UI), macOS and iOS (PingFang SC, Kohinoor
+  Devanagari) and Android (Noto) have them. In Playwright's Docker image,
+  Chromium, Firefox and WebKit render both scripts with its fallback fonts
+  (FreeSans, WenQuanYi Zen Hei), conjuncts included; a Linux system without
+  any Devanagari or Chinese font shows boxes. `<html lang="zh-Hans">` lets the
+  browser choose simplified glyphs.
+
+### Fonts
+
+The pages use the editor's Inter (`src/site/fonts.ts`), so the site and the
+editor read as one product and going from one to the other downloads no font
+twice:
+
+- **The editor's files.** The plugin reads the stylesheet `src/styles/index.css`
+  imports (`@fontsource-variable/inter`: one `@font-face` per subset, Latin,
+  Latin Extended, Cyrillic, Greek, Vietnamese…, each with its
+  `unicode-range`) and, in a build, the address Vite gave each file for the
+  editor (`assets/inter-latin-wght-normal-[hash].woff2`); `yarn dev` serves
+  them from `node_modules`, as it serves the editor's. Nothing comes from
+  another server, and there is no second copy of the font.
+- **Only what the page draws.** Each page carries the `@font-face` rules of
+  the subsets whose characters its text uses (its text, a stacked table's
+  column names, the calculator's texts, the breadcrumb's «›») and preloads
+  them (`<link rel="preload" as="font" crossorigin>`), so the font starts
+  downloading with the page. Today that is Latin alone on every page, in
+  every language: French «œ» and its capitals with accents are in it, and
+  Chinese and Devanagari are in no subset of Inter. A page that needs a
+  subset the build didn't emit stops the build.
+- **Nothing moves when it arrives.** `font-display: swap`, as in the editor:
+  the text shows at once in a fallback and Inter takes its place when it
+  arrives. The fallback is a system font resized to Inter's measure
+  (`FALLBACK_FACES`: `size-adjust` and `ascent-override`, `descent-override`,
+  `line-gap-override`), so lines keep their length and their baseline: Arial
+  on Windows, macOS and iOS (and its metric clones Liberation Sans, Arimo and
+  Nimbus Sans on Linux and ChromeOS), Roboto on Android, each in regular and
+  bold. San Francisco and Segoe UI aren't used: Safari doesn't let `local()`
+  reach San Francisco, and both systems have Arial. `optional` would leave
+  slow first visits in the fallback for the whole page, and `block` would
+  hide the text for up to 3 s. The comment above `FALLBACK_FACES` says how
+  the numbers were worked out; `tests/site/fonts.test.ts` reads Inter's
+  metrics from its file and fails if a new version of the package changes
+  them (then work the numbers out again).
+- **Measured** on Slow 3G (Chromium, 2 s latency, 50 kB/s; Inter arrives
+  about 3 s after the text shows), layout shift after Inter arrives, where
+  system fonts gave 0: with the resized fallback, 0 on the FAQ and the
+  10 × 15 guide at 390 and 1440 px, 0.028 on the longest page (the
+  third-party licenses) at 390 px and 0 at 1440 px, 0 on the Chinese and
+  Hindi guides and 0.01 on the Hindi FAQ at 390 px; without it, 0.17 and
+  0.07 on the licenses and 0.02 on the 10 × 15 guide. A paragraph can
+  still break one word differently: the faces match Inter's widths on
+  average (within 0.3 % for regular and bold text), not letter by letter.
+- **Each language's fonts behind Inter**, as `src/styles/tokens.css` gives
+  them: Chinese, PingFang SC, Microsoft YaHei, Noto Sans CJK SC; Hindi, the
+  system's Devanagari font (Nirmala UI, Kohinoor Devanagari, Noto Sans
+  Devanagari). Unlike the editor, the Hindi pages don't download Noto Sans
+  Devanagari: it weighs 121 kB, twice what a Hindi guide downloads with
+  Inter (about 56 kB); it would arrive after Inter and move the whole text
+  when it swapped in (0.08 measured on the Hindi FAQ on a Windows-like
+  system); and every system Hindi readers use has a Devanagari font,
+  Android's being that same Noto Sans Devanagari. Latin letters and digits
+  in those pages are Inter's.
+- **The editor's rendering**: the same weights (500 to 800, from the
+  variable font: none is synthesized), tabular numbers in tables, the
+  editor's font smoothing. The files have no optical size axis, so
+  `font-optical-sizing` changes nothing, as in the editor. Code stays in the
+  system's monospace font.
+- **Bytes.** The `@font-face` rules, the preload and the fallback faces add
+  about 0.6 kB (gzip) to each page; the first visit to a page downloads
+  Inter's Latin file too, 48.3 kB, which the editor then has in its cache.
+  `yarn size` checks each page's HTML (`pages`) and its first visit: HTML,
+  fonts and scripts, against `pageFirstVisit`.
 
 ### How a page is built
 
@@ -287,7 +355,15 @@ editor's metadata, which no other language needs).
      `**Unités :**`) ends each term with it;
    - `tests/site/table.test.ts`: its photos-10x15 page and third-party
      licenses page, which carry the stacked-table CSS;
-   - `e2e/specs/site-pages.spec.ts`: its pages in `SHOWN`;
+   - `e2e/specs/site-pages.spec.ts`: its pages in `SHOWN`, and a guide in
+     `GUIDES`;
+   - `src/site/styles.ts`: if Inter doesn't have its script, its fonts behind
+     Inter (`:root:lang(…)`), as `src/styles/tokens.css` gives them; if its
+     text needs another subset of Inter than Latin (Vietnamese, Cyrillic,
+     Latin Extended for Polish or Turkish…), the pages declare and preload it
+     on their own, but `tests/site/fonts.test.ts` expects Latin alone and
+     `pageFirstVisit` in `scripts/size-budgets.json` may need the subset's
+     weight: say so where you change them;
    - `scripts/size-budgets.json`: its privacy policy, third-party
      licenses and stickers guide, which are over the budget for any page (and any other page
      `yarn size` finds over it or right at it: a script that takes three
