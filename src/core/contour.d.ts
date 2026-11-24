@@ -29,6 +29,13 @@ export function countWork(counter: ContourWork | null): void;
  */
 export function traceShape(mask: AlphaMask, options: { crop?: Crop | null; w: number; h: number; margin?: number }): Float64Array[] | null;
 
+/**
+ * Whether nothing in the visible part is transparent, sampled as traceShape
+ * samples it (same options): why traceShape gives an image without a
+ * transparent background the rectangle. False when nothing is opaque either.
+ */
+export function opaqueInView(mask: AlphaMask, options: { crop?: Crop | null; w: number; h: number; margin?: number }): boolean;
+
 /** Positive when clockwise on screen (y down). */
 export function loopArea(points: Loop): number;
 export function insideLoop(points: Loop, x: number, y: number): boolean;

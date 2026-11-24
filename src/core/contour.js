@@ -554,6 +554,19 @@ export function traceShape(mask, { crop = null, w, h, margin = 0 }) {
   });
 }
 
+/**
+ * Whether nothing in an image's visible part is transparent, sampled as
+ * traceShape samples it with the same options: the image has no transparent
+ * background, which is why traceShape gives it the rectangle. False when
+ * something is (also when nothing is opaque: that rectangle has another
+ * cause) or there is nothing to sample.
+ */
+export function opaqueInView(mask, { crop = null, w, h, margin = 0 }) {
+  if (!(w > 0 && h > 0) || !mask || !(mask.width > 0 && mask.height > 0)) return false;
+  const g = gridFor(mask, crop, w, h, Number.isFinite(margin) ? margin : 0);
+  return sample(mask, g, w, h).opaque === g.nx * g.ny;
+}
+
 // ---------- On the sheet ----------
 
 /**

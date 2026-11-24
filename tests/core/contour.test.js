@@ -2,7 +2,7 @@
 // image's visible part, placing it on the sheet with its piece, and what of
 // it is drawn next to other pieces.
 import { describe, expect, test } from 'vitest';
-import { ALPHA_THRESHOLD, clipLoop, contourCuts, insideLoop, loopArea, pathData, placeLoops, traceShape } from '../../src/core/contour.js';
+import { ALPHA_THRESHOLD, clipLoop, contourCuts, insideLoop, loopArea, opaqueInView, pathData, placeLoops, traceShape } from '../../src/core/contour.js';
 import { rotateCrop } from '../../src/core/crop.js';
 import { cutLines } from '../../src/core/cutmarks.js';
 import { disc, distanceToLoops, maskOf, radii } from '../support/contour.ts';
@@ -122,6 +122,31 @@ describe('traceShape', () => {
       const v = -(loop[i] - 50) * sin + (loop[i + 1] - 50) * cos;
       expect(Math.abs(Math.max(Math.abs(u), Math.abs(v)) - 25)).toBeLessThan(0.75 * PX);
     }
+  });
+});
+
+describe('opaqueInView', () => {
+  /** The round disc on a background of `alpha` all around it. */
+  const onBackground = (alpha) => {
+    const mask = maskOf(400, 400, () => true, alpha);
+    mask.alpha.forEach((_, i) => {
+      if (disc(200, 200, 120)(i % 400 + 0.5, Math.floor(i / 400) + 0.5)) mask.alpha[i] = 255;
+    });
+    return mask;
+  };
+  test.each([
+    { name: 'an image opaque all over has nothing transparent in view', mask: maskOf(50, 40, () => true), options: { w: 10, h: 8 }, opaque: true },
+    { name: 'a shape on a transparent background has something transparent', mask: round, options: { w: 100, h: 100, margin: 2 }, opaque: false },
+    { name: 'nothing opaque in view is not counted: that rectangle has another cause', mask: maskOf(50, 40, () => false), options: { w: 10, h: 8, margin: 2 }, opaque: false },
+    { name: 'a crop that leaves out the only transparent border has nothing transparent', mask: maskOf(100, 100, (x) => x > 10), options: { crop: { x: 0.2, y: 0, w: 0.8, h: 1 }, w: 8, h: 10 }, opaque: true },
+    // 4000 px across 400 mm: a cell for every 6 or 7 pixels, as traceShape samples them.
+    { name: 'a transparent border thinner than a cell is not seen', mask: maskOf(4000, 400, (x) => x > 1), options: { w: 400, h: 40 }, opaque: true },
+    { name: `a background under alpha ${ALPHA_THRESHOLD} counts as transparent`, mask: onBackground(ALPHA_THRESHOLD - 1), options: { w: 100, h: 100 }, opaque: false },
+    { name: `a background from alpha ${ALPHA_THRESHOLD} counts as opaque`, mask: onBackground(ALPHA_THRESHOLD), options: { w: 100, h: 100 }, opaque: true },
+  ])('$name', ({ mask, options, opaque }) => {
+    expect(opaqueInView(mask, options)).toBe(opaque);
+    // It explains traceShape's rectangle: never said of an image it gives a shape.
+    if (opaque) expect(traceShape(mask, options)).toBeNull();
   });
 });
 
