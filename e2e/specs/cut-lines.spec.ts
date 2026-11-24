@@ -1,7 +1,8 @@
 // Cut lines in a real browser: the layer over the pieces lets the pointer
 // through, hides while dragging, waits while the pieces glide to where a
 // change leaves them (frame by frame), follows the cut margin while typing, the
-// selected piece shows its cut box, and the choice survives a reload. Which
+// selected piece shows its cut box, an image the worker finds no transparency
+// in says why its Contour line is its rectangle, and the choice survives a reload. Which
 // lines and which stroke are tested lower (tests/components/CutLayer.test.tsx,
 // tests/components/CutsSection.test.tsx, tests/core/cutmarks.test.js,
 // tests/services/pdf.test.js); the PDF against the screen, in export-parity.spec.ts.
@@ -24,7 +25,7 @@ const screenLines = (page: Page) =>
     };
   });
 
-async function chooseCuts(app: App, mode: 'none' | 'corners' | 'outline') {
+async function chooseCuts(app: App, mode: 'none' | 'corners' | 'outline' | 'contour') {
   await app.page.keyboard.press('Escape');
   await app.openSetting('#cut-mode');
   // The chip's radio covers it (it is what gets the click).
@@ -154,6 +155,39 @@ test.describe('the cut margin', () => {
     expect(cutBox.content).not.toBe('none');
     expect(cutBox.border).toBe('dashed');
     expect(cutBox.inset).toBeCloseTo(-3 * zoom, 1);
+  });
+});
+
+test.describe('Contour on images without a transparent background', () => {
+  // The worker traces each image for real: an RGB PNG comes back as having
+  // nothing transparent, as a JPG is known to; which rows and notes say so
+  // in every case is tested lower (tests/components/no-transparent-background.test.tsx).
+  test('a JPG and an opaque PNG keep their rectangle and say why in their row and in the Item tab while a transparent PNG follows its shape', async ({ app, page }) => {
+    await app.addFiles(['sticker.png', 'wide.png', 'small.jpg']);
+    const idOf = async (name: string) => Number(await app.pieceNamed(name).getAttribute('data-id'));
+    const [sticker, wide, small] = [await idOf('sticker.png'), await idOf('wide.png'), await idOf('small.jpg')];
+    const badge = (id: number) => app.row(id).locator('.row-badge[data-kind="opaque"]');
+    const why = 'Sin fondo transparente, la línea de corte es rectangular';
+    await page.locator('#arrange').click();
+    await chooseCuts(app, 'contour');
+    // The sticker's shape and the other two's rectangles (their 8 sides are apart: 5 mm of gap).
+    await expect.poll(() => page.locator('#sheets .cut-layer > g:not(.cut-emphasis) path').count()).toBeGreaterThan(0);
+    await expect(page.locator('#sheets .cut-layer > g:not(.cut-emphasis) line')).toHaveCount(8);
+    await expect(badge(wide)).toHaveAttribute('data-tip', why);
+    await expect(badge(small)).toHaveAttribute('data-tip', why);
+    await expect(badge(sticker)).toHaveCount(0);
+    await expect(app.row(small)).toHaveAccessibleName(new RegExp(`^small\\.jpg.+\\. ${why}$`));
+
+    await app.row(small).click();
+    await app.showTab('piece');
+    await expect(page.locator('#opaque-note')).toBeVisible();
+    await expect(page.locator('#opaque-note')).toHaveText(why);
+    await app.row(sticker).click();
+    await expect(page.locator('#opaque-note')).toBeHidden();
+
+    // With Outline the rectangle is what was asked for: nothing to explain.
+    await chooseCuts(app, 'outline');
+    await expect(page.locator('#piece-list .row-badge[data-kind="opaque"]')).toHaveCount(0);
   });
 });
 
