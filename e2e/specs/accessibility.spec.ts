@@ -146,6 +146,16 @@ flow('editing', [DESKTOP, MEDIUM, PHONE], async (c, app) => {
   await expect(page.locator('#piecebar button').first()).toBeFocused();
   await expect(page.locator('#tooltip')).toBeVisible();
   await c.state('tooltip of the focused toolbar button');
+
+  // None of the four has a transparent background: each row says so, and so does the Item tab.
+  await page.keyboard.press('Escape');
+  await app.openSetting('#cut-mode');
+  await page.locator('#cut-mode input[value="contour"]').check({ force: true });
+  await expect(page.locator('#piece-list .row-badge[data-kind="opaque"]')).toHaveCount(4);
+  await focusPiece(small);
+  await app.showTab('piece');
+  await expect(page.locator('#opaque-note')).toBeVisible();
+  await c.state('Contour cut lines on images without a transparent background: their badges and the note');
 });
 
 // ---------- Printing: the advice before, the summary after ----------
