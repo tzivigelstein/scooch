@@ -1,8 +1,9 @@
 // Deep links: URL parameters that open the editor with a new project already
-// set up (paper, orientation, margin, gap, cut lines, «Rotación automática»)
-// and a photo size for the images added to it. Pure: parsing and building
-// query strings. What applying one does is in state/actions/deeplink.ts; the
-// parameters are documented in docs/deep-links.md.
+// set up (paper, orientation, margin, gap, cut lines and their cut margin,
+// Auto-rotate) and a photo size for the images added to it. Pure: parsing and
+// building query strings. What applying one does is in
+// state/actions/deeplink.ts; the parameters are documented in
+// docs/deep-links.md.
 //
 // Every value is validated on its own: an unknown or unreadable one is
 // ignored, a number out of range is clamped, and the rest still applies.
@@ -13,12 +14,18 @@ import { CUSTOM_MAX, CUSTOM_MIN, PAPERS, sizeOf } from './papers.js';
 import { clamp, tidy } from './util.js';
 
 /** The parameters a deep link reads, in the order a built link writes them. */
-export const DEEP_LINK_KEYS = Object.freeze(['paper', 'orientation', 'margin', 'gap', 'photo', 'cuts', 'rotate']);
+export const DEEP_LINK_KEYS = Object.freeze(['paper', 'orientation', 'margin', 'gap', 'photo', 'cuts', 'cutmargin', 'rotate']);
 
 /** Margin and gap, in mm: the range of the sheet's fields. */
 export const LENGTH_RANGE = Object.freeze([0, 50]);
 /** A custom photo size's sides, in mm. */
 export const PHOTO_RANGE = Object.freeze([5, 1000]);
+/**
+ * The cut margin, in mm (negative: the cut goes inside the image): the range
+ * of its field, projectdoc.js CUT_LIMITS.margin (not imported: the site's
+ * calculator, which loads this module, would carry projectdoc's constants).
+ */
+export const CUT_MARGIN_RANGE = Object.freeze([-5, 20]);
 
 /** Names the interface (or a person typing a link) uses for some papers. */
 const PAPER_ALIASES = Object.freeze({ carta: 'letter', oficio: 'legal', tabloide: 'tabloid' });
@@ -31,7 +38,7 @@ const SIZE_MM = /^(\d+(?:[.,]\d+)?)x(\d+(?:[.,]\d+)?)mm$/;
 const toNumber = (text) => Number(text.replace(',', '.'));
 
 // Lengths are kept in hundredths of a mm (tidy): what a link can say, and what it writes back.
-const lengthOf = (text) => (NUMBER.test(text) ? tidy(clamp(toNumber(text), ...LENGTH_RANGE)) : undefined);
+const lengthOf = (text, range = LENGTH_RANGE) => (NUMBER.test(text) ? tidy(clamp(toNumber(text), ...range)) : undefined);
 
 function sizeOfText(text, range) {
   const match = SIZE_MM.exec(text);
@@ -58,11 +65,11 @@ function photoOf(text) {
  * Reads a query string («?paper=A4&margin=5»). Returns null when it has none
  * of DEEP_LINK_KEYS; otherwise {keys, settings, photo}: `keys` are the deep
  * link parameters present (valid or not), `settings` what the new project
- * takes (paper, landscape, margin, gap, cutMode, rotate: only the valid ones)
- * and `photo` the size for the images added to it ({id, w, h}, `id` null for
- * a custom size), or null. `defaults.paper` is the paper a margin is checked
- * against when the link sets none: a margin that leaves no printable area is
- * ignored.
+ * takes (paper, landscape, margin, gap, cutMode, cutMargin, rotate: only the
+ * valid ones) and `photo` the size for the images added to it ({id, w, h},
+ * `id` null for a custom size), or null. `defaults.paper` is the paper a
+ * margin is checked against when the link sets none: a margin that leaves no
+ * printable area is ignored.
  */
 export function parseDeepLink(search, { paper: defaultPaper = 'A4' } = {}) {
   const params = new URLSearchParams(search);
@@ -87,6 +94,9 @@ export function parseDeepLink(search, { paper: defaultPaper = 'A4' } = {}) {
 
   const cutMode = value('cuts');
   if (keys.includes('cuts') && CUT_MODES.includes(cutMode)) settings.cutMode = cutMode;
+  // Kept with or without `cuts`: it shows once the project has cut lines.
+  const cutMargin = keys.includes('cutmargin') ? lengthOf(value('cutmargin'), CUT_MARGIN_RANGE) : undefined;
+  if (cutMargin !== undefined) settings.cutMargin = cutMargin;
   const rotate = SWITCH[value('rotate')];
   if (keys.includes('rotate') && rotate !== undefined) settings.rotate = rotate;
 
@@ -104,7 +114,7 @@ const sizeText = ({ w, h }) => `${tidy(w)}x${tidy(h)}mm`;
  * is missing is left out. `paper`: a preset id or {custom, w, h}; `photo`: a
  * PHOTO_SIZES id or {w, h} in mm.
  */
-export function deepLinkSearch({ paper, landscape, margin, gap, photo, cutMode, rotate } = {}) {
+export function deepLinkSearch({ paper, landscape, margin, gap, photo, cutMode, cutMargin, rotate } = {}) {
   const params = new URLSearchParams();
   if (typeof paper === 'string') params.set('paper', paper);
   else if (paper) params.set('paper', sizeText(paper));
@@ -114,6 +124,7 @@ export function deepLinkSearch({ paper, landscape, margin, gap, photo, cutMode, 
   if (typeof photo === 'string') params.set('photo', photo);
   else if (photo) params.set('photo', sizeText(photo));
   if (cutMode !== undefined) params.set('cuts', cutMode);
+  if (cutMargin !== undefined) params.set('cutmargin', String(tidy(cutMargin)));
   if (rotate !== undefined) params.set('rotate', rotate ? 'on' : 'off');
   const text = params.toString();
   return text ? `?${text}` : '';

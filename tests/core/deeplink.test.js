@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { DEEP_LINK_KEYS, deepLinkSearch, parseDeepLink, setsUp, withoutDeepLink } from '../../src/core/deeplink.js';
+import { CUT_MARGIN_RANGE, DEEP_LINK_KEYS, deepLinkSearch, parseDeepLink, setsUp, withoutDeepLink } from '../../src/core/deeplink.js';
+import { CUT_LIMITS } from '../../src/core/projectdoc.js';
 
 const settings = (search, defaults) => parseDeepLink(search, defaults)?.settings;
 
@@ -10,11 +11,11 @@ describe('which queries are deep links', () => {
 
   test('the parameters present are listed in a fixed order, valid or not', () => {
     expect(parseDeepLink('?rotate=maybe&utm=x&paper=A4&margin=abc')?.keys).toEqual(['paper', 'margin', 'rotate']);
-    expect(DEEP_LINK_KEYS).toEqual(['paper', 'orientation', 'margin', 'gap', 'photo', 'cuts', 'rotate']);
+    expect(DEEP_LINK_KEYS).toEqual(['paper', 'orientation', 'margin', 'gap', 'photo', 'cuts', 'cutmargin', 'rotate']);
   });
 
   test('a link whose values are all unreadable sets nothing up', () => {
-    const link = parseDeepLink('?paper=A10&orientation=diagonal&margin=wide&gap=&photo=huge&cuts=dashed&rotate=maybe');
+    const link = parseDeepLink('?paper=A10&orientation=diagonal&margin=wide&gap=&photo=huge&cuts=dashed&cutmargin=wide&rotate=maybe');
     expect(link?.settings).toEqual({});
     expect(link?.photo).toBeNull();
     expect(setsUp(link)).toBe(false);
@@ -114,6 +115,51 @@ describe('cut lines and «Rotación automática»', () => {
   });
 });
 
+describe('cut margin', () => {
+  test.each([
+    ['3', 3],
+    ['0', 0],
+    ['1.5', 1.5],
+    ['-2', -2],
+    ['3.14159', 3.14],
+  ])('«%s» mm is a cut margin of %s mm', (text, mm) => {
+    expect(settings(`?cutmargin=${text}`)).toEqual({ cutMargin: mm });
+  });
+
+  test('a decimal comma reads as a decimal point', () => {
+    expect(settings('?cutmargin=2,5')).toEqual({ cutMargin: 2.5 });
+  });
+
+  test('its range is the one the Cut margin field enforces', () => {
+    expect(CUT_MARGIN_RANGE).toEqual(CUT_LIMITS.margin);
+    expect(CUT_MARGIN_RANGE).toEqual([-5, 20]);
+  });
+
+  test.each([
+    ['25', 20],
+    ['20.01', 20],
+    ['-8', -5],
+    ['-5.5', -5],
+  ])('«%s» mm is clamped to %s mm like the Cut margin field', (text, mm) => {
+    expect(settings(`?cutmargin=${text}`)).toEqual({ cutMargin: mm });
+  });
+
+  test.each(['', 'abc', '3mm', '1e1', '.5', '5.', '+3', '--3', 'Infinity', '1/2'])('«%s» is not a cut margin and the rest of the link still applies', (text) => {
+    const value = encodeURIComponent(text);
+    expect(settings(`?cuts=contour&cutmargin=${value}`)).toEqual({ cutMode: 'contour' });
+    // Alone, it is still a deep link parameter (taken out of the address) that sets nothing up.
+    const alone = parseDeepLink(`?cutmargin=${value}`);
+    expect(alone?.keys).toEqual(['cutmargin']);
+    expect(setsUp(alone)).toBe(false);
+  });
+
+  test('it is read with or without the cut lines', () => {
+    expect(settings('?cuts=contour&cutmargin=3')).toEqual({ cutMode: 'contour', cutMargin: 3 });
+    expect(settings('?cutmargin=3')).toEqual({ cutMargin: 3 });
+    expect(setsUp(parseDeepLink('?cutmargin=0'))).toBe(true);
+  });
+});
+
 describe('photo size', () => {
   test.each([
     ['10x15', { id: '10x15', w: 101.6, h: 152.4 }],
@@ -162,8 +208,18 @@ describe('building links', () => {
     }
   });
 
+  test('a built link writes the cut margin after the cut lines and parsing it gives the same back', () => {
+    expect(deepLinkSearch({ rotate: true, cutMargin: 3, cutMode: 'contour', gap: 3 })).toBe('?gap=3&cuts=contour&cutmargin=3&rotate=on');
+    expect(deepLinkSearch({ cutMargin: -1.5 })).toBe('?cutmargin=-1.5');
+    expect(deepLinkSearch({ cutMargin: 2.345678 })).toBe('?cutmargin=2.35');
+    for (const request of [{ paper: 'A4', margin: 5, gap: 3, cutMode: 'contour', cutMargin: 3 }, { cutMargin: -5 }, { cutMode: 'outline', cutMargin: 0 }, { cutMargin: 20 }]) {
+      expect(parseDeepLink(deepLinkSearch(request))?.settings).toEqual(request);
+    }
+  });
+
   test('removing a link leaves the other parameters as they were', () => {
     expect(withoutDeepLink('?utm_source=a&paper=A4&margin=5&ref=b')).toBe('?utm_source=a&ref=b');
+    expect(withoutDeepLink('?cuts=contour&cutmargin=3&ref=b')).toBe('?ref=b');
     expect(withoutDeepLink('?paper=A4')).toBe('');
     expect(withoutDeepLink('')).toBe('');
   });

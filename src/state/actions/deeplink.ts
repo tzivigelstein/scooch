@@ -4,7 +4,7 @@
 
 import { fitToSize } from '../../core/crop.js';
 import { parseDeepLink, setsUp, withoutDeepLink, type DeepLink, type DeepLinkPhoto } from '../../core/deeplink.js';
-import type { Item } from '../../core/types.ts';
+import type { Cuts, Item } from '../../core/types.ts';
 import { t, type CopyKey } from '../../copy/index.ts';
 import { paperName, sizeText } from '../../services/measure.ts';
 import type { StartSettings } from '../../services/projects.ts';
@@ -28,9 +28,17 @@ export function takeDeepLink(): DeepLink | null {
   return setsUp(link) ? link : null;
 }
 
-/** The settings the new project is created with (initProjects' `start`). */
-export function startSettings({ settings: { cutMode, ...rest } }: DeepLink): StartSettings {
-  return cutMode ? { ...rest, cuts: { ...getDocument().cuts, mode: cutMode } } : rest;
+/**
+ * The settings the new project is created with (initProjects' `start`). Of
+ * the cut settings, the link sets only the mode and the cut margin; the
+ * marks and the stroke stay as they are.
+ */
+export function startSettings({ settings: { cutMode, cutMargin, ...rest } }: DeepLink): StartSettings {
+  if (cutMode === undefined && cutMargin === undefined) return rest;
+  const cuts: Cuts = { ...getDocument().cuts };
+  if (cutMode !== undefined) cuts.mode = cutMode;
+  if (cutMargin !== undefined) cuts.margin = cutMargin;
+  return { ...rest, cuts };
 }
 
 /** Once the project is created: its photo size starts to apply, and the notice says what the link set up. */

@@ -1,10 +1,12 @@
 import type { CustomPaper, CutMode, Paper, Size } from './types';
 
-export type DeepLinkKey = 'paper' | 'orientation' | 'margin' | 'gap' | 'photo' | 'cuts' | 'rotate';
+export type DeepLinkKey = 'paper' | 'orientation' | 'margin' | 'gap' | 'photo' | 'cuts' | 'cutmargin' | 'rotate';
 
 export const DEEP_LINK_KEYS: readonly DeepLinkKey[];
 export const LENGTH_RANGE: readonly [number, number];
 export const PHOTO_RANGE: readonly [number, number];
+/** The cut margin's range in mm: the one its field enforces (CUT_LIMITS.margin). */
+export const CUT_MARGIN_RANGE: readonly [number, number];
 
 /** What a new project takes from a link (only what was valid). */
 export interface DeepLinkSettings {
@@ -13,6 +15,8 @@ export interface DeepLinkSettings {
   margin?: number;
   gap?: number;
   cutMode?: CutMode;
+  /** mm between each image and its cut line (Cuts.margin). */
+  cutMargin?: number;
   rotate?: boolean;
 }
 

@@ -5,6 +5,7 @@
 // changes a saved one, and leaves the address without its parameters. The
 // real IndexedDB and a reload in a browser are in e2e/specs/deep-links.spec.ts.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { DEFAULT_CUTS } from '../../src/core/projectdoc.js';
 import { memoryStorage } from '../../src/core/projectstore.js';
 import type { ProjectStorage } from '../../src/core/types.ts';
 import { storedProject } from '../support/projects.ts';
@@ -116,6 +117,21 @@ describe('a deep link on start', () => {
     expect(await storage.list()).toHaveLength(1);
     expect(window.location.search).toBe('');
     expect(app.notice()).toBeNull();
+  });
+
+  test('the link’s cut lines and cut margin go to the new project and the other cut settings keep their defaults', async () => {
+    const storage = memoryStorage();
+    const app = await start(storage, '?cuts=contour&cutmargin=3');
+    const expected = { ...DEFAULT_CUTS, mode: 'contour', margin: 3 };
+    expect(app.getDocument().cuts).toEqual(expected);
+    expect((await storage.get(app.session.record!.id))!.doc.cuts).toEqual(expected);
+    expect(window.location.search).toBe('');
+  });
+
+  test('a cut margin without cut lines goes to the new project with the cut lines still off', async () => {
+    const app = await start(memoryStorage(), '?paper=A5&cutmargin=-1.5');
+    expect(app.getDocument().paper).toBe('A5');
+    expect(app.getDocument().cuts).toEqual({ ...DEFAULT_CUTS, margin: -1.5 });
   });
 
   test('without storage, the link still sets up the project the tab works on', async () => {
