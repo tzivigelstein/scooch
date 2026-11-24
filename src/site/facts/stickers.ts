@@ -1,7 +1,7 @@
 // «Stickers en casa» (stickers), in every language: the layouts its buttons
-// open (with the contour cut lines, «Silueta»), the sheet its figure draws and
-// how many stickers fit on it, and the opacity from which a pixel counts as
-// part of a shape.
+// open (with the contour cut lines, Contour, and the cut margin the guide
+// names), the sheet its figure draws and how many stickers fit on it, and the
+// opacity from which a pixel counts as part of a shape.
 //
 // The figure is the app's own work: the packer puts the stickers where
 // «Acomodar» would (each one's rectangle grown by the cut margin, with the
@@ -111,8 +111,8 @@ export function stickersFacts() {
     /** From this opacity (%) a pixel is part of the shape (core/contour.js ALPHA_THRESHOLD). */
     opacity: Math.round((ALPHA_THRESHOLD / 255) * 100),
     open: {
-      a4: editorHref({ paper: 'A4', ...layout, cutMode: 'contour' }),
-      letter: editorHref({ paper: 'letter', ...layout, cutMode: 'contour' }),
+      a4: editorHref({ paper: 'A4', ...layout, cutMode: 'contour', cutMargin }),
+      letter: editorHref({ paper: 'letter', ...layout, cutMode: 'contour', cutMargin }),
     },
   };
 }

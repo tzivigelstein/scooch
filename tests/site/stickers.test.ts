@@ -1,9 +1,9 @@
 // The stickers guide's facts (src/site/facts/stickers.ts): its buttons open
-// the editor with the contour cut lines, and its drawing shows what the app's
-// tracer does, as the guide says: one closed line around each shape, none in
-// a hole, each line inside its sticker's rectangle grown by the cut margin
-// (what «Acomodar» keeps the gap between), and following the shape, not the
-// rectangle.
+// the editor with the contour cut lines and the cut margin the guide names,
+// and its drawing shows what the app's tracer does, as the guide says: one
+// closed line around each shape, none in a hole, each line inside its
+// sticker's rectangle grown by the cut margin (what «Acomodar» keeps the gap
+// between), and following the shape, not the rectangle.
 import { describe, expect, test } from 'vitest';
 import { loopArea } from '../../src/core/contour.js';
 import { parseDeepLink } from '../../src/core/deeplink.js';
@@ -19,12 +19,12 @@ const loopsOf = (d: string) =>
     .map((loop) => loop.replace('M', '').split('L').flatMap((pair) => pair.trim().split(' ').map(Number)));
 
 describe('the stickers guide', () => {
-  test('its buttons open the editor with contour cut lines, on A4 and on Letter, with the layout the guide states', () => {
+  test('its buttons open the editor on A4 and on Letter with contour cut lines and the layout and cut margin the guide states', () => {
     for (const [href, paper] of [
       [f.open.a4, 'A4'],
       [f.open.letter, 'letter'],
     ]) {
-      expect(parseDeepLink(href.slice(1))!.settings).toEqual({ paper, margin: f.layout.margin, gap: f.layout.gap, cutMode: 'contour' });
+      expect(parseDeepLink(href.slice(1))!.settings).toEqual({ paper, margin: f.layout.margin, gap: f.layout.gap, cutMode: 'contour', cutMargin: f.cutMargin });
     }
   });
 
