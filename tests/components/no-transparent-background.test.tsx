@@ -2,12 +2,14 @@
 // With Contour cut lines, an image whose line stays its rectangle because it
 // has no transparent background says so, in one sentence: a badge in its row
 // of the Items list (its tooltip and, for screen readers, the end of the
-// row's name). A JPEG and a PDF page say it at once and a PNG once its trace
-// finds nothing transparent; with the other cut lines the rectangle is what
-// was chosen and nothing is said. What a trace finds is services/contours.test.ts's.
+// row's name) and a note in the Item tab while it is the one selected. A JPEG
+// and a PDF page say it at once and a PNG once its trace finds nothing
+// transparent; with the other cut lines the rectangle is what was chosen and
+// nothing is said. What a trace finds is services/contours.test.ts's.
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { PieceList } from '../../src/components/pieces-panel/PieceList.tsx';
+import { PieceSection } from '../../src/components/properties-panel/PieceSection.tsx';
 import { DEFAULT_CUTS } from '../../src/core/projectdoc.js';
 import type { CutMode } from '../../src/core/types.ts';
 import { traceAlpha } from '../../src/services/alpha.ts';
@@ -56,6 +58,7 @@ async function traced(items: Piece[]) {
 }
 
 const badge = (id: number) => document.querySelector<HTMLElement>(`#piece-list [role="option"][data-id="${id}"] .row-badge[data-kind="opaque"]`);
+const note = () => document.getElementById('opaque-note')!;
 
 describe('the badge in the Items list', () => {
   beforeEach(() => {
@@ -90,5 +93,37 @@ describe('the badge in the Items list', () => {
     expect(document.querySelectorAll('.row-badge[data-kind="opaque"]')).toHaveLength(3);
     show([jpg, pdf, flat, sticker], [], mode);
     expect(document.querySelectorAll('.row-badge[data-kind="opaque"]')).toHaveLength(0);
+  });
+});
+
+describe('the note in the Item tab', () => {
+  beforeEach(() => {
+    render(
+      <>
+        <PieceSection />
+        <div id="live-polite" />
+        <div id="live-assertive" />
+      </>
+    );
+  });
+
+  test('says the same of the one image selected and only with Contour', () => {
+    show([jpg, sticker], [jpg.id]);
+    expect(note().hidden).toBe(false);
+    expect(note().textContent).toBe(WHY);
+    show([jpg, sticker], [jpg.id], 'outline');
+    expect(note().hidden).toBe(true);
+    // Of several selected nothing is said: the list says which.
+    show([jpg, pdf], [jpg.id, pdf.id]);
+    expect(note().hidden).toBe(true);
+  });
+
+  test('shows for a PNG once its trace finds nothing transparent and never for a sticker', async () => {
+    show([flat, sticker], [flat.id]);
+    expect(note().hidden).toBe(true);
+    await traced([flat, sticker]);
+    expect(note().hidden).toBe(false);
+    show([flat, sticker], [sticker.id]);
+    expect(note().hidden).toBe(true);
   });
 });

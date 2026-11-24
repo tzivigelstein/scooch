@@ -6,7 +6,7 @@
 // line. sheetCuts gives a sheet's lines the same way to the screen and to the
 // PDF, which waits for every shape first (shapesReady). A trace also says why
 // an image keeps its rectangle, when that is because it has no transparent
-// background (lacksTransparency): the list and the «Pieza» tab say so.
+// background (lacksTransparency): the Items list and the Item tab say so.
 //
 // Shapes are traced in units of the visible part's longer side, so one trace
 // serves every size of the piece; the margin, in those units, is rounded to

@@ -28,7 +28,7 @@ import {
   TriangleAlert,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
 import type { AlignMode } from '../../core/align.js';
 import { PHOTO_SIZES } from '../../core/crop.js';
 import { common, SCALE_RANGE } from '../../core/group.js';
@@ -39,6 +39,7 @@ import { MAX_ITEMS } from '../../config.ts';
 import { useNativeEvents } from '../../hooks/useNativeEvents.ts';
 import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';
 import type { ShortcutName } from '../../hooks/shortcuts.ts';
+import { lacksTransparency, shapesVersion, subscribeShapes } from '../../services/contours.ts';
 import { decimalValue, lengthText, sizeText, unitName, unitSymbol } from '../../services/measure.ts';
 import { getAsset } from '../../state/assets.ts';
 import { getDocument, useDocument, type Piece } from '../../state/document.ts';
@@ -106,6 +107,24 @@ function resolution(item: Piece) {
   const printsAt = res.vector ? '' : t('props.resolution.printsAt', { ppp: res.ppp });
   const text = res.vector ? t('props.resolution.vector') : note ? t('props.resolution.withNote', { text: printsAt, note: t(`props.resolution.${note}`) }) : printsAt;
   return { level, text };
+}
+
+/**
+ * With Contour cut lines, why the piece's line is its rectangle when its
+ * image has no transparent background: its badge in the Items list, icon and
+ * text. It follows the traced shapes by itself, so the section doesn't
+ * render again for them.
+ */
+function OpaqueNote({ item }: { item: Piece | null }) {
+  const cuts = useDocument((s) => s.cuts);
+  useSyncExternalStore(subscribeShapes, shapesVersion);
+  const shown = !!item && cuts.mode === 'contour' && lacksTransparency(item, cuts.margin);
+  return (
+    <p id="opaque-note" className="field-note" hidden={!shown}>
+      <Icon icon={Info} />
+      <span>{t('pieces.badges.opaque')}</span>
+    </p>
+  );
 }
 
 const PHOTO_GROUPS = ['print', 'id', 'instant'] as const;
@@ -386,6 +405,7 @@ export function PieceSection() {
           <Icon icon={RotateCw} />
           <strong id="rotation-angle">{t('props.rotated', { deg: single?.r ?? 90 })}</strong>
         </p>
+        <OpaqueNote item={single} />
         <div className="photo-row">
           <div className="field">
             <span id="photo-size-label" className="field-label">
