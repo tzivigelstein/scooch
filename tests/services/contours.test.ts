@@ -1,6 +1,7 @@
 // The pieces' contour cut lines (services/contours.ts): what is traced and
-// when, with a tracer that runs core/contour.traceShape on masks drawn here
-// instead of the worker; what stands in meanwhile; and the PDF, which waits.
+// when, with a tracer that traces masks drawn here as the worker traces an
+// image (services/alpha.traceAlpha); what stands in meanwhile; why an image
+// keeps its rectangle; and the PDF, which waits.
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { PDFDocument, PDFRawStream, decodePDFRawStream } from 'pdf-lib';
 import { placeLoops, traceShape } from '../../src/core/contour.js';
@@ -11,7 +12,8 @@ import type { Cuts } from '../../src/core/types.ts';
 import { addAsset, getAsset } from '../../src/state/assets.ts';
 import { setDocument, type Piece } from '../../src/state/document.ts';
 import { makePdf } from '../../src/services/export.ts';
-import { setTracer, shapeOf, shapesReady, sheetCuts, showShapes, type TraceRequest } from '../../src/services/contours.ts';
+import { lacksTransparency, setTracer, shapeOf, shapesReady, sheetCuts, showShapes, type TraceRequest } from '../../src/services/contours.ts';
+import { traceAlpha } from '../../src/services/alpha.ts';
 import type { ImageAsset } from '../../src/services/assets.ts';
 import { disc, maskOf } from '../support/contour.ts';
 import { rgbPng } from '../support/png.ts';
@@ -23,8 +25,12 @@ const MM_PER_PT = 25.4 / 72;
 
 /** A round sticker: 600 × 600 px, a disc of 250 px radius in the middle. */
 const STICKER = maskOf(600, 600, disc(300, 300, 250));
+/** A photo saved as PNG: nothing transparent anywhere. */
+const PHOTO = maskOf(600, 600, () => true);
 
 let traced: TraceRequest[] = [];
+/** What the images traced are (the worker decodes each one's preview). */
+let mask = STICKER;
 /** Resolves the traces held back (with `hold`), in order. */
 let held: (() => void)[] = [];
 let hold = false;
@@ -34,7 +40,7 @@ function tracer(request: TraceRequest) {
   traced.push(request);
   const run = () => {
     if (fail) throw new Error('no luck');
-    return traceShape(STICKER, request);
+    return traceAlpha(mask, request);
   };
   if (!hold) return Promise.resolve().then(run);
   return new Promise<ReturnType<typeof run>>((resolve, reject) =>
@@ -60,6 +66,7 @@ beforeEach(() => {
   held = [];
   hold = false;
   fail = false;
+  mask = STICKER;
   setTracer(tracer);
   resetState();
   png = fakeImage({ name: 'pegatina.png', px: [600, 600], format: 'png' });
@@ -156,6 +163,56 @@ describe('what the sheet shows meanwhile', () => {
     await shapesReady([item], 0);
     expect(shapeOf(item, 0)).toBeNull();
     expect(sheetCuts([item], cuts(), W, H).lines).toHaveLength(4);
+  });
+});
+
+describe('why an image keeps its rectangle', () => {
+  test('a JPEG and a PDF page lack transparency from the start without being traced', async () => {
+    const items = [piece(1, fakeImage({ name: 'foto.jpg', src: 2, format: 'jpg' }), 10, 10), piece(2, fakePdf({ src: 3 }), 60, 10, { scale: 20 })];
+    expect(items.map((item) => lacksTransparency(item, 0))).toEqual([true, true]);
+    showShapes('sheet', items, 0);
+    await settle();
+    expect(traced).toEqual([]);
+  });
+
+  test('a PNG with nothing transparent lacks it once traced and keeps its rectangle', async () => {
+    hold = true;
+    mask = PHOTO;
+    const item = piece(1, png, 10, 10);
+    showShapes('sheet', [item], 0);
+    await settle();
+    expect(lacksTransparency(item, 0), 'not known while it is traced').toBe(false);
+    held.shift()!();
+    await settle();
+    expect(lacksTransparency(item, 0)).toBe(true);
+    expect(shapeOf(item, 0)).toBeNull();
+    expect(sheetCuts([item], cuts(), W, H)).toMatchObject({ lines: { length: 4 }, paths: [] });
+    // With another margin, while it is traced again, the trace before still says so.
+    showShapes('sheet', [item], 2);
+    await settle();
+    expect(lacksTransparency(item, 2)).toBe(true);
+  });
+
+  test('neither a PNG traced as a shape nor one whose trace failed is said to lack it', async () => {
+    const item = piece(1, png, 10, 10);
+    await shapesReady([item], 0);
+    expect(lacksTransparency(item, 0)).toBe(false);
+    fail = true;
+    const other = piece(2, fakeImage({ name: 'otra.png', src: 2, px: [600, 600], format: 'png' }), 80, 10);
+    await shapesReady([other], 0);
+    expect(shapeOf(other, 0)).toBeNull();
+    expect(lacksTransparency(other, 0), 'a failed trace says nothing of the image').toBe(false);
+  });
+
+  test('a crop decides: the transparent part cropped out lacks it and in view again does not', async () => {
+    // Transparent only along the left tenth.
+    mask = maskOf(600, 600, (x) => x > 60);
+    const whole = piece(1, png, 10, 10);
+    const cropped = piece(1, png, 10, 10, { crop: { x: 0.2, y: 0, w: 0.8, h: 1 } });
+    await shapesReady([cropped], 0);
+    expect(lacksTransparency(cropped, 0)).toBe(true);
+    await shapesReady([whole], 0);
+    expect(lacksTransparency(whole, 0)).toBe(false);
   });
 });
 

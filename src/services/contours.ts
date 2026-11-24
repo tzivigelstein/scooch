@@ -4,20 +4,22 @@
 // piece reuses it, and so does resizing it while the margin is 0. Until a
 // shape is ready, the piece shows the last one traced for the same crop, or no
 // line. sheetCuts gives a sheet's lines the same way to the screen and to the
-// PDF, which waits for every shape first (shapesReady).
+// PDF, which waits for every shape first (shapesReady). A trace also says why
+// an image keeps its rectangle, when that is because it has no transparent
+// background (lacksTransparency): the list and the «Pieza» tab say so.
 //
 // Shapes are traced in units of the visible part's longer side, so one trace
 // serves every size of the piece; the margin, in those units, is rounded to
 // MARGIN_STEP so resizing with a margin traces again only every so often.
 
-import { contourCuts, placeLoops, traceShape, type AlphaMask, type CutPath } from '../core/contour.js';
+import { contourCuts, placeLoops, type AlphaMask, type CutPath } from '../core/contour.js';
 import { pieceSize } from '../core/crop.js';
 import { cutLines, type CutLine } from '../core/cutmarks.js';
 import type { Box, Crop, Cuts } from '../core/types.ts';
 import type { Piece } from '../state/document.ts';
 import { getAsset } from '../state/assets.ts';
 import type { AppAsset } from './assets.ts';
-import { decodeAlpha } from './alpha.ts';
+import { decodeAlpha, traceAlpha } from './alpha.ts';
 
 type Loops = Float64Array[];
 
@@ -30,8 +32,15 @@ export interface TraceRequest {
   margin: number;
 }
 
-/** Traces one request: the loops, or null when the rectangle applies. */
-export type Tracer = (request: TraceRequest) => Promise<Loops | null>;
+/**
+ * What tracing gives: the loops, or the rectangle; 'opaque' when that is
+ * because nothing in view is transparent (core/contour.opaqueInView), null
+ * for any other cause (nothing opaque in view, a trace that failed).
+ */
+export type Traced = Loops | 'opaque' | null;
+
+/** Traces one request. */
+export type Tracer = (request: TraceRequest) => Promise<Traced>;
 
 /** To the worker: a request, with an id of its source (the same Blob keeps the same id). */
 export interface TraceMessage extends TraceRequest {
@@ -40,7 +49,7 @@ export interface TraceMessage extends TraceRequest {
 }
 
 /** From the worker; `unsupported`: it can't decode images (no OffscreenCanvas), trace in the page. */
-export type TraceReply = { id: number; loops: Loops | null; unsupported?: undefined } | { id: number; unsupported: true; loops?: undefined };
+export type TraceReply = { id: number; loops: Traced; unsupported?: undefined } | { id: number; unsupported: true; loops?: undefined };
 
 const MARGIN_STEP = 1 / 2048;
 /** Traced shapes kept besides the ones in use, and stand-ins kept. */
@@ -59,16 +68,16 @@ const sourceId = (blob: Blob) => {
 const pageMasks = new WeakMap<Blob, Promise<AlphaMask>>();
 
 /** Traces in the page (where there is no worker): the same work, on the main thread. */
-async function traceInPage(request: TraceRequest): Promise<Loops | null> {
+async function traceInPage(request: TraceRequest): Promise<Traced> {
   if (typeof createImageBitmap !== 'function') return null;
   let mask = pageMasks.get(request.source);
   if (!mask) pageMasks.set(request.source, (mask = decodeAlpha(request.source)));
-  return traceShape(await mask, request);
+  return traceAlpha(await mask, request);
 }
 
 let worker: Worker | null | undefined;
 let lastMessage = 0;
-const waiting = new Map<number, { request: TraceRequest; done: (loops: Loops | null) => void }>();
+const waiting = new Map<number, { request: TraceRequest; done: (loops: Traced) => void }>();
 
 // Without the worker, what it had pending is traced in the page.
 function dropWorker() {
@@ -132,7 +141,7 @@ interface Entry {
   /** Until it is traced (then dropped: it holds the image's preview). */
   request: TraceRequest | null;
   state: 'queued' | 'tracing' | 'done';
-  loops: Loops | null;
+  loops: Traced;
   done: Promise<void>;
   finish: () => void;
   /** The slots (a scope and a piece) that show it. */
@@ -141,7 +150,7 @@ interface Entry {
 
 const entries = new Map<string, Entry>();
 /** The last shape traced for each source and crop (by `base`), shown until the exact one is ready. */
-const latest = new Map<string, Loops | null>();
+const latest = new Map<string, Traced>();
 /** Which entry each slot of each scope wants. */
 const scopes = new Map<string, Map<string, string>>();
 const queue: string[] = [];
@@ -305,10 +314,28 @@ export async function shapesReady(items: readonly Piece[], margin: number, asset
 export function shapeOf(item: Piece, margin: number, assetOf: (key: string) => AppAsset = getAsset): Loops | null | undefined {
   const wanted = need(item, assetOf(item.asset), margin);
   if (!wanted) return null;
-  const entry = entries.get(wanted.key);
-  const loops = entry?.state === 'done' ? entry.loops : latest.get(wanted.base);
+  const loops = tracedFor(wanted);
   if (loops === undefined) return undefined;
-  return loops && placeLoops(loops, { x: item.x, y: item.y, r: item.r, uw: wanted.uw, uh: wanted.uh, k: wanted.side });
+  return Array.isArray(loops) ? placeLoops(loops, { x: item.x, y: item.y, r: item.r, uw: wanted.uw, uh: wanted.uh, k: wanted.side }) : null;
+}
+
+/** What is traced for a piece: its exact trace once ready, until then the last one for its image and crop. */
+function tracedFor(wanted: NonNullable<ReturnType<typeof need>>): Traced | undefined {
+  const entry = entries.get(wanted.key);
+  return entry?.state === 'done' ? entry.loops : latest.get(wanted.base);
+}
+
+/**
+ * Whether a piece's contour is its rectangle because its image has no
+ * transparent background: a JPEG or a PDF page (drawn on white), or a PNG
+ * with nothing transparent in view once it is traced. False while that
+ * isn't known, and when the rectangle has another cause.
+ */
+export function lacksTransparency(item: Piece, margin: number, assetOf: (key: string) => AppAsset = getAsset): boolean {
+  const asset = assetOf(item.asset);
+  if (!traceable(asset)) return true;
+  const wanted = need(item, asset, margin);
+  return !!wanted && tracedFor(wanted) === 'opaque';
 }
 
 /**

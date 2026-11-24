@@ -1,7 +1,11 @@
-// The alpha channel of an image file, to trace its shape (core/contour.js).
+// The alpha channel of an image file, and what it traces (core/contour.js).
 // Works in a worker (OffscreenCanvas) and in the page.
 
-import type { AlphaMask } from '../core/contour.js';
+import { opaqueInView, traceShape, type AlphaMask } from '../core/contour.js';
+import type { TraceRequest, Traced } from './contours.ts';
+
+/** The loops of the shape in view, or why its rectangle applies (contours.Traced). */
+export const traceAlpha = (mask: AlphaMask, request: Omit<TraceRequest, 'source'>): Traced => traceShape(mask, request) ?? (opaqueInView(mask, request) ? 'opaque' : null);
 
 export async function decodeAlpha(file: Blob): Promise<AlphaMask> {
   const bitmap = await createImageBitmap(file, { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });

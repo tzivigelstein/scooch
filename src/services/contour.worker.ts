@@ -2,8 +2,8 @@
 // image nor tracing it blocks the page. It keeps the alpha of the last few
 // images it decoded: a new crop or margin of the same image only traces.
 
-import { traceShape, type AlphaMask } from '../core/contour.js';
-import { decodeAlpha } from './alpha.ts';
+import type { AlphaMask } from '../core/contour.js';
+import { decodeAlpha, traceAlpha } from './alpha.ts';
 import type { TraceMessage, TraceReply } from './contours.ts';
 
 const KEEP = 6;
@@ -24,8 +24,8 @@ self.onmessage = async ({ data }: MessageEvent<TraceMessage>) => {
   const { id, sourceId, source, crop, w, h, margin } = data;
   if (typeof OffscreenCanvas !== 'function' || typeof createImageBitmap !== 'function') return reply({ id, unsupported: true });
   try {
-    const loops = traceShape(await maskOf(sourceId, source), { crop, w, h, margin });
-    reply({ id, loops }, loops ? loops.map((loop) => loop.buffer) : []);
+    const loops = traceAlpha(await maskOf(sourceId, source), { crop, w, h, margin });
+    reply({ id, loops }, Array.isArray(loops) ? loops.map((loop) => loop.buffer) : []);
   } catch (err) {
     masks.delete(sourceId);
     console.warn('The shape of an image could not be traced; its cut line is the rectangle.', err);
