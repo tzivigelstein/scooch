@@ -106,6 +106,7 @@ const en: Catalogue = {
       pastMargin: 'Crosses the margin',
       overlap: 'Overlaps another item',
       lowRes: 'May look pixelated',
+      opaque: 'No transparent background, so the cut line is a rectangle',
     },
   },
 

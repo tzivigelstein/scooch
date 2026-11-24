@@ -7,11 +7,12 @@
 // (role="group" with its heading and count); the arrows go from one group to
 // the next. The list's selection and the sheet's are the same.
 
-import { Layers, SquareArrowOutDownRight, SquareDashed, TriangleAlert, type LucideIcon } from 'lucide-react';
-import { memo, useLayoutEffect, useMemo, useRef, type FocusEvent, type KeyboardEvent, type MouseEvent } from 'react';
+import { Info, Layers, SquareArrowOutDownRight, SquareDashed, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { memo, useLayoutEffect, useMemo, useRef, useSyncExternalStore, type FocusEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import { rangeBetween } from '../../core/group.js';
 import { t } from '../../copy/index.ts';
 import { previewAttrs } from '../../hooks/usePreviewTriggers.ts';
+import { lacksTransparency, shapesVersion, subscribeShapes } from '../../services/contours.ts';
 import { sizeText } from '../../services/measure.ts';
 import { getAsset } from '../../state/assets.ts';
 import { getDocument, useDocument, type Piece } from '../../state/document.ts';
@@ -34,11 +35,14 @@ import './PieceList.css';
 const THUMB_REM = 1.875;
 
 // Each row's badges (their text is in pieces.badges.<key>). Scissors are «Cortar»: sticking out has its own icon.
-const BADGES: readonly { key: 'cut' | 'pastMargin' | 'overlap' | 'lowRes'; icon: LucideIcon }[] = [
+// Why an image's Contour line is its rectangle is something to know, not a problem: the info icon
+// (a hollow square would read as a checkbox).
+const BADGES: readonly { key: 'cut' | 'pastMargin' | 'overlap' | 'lowRes' | 'opaque'; icon: LucideIcon }[] = [
   { key: 'cut', icon: SquareArrowOutDownRight },
   { key: 'pastMargin', icon: SquareDashed },
   { key: 'overlap', icon: Layers },
   { key: 'lowRes', icon: TriangleAlert },
+  { key: 'opaque', icon: Info },
 ];
 
 // Only values that stay equal when nothing about the row changed: a row
@@ -51,18 +55,20 @@ interface RowProps {
   pastMargin: boolean;
   /** Overlaps another piece (and overlaps aren't allowed). */
   overlap: boolean;
+  /** Its Contour cut line is its rectangle: the image has no transparent background. */
+  opaque: boolean;
   /** Re-renders the row when the unit changes. */
   unit: string;
 }
 
-const Row = memo(function Row({ item, selected, tabStop, cut, pastMargin, overlap }: RowProps) {
+const Row = memo(function Row({ item, selected, tabStop, cut, pastMargin, overlap, opaque }: RowProps) {
   useTextsLanguage();
   const asset = getAsset(item.asset);
   const [w, h] = dims(item);
   const paged = asset.kind === 'pdf' && asset.pages > 1;
   const res = printResolution(item);
   const thumb = thumbView(item, asset, THUMB_REM);
-  const flags = { cut, pastMargin, overlap, lowRes: !res.vector && res.level === 'low' };
+  const flags = { cut, pastMargin, overlap, lowRes: !res.vector && res.level === 'low', opaque };
   const size = t(paged ? 'pieces.rowSizePage' : 'pieces.rowSize', { size: sizeText(w, h), page: asset.kind === 'pdf' ? asset.page : 1 });
   // Both lines can be cut with «…» in a narrow list: the tooltip has them whole.
   return (
@@ -114,6 +120,8 @@ export function PieceList() {
   const cuts = useDocument((s) => s.cuts);
   const allowOverlap = useDocument((s) => s.allowOverlap);
   const unit = usePrefs((s) => s.unit);
+  // A finished trace can show a row's `opaque` badge.
+  useSyncExternalStore(subscribeShapes, shapesVersion);
   // From where Shift extends the selection (the last one picked by hand) and
   // what the next focus of a row does.
   const anchor = useRef<number | null>(null);
@@ -258,6 +266,7 @@ export function PieceList() {
         cut={!!problem?.cut}
         pastMargin={!!problem?.pastMargin}
         overlap={!!problem?.overlap && !allowOverlap}
+        opaque={cuts.mode === 'contour' && lacksTransparency(item, cuts.margin)}
         unit={unit}
       />
     );

@@ -107,6 +107,7 @@ const zhHans: Catalogue = {
       pastMargin: '超出页边距',
       overlap: '与其他素材重叠',
       lowRes: '可能会模糊',
+      opaque: '没有透明背景，裁切线是矩形',
     },
   },
 

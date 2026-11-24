@@ -120,6 +120,8 @@ const es = {
       pastMargin: 'Pasa el margen',
       overlap: 'Se superpone con otra pieza',
       lowRes: 'Puede verse pixelada',
+      // With Contour cut lines, an image whose line stays its rectangle; also its note in the Item tab
+      opaque: 'Sin fondo transparente, la línea de corte es rectangular',
     },
   },
 

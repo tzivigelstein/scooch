@@ -107,6 +107,7 @@ const fr: Catalogue = {
       pastMargin: 'Dépasse la marge',
       overlap: 'Chevauche un autre élément',
       lowRes: 'Risque d’être pixélisé',
+      opaque: 'Sans fond transparent, le trait de coupe est rectangulaire',
     },
   },
 

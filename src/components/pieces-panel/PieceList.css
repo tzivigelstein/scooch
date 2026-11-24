@@ -170,7 +170,8 @@
     color: #8a4b00;
   }
 
-  .row-badge[data-kind="overlap"] {
+  .row-badge[data-kind="overlap"],
+  .row-badge[data-kind="opaque"] {
     color: var(--accent-strong);
   }
 

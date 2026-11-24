@@ -87,6 +87,7 @@
   "pieces.badges.pastMargin": "Pasa el margen",
   "pieces.badges.overlap": "Se superpone con otra pieza",
   "pieces.badges.lowRes": "Puede verse pixelada",
+  "pieces.badges.opaque": "Sin fondo transparente, la línea de corte es rectangular",
   "sheet.numbered": "Hoja {i} de {total}",
   "sheet.count.one": "{n} hoja",
   "sheet.count.other": "{n} hojas",
