@@ -46,10 +46,10 @@ export function stickers({ ui, num, mm, size }: Kit): SitePage {
         h2: 'कैसे करें',
         html:
           steps([
-            `ऊपर दिए किसी बटन से ${app} खोलें: शीट में ${mm(f.layout.margin)} मार्जिन, ${mm(f.layout.gap)} अंतराल और ${q(contour)} पर सेट ${cutLines} होती हैं। अगर ${app} पहले से खुला है, तो ${ui('props.title')} के ${ui('props.tabs.project')} टैब में ${cutLines} में ${q(contour)} चुनें।`,
+            `ऊपर दिए किसी बटन से ${app} खोलें: शीट में ${mm(f.layout.margin)} मार्जिन, ${mm(f.layout.gap)} अंतराल और ${q(contour)} पर सेट ${cutLines} होती हैं, जिनका ${cutMargin} ${mm(f.cutMargin)} होता है। अगर ${app} पहले से खुला है, तो ${ui('props.title')} के ${ui('props.tabs.project')} टैब में ${cutLines} में ${q(contour)} चुनें।`,
             `${q(ui('bar.add'))} से अपनी इमेज जोड़ें या उन्हें शीट पर छोड़ें। पारदर्शिता वाली हर इमेज की लाइन कुछ ही पलों में दिखने लगती है।`,
             `हर स्टिकर का आकार तय करें: उसे चुनें और ${ui('props.title')} के ${ui('props.tabs.piece')} टैब में ${ui('props.widthTip')} या ${ui('props.heightTip')} लिखें। दूसरी तरफ़ का माप अपने-आप बदल जाता है।`,
-            `${cutLines} में ${q(more)} खोलें और ${cutMargin} लिखें: इमेज और उसकी लाइन के बीच की दूरी। ${mm(f.cutMargin)} रखने पर हर स्टिकर के चारों ओर कागज़ का एक किनारा रहता है।`,
+            `${cutLines} में ${q(more)} खोलकर ${cutMargin} देखें: इमेज और उसकी लाइन के बीच की दूरी। ${mm(f.cutMargin)} रखने पर हर स्टिकर के चारों ओर कागज़ का एक किनारा रहता है। इसे बदलना हो, तो दूसरा मान लिखें।`,
             `${q(ui('bar.arrange'))} दबाएं: ${app} स्टिकरों को एक-दूसरे पर चढ़ाए बिना, उनके बीच ${ui('props.gap')} छोड़कर रखता है, और ज़रूरत हो तो नई शीटें जोड़ता है।`,
             `${q(ui('bar.print'))} या ${q(ui('bar.download'))} दबाएं और प्रिंट डायलॉग में “असली आकार” या “100%” चुनें। फिर हर स्टिकर को उसकी लाइन पर काटें।`,
           ]) +

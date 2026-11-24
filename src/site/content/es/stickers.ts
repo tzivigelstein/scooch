@@ -41,10 +41,10 @@ export function stickers({ ui, num, mm, size }: Kit): SitePage {
         h2: 'Cómo hacerlo',
         html:
           steps([
-            `Abre ${app} con uno de los botones de arriba: la hoja queda con márgenes de ${mm(f.layout.margin)}, ${mm(f.layout.gap)} de separación y las ${ui('cuts.title').toLowerCase()} en ${contour}. Si ya lo tienes abierto, elige ${contour} en ${ui('cuts.title')}, en la pestaña ${ui('props.tabs.project')} de ${ui('props.title')}.`,
+            `Abre ${app} con uno de los botones de arriba: la hoja queda con márgenes de ${mm(f.layout.margin)}, ${mm(f.layout.gap)} de separación y las ${ui('cuts.title').toLowerCase()} en ${contour}, con ${mm(f.cutMargin)} de ${cutMargin}. Si ya lo tienes abierto, elige ${contour} en ${ui('cuts.title')}, en la pestaña ${ui('props.tabs.project')} de ${ui('props.title')}.`,
             `Agrega tus imágenes con ${ui('bar.add')} o suéltalas sobre la hoja. Cada imagen con transparencia muestra su línea en unos instantes.`,
             `Dale a cada sticker su medida: selecciónalo y escribe el ${ui('props.widthTip')} o el ${ui('props.heightTip')} en ${ui('props.title')}, en la pestaña ${ui('props.tabs.piece')}. El otro lado se ajusta solo.`,
-            `En ${ui('cuts.title')}, abre ${ui('cuts.more')} y escribe el ${cutMargin}: la distancia entre la imagen y su línea. Con ${mm(f.cutMargin)}, cada sticker queda con un borde de papel alrededor.`,
+            `En ${ui('cuts.title')}, abre ${ui('cuts.more')} para ver el ${cutMargin}: la distancia entre la imagen y su línea. Con ${mm(f.cutMargin)}, cada sticker queda con un borde de papel alrededor. Para cambiarlo, escribe otro valor.`,
             `Presiona ${ui('bar.arrange')}: ${app} ubica los stickers sin superponerlos, con la ${ui('props.gap').toLowerCase()} entre ellos, y suma las hojas que hagan falta.`,
             `Presiona ${ui('bar.print')} o ${ui('bar.download')} y, en el diálogo de impresión, elige «Tamaño real» o «100 %». Después recorta cada sticker por su línea.`,
           ]) +

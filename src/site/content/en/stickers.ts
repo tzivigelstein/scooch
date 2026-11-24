@@ -44,10 +44,10 @@ export function stickers({ ui, num, mm, size }: Kit): SitePage {
         h2: 'How to do it',
         html:
           steps([
-            `Open ${app} with one of the buttons above: the sheet gets ${mm(f.layout.margin)} margins, ${mm(f.layout.gap)} of spacing and the ${cutLines} set to ${contour}. If you already have it open, choose ${contour} under ${ui('cuts.title')}, in the ${ui('props.tabs.project')} tab of ${ui('props.title')}.`,
+            `Open ${app} with one of the buttons above: the sheet gets ${mm(f.layout.margin)} margins, ${mm(f.layout.gap)} of spacing and the ${cutLines} set to ${contour}, with a ${mm(f.cutMargin)} ${cutMargin}. If you already have it open, choose ${contour} under ${ui('cuts.title')}, in the ${ui('props.tabs.project')} tab of ${ui('props.title')}.`,
             `Add your images with ${ui('bar.add')} or drop them on the sheet. Each image with transparency shows its line within moments.`,
             `Give each sticker its size: select it and type the ${ui('props.widthTip')} or the ${ui('props.heightTip')} in ${ui('props.title')}, in the ${ui('props.tabs.piece')} tab. The other side adjusts by itself.`,
-            `Under ${ui('cuts.title')}, open ${ui('cuts.more')} and type the ${cutMargin}: the distance between the image and its line. With ${mm(f.cutMargin)}, each sticker gets a border of paper around it.`,
+            `Under ${ui('cuts.title')}, open ${ui('cuts.more')} to check the ${cutMargin}: the distance between the image and its line. With ${mm(f.cutMargin)}, each sticker gets a border of paper around it. To change it, type another value.`,
             `Press ${ui('bar.arrange')}: ${app} places the stickers without overlapping, with the ${gap} between them, and adds as many sheets as it takes.`,
             `Press ${ui('bar.print')} or ${ui('bar.download')} and, in the print dialog, choose “Actual size” or “100%”. Then cut out each sticker along its line.`,
           ]) +

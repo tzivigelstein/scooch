@@ -44,10 +44,10 @@ export function stickers({ ui, num, mm, size }: Kit): SitePage {
         h2: '操作步骤',
         html:
           steps([
-            `用上方的任一按钮打开${app}：纸张的页边距为${mm(f.layout.margin)}，间距为${mm(f.layout.gap)}，${cutLines}设为${q(contour)}。如果已经打开了，在${q(ui('props.title'))}的${q(ui('props.tabs.project'))}标签页中，把${q(cutLines)}设为${q(contour)}。`,
+            `用上方的任一按钮打开${app}：纸张的页边距为${mm(f.layout.margin)}，间距为${mm(f.layout.gap)}，${cutLines}设为${q(contour)}，${cutMargin}为${mm(f.cutMargin)}。如果已经打开了，在${q(ui('props.title'))}的${q(ui('props.tabs.project'))}标签页中，把${q(cutLines)}设为${q(contour)}。`,
             `用${q(ui('bar.add'))}添加图片，或者把图片拖到纸张上。有透明部分的图片，片刻之后就会显示裁切线。`,
             `设置每张贴纸的尺寸：选中它，在${q(ui('props.title'))}的${q(ui('props.tabs.piece'))}标签页中输入${q(ui('props.widthTip'))}或${q(ui('props.heightTip'))}。另一边会自动调整。`,
-            `在${q(cutLines)}中展开${q(ui('cuts.more'))}，输入${q(cutMargin)}，也就是图片和裁切线之间的距离。设为${mm(f.cutMargin)}时，每张贴纸周围都会留出一圈纸边。`,
+            `在${q(cutLines)}中展开${q(ui('cuts.more'))}，查看${q(cutMargin)}，也就是图片和裁切线之间的距离。设为${mm(f.cutMargin)}时，每张贴纸周围都会留出一圈纸边。如需修改，输入其他数值即可。`,
             `点击${q(ui('bar.arrange'))}：${app}会把贴纸排开、互不重叠，彼此之间留出${q(ui('props.gap'))}，需要时还会添加纸张。`,
             `点击${q(ui('bar.print'))}或${q(ui('bar.download'))}，在打印对话框中选择“实际大小”或“100%”。然后沿线剪下每张贴纸。`,
           ]) +

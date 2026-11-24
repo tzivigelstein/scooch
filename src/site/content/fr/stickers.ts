@@ -46,10 +46,10 @@ export function stickers({ ui, num, mm, size }: Kit): SitePage {
         h2: 'Comment faire',
         html:
           steps([
-            `Ouvrez ${app} avec l’un des boutons ci-dessus : la feuille a des marges de ${mm(f.layout.margin)}, ${mm(f.layout.gap)} d’espacement et les ${cutLines} en ${contour}. S’il est déjà ouvert, choisissez ${contour} dans ${ui('cuts.title')}, dans l’onglet ${ui('props.tabs.project')} des ${ui('props.title')}.`,
+            `Ouvrez ${app} avec l’un des boutons ci-dessus : la feuille a des marges de ${mm(f.layout.margin)}, ${mm(f.layout.gap)} d’espacement et les ${cutLines} en ${contour}, avec une ${cutMargin} de ${mm(f.cutMargin)}. S’il est déjà ouvert, choisissez ${contour} dans ${ui('cuts.title')}, dans l’onglet ${ui('props.tabs.project')} des ${ui('props.title')}.`,
             `Ajoutez vos images avec ${ui('bar.add')} ou déposez-les sur la feuille. Chaque image avec de la transparence affiche son trait en quelques instants.`,
             `Donnez à chaque sticker sa taille : sélectionnez-le et saisissez la ${ui('props.widthTip')} ou la ${ui('props.heightTip')} dans l’onglet ${ui('props.tabs.piece')} des ${ui('props.title')}. L’autre côté s’ajuste tout seul.`,
-            `Dans ${ui('cuts.title')}, ouvrez ${more} et saisissez la ${cutMargin} : la distance entre l’image et son trait. Avec ${mm(f.cutMargin)}, chaque sticker garde une bordure de papier tout autour.`,
+            `Dans ${ui('cuts.title')}, ouvrez ${more} pour vérifier la ${cutMargin} : la distance entre l’image et son trait. Avec ${mm(f.cutMargin)}, chaque sticker garde une bordure de papier tout autour. Pour la changer, saisissez une autre valeur.`,
             `Appuyez sur ${ui('bar.arrange')} : ${app} place les stickers sans qu’ils se superposent, avec l’${gap} entre eux, et ajoute autant de feuilles qu’il faut.`,
             `Appuyez sur ${ui('bar.print')} ou ${ui('bar.download')} et, dans la boîte de dialogue d’impression, choisissez « Taille réelle » ou « 100 % ». Découpez ensuite chaque sticker le long de son trait.`,
           ]) +
