@@ -1,7 +1,9 @@
 // A deep link in a real browser, with the real IndexedDB (the rules are in
 // tests/core/deeplink.test.js and tests/services/deep-link-start.test.ts):
 // it opens a new project set up, the saved project stays as it was, and a
-// reload doesn't create another one.
+// reload doesn't create another one. And a guide's button, clicked on the
+// site, opens the editor set up as the guide says: the sticker guide's cut
+// margin (tests/site/stickers.test.ts ties it to the guide's text).
 import { expect, norm, test } from '../support/test.ts';
 import { cards, openProjects, saved } from '../support/projects.ts';
 
@@ -42,4 +44,17 @@ test('a deep link opens a new project set up, leaves the saved one as it was, an
   await expect(app.pieces()).toHaveCount(1);
   await openProjects(page);
   expect(await cards(page)).toHaveLength(2);
+});
+
+test('the sticker guide’s A4 button opens the editor with Contour cut lines and the 3 mm cut margin the guide names', async ({ app, page }) => {
+  await page.goto('./es/hacer-stickers-en-casa');
+  await page.getByRole('link', { name: 'Abrir Scooch con hoja A4' }).click();
+  await app.ready();
+  await app.openSetting('#cut-mode');
+  await expect(page.locator('#cut-mode input[value="contour"]')).toBeChecked();
+  // The cut margin is under More options.
+  const more = page.locator('#cut-options');
+  if (!(await more.evaluate((details) => (details as HTMLDetailsElement).open))) await more.locator('summary').click();
+  await expect(page.locator('#cut-margin')).toBeVisible();
+  await expect(page.locator('#cut-margin')).toHaveValue('3');
 });
