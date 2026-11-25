@@ -3,7 +3,7 @@
 // the document asks for them, its cut lines (contour ones once every shape
 // is traced). pdf-lib builds it in a worker (export.worker.ts), so embedding
 // large images never freezes the page; where the worker can't start or
-// stops, the page builds it.
+// stops, the page builds it (pdf.ts and pdf-lib load only then).
 
 import { APP_NAME } from '../config.ts';
 import { cutStyle } from '../core/cutmarks.js';
@@ -16,7 +16,7 @@ import { itemsOn, sheetSize } from '../state/selectors.ts';
 import type { AppAsset } from './assets.ts';
 import { shapesReady, sheetCuts } from './contours.ts';
 import { paperSlug, writtenPaperName } from './measure.ts';
-import { buildPdf, pdfFile, type PdfJob, type PdfReply, type PdfSource } from './pdf.ts';
+import type { PdfJob, PdfReply, PdfSource } from './pdf.ts';
 
 /** «scooch-a4.pdf»: the same in every language, like the PDF's title (copy/output.ts). */
 export const pdfFileName = () => `${slug(APP_NAME, OUTPUT_TEXTS.fallbackName)}-${paperSlug()}.pdf`;
@@ -82,7 +82,10 @@ export function setPdfWorker(make: (() => PdfWorker) | null | undefined) {
   makeWorker = make;
 }
 
-const buildInPage = async (job: PdfJob) => pdfFile(await buildPdf(job));
+async function buildInPage(job: PdfJob) {
+  const { buildPdf, pdfFile } = await import('./pdf.ts');
+  return pdfFile(await buildPdf(job));
+}
 
 function build(job: PdfJob, signal?: AbortSignal): Promise<Blob> {
   const make = makeWorker === undefined ? (typeof Worker === 'function' ? startWorker : null) : makeWorker;
