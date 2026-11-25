@@ -369,6 +369,7 @@ const fr: Catalogue = {
 
   qr: {
     name: 'Code QR',
+    noCrop: 'Un code QR ne se recadre pas',
   },
 
   zoom: {

@@ -8,6 +8,7 @@ import { sameNumber } from '../../core/util.js';
 import { formatList, sentences, t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
 import { sizeText } from '../../services/measure.ts';
+import { getAsset } from '../assets.ts';
 import { getDocument, type Piece } from '../document.ts';
 import { commit } from '../history.ts';
 import { dims, findItem, pieceName, selectedItems, sheetIndex } from '../selectors.ts';
@@ -27,6 +28,9 @@ export function selectionPhotoSize(list: readonly Piece[]): string {
   return values.size === 1 ? [...values][0] : 'mixed';
 }
 
+/** The selected pieces a photo size applies to: a QR code is never cropped. */
+const croppableSelection = () => selectedItems().filter((item) => getAsset(item.asset).kind !== 'qr');
+
 /** A standard size's visible name («10 × 15»). */
 export const photoSizeName = (id: string) => t(`crop.names.${id}` as Parameters<typeof t>[0]);
 
@@ -39,7 +43,7 @@ export const photoSizeName = (id: string) => t(`crop.names.${id}` as Parameters<
  */
 export function photoSizePlan(id: string, newSheet?: () => number) {
   const { items, sheets } = getDocument();
-  const list = selectedItems();
+  const list = croppableSelection();
   const size = id === 'original' ? null : photoSize(id);
   if (!list.length || (id !== 'original' && !size)) return null;
   return planPhotoSize(list, size, {
@@ -57,7 +61,7 @@ export function photoSizePlan(id: string, newSheet?: () => number) {
  */
 export function applyPhotoSize(id: string) {
   if (getDocument().busy) return;
-  const list = selectedItems();
+  const list = croppableSelection();
   const plan = photoSizePlan(id);
   if (!plan) return;
   const { changed, refused } = plan;

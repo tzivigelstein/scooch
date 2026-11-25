@@ -368,6 +368,7 @@ const en: Catalogue = {
 
   qr: {
     name: 'QR code',
+    noCrop: 'A QR code can’t be cropped',
   },
 
   zoom: {

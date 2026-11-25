@@ -7,11 +7,12 @@ import { historyDepth, resetHistory, undo } from '../../src/state/history.ts';
 
 import { dims } from '../../src/state/selectors.ts';
 import { getView, setView } from '../../src/state/view.ts';
-import { applyPhotoSize, photoSizeOf, selectionPhotoSize } from '../../src/state/actions/crop.ts';
+import { applyPhotoSize, photoSizeOf, photoSizePlan, selectionPhotoSize } from '../../src/state/actions/crop.ts';
 import { changePage } from '../../src/state/actions/files.ts';
 import { fillWithCopies, printResolution } from '../../src/state/actions/layout.ts';
 import { actualSize, duplicate, fit, rotate } from '../../src/state/actions/pieces.ts';
-import { fakePdf, heard, listen } from '../support/state.ts';
+import { fakePdf, fakeQr, heard, listen } from '../support/state.ts';
+import { startCrop } from '../../src/components/canvas/cropMode.ts';
 
 // Another page of a PDF: pdf.js is faked, each page has the size set in `pageSizes` (mm).
 const pageSizes = vi.hoisted(() => new Map<number, [number, number]>());
@@ -233,5 +234,30 @@ describe('another page of a cropped PDF piece', () => {
     expect(size(1)).toEqual(was);
     expect(photoSizeOf(item(1))).toBe('9x13');
     expect(getView().flash).toBeNull();
+  });
+});
+
+describe('a QR code is never cropped', () => {
+  test('crop mode says so instead of starting, however it is asked for', () => {
+    listen();
+    const qr = fakeQr();
+    setDocument({ items: [piece(1, qr, 10, 10)], selection: [1], busy: false });
+    startCrop();
+    expect(getView().cropping).toBeNull();
+    expect(heard()).toBe('Un código QR no se recorta.');
+    startCrop(1);
+    expect(getView().cropping).toBeNull();
+  });
+
+  test('a photo size leaves the QR codes of the selection as they are; with only QR codes it has nothing to do', () => {
+    const qr = fakeQr();
+    const photo = image(60, 40);
+    setDocument({ items: [piece(1, qr, 10, 10), piece(2, photo, 100, 10)], selection: [1, 2], busy: false });
+    resetHistory();
+    applyPhotoSize('10x10');
+    expect(item(1)).toMatchObject({ crop: null, scale: 100 });
+    expect(item(2).crop).not.toBeNull();
+    setDocument({ selection: [1] });
+    expect(photoSizePlan('10x10')).toBeNull();
   });
 });

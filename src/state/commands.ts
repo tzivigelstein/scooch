@@ -78,6 +78,7 @@ import { SHORTCUTS, type ShortcutKeys, type ShortcutName } from '../hooks/shortc
 import { browserLanguage, shownLanguage } from '../services/language.ts';
 import { sizeText } from '../services/measure.ts';
 import { sitePath } from '../site/links.ts';
+import { findAsset } from './assets.ts';
 import { getDocument } from './document.ts';
 import { getPrefs, setLanguage, setTheme } from './prefs.ts';
 import { useProject } from './project.ts';
@@ -178,6 +179,7 @@ const noPieces = () => (getDocument().items.length ? null : t('menu.reasons.noPi
 const noSelection = () => (getDocument().selection.length ? null : t('announce.needSelection'));
 const notSingle = () => noSelection() ?? (getDocument().selection.length === 1 ? null : t('menu.reasons.single'));
 const noProject = () => (useProject.getState().id && useProject.getState().storage ? null : t('projects.statusTip.off'));
+const cropReason = () => notSingle() ?? (findAsset(selectedItems()[0].asset)?.kind === 'qr' ? t('qr.noCrop') : null);
 
 function frontReason() {
   const reason = notSingle();
@@ -326,7 +328,7 @@ const DEFINITIONS = {
   center: { section: 'selection', label: 'props.center', icon: Crosshair, aliases: 'commands.aliases.center', keys: ['center'], disabled: notSingle, run: () => center({ focus: true }) },
   actualSize: { section: 'selection', label: 'props.actualTip', icon: Scaling, aliases: 'commands.aliases.actualSize', disabled: noSelection, run: actualSize },
   front: { section: 'selection', label: 'menu.front', icon: BringToFront, aliases: 'commands.aliases.front', keys: ['front'], disabled: frontReason, run: () => bringToFront({ focus: true }) },
-  crop: { section: 'selection', label: 'menu.crop', icon: Crop, aliases: 'commands.aliases.crop', keys: ['crop'], disabled: notSingle, run: () => startCrop() },
+  crop: { section: 'selection', label: 'menu.crop', icon: Crop, aliases: 'commands.aliases.crop', keys: ['crop'], disabled: cropReason, run: () => startCrop() },
   selectSame: { section: 'selection', label: 'menu.selectSame', icon: Images, aliases: 'commands.aliases.selectSame', keys: ['selectSame'], disabled: noSelection, run: selectSame },
   selectAll: { section: 'selection', label: 'commands.selectAll', icon: ListChecks, aliases: 'commands.aliases.selectAll', keys: ['selectAll'], disabled: noPieces, run: selectAll },
   copy: { section: 'selection', label: 'menu.copy', icon: Copy, aliases: 'commands.aliases.clipboard', keys: ['copy'], disabled: noSelection, run: () => void copySelection() },

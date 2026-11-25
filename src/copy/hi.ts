@@ -369,6 +369,7 @@ const hi: Catalogue = {
 
   qr: {
     name: 'QR कोड',
+    noCrop: 'QR कोड क्रॉप नहीं होता',
   },
 
   zoom: {

@@ -406,6 +406,8 @@ const es = {
   qr: {
     // Its name in the lists and labels while it has no content (then, its content)
     name: 'Código QR',
+    // Why «Recortar» doesn't apply to it
+    noCrop: 'Un código QR no se recorta',
   },
 
   // The canvas zoom (a screen measure: 100 % is not the printed size)

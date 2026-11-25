@@ -19,7 +19,7 @@ import { useProject } from '../../src/state/project.ts';
 import { getView, setView } from '../../src/state/view.ts';
 import { copySelection } from '../../src/state/actions/clipboard.ts';
 import { duplicate } from '../../src/services/projects.ts';
-import { fakeImageMm, heard, listen, piece, resetState } from '../support/state.ts';
+import { fakeImageMm, fakeQr, heard, listen, piece, resetState } from '../support/state.ts';
 
 vi.mock('../../src/services/projects.ts', async (importOriginal) => ({ ...(await importOriginal<typeof import('../../src/services/projects.ts')>()), duplicate: vi.fn() }));
 
@@ -122,6 +122,14 @@ describe('why a command can’t run', () => {
     expect(reasons(['distributeY', 'moveToNewSheet', 'rotateRight'])).toEqual({ distributeY: null, moveToNewSheet: null, rotateRight: null });
     setView({ distribute: 'even' });
     expect(command('distributeY').disabled).toBe('Selecciona 3 piezas o más de una misma hoja para repartir parejo');
+  });
+
+  test('cropping a QR code: it never is, and says so', () => {
+    const qr = fakeQr();
+    resetState({ items: [piece(1, qr, 10, 10), piece(2, card, 100, 10)], selection: [1] });
+    expect(command('crop').disabled).toBe('Un código QR no se recorta');
+    setDocument({ selection: [2] });
+    expect(command('crop').disabled).toBeNull();
   });
 
   test('bringing to front, only over another piece', () => {

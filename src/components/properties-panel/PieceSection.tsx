@@ -310,7 +310,9 @@ export function PieceSection() {
   const summary = single ? fillSummary(single) : null;
   const describe = (ids: string) => (single ? ids : undefined);
   const unit = unitSymbol();
-  const photoValue = n ? selectionPhotoSize(list) : 'original';
+  // A QR code is never cropped: no photo size for it (several pieces take it without their QR codes).
+  const croppable = list.filter((item) => getAsset(item.asset).kind !== 'qr');
+  const photoValue = croppable.length ? selectionPhotoSize(croppable) : 'original';
 
   return (
     <div className="prop-section" id="section-piece">
@@ -406,7 +408,7 @@ export function PieceSection() {
           <strong id="rotation-angle">{t('props.rotated', { deg: single?.r ?? 90 })}</strong>
         </p>
         <OpaqueNote item={single} />
-        <div className="photo-row">
+        <div className="photo-row" hidden={n > 0 && !croppable.length}>
           <div className="field">
             <span id="photo-size-label" className="field-label">
               {t('crop.size')}

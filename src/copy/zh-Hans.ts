@@ -368,6 +368,7 @@ const zhHans: Catalogue = {
 
   qr: {
     name: '二维码',
+    noCrop: '二维码不能裁剪',
   },
 
   zoom: {

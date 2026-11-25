@@ -10,7 +10,7 @@ import { setTexts, textsFor } from '../../src/copy/index.ts';
 import { getDocument, setDocument, type Piece } from '../../src/state/document.ts';
 import { historyDepth } from '../../src/state/history.ts';
 import { dims } from '../../src/state/selectors.ts';
-import { fakeImage, fakePdf, piece, resetState } from '../support/state.ts';
+import { fakeImage, fakePdf, fakeQr, piece, resetState } from '../support/state.ts';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const mm = (id: string) => parseFloat($<HTMLInputElement>(id).value.replace(',', '.'));
@@ -117,6 +117,17 @@ describe('what kind of piece', () => {
     expect($('page-row').hidden).toBe(true);
     expect($('resolution-note').hidden).toBe(false);
     expect($('resolution-text').textContent!.replace(/ /g, ' ')).toMatch(/^Se imprime a 300 ppp/);
+  });
+});
+
+describe('a QR code', () => {
+  test('it is vector and has neither «Tamaño de foto» nor «Recortar»: it is never cropped; with an image too they are the image’s', () => {
+    const qr = fakeQr();
+    show([piece(1, qr, 30, 30), piece(2, photo, 100, 30)]);
+    expect($('photo-size').closest('.photo-row')!.hasAttribute('hidden')).toBe(true);
+    expect($('resolution-text').textContent).toBe('Vectorial: nítida a cualquier tamaño');
+    show([piece(1, qr, 30, 30), piece(2, photo, 100, 30)], [1, 2]);
+    expect($('photo-size').closest('.photo-row')!.hasAttribute('hidden')).toBe(false);
   });
 });
 

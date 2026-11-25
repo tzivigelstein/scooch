@@ -335,6 +335,7 @@
   "cuts.gapFix": "Usar separación de {value}",
   "cuts.gapFixed": "Se cambió la separación a {value}. Acomoda las piezas para aplicarla.",
   "qr.name": "Código QR",
+  "qr.noCrop": "Un código QR no se recorta",
   "zoom.control": "Zoom",
   "zoom.zoomIn": "Acercar",
   "zoom.zoomOut": "Alejar",

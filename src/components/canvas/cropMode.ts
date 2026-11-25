@@ -1,7 +1,9 @@
 // Entering and leaving crop mode (the «Recortar» buttons, K, a double click,
 // the context menu). The mode itself (crop/CropMode.tsx) loads on first use.
+// A QR code is never cropped: those ways say so instead.
 
 import { t } from '../../copy/index.ts';
+import { findAsset } from '../../state/assets.ts';
 import { getDocument } from '../../state/document.ts';
 import { flushUi } from '../../state/flush.ts';
 import { getView, setView } from '../../state/view.ts';
@@ -40,8 +42,10 @@ export function startCrop(id?: number) {
     if (selection.length > 1) return singleOnly();
     id = selection.at(-1);
   }
-  if (id === undefined || !items.some((item) => item.id === id)) return announce(t('announce.needSelection'));
-  const target = id;
+  const piece = items.find((item) => item.id === id);
+  if (!piece) return announce(t('announce.needSelection'));
+  if (findAsset(piece.asset)?.kind === 'qr') return announce(t('qr.noCrop'));
+  const target = piece.id;
   select(target);
   whenLoaded(CropContent, () => {
     if (getDocument().busy || !getDocument().items.some((item) => item.id === target)) return;
