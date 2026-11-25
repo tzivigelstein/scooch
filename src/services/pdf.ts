@@ -1,12 +1,16 @@
 // Export: one PDF page the size of the sheet for each sheet with pieces, in
 // order, built with pdf-lib. Where each piece goes (cropped and rotated) comes
 // from crop.drawParams; without a crop the numbers and operators are the same
-// as always. The export worker (export.worker.ts) builds it with pdfReply and
+// as always. A QR code is drawn, not embedded: its modules and eyes are the
+// path data the screen shows (qrshape.js), filled as vectors; its logo is
+// embedded as an image and its caption as the raster of its text the page
+// made at print resolution (services/qr.ts). The export worker (export.worker.ts) builds it with pdfReply and
 // a pdf-lib of its own; buildPdf loads pdf-lib in the page (a chunk of its
 // own), where the worker can't build it (export.ts).
 
 import type { PDFDocument as PdfLibDocument, PDFEmbeddedPage, PDFImage } from 'pdf-lib';
 import type { CutPath } from '../core/contour.js';
+import type { QrBox } from '../core/qrshape.js';
 import { cutStyle as styleOf, type CutLine, type CutStyle } from '../core/cutmarks.js';
 import { drawParams } from '../core/crop.js';
 import type { Crop } from '../core/types.ts';
@@ -14,10 +18,32 @@ import type { ImageAsset, PdfAsset } from './assets.ts';
 
 const PT_PER_MM = 72 / 25.4;
 
+/**
+ * What the PDF needs of a QR code: its square's side in modules (`units`,
+ * quiet zone included) and its caption's band under it, its path data, its
+ * colors as 0–1 RGB, its logo (`bytes`, empty without one, and where it goes)
+ * and its caption as a PNG.
+ */
+export interface QrPdfSource {
+  kind: 'qr';
+  w: number;
+  h: number;
+  units: number;
+  band: number;
+  dots: string;
+  eyes: string;
+  color: [number, number, number];
+  background: [number, number, number] | null;
+  bytes: Uint8Array;
+  logo: { format: 'jpg' | 'png'; box: QrBox } | null;
+  caption: Uint8Array | null;
+}
+
 /** What the PDF needs of an asset (a PDF page's preview is embedded when the page can't be). */
 export type PdfSource =
   | Pick<ImageAsset, 'kind' | 'src' | 'format' | 'bytes' | 'w' | 'h'>
-  | Pick<PdfAsset, 'kind' | 'src' | 'page' | 'view' | 'pageRotation' | 'bytes' | 'preview' | 'w' | 'h'>;
+  | Pick<PdfAsset, 'kind' | 'src' | 'page' | 'view' | 'pageRotation' | 'bytes' | 'preview' | 'w' | 'h'>
+  | QrPdfSource;
 
 export interface PdfPiece {
   asset: PdfSource;
@@ -100,6 +126,10 @@ export async function drawPdf(lib: PdfLib, { width, height, pages, title, creato
   for (const { pieces, lines = [], paths = [] } of pages) {
     const page = doc.addPage([pt(width), pt(height)]);
     for (const piece of pieces) {
+      if (piece.asset.kind === 'qr') {
+        await drawQr(lib, doc, page, { ...piece, asset: piece.asset }, height);
+        continue;
+      }
       const target = await embed(piece.asset);
       const p = drawParams(piece, piece.asset, height);
       const options = { x: p.x, y: p.y, width: p.width, height: p.height, rotate: degrees(p.rotate) };
@@ -125,6 +155,44 @@ export async function drawPdf(lib: PdfLib, { width, height, pages, title, creato
     }
   }
   return doc.save();
+}
+
+// A QR code's logo and caption, embedded once per document however many pieces show them.
+const qrImages = new WeakMap<PdfLibDocument, Map<Uint8Array, Promise<PDFImage>>>();
+
+function qrImage(doc: PdfLibDocument, bytes: Uint8Array, format: 'jpg' | 'png') {
+  let cache = qrImages.get(doc);
+  if (!cache) qrImages.set(doc, (cache = new Map()));
+  if (!cache.has(bytes)) cache.set(bytes, format === 'jpg' ? doc.embedJpg(wholeBuffer(bytes)) : doc.embedPng(wholeBuffer(bytes)));
+  return cache.get(bytes)!;
+}
+
+/**
+ * A QR code piece, in units of its modules: the piece's box (crop.drawParams,
+ * which never crops a QR code) mapped to its square and band with the origin
+ * at the bottom left; the path data, which is y-down from the top left, is
+ * flipped by drawSvgPath. The background, the modules and eyes, the logo,
+ * then the caption.
+ */
+async function drawQr(lib: PdfLib, doc: PdfLibDocument, page: ReturnType<PdfLibDocument['addPage']>, piece: PdfPiece & { asset: QrPdfSource }, sheetH: number) {
+  const { asset } = piece;
+  const p = drawParams(piece, asset, sheetH);
+  const full = asset.units + asset.band;
+  const [logo, caption] = await Promise.all([
+    asset.logo && asset.bytes.length ? qrImage(doc, asset.bytes, asset.logo.format) : null,
+    asset.caption ? qrImage(doc, asset.caption, 'png') : null,
+  ]);
+  page.pushOperators(lib.pushGraphicsState(), lib.translate(p.x, p.y), lib.rotateDegrees(p.rotate), lib.scale(p.width / asset.units, p.height / full));
+  if (asset.background) page.drawRectangle({ x: 0, y: 0, width: asset.units, height: full, color: lib.rgb(...asset.background) });
+  const color = lib.rgb(...asset.color);
+  page.drawSvgPath(asset.dots, { x: 0, y: full, color });
+  page.drawSvgPath(asset.eyes, { x: 0, y: full, color });
+  if (logo && asset.logo) {
+    const { x, y, w, h } = asset.logo.box;
+    page.drawImage(logo, { x, y: full - y - h, width: w, height: h });
+  }
+  if (caption) page.drawImage(caption, { x: 0, y: 0, width: asset.units, height: asset.band });
+  page.pushOperators(lib.popGraphicsState());
 }
 
 /**
@@ -173,7 +241,7 @@ function embedder(doc: PdfLibDocument, lib: PdfLib) {
     return embedPreview(asset);
   };
 
-  return (asset: PdfSource) => {
+  return (asset: Exclude<PdfSource, QrPdfSource>) => {
     const id = asset.kind === 'pdf' ? `${asset.src}#${asset.page}` : String(asset.src);
     if (!cache.has(id)) cache.set(id, asset.kind === 'pdf' ? embedPdfAsset(asset) : embedImage(asset));
     return cache.get(id)!;

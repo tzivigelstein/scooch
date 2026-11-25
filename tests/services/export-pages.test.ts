@@ -5,9 +5,10 @@
 // which one it is), so each page's images say which sheet it came from.
 import { deflateSync } from 'node:zlib';
 import { PDFDocument, PDFName, PDFRawStream, type PDFDict } from 'pdf-lib';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { addAsset } from '../../src/state/assets.ts';
 import { makePdf } from '../../src/services/export.ts';
+import { buildQr } from '../../src/services/qr.ts';
 import { getDocument } from '../../src/state/document.ts';
 import { choosePaper } from '../../src/state/actions/sheets.ts';
 import { piece, resetState } from '../support/state.ts';
@@ -104,5 +105,27 @@ describe('the PDF of several sheets', () => {
       [11, 12, 13],
       [61, 62],
     ]);
+  });
+});
+
+describe('a QR code', () => {
+  test('its caption is rasterized at 600 ppi for its largest piece and its logo is embedded as it is', async () => {
+    let n = 0;
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(() => `blob:qr/${++n}`);
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(new Proxy({ measureText: () => ({ width: 10 }) }, { get: (target, key) => (target as Record<PropertyKey, unknown>)[key] ?? (() => {}) }) as never);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,');
+    // The caption's raster is as many px wide as the canvas it was drawn into.
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (this: HTMLCanvasElement, done: BlobCallback) {
+      done(new Blob([png(this.width) as BlobPart], { type: 'image/png' }));
+    });
+    const logo = png(7);
+    const qr = await buildQr({ text: 'https://scooch.app', color: '#000000', background: '#ffffff', dots: 'square', eyes: 'square', caption: 'Menú', logo: { src: 99, format: 'png', px: [7, 2], bytes: logo, blob: new Blob([logo as BlobPart]), hash: 'h-logo' } }, 40);
+    const key = addAsset(qr);
+    resetState({ items: [piece(1, key, 20, 20, { scale: 50 }), piece(2, key, 100, 20, { scale: 100 })] });
+    const [page] = await pagesOf(await makePdf());
+    // Both pieces draw the same logo and the same caption: 40 mm at 100 % is 945 px at 600 ppi.
+    const caption = Math.round((40 * 600) / 25.4);
+    expect(page.images).toEqual([7, 7, caption, caption]);
+    vi.restoreAllMocks();
   });
 });

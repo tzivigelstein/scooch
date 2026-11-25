@@ -7,6 +7,7 @@ import { buildPdf } from '../../src/services/pdf.ts';
 import { cutStyle } from '../../src/core/cutmarks.js';
 import { drawParams } from '../../src/core/crop.js';
 import { cutLines } from '../../src/core/cutmarks.js';
+import { qrDrawing } from '../../src/core/qrshape.js';
 
 const PT = 72 / 25.4;
 
@@ -184,6 +185,32 @@ describe('buildPdf', () => {
     const streams = doc.context.enumerateIndirectObjects().map(([, object]) => object).filter((object) => object instanceof PDFRawStream && String(object.dict.get(PDFName.of('Subtype'))) === '/Image');
     assert.equal(streams.length, 1);
     assert.deepEqual(Buffer.from(streams[0].contents), Buffer.from(file));
+  });
+
+  test('a QR code is drawn as vector paths in its box; only its logo and caption are images, each embedded once', async () => {
+    const drawing = qrDrawing('https://scooch.app', { dots: 'rounded', eyes: 'rounded', logo: 1 });
+    const band = drawing.units * 0.16;
+    const qr = { kind: 'qr', w: 40, h: 46.4, units: drawing.units, band, dots: drawing.dots, eyes: drawing.eyes, color: [0.1, 0.2, 0.6], background: [1, 1, 0.9], bytes: png(), logo: { format: 'png', box: drawing.logo }, caption: png() };
+    const pieces = [
+      { asset: qr, x: 20, y: 30, scale: 50, r: 0, crop: null },
+      { asset: qr, x: 100, y: 30, scale: 75, r: 90, crop: null },
+    ];
+    const out = await buildPdf({ ...SHEET, pages: [{ pieces }], title: 't' });
+    // Each drawing names the image again; behind the names, two images.
+    const doc = await PDFDocument.load(out, { updateMetadata: false });
+    const xobj = doc.getPages()[0].node.Resources().lookup(PDFName.of('XObject'));
+    assert.equal(new Set(xobj.keys().map((key) => xobj.get(key).toString())).size, 2);
+    assert.deepEqual([...new Set(await xobjectTypes(out))], ['/Image']);
+    const [content] = await contents(out);
+    // Each piece: its box (crop.drawParams) in module units, then the background, the modules and the eyes filled, the logo and the caption.
+    for (const piece of pieces) {
+      const p = drawParams(piece, qr, SHEET.height);
+      assert.ok(content.includes(`q\n1 0 0 1 ${p.x} ${p.y} cm\n`), `placed at ${p.x}, ${p.y}`);
+      assert.ok(content.includes(` 0 0 cm\n${p.width / qr.units} 0 0 ${p.height / (qr.units + band)} 0 0 cm\n`), 'scaled to its modules');
+    }
+    assert.equal((content.match(/\nf\n/g) ?? []).length, 6, 'background, modules and eyes, twice');
+    assert.ok((content.match(/ c\n/g) ?? []).length > 200, 'rounded modules and eyes are curves');
+    assert.equal((content.match(/ Do\n/g) ?? []).length, 4, 'the logo and the caption, twice');
   });
 
   test('several pages: each with its own', async () => {

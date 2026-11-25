@@ -12,6 +12,7 @@ import { CAPTION_BAND, cleanQr, qrDrawing } from '../core/qrshape.js';
 import type { QrAssetMeta, StoredFile } from '../core/types.ts';
 import { t } from '../copy/index.ts';
 import type { QrAsset, QrLogo } from './assets.ts';
+import type { QrPdfSource } from './pdf.ts';
 import { knownBytes } from './storage/hash.ts';
 
 /** A new QR code's side at 100 %, quiet zone included (mm). */
@@ -172,6 +173,53 @@ export async function buildQr(fields: QrFields, w: number, h = w): Promise<QrAss
       }
       ctx.restore();
     },
+  };
+}
+
+// ---------- The PDF ----------
+
+/** The caption's raster in the PDF: px per inch of its printed width, and at most this many px across. */
+const PRINT_DPI = 600;
+const PRINT_PX = 8000;
+
+const rgb = (hex: string): [number, number, number] => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number];
+
+function pngBytes(canvas: HTMLCanvasElement) {
+  return new Promise<Uint8Array | null>((resolve) =>
+    canvas.toBlob((blob) => {
+      if (!blob) resolve(null);
+      else blob.arrayBuffer().then((buffer) => resolve(new Uint8Array(buffer)), () => resolve(null));
+    }, 'image/png')
+  );
+}
+
+/**
+ * What the PDF draws of a QR code (pdf.ts drawQr): its paths and colors, its
+ * logo's bytes and its caption rasterized at PRINT_DPI for its largest piece
+ * (`scale`, in %), so it prints as sharp as its modules.
+ */
+export async function qrPdfSource(qr: QrAsset, scale: number): Promise<QrPdfSource> {
+  const { units } = qr.drawing;
+  const ratio = (qr.h - qr.w) / qr.w;
+  let caption: Uint8Array | null = null;
+  if (qr.caption) {
+    const px = Math.min(PRINT_PX, Math.max(64, Math.round((((qr.w * scale) / 100) * PRINT_DPI) / 25.4)));
+    const canvas = await captionCanvas(qr.caption, qr.color, px, ratio);
+    caption = canvas && (await pngBytes(canvas));
+  }
+  return {
+    kind: 'qr',
+    w: qr.w,
+    h: qr.h,
+    units,
+    band: units * ratio,
+    dots: qr.drawing.dots,
+    eyes: qr.drawing.eyes,
+    color: rgb(qr.color),
+    background: qr.background ? rgb(qr.background) : null,
+    bytes: qr.bytes,
+    logo: qr.logo && qr.drawing.logo ? { format: qr.logo.format, box: qr.drawing.logo } : null,
+    caption,
   };
 }
 

@@ -13,7 +13,7 @@ import { OUTPUT_TEXTS, outputText } from '../copy/output.ts';
 import { getAsset } from '../state/assets.ts';
 import { getDocument, type Piece } from '../state/document.ts';
 import { itemsOn, sheetSize } from '../state/selectors.ts';
-import type { AppAsset } from './assets.ts';
+import { loadQr, type AppAsset } from './assets.ts';
 import { shapesReady, sheetCuts } from './contours.ts';
 import { paperSlug, writtenPaperName } from './measure.ts';
 import type { PdfJob, PdfReply, PdfSource } from './pdf.ts';
@@ -21,9 +21,13 @@ import type { PdfJob, PdfReply, PdfSource } from './pdf.ts';
 /** «scooch-a4.pdf»: the same in every language, like the PDF's title (copy/output.ts). */
 export const pdfFileName = () => `${slug(APP_NAME, OUTPUT_TEXTS.fallbackName)}-${paperSlug()}.pdf`;
 
-/** What the PDF takes of an asset: what it draws, nothing a worker can't receive (the pdf.js document). */
-function pdfSource(asset: AppAsset): PdfSource {
-  if (asset.kind === 'qr') throw new Error('QR codes are not exported yet');
+/**
+ * What the PDF takes of an asset: what it draws, nothing a worker can't
+ * receive (the pdf.js document). A QR code's caption is rasterized for the
+ * largest of its pieces (`scale`), by services/qr.ts.
+ */
+async function pdfSource(asset: AppAsset, scale: number): Promise<PdfSource> {
+  if (asset.kind === 'qr') return (await loadQr()).qrPdfSource(asset, scale);
   return asset.kind === 'pdf'
     ? { kind: 'pdf', src: asset.src, page: asset.page, view: asset.view, pageRotation: asset.pageRotation, bytes: asset.bytes, preview: asset.preview, w: asset.w, h: asset.h }
     : { kind: 'image', src: asset.src, format: asset.format, bytes: asset.bytes, w: asset.w, h: asset.h };
@@ -42,7 +46,8 @@ export async function makePdf(signal?: AbortSignal): Promise<Blob> {
   // The assets as they are now: nothing the document does meanwhile changes this PDF.
   const assets = new Map(filled.flat().map((item) => [item.asset, getAsset(item.asset)]));
   const assetOf = (key: string) => assets.get(key)!;
-  const sources = new Map([...assets].map(([key, asset]) => [key, pdfSource(asset)]));
+  const largest = (key: string) => Math.max(...filled.flat().map((item) => (item.asset === key ? item.scale : 0)));
+  const sources = new Map(await Promise.all([...assets].map(async ([key, asset]) => [key, await pdfSource(asset, largest(key))] as const)));
   const piece = (item: Piece) => ({ asset: sources.get(item.asset)!, x: item.x, y: item.y, scale: item.scale, r: item.r, crop: item.crop ?? null });
   if (cuts.mode === 'contour') await shapesReady(filled.flat(), cuts.margin, assetOf);
   signal?.throwIfAborted();
