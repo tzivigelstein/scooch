@@ -9,9 +9,9 @@
 // print only once it settles (a page load, another PDF, its download).
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { createElement } from 'react';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import CropMode from '../../src/components/canvas/crop/CropMode.tsx';
-import { usePrintSummary } from '../../src/components/feedback/printSummary.ts';
+import { SummaryContent, usePrintSummary } from '../../src/components/feedback/printSummary.ts';
 import { askTip } from '../../src/components/dialogs/printTip.ts';
 import { Topbar } from '../../src/components/topbar/Topbar.tsx';
 import { makePdf } from '../../src/services/export.ts';
@@ -58,6 +58,9 @@ const flash = () => {
 };
 /** Lets the export reach the advice (and its answer reach the export). */
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+// What the summary says loads when the app is idle: loaded here, it shows at once.
+beforeAll(() => SummaryContent.preload());
 
 beforeEach(() => {
   vi.clearAllMocks();

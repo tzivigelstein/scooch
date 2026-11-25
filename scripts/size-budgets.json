@@ -38,9 +38,9 @@
     "what": "The CSS the editor's index.html links (read from the built HTML), which blocks its first paint: the tokens, the base, the shared buttons and form controls, the layout, printing and the system's preferences, and the stylesheets of every component that shows at start. The parts that load later bring their own (see «totalCss»)."
   },
   "totalCss": {
-    "kB": 18.5,
-    "measured": 17.5,
-    "what": "Every .css file of the build: the editor's stylesheet, the lazy parts' (the dialogs but «confirm», the menus, crop mode, the command palette: each compressed on its own, about 0.3 to 1.1 kB, loaded when the app is idle or the part opens) and Hindi's font rule (devanagari-*.css, about 0.25 kB, loaded only with Hindi). The static pages carry their CSS inline (counted in each page)."
+    "kB": 19.9,
+    "measured": 18.9,
+    "what": "Every .css file of the build: the editor's stylesheet, the lazy parts' (the dialogs but «confirm», the menus, crop mode, the command palette, the summary after printing: each compressed on its own, about 0.3 to 2.4 kB, loaded when the app is idle or the part opens) and Hindi's font rule (devanagari-*.css, about 0.25 kB, loaded only with Hindi). The static pages carry their CSS inline (counted in each page)."
   },
   "pageScripts": {
     "kB": 6.5,

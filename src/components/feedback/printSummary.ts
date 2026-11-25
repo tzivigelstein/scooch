@@ -1,9 +1,11 @@
 // The summary after printing or downloading (see PrintSummary.tsx): what it
 // shows, worked out once the person is back from the print dialog, and where
 // the focus returns. It closes with «Listo», Esc or the backdrop, and with the
-// next print or download.
+// next print or download. What it says (SummaryContent.tsx) loads when the app
+// is idle, or with the first print or download: it shows once loaded.
 
 import { create } from 'zustand';
+import { lazyContent, prefetch, whenLoaded } from '../lazy.ts';
 import type { Equivalent } from '../../core/savings.js';
 import type { OutputKind } from '../dialogs/printTip.ts';
 
@@ -45,7 +47,13 @@ interface SummaryState {
 
 export const usePrintSummary = create<SummaryState>()(() => ({ summary: null, returnTo: null, kind: 'print' }));
 
-export const showSummary = (summary: PrintSummary, returnTo: Element | null) => usePrintSummary.setState({ summary, returnTo, kind: summary.kind });
+export const SummaryContent = lazyContent(() => import('./SummaryContent.tsx'));
+
+/** Loads what the summary says ahead of time (when the app is idle). */
+export const preloadSummary = () => prefetch(SummaryContent);
+
+export const showSummary = (summary: PrintSummary, returnTo: Element | null) =>
+  whenLoaded(SummaryContent, () => usePrintSummary.setState({ summary, returnTo, kind: summary.kind }));
 
 export const closeSummary = () => {
   if (usePrintSummary.getState().summary) usePrintSummary.setState({ summary: null });

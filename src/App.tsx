@@ -15,6 +15,7 @@ import { ContextMenuContent, preloadContextMenu, useContextMenu } from './compon
 import { LiveRegions } from './components/feedback/LiveRegions.tsx';
 import { NoticePill } from './components/feedback/NoticePill.tsx';
 import { PrintSummary } from './components/feedback/PrintSummary.tsx';
+import { preloadSummary } from './components/feedback/printSummary.ts';
 import { Tooltip } from './components/feedback/Tooltip.tsx';
 import { UsageTip } from './components/feedback/UsageTip.tsx';
 import { PiecesPanel } from './components/pieces-panel/PiecesPanel.tsx';
@@ -147,6 +148,7 @@ export function App() {
       preloadDialogs();
       preloadCrop();
       preloadContextMenu();
+      preloadSummary();
     });
     return () => {
       stopFollowing();

@@ -10,7 +10,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { PrintSummary } from '../../src/components/feedback/PrintSummary.tsx';
-import { showSummary, usePrintSummary, type PrintSummary as Summary } from '../../src/components/feedback/printSummary.ts';
+import { showSummary, SummaryContent, usePrintSummary, type PrintSummary as Summary } from '../../src/components/feedback/printSummary.ts';
 import { arrangeAll } from '../../src/state/actions/edit.ts';
 
 vi.mock('../../src/components/dialogs/donate.ts', () => ({ donateUrl: () => 'https://www.patreon.com/ejemplo', neverAskDonation: vi.fn() }));
@@ -49,7 +49,9 @@ const row = (which: 'is-baseline' | 'is-app') => {
   };
 };
 
-beforeAll(() => {
+beforeAll(async () => {
+  // What it says loads when the app is idle: loaded here, it shows at once.
+  await SummaryContent.preload();
   // jsdom's <dialog> can't show modally.
   HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
     this.setAttribute('open', '');
