@@ -77,6 +77,22 @@ describe('the saved undo history', () => {
     const read = parseHistory(serializeHistory('p1', stacks(), metaOf, hashOf));
     expect(nextIdsOf(read)).toEqual({ item: 3, sheet: 2, asset: 3, src: 3 });
   });
+
+  test('a step with a QR code keeps it and its logo’s file; one of document version 6 still reads', () => {
+    const qr = { kind: 'qr', text: 'https://scooch.app', color: '#000000', background: null, dots: 'circle', eyes: 'rounded', caption: 'Hola', logo: { src: 7, format: 'jpg', px: [64, 64] }, w: 40, h: 46.4 };
+    const metas = { ...META, a3: qr };
+    const c = { id: 3, asset: 'a3', sheet: 1, x: 5, y: 5, scale: 60, r: 0, crop: null };
+    const steps = { undo: [step([a, c])], redo: [] };
+    const saved = serializeHistory('p1', steps, (key) => metas[key], hashOf);
+    expect(saved.assets.a3).toEqual(qr);
+    expect(saved.files['src:7']).toBe('h-src:7');
+    expect(parseHistory(saved).undo).toEqual(steps.undo);
+    expect(nextIdsOf(parseHistory(saved))).toMatchObject({ asset: 4, src: 8 });
+    const older = serializeHistory('p1', stacks(), metaOf, hashOf);
+    expect(parseHistory({ ...older, docVersion: 6 }).undo).toEqual(stacks().undo);
+    // A QR code is never cropped.
+    expect(parseHistory({ ...saved, items: saved.items.map((item) => (item.asset === 'a3' ? { ...item, crop: { x: 0, y: 0, w: 0.5, h: 0.5 } } : item)) })).toBeNull();
+  });
 });
 
 describe('the saved cut pieces', () => {
@@ -116,7 +132,7 @@ describe('stored versions', () => {
   });
 
   test('what is written today has exactly the shape of the fixtures', () => {
-    // The fixtures were written with document version 5, which reads as version 6.
+    // The fixtures were written with document version 5, which reads as version 7.
     const history = fixture('history-v1').record;
     const steps = parseHistory(history);
     expect(serializeHistory(history.project, steps, (key) => history.assets[key], (key) => history.files[key])).toEqual({ ...history, docVersion: DOC_VERSION });

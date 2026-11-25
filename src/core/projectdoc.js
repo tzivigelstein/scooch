@@ -12,10 +12,10 @@
 // clamped (repair); only what can't be interpreted (no sheets, items or
 // assets, pieces pointing nowhere) makes a document damaged.
 //
-// Shape (version 6):
+// Shape (version 7):
 //
 //   {
-//     version: 6,
+//     version: 7,
 //     paper: 'A4' | {custom: true, w, h},   // ids of papers.js; sizes in mm
 //     landscape: false,
 //     margin: 10, gap: 5,                  // mm
@@ -31,23 +31,39 @@
 //     assets: {
 //       a1: {kind: 'image', name, src, px: [w, h], format: 'jpg' | 'png', dpi, w, h, derived},
 //       a2: {kind: 'pdf', name, src, page, pages, pageRotation, view: [x0, y0, x1, y1], px, w, h},
+//       a3: {kind: 'qr', text, color: '#000000', background: '#ffffff' | null,   // since 7: a QR code,
+//            dots: 'square' | 'rounded' | 'circle', eyes: 'square' | 'rounded',  // drawn from these
+//            caption: '', logo: null | {src, format: 'jpg' | 'png', px: [w, h]},  // (qrshape.js)
+//            w, h},
 //     },
 //   }
 //
 // `src` identifies the original file (the pages of one PDF share it). The
 // binaries go apart, under these keys (fileKeys):
-//   'src:N'      the original file (image or PDF)
+//   'src:N'      the original file (image or PDF; a QR code's logo)
 //   'bytes:N'    what is embedded in the PDF when it isn't the original
 //                (derived: true: a JPG with an EXIF orientation, or formats
 //                pdf-lib can't embed)
-//   'preview:aK' the rasterized preview (so opening needs no pdf.js)
+//   'preview:aK' the rasterized preview (so opening needs no pdf.js); a QR
+//                code has none: it is drawn again from its fields
+//
+// A QR code (since 7) is no file: `text` is its content (a link or any text),
+// `color` the code's and its caption's, `background` null when transparent,
+// `caption` the short text under it (at most 40 characters; '' for none) and
+// `logo` an image of the person's over its middle. `w` is the side of its
+// square at 100 % (quiet zone included) and `h` that plus its caption's band.
+// Its pieces are never cropped. Editing it makes another asset, like another
+// PDF page: assets never change once added. Here a QR code needs its text, its
+// size and, if it has a logo, a readable one (repair drops it otherwise); what
+// it looks like is read where it is drawn (qrshape.cleanQr: a style it can't
+// read takes its default), which keeps this module, loaded at start, small.
 
 import { sizeOf } from './papers.js';
 import { MIN_CROP, clampCrop, isIdentity } from './crop.js';
 import { CUT_DASHES, CUT_MODES, CUT_WEIGHTS, isHexColor } from './cutmarks.js';
-import { clamp } from './util.js';
+import { clamp, isRecord } from './util.js';
 
-export const DOC_VERSION = 6;
+export const DOC_VERSION = 7;
 
 /** Cut lines of a new document: none, and thin solid black when turned on. */
 export const DEFAULT_CUTS = Object.freeze({ mode: 'none', length: 4, offset: 1.5, margin: 0, weight: 'thin', color: '#000000', dash: 'solid' });
@@ -77,11 +93,21 @@ export class ProjectError extends Error {
 
 const IMAGE_FIELDS = ['kind', 'name', 'src', 'px', 'format', 'dpi', 'w', 'h'];
 const PDF_FIELDS = ['kind', 'name', 'src', 'page', 'pages', 'pageRotation', 'view', 'px', 'w', 'h'];
+const QR_FIELDS = ['kind', 'text', 'color', 'background', 'dots', 'eyes', 'caption', 'logo', 'w', 'h'];
 
 const pick = (obj, fields) => Object.fromEntries(fields.map((key) => [key, Array.isArray(obj[key]) ? [...obj[key]] : obj[key]]));
 
-/** What a stored document keeps of an app asset (no binaries): image or PDF page fields. */
-export const assetMeta = (asset) => (asset.kind === 'pdf' ? pick(asset, PDF_FIELDS) : { ...pick(asset, IMAGE_FIELDS), derived: !!asset.derived });
+/** What a stored document keeps of an app asset (no binaries): image, PDF page or QR code fields. */
+export function assetMeta(asset) {
+  if (asset.kind === 'pdf') return pick(asset, PDF_FIELDS);
+  if (asset.kind !== 'qr') return { ...pick(asset, IMAGE_FIELDS), derived: !!asset.derived };
+  const meta = pick(asset, QR_FIELDS);
+  if (meta.logo) meta.logo = pick(meta.logo, ['src', 'format', 'px']);
+  return meta;
+}
+
+/** The source file an asset's binaries come from (a QR code's logo), or 0 (a QR code without one). */
+export const sourceOf = (asset) => (asset.kind === 'qr' ? asset.logo?.src || 0 : asset.src);
 
 /**
  * The document to save from the state. `assets`: Map key → asset (the app's,
@@ -111,15 +137,18 @@ export function serialize({ sheets, items, paper, landscape, margin, gap, rotate
   };
 }
 
+/** The keys of the binaries asset `key` needs (see above). */
+export function assetFileKeys(key, asset) {
+  if (asset.kind === 'qr') return asset.logo ? [`src:${asset.logo.src}`] : [];
+  const keys = [`src:${asset.src}`];
+  if (asset.kind === 'image' && asset.derived) keys.push(`bytes:${asset.src}`);
+  keys.push(`preview:${key}`);
+  return keys;
+}
+
 /** The keys of the binaries the document needs (see above), each once. */
 export function fileKeys(doc) {
-  const keys = new Set();
-  for (const [key, asset] of Object.entries(doc.assets)) {
-    keys.add(`src:${asset.src}`);
-    if (asset.kind === 'image' && asset.derived) keys.add(`bytes:${asset.src}`);
-    keys.add(`preview:${key}`);
-  }
-  return [...keys];
+  return [...new Set(Object.entries(doc.assets).flatMap(([key, asset]) => assetFileKeys(key, asset)))];
 }
 
 /** How many sheets and pieces (for the projects list). */
@@ -132,7 +161,7 @@ export function nextIds(doc) {
     item: max(doc.items.map((item) => item.id)) + 1,
     sheet: max(doc.sheets.map((sheet) => sheet.id)) + 1,
     asset: max(Object.keys(doc.assets).map((key) => Number(key.slice(1)) || 0)) + 1,
-    src: max(Object.values(doc.assets).map((asset) => asset.src)) + 1,
+    src: max(Object.values(doc.assets).map(sourceOf)) + 1,
   };
 }
 
@@ -180,6 +209,8 @@ const MIGRATIONS = {
   4: (doc, context) => ({ ...doc, version: 5, allowOverlap: context.allowOverlap === true }),
   // Version 6 adds the cut mode 'contour': a version 5 document is a valid version 6 one.
   5: (doc) => ({ ...doc, version: 6 }),
+  // Version 7 adds QR code assets: a version 6 document is a valid version 7 one.
+  6: (doc) => ({ ...doc, version: 7 }),
 };
 
 /**
@@ -209,9 +240,12 @@ const isPositive = (v) => isFiniteNumber(v) && v > 0;
 const isId = (v) => Number.isInteger(v) && v > 0;
 const isPair = (v) => Array.isArray(v) && v.length === 2 && v.every(isPositive);
 
+const validLogo = (logo) => isRecord(logo) && isId(logo.src) && ['jpg', 'png'].includes(logo.format) && isPair(logo.px);
+
 function assetProblem(key, asset) {
   if (!/^a\d+$/.test(key)) return `asset key ${key}`;
   if (!asset || typeof asset !== 'object') return `asset ${key}`;
+  if (asset.kind === 'qr') return typeof asset.text === 'string' && isPositive(asset.w) && isPositive(asset.h) && (!asset.logo || validLogo(asset.logo)) ? null : `QR code ${key}`;
   if (typeof asset.name !== 'string' || !isId(asset.src) || !isPair(asset.px) || !isPositive(asset.w) || !isPositive(asset.h)) {
     return `asset ${key} incomplete`;
   }
@@ -285,8 +319,8 @@ export function validate(doc) {
     if (!isFiniteNumber(item?.x) || !isFiniteNumber(item?.y)) problems.push(`${where}: position`);
     if (!isPositive(item?.scale)) problems.push(`${where}: scale`);
     if (![0, 90, 180, 270].includes(item?.r)) problems.push(`${where}: rotation`);
-    // No `crop` (or null): no crop.
-    if (item?.crop != null && !validCrop(item.crop)) problems.push(`${where}: crop`);
+    // No `crop` (or null): no crop. A QR code is never cropped.
+    if (item?.crop != null && (!validCrop(item.crop) || assets?.[item.asset]?.kind === 'qr')) problems.push(`${where}: crop`);
   }
   return problems;
 }
@@ -320,12 +354,17 @@ export function repair(doc) {
     color: isHexColor(cuts.color) ? cuts.color : DEFAULT_CUTS.color,
     dash: CUT_DASHES.includes(cuts.dash) ? cuts.dash : DEFAULT_CUTS.dash,
   };
+  // A QR code's logo that can't be read is dropped.
+  const assets = isRecord(out.assets) ? (out.assets = { ...out.assets }) : null;
+  for (const key in assets) if (assets[key]?.kind === 'qr' && !validLogo(assets[key].logo)) assets[key] = { ...assets[key], logo: null };
   if (Array.isArray(out.items)) {
     out.items = out.items.map((item) => {
       if (!item || typeof item !== 'object') return item;
       const fixed = { ...item };
       // A crop that can't be read is no crop; one slightly outside the image is brought inside.
       if (item.crop != null) fixed.crop = typeof item.crop === 'object' ? clampCrop(item.crop) : null;
+      // A QR code is never cropped.
+      if (assets?.[item.asset]?.kind === 'qr') fixed.crop = null;
       if (isPositive(item.scale)) fixed.scale = clamp(item.scale, 1, 1000);
       return fixed;
     });

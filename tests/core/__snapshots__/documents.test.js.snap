@@ -50,7 +50,7 @@ exports[`stored documents of every version > v0 opens and becomes the current ve
       "id": 1,
     },
   ],
-  "version": 6,
+  "version": 7,
 }
 `;
 
@@ -141,7 +141,7 @@ exports[`stored documents of every version > v1 opens and becomes the current ve
       "id": 4,
     },
   ],
-  "version": 6,
+  "version": 7,
 }
 `;
 
@@ -237,7 +237,7 @@ exports[`stored documents of every version > v2 opens and becomes the current ve
       "id": 4,
     },
   ],
-  "version": 6,
+  "version": 7,
 }
 `;
 
@@ -333,7 +333,7 @@ exports[`stored documents of every version > v3 opens and becomes the current ve
       "id": 4,
     },
   ],
-  "version": 6,
+  "version": 7,
 }
 `;
 
@@ -429,7 +429,7 @@ exports[`stored documents of every version > v3-with-margin opens and becomes th
       "id": 4,
     },
   ],
-  "version": 6,
+  "version": 7,
 }
 `;
 
@@ -525,7 +525,7 @@ exports[`stored documents of every version > v4 opens and becomes the current ve
       "id": 4,
     },
   ],
-  "version": 6,
+  "version": 7,
 }
 `;
 
@@ -621,7 +621,7 @@ exports[`stored documents of every version > v5 opens and becomes the current ve
       "id": 4,
     },
   ],
-  "version": 6,
+  "version": 7,
 }
 `;
 
@@ -737,6 +737,183 @@ exports[`stored documents of every version > v6 opens and becomes the current ve
       "id": 2,
     },
   ],
-  "version": 6,
+  "version": 7,
+}
+`;
+
+exports[`stored documents of every version > v7 opens and becomes the current version 1`] = `
+{
+  "allowOverlap": false,
+  "assets": {
+    "a1": {
+      "derived": false,
+      "dpi": 300,
+      "format": "png",
+      "h": 101.6,
+      "kind": "image",
+      "name": "logo.png",
+      "px": [
+        1600,
+        1200,
+      ],
+      "src": 1,
+      "w": 135.47,
+    },
+    "a2": {
+      "derived": true,
+      "dpi": 300,
+      "format": "png",
+      "h": 76.2,
+      "kind": "image",
+      "name": "pegatina.webp",
+      "px": [
+        900,
+        900,
+      ],
+      "src": 2,
+      "w": 76.2,
+    },
+    "a3": {
+      "h": 297,
+      "kind": "pdf",
+      "name": "plano.pdf",
+      "page": 1,
+      "pageRotation": 0,
+      "pages": 2,
+      "px": [
+        1697,
+        2400,
+      ],
+      "src": 3,
+      "view": [
+        0,
+        0,
+        595.28,
+        841.89,
+      ],
+      "w": 210,
+    },
+    "a4": {
+      "background": "#fff8e7",
+      "caption": "Escanea el menú",
+      "color": "#1f3a93",
+      "dots": "rounded",
+      "eyes": "rounded",
+      "h": 46.4,
+      "kind": "qr",
+      "logo": {
+        "format": "png",
+        "px": [
+          512,
+          512,
+        ],
+        "src": 4,
+      },
+      "text": "https://scooch.app/es/?utm_source=qr",
+      "w": 40,
+    },
+    "a5": {
+      "background": null,
+      "caption": "",
+      "color": "#000000",
+      "dots": "circle",
+      "eyes": "square",
+      "h": 40,
+      "kind": "qr",
+      "logo": null,
+      "text": "WIFI:S:Casa;T:WPA;P:clave1234;;",
+      "w": 40,
+    },
+  },
+  "cuts": {
+    "color": "#1f6feb",
+    "dash": "dotted",
+    "length": 4,
+    "margin": 2.5,
+    "mode": "contour",
+    "offset": 1.5,
+    "weight": "medium",
+  },
+  "gap": 3,
+  "items": [
+    {
+      "asset": "a1",
+      "crop": {
+        "h": 0.9,
+        "w": 0.7,
+        "x": 0.1,
+        "y": 0,
+      },
+      "id": 1,
+      "r": 90,
+      "scale": 60,
+      "sheet": 1,
+      "x": 12,
+      "y": 15,
+    },
+    {
+      "asset": "a2",
+      "crop": null,
+      "id": 2,
+      "r": 0,
+      "scale": 100,
+      "sheet": 1,
+      "x": 120,
+      "y": 20,
+    },
+    {
+      "asset": "a3",
+      "crop": null,
+      "id": 3,
+      "r": 0,
+      "scale": 50,
+      "sheet": 2,
+      "x": 10,
+      "y": 10,
+    },
+    {
+      "asset": "a4",
+      "crop": null,
+      "id": 4,
+      "r": 0,
+      "scale": 75,
+      "sheet": 1,
+      "x": 30,
+      "y": 150,
+    },
+    {
+      "asset": "a4",
+      "crop": null,
+      "id": 5,
+      "r": 90,
+      "scale": 50,
+      "sheet": 2,
+      "x": 120,
+      "y": 200,
+    },
+    {
+      "asset": "a5",
+      "crop": null,
+      "id": 6,
+      "r": 0,
+      "scale": 100,
+      "sheet": 2,
+      "x": 150,
+      "y": 20,
+    },
+  ],
+  "landscape": true,
+  "margin": 6,
+  "paper": "A4",
+  "rotate": true,
+  "sheets": [
+    {
+      "id": 1,
+    },
+    {
+      "id": 2,
+    },
+  ],
+  "version": 7,
 }
 `;

@@ -1,14 +1,13 @@
 import type { QrLevel } from './qrcode.js';
-
-export type QrDots = 'square' | 'rounded' | 'circle';
-export type QrEyes = 'square' | 'rounded';
+import type { QrAssetMeta, QrDots, QrEyes } from './types';
 
 export const QR_DOTS: readonly QrDots[];
 export const QR_EYES: readonly QrEyes[];
+export const CAPTION_MAX: number;
+
 export const QUIET_ZONE: number;
 export const LOGO_SIDE: number;
 export const CAPTION_BAND: number;
-export const CAPTION_MAX: number;
 export const MIN_CONTRAST: number;
 
 /** A rectangle in modules, from the top left of the code's square (quiet zone included). */
@@ -40,6 +39,7 @@ export interface QrCleared {
   y1: number;
 }
 
+export function cleanQr<T extends Pick<QrAssetMeta, 'text' | 'color' | 'background' | 'dots' | 'eyes' | 'caption'>>(qr: T): T;
 export function fitText(text: string): string;
 export function logoPlace(size: number, aspect: number): { box: QrBox; cleared: QrCleared };
 export function logoFits(version: number, level: QrLevel, cleared: QrCleared): boolean;

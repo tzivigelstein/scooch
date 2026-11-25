@@ -20,22 +20,23 @@
 //   step: {sheets: [id], items: [index], selection: [id], paper, landscape,
 //          margin, gap, cuts, allowOverlap}
 // Steps of another document version than the current one aren't read (the
-// history is dropped once, never the project), except those of version 5,
-// which are valid version 6 steps (6 only adds a cut mode).
+// history is dropped once, never the project), except those of versions 5
+// and 6, which are valid version 7 steps (6 only adds a cut mode and 7 the
+// QR code assets).
 //
 // Clipboard, version 1 ({id: 'cut', v: 1, docVersion, …}): what «Cortar» took
 // and wasn't pasted yet:
 //   {id: 'cut', v: 1, docVersion, pieces: [{asset, scale, r, crop}],
 //    assets: {aK: meta}, files: {key: hash}, hashes: [hash]}
 
-import { DOC_VERSION, cleanCrop, cleanCuts, fileKeys, validate } from './projectdoc.js';
+import { DOC_VERSION, cleanCrop, cleanCuts, fileKeys, sourceOf, validate } from './projectdoc.js';
 import { isRecord } from './util.js';
 
 export const HISTORY_VERSION = 1;
 export const CLIP_VERSION = 1;
 
 /** Document versions whose steps and pieces read as they are. */
-const READABLE_DOC_VERSIONS = [5, DOC_VERSION];
+const READABLE_DOC_VERSIONS = [5, 6, DOC_VERSION];
 
 const cleanItem = ({ id, asset, sheet, x, y, scale, r, crop }) => ({ id, asset, sheet, x, y, scale, r, crop: cleanCrop(crop) });
 
@@ -164,6 +165,6 @@ export function nextIdsOf({ undo = [], redo = [], assets = {} }) {
     item: max(steps.flatMap((snap) => snap.items.map((item) => item.id))) + 1,
     sheet: max(steps.flatMap((snap) => snap.sheets.map((sheet) => sheet.id))) + 1,
     asset: max(Object.keys(assets).map((key) => Number(key.slice(1)) || 0)) + 1,
-    src: max(Object.values(assets).map((asset) => asset.src)) + 1,
+    src: max(Object.values(assets).map(sourceOf)) + 1,
   };
 }

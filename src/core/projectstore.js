@@ -10,7 +10,7 @@
 //   projectdoc.fileKeys(); each binary is stored once per content (its hash),
 //   whoever references it.
 
-import { DOC_VERSION, DEFAULT_CUTS, ProjectError, deserialize, fileKeys, counts } from './projectdoc.js';
+import { DOC_VERSION, DEFAULT_CUTS, ProjectError, assetFileKeys, deserialize, fileKeys, counts } from './projectdoc.js';
 
 /** The longest a project's name can be. */
 export const NAME_MAX = 80;
@@ -189,10 +189,9 @@ export function recoverJournal(record, files, journal, context = {}) {
   } catch {
     return null;
   }
-  const has = (key) => files.has(key);
   const usable = new Set(
     Object.entries(doc.assets)
-      .filter(([key, a]) => has(`src:${a.src}`) && has(`preview:${key}`) && (!(a.kind === 'image' && a.derived) || has(`bytes:${a.src}`)))
+      .filter(([key, a]) => assetFileKeys(key, a).every((file) => files.has(file)))
       .map(([key]) => key)
   );
   const items = doc.items.filter((item) => usable.has(item.asset));

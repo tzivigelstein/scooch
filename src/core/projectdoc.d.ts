@@ -1,4 +1,4 @@
-import type { Crop, Cuts, ImageAssetMeta, Item, Paper, PdfAssetMeta, ProjectDoc, Sheet } from './types';
+import type { AssetMeta, Crop, Cuts, ImageAssetMeta, Item, Paper, PdfAssetMeta, ProjectDoc, QrAssetMeta, Sheet } from './types';
 
 export const DOC_VERSION: number;
 export const DEFAULT_CUTS: Readonly<Cuts>;
@@ -8,6 +8,8 @@ export function cleanCuts(cuts: Partial<Cuts> | undefined): Cuts;
 export const CUT_LIMITS: Readonly<{ length: readonly [number, number]; offset: readonly [number, number]; margin: readonly [number, number] }>;
 
 export function cleanCrop(crop: Crop | null | undefined): Crop | null;
+
+
 
 export type ProjectErrorCode = 'corrupt' | 'newer' | 'missing';
 
@@ -37,13 +39,17 @@ export interface MigrationContext {
 }
 
 /** An app asset as far as serializing goes (the binaries and extra fields are ignored). */
-export type SerializableAsset = PdfAssetMeta | (Omit<ImageAssetMeta, 'derived'> & { derived?: boolean });
+export type SerializableAsset = PdfAssetMeta | QrAssetMeta | (Omit<ImageAssetMeta, 'derived'> & { derived?: boolean });
 
 export function serialize(state: DocumentState, assets: ReadonlyMap<string, SerializableAsset>): ProjectDoc;
 /** What a stored document keeps of an app asset (no binaries). */
-export function assetMeta(asset: SerializableAsset): ImageAssetMeta | PdfAssetMeta;
+export function assetMeta(asset: SerializableAsset): AssetMeta;
+/** The source file an asset's binaries come from (a QR code's logo), or 0 (a QR code without one). */
+export function sourceOf(asset: Pick<SerializableAsset, 'kind'> & { src?: number; logo?: { src: number } | null }): number;
+/** Keys of the binaries asset `key` needs: 'src:N', 'bytes:N' and 'preview:aK' (a QR code: its logo's 'src:N'). */
+export function assetFileKeys(key: string, asset: AssetMeta | SerializableAsset): string[];
 /** Keys of the binaries a document needs: 'src:N', 'bytes:N' and 'preview:aK'. */
-export function fileKeys(doc: Pick<ProjectDoc, 'assets'>): string[];
+export function fileKeys(doc: { assets: Readonly<Record<string, AssetMeta | SerializableAsset>> }): string[];
 export function counts(doc: Pick<ProjectDoc, 'sheets' | 'items'>): { sheets: number; pieces: number };
 export function nextIds(doc: Pick<ProjectDoc, 'items' | 'sheets' | 'assets'>): { item: number; sheet: number; asset: number; src: number };
 /** Brings a stored document to the current version (not validated). */

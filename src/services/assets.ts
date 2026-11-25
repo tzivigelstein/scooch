@@ -8,6 +8,7 @@
 
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { sourceOf } from '../core/projectdoc.js';
 import type { AssetMeta, StoredFile } from '../core/types.ts';
 import { t } from '../copy/index.ts';
 import { blobOfBytes, hashBlob, hashBytes } from './storage/hash.ts';
@@ -344,6 +345,7 @@ export async function restoreAssets(doc: { assets: Record<string, AssetMeta> }, 
   const out = new Map<string, AppAsset>();
   try {
     for (const [key, meta] of Object.entries(doc.assets)) {
+      if (meta.kind === 'qr') throw new Error('QR codes are not drawn yet');
       const derived = meta.kind === 'image' && meta.derived;
       const bytesKey = derived ? `bytes:${meta.src}` : `src:${meta.src}`;
       if (!shared.has(bytesKey)) shared.set(bytesKey, read(files.get(bytesKey)!.blob));
@@ -362,6 +364,6 @@ export async function restoreAssets(doc: { assets: Record<string, AssetMeta> }, 
     for (const asset of out.values()) URL.revokeObjectURL(asset.url);
     throw err;
   }
-  reserveSources(Math.max(1, ...Object.values(doc.assets).map((meta) => meta.src + 1)));
+  reserveSources(Math.max(1, ...Object.values(doc.assets).map((meta) => sourceOf(meta) + 1)));
   return out;
 }

@@ -241,3 +241,80 @@ describe('deserialize', () => {
     }
   });
 });
+
+// A QR code asset as the app keeps it: its drawing, picture and logo bytes stay out of the document.
+const qrCode = (props = {}) => ({
+  kind: 'qr',
+  text: 'https://scooch.app',
+  color: '#1f3a93',
+  background: null,
+  dots: 'rounded',
+  eyes: 'square',
+  caption: 'Menú',
+  logo: { src: 5, format: 'png', px: [256, 128], bytes: new Uint8Array([9]) },
+  w: 40,
+  h: 46.4,
+  name: 'https://scooch.app',
+  url: 'blob:qr',
+  drawing: { units: 29 },
+  ...props,
+});
+
+describe('QR codes (version 7)', () => {
+  const state = () => ({
+    ...sampleState(),
+    items: [...sampleState().items, { id: 9, asset: 'a3', sheet: 1, x: 5, y: 5, scale: 75, r: 90, crop: null }, { id: 10, asset: 'a4', sheet: 4, x: 50, y: 5, scale: 100, r: 0 }],
+  });
+  const assets = () => new Map([...sampleAssets(), ['a3', qrCode()], ['a4', qrCode({ text: '', background: '#ffffff', logo: null, caption: '', h: 40 })]]);
+
+  test('a QR code keeps its content and style and its logo’s file', () => {
+    const doc = serialize(state(), assets());
+    assert.deepEqual(doc.assets.a3, {
+      kind: 'qr',
+      text: 'https://scooch.app',
+      color: '#1f3a93',
+      background: null,
+      dots: 'rounded',
+      eyes: 'square',
+      caption: 'Menú',
+      logo: { src: 5, format: 'png', px: [256, 128] },
+      w: 40,
+      h: 46.4,
+    });
+    assert.equal(doc.assets.a4.logo, null);
+    assert.deepEqual(validate(doc), []);
+    assert.deepEqual(deserialize(JSON.parse(JSON.stringify(doc))), doc);
+    // Only the logo is a file: no preview, and nothing for a code without a logo.
+    assert.deepEqual(fileKeys({ assets: { a3: doc.assets.a3, a4: doc.assets.a4 } }), ['src:5']);
+    assert.equal(nextIds(doc).src, 6);
+  });
+
+  test('a version 6 document opens as it was', () => {
+    const doc = serialize(sampleState(), sampleAssets());
+    assert.deepEqual(migrate({ ...doc, version: 6 }), doc);
+  });
+
+  test('a QR code is never cropped and a logo it can’t read is dropped', () => {
+    const doc = serialize(state(), assets());
+    const open = (qr, item = {}) => deserialize({ ...doc, assets: { ...doc.assets, a3: { ...doc.assets.a3, ...qr } }, items: doc.items.map((it) => (it.id === 9 ? { ...it, ...item } : it)) });
+    assert.equal(open({}, { crop: { x: 0.1, y: 0.1, w: 0.5, h: 0.5 } }).items.find((it) => it.id === 9).crop, null);
+    assert.equal(open({ logo: { src: 5, format: 'gif', px: [1, 1] } }).assets.a3.logo, null);
+    assert.equal(open({ logo: { src: 0, format: 'png', px: [1, 1] } }).assets.a3.logo, null);
+    assert.equal(open({ logo: undefined }).assets.a3.logo, null);
+    // Its style is read where it is drawn (qrshape.cleanQr).
+    assert.equal(open({ dots: 'stars' }).assets.a3.dots, 'stars');
+    // Without its content or its size, a QR code can't be drawn.
+    for (const broken of [{ text: 7 }, { text: undefined }, { w: 0 }, { h: -1 }]) {
+      assert.throws(() => open(broken), (err) => err instanceof ProjectError && err.code === 'corrupt', JSON.stringify(broken));
+    }
+  });
+
+  test('a QR code that isn’t repaired (an undo step) must be whole', () => {
+    const doc = serialize(state(), assets());
+    const check = (qr) => validate({ ...doc, assets: { ...doc.assets, a3: { ...doc.assets.a3, ...qr } } });
+    assert.deepEqual(check({}), []);
+    assert.deepEqual(check({ text: null }), ['QR code a3']);
+    assert.deepEqual(check({ logo: { src: 0, format: 'png', px: [1, 1] } }), ['QR code a3']);
+    assert.deepEqual(validate({ ...doc, items: doc.items.map((it) => (it.id === 9 ? { ...it, crop: { x: 0, y: 0, w: 0.5, h: 0.5 } } : it)) }), ['item 9: crop']);
+  });
+});

@@ -4,7 +4,7 @@
 // with custom colors, under a caption and with the longest content.
 import { describe, expect, test } from 'vitest';
 import { fitsQr } from '../../src/core/qrcode.js';
-import { colorIssue, contrastRatio, fitText, LOGO_SIDE, logoFits, logoPlace, QR_DOTS, QR_EYES, QUIET_ZONE, qrDrawing } from '../../src/core/qrshape.js';
+import { cleanQr, colorIssue, contrastRatio, fitText, LOGO_SIDE, logoFits, logoPlace, QR_DOTS, QR_EYES, QUIET_ZONE, qrDrawing } from '../../src/core/qrshape.js';
 import { decode, polygonsBounds, polygonsOf, rasterizeQr } from '../support/qr.ts';
 
 const SHAPES = QR_DOTS.flatMap((dots) => QR_EYES.map((eyes) => ({ dots, eyes })));
@@ -135,6 +135,21 @@ describe('the code’s square', () => {
 
   test('the same content and style give the same paths', () => {
     expect(qrDrawing('same', { dots: 'rounded', eyes: 'rounded', logo: 1.5 })).toEqual(qrDrawing('same', { dots: 'rounded', eyes: 'rounded', logo: 1.5 }));
+  });
+});
+
+describe('cleanQr', () => {
+  test('a style it can’t read takes its default and the text is cut to what fits', () => {
+    const qr = { kind: 'qr', text: 'x'.repeat(2000), color: 'blue', background: 'none', dots: 'stars', eyes: 7, caption: 3, logo: null, w: 40, h: 40 };
+    expect(cleanQr(qr)).toEqual({ ...qr, text: 'x'.repeat(1273), color: '#000000', background: '#ffffff', dots: 'square', eyes: 'square', caption: '' });
+    expect(cleanQr({ ...qr, text: 'ok', color: '#1F3A93', background: null, dots: 'circle', eyes: 'rounded', caption: 'y'.repeat(60) })).toMatchObject({
+      text: 'ok',
+      color: '#1f3a93',
+      background: null,
+      dots: 'circle',
+      eyes: 'rounded',
+      caption: 'y'.repeat(40),
+    });
   });
 });
 

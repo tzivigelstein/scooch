@@ -144,8 +144,37 @@ export interface PdfAssetMeta {
   h: number;
 }
 
+export type QrDots = 'square' | 'rounded' | 'circle';
+export type QrEyes = 'square' | 'rounded';
+
+/** A QR code's logo: its file is 'src:N' (projectdoc.fileKeys), a JPG or a PNG of `px` pixels. */
+export interface QrLogoMeta {
+  src: number;
+  format: 'jpg' | 'png';
+  px: [number, number];
+}
+
+/**
+ * A QR code (since document version 7), drawn from these fields
+ * (core/qrshape.js): its content, colors (`background` null: transparent),
+ * shapes, caption ('' for none) and logo. `w`: its square's side at 100 %,
+ * quiet zone included; `h`: that plus its caption's band.
+ */
+export interface QrAssetMeta {
+  kind: 'qr';
+  text: string;
+  color: string;
+  background: string | null;
+  dots: QrDots;
+  eyes: QrEyes;
+  caption: string;
+  logo: QrLogoMeta | null;
+  w: number;
+  h: number;
+}
+
 /** What a saved document keeps of an asset (the binaries go apart, see projectdoc.fileKeys). */
-export type AssetMeta = ImageAssetMeta | PdfAssetMeta;
+export type AssetMeta = ImageAssetMeta | PdfAssetMeta | QrAssetMeta;
 
 /** The document of a saved project (current version). */
 export interface ProjectDoc {

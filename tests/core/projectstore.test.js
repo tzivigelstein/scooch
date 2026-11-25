@@ -281,6 +281,21 @@ describe('recoverJournal', () => {
     assert.deepEqual(Object.keys(out.doc.assets).sort(), ['a1', 'a2']);
   });
 
+  test('a QR code needs no file but its logo’s', async () => {
+    const storage = memoryStorage();
+    const { record } = await saved(storage);
+    const { files } = await loadProject(storage, 'p1');
+    const doc = docWith();
+    const qr = { kind: 'qr', text: 'x', color: '#000000', background: '#ffffff', dots: 'square', eyes: 'square', caption: '', logo: null, w: 40, h: 40 };
+    doc.assets.a3 = qr;
+    doc.assets.a4 = { ...qr, logo: { src: 9, format: 'png', px: [8, 8] } };
+    doc.items.push({ id: 3, asset: 'a3', sheet: 1, x: 0, y: 0, scale: 100, r: 0 }, { id: 4, asset: 'a4', sheet: 1, x: 50, y: 0, scale: 100, r: 0 });
+    const out = recoverJournal(record, files, { id: 'p1', at: record.modified + 10, doc });
+    assert.deepEqual(Object.keys(out.doc.assets).sort(), ['a1', 'a2', 'a3'], 'the one whose logo isn’t stored yet is dropped');
+    const withLogo = recoverJournal(record, new Map([...files, ['src:9', file('src:9')]]), { id: 'p1', at: record.modified + 10, doc });
+    assert.deepEqual(Object.keys(withLogo.doc.assets).sort(), ['a1', 'a2', 'a3', 'a4']);
+  });
+
   test('doesn’t use it when it is old, another project’s or broken', async () => {
     const storage = memoryStorage();
     const { record, doc } = await saved(storage);

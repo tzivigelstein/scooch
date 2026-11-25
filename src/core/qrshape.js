@@ -1,7 +1,8 @@
 // How a QR code piece is drawn: its modules and its three finder «eyes» as
 // SVG path data, the room for a logo and the band of its caption. Pure module
 // (no DOM): the screen (an SVG) and the PDF (pdf-lib's drawSvgPath) draw the
-// same paths, so they match at any size.
+// same paths, so they match at any size. What a QR code is made of is the
+// document's (projectdoc.js); cleanQr reads its style.
 //
 // Units are modules, with the origin at the top left of the code's square,
 // which includes the quiet zone (QUIET_ZONE modules of background on every
@@ -16,12 +17,15 @@
 // a smudge, a fold or a poor print. Its size is fixed (LOGO_SIDE), so the
 // person can't make it big enough to break the code.
 
+import { isHexColor } from './cutmarks.js';
 import { codewordLayout, encodeQr, fitsQr, MAX_VERSION } from './qrcode.js';
 
 /** Shapes of the modules. */
 export const QR_DOTS = Object.freeze(['square', 'rounded', 'circle']);
 /** Shapes of the three finder patterns. */
 export const QR_EYES = Object.freeze(['square', 'rounded']);
+/** The most characters (UTF-16 code units, as a field's maxlength counts them) a caption has. */
+export const CAPTION_MAX = 40;
 
 /** Modules of background around the code (the standard asks for 4). */
 export const QUIET_ZONE = 4;
@@ -33,14 +37,30 @@ const LOGO_PAD = 0.5;
 const LOGO_BUDGET = 0.6;
 /** The caption's band under the code, as a share of the code's side. */
 export const CAPTION_BAND = 0.16;
-/** The most characters a caption has. */
-export const CAPTION_MAX = 40;
 /** The level without a logo: about 15 % of the codewords can be repaired (more when the version has room). */
 const LEVEL = 'M';
 /** The diameter of a module drawn as a circle. */
 const DOT = 0.9;
 /** The corners' radius of the rounded eyes: the ring outside, its hole and the centre. */
 const EYE_RADII = [2, 1, 1];
+
+/**
+ * A QR code's fields (a document's, an undo step's) as they are drawn: its
+ * text cut to what fits (fitText) and a style it can't read with its default
+ * (black on white, square, no caption). The document keeps the rest
+ * (projectdoc.js).
+ */
+export function cleanQr(qr) {
+  return {
+    ...qr,
+    text: fitText(String(qr.text)),
+    color: isHexColor(qr.color) ? qr.color.toLowerCase() : '#000000',
+    background: qr.background === null ? null : isHexColor(qr.background) ? qr.background.toLowerCase() : '#ffffff',
+    dots: QR_DOTS.includes(qr.dots) ? qr.dots : 'square',
+    eyes: QR_EYES.includes(qr.eyes) ? qr.eyes : 'square',
+    caption: typeof qr.caption === 'string' ? qr.caption.slice(0, CAPTION_MAX) : '',
+  };
+}
 
 /**
  * The longest start of `text` that fits a QR code at level H (what a logo
