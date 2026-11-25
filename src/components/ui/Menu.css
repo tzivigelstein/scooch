@@ -80,11 +80,6 @@
     cursor: default;
   }
 
-  .menu-item[aria-disabled="true"] .menu-label {
-    text-decoration: line-through;
-    text-decoration-color: color-mix(in srgb, currentColor 50%, transparent);
-  }
-
   .menu-why {
     grid-column: 2 / -1;
     padding-bottom: 0.125rem;

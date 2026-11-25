@@ -146,11 +146,6 @@
     cursor: default;
   }
 
-  .palette-option[aria-disabled="true"] .palette-label {
-    text-decoration: line-through;
-    text-decoration-color: color-mix(in srgb, currentColor 50%, transparent);
-  }
-
   .palette-why {
     grid-column: 2 / -1;
     padding-bottom: 0.125rem;
