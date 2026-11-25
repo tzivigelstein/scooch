@@ -17,7 +17,7 @@ import { traceAlpha } from '../../src/services/alpha.ts';
 import type { ImageAsset } from '../../src/services/assets.ts';
 import { disc, maskOf } from '../support/contour.ts';
 import { rgbPng } from '../support/png.ts';
-import { fakeImage, fakePdf, piece, resetState } from '../support/state.ts';
+import { fakeImage, fakePdf, fakeQr, piece, resetState } from '../support/state.ts';
 
 const W = 210;
 const H = 297;
@@ -167,6 +167,15 @@ describe('what the sheet shows meanwhile', () => {
 });
 
 describe('why an image keeps its rectangle', () => {
+  test('a QR code is cut along its rectangle with no note: whatever its background, nothing about it would change that', async () => {
+    const items = [piece(1, fakeQr({ background: null }), 10, 10), piece(2, fakeQr({ text: 'x', background: '#ffffff' }), 70, 10)];
+    expect(items.map((item) => lacksTransparency(item, 0))).toEqual([false, false]);
+    await shapesReady(items, 0);
+    expect(traced).toEqual([]);
+    expect(items.map((item) => shapeOf(item, 0))).toEqual([null, null]);
+    expect(sheetCuts(items, cuts(), W, H)).toMatchObject({ lines: { length: 8 }, paths: [] });
+  });
+
   test('a JPEG and a PDF page lack transparency from the start without being traced', async () => {
     const items = [piece(1, fakeImage({ name: 'foto.jpg', src: 2, format: 'jpg' }), 10, 10), piece(2, fakePdf({ src: 3 }), 60, 10, { scale: 20 })];
     expect(items.map((item) => lacksTransparency(item, 0))).toEqual([true, true]);

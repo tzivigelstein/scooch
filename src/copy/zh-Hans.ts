@@ -366,6 +366,10 @@ const zhHans: Catalogue = {
     gapFixed: '间距已改为{value}。请重新排版以应用。',
   },
 
+  qr: {
+    name: '二维码',
+  },
+
   zoom: {
     control: '缩放',
     zoomIn: '放大',

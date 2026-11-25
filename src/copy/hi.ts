@@ -367,6 +367,10 @@ const hi: Catalogue = {
     gapFixed: 'अंतराल {value} कर दिया गया। लागू करने के लिए आइटम व्यवस्थित करें।',
   },
 
+  qr: {
+    name: 'QR कोड',
+  },
+
   zoom: {
     control: 'ज़ूम',
     zoomIn: 'ज़ूम इन करें',

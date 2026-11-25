@@ -22,10 +22,12 @@ import type { PdfJob, PdfReply, PdfSource } from './pdf.ts';
 export const pdfFileName = () => `${slug(APP_NAME, OUTPUT_TEXTS.fallbackName)}-${paperSlug()}.pdf`;
 
 /** What the PDF takes of an asset: what it draws, nothing a worker can't receive (the pdf.js document). */
-const pdfSource = (asset: AppAsset): PdfSource =>
-  asset.kind === 'pdf'
+function pdfSource(asset: AppAsset): PdfSource {
+  if (asset.kind === 'qr') throw new Error('QR codes are not exported yet');
+  return asset.kind === 'pdf'
     ? { kind: 'pdf', src: asset.src, page: asset.page, view: asset.view, pageRotation: asset.pageRotation, bytes: asset.bytes, preview: asset.preview, w: asset.w, h: asset.h }
     : { kind: 'image', src: asset.src, format: asset.format, bytes: asset.bytes, w: asset.w, h: asset.h };
+}
 
 /**
  * The document's PDF, as the file (application/pdf) that is downloaded or
@@ -57,7 +59,7 @@ export function pdfContentKey() {
   const { sheets, cuts } = getDocument();
   const piece = (item: Piece) => {
     const asset = getAsset(item.asset);
-    const file = asset.hashes?.bytes ?? asset.hashes?.src ?? `${asset.src}:${asset.name}`;
+    const file = asset.kind === 'qr' ? asset.signature : (asset.hashes?.bytes ?? asset.hashes?.src ?? `${asset.src}:${asset.name}`);
     return [file, asset.kind === 'pdf' ? asset.page : 0, asset.w, asset.h, item.x, item.y, item.scale, item.r, item.crop ?? null];
   };
   const pages = sheets

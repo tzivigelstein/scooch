@@ -155,7 +155,8 @@ export function common(values, tolerance = 1e-6) {
 /**
  * Which pieces are «the same»: those from the same source file as one of
  * `ids`. `items`: [{id, src}] (src: the asset's original file; the pages of
- * one PDF share it, and crop, scale, rotation and page don't change it).
+ * one PDF share it, and crop, scale, rotation and page don't change it; for
+ * a QR code, what it is drawn from).
  * Gives the ids, in the order of `items`.
  */
 export function sameSource(items, ids) {

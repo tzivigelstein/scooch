@@ -366,6 +366,10 @@ const en: Catalogue = {
     gapFixed: 'Spacing changed to {value}. Arrange the items to apply it.',
   },
 
+  qr: {
+    name: 'QR code',
+  },
+
   zoom: {
     control: 'Zoom',
     zoomIn: 'Zoom in',

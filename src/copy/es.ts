@@ -402,6 +402,12 @@ const es = {
     gapFixed: 'Se cambió la separación a {value}. Acomoda las piezas para aplicarla.',
   },
 
+  // QR code pieces
+  qr: {
+    // Its name in the lists and labels while it has no content (then, its content)
+    name: 'Código QR',
+  },
+
   // The canvas zoom (a screen measure: 100 % is not the printed size)
   zoom: {
     control: 'Zoom',

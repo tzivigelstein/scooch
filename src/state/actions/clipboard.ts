@@ -7,6 +7,7 @@
 // reload in between loses nothing.
 
 import { MAX_ITEMS } from '../../config.ts';
+import { sourceOf } from '../../core/projectdoc.js';
 import type { Item } from '../../core/types.ts';
 import { t } from '../../copy/index.ts';
 import { announce } from '../../components/feedback/announcer.ts';
@@ -98,16 +99,18 @@ function resolve(piece: ClipPiece, sources: Map<number, number>) {
   const loaded = assetEntries().find(([, asset]) => asset === piece.asset);
   if (loaded) return loaded[0];
   const foreign = clip!.generation !== assetGeneration();
-  let src = piece.asset.src;
-  if (foreign) {
+  const from = piece.asset;
+  // A QR code without a logo has no source file (0).
+  let src = sourceOf(from);
+  if (foreign && src) {
     if (!sources.has(src)) {
-      reserveSources(Math.max(0, ...assetEntries().map(([, asset]) => asset.src)) + 1);
+      reserveSources(Math.max(0, ...assetEntries().map(([, asset]) => sourceOf(asset))) + 1);
       sources.set(src, newSource());
     }
     src = sources.get(src)!;
   }
-  const url = URL.createObjectURL(piece.asset.preview);
-  const asset: AppAsset = piece.asset.kind === 'pdf' ? { ...piece.asset, src, url, pdf: null } : { ...piece.asset, src, url };
+  const url = URL.createObjectURL(from.preview);
+  const asset: AppAsset = from.kind === 'pdf' ? { ...from, src, url, pdf: null } : from.kind === 'qr' ? { ...from, logo: from.logo && { ...from.logo, src }, url } : { ...from, src, url };
   const key = addAsset(asset);
   // Later pastes reuse what this one added.
   piece.key = key;

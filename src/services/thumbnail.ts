@@ -36,7 +36,8 @@ export async function drawThumbnail(
   for (const item of items) {
     const img = imageOf(item);
     const asset = assetOf(item.asset);
-    if (!img?.complete || !img.naturalWidth || !asset) continue;
+    // A QR code paints itself: its picture is an SVG, which some browsers won't let a canvas read back.
+    if (!asset || (asset.kind !== 'qr' && (!img?.complete || !img.naturalWidth))) continue;
     const p = cssParams(item, asset, k);
     ctx.save();
     ctx.beginPath();
@@ -44,7 +45,9 @@ export async function drawThumbnail(
     ctx.clip();
     ctx.translate(p.left + p.img.left + p.img.width / 2, p.top + p.img.top + p.img.height / 2);
     ctx.rotate((item.r * Math.PI) / 180);
-    ctx.drawImage(img, -p.img.width / 2, -p.img.height / 2, p.img.width, p.img.height);
+    ctx.translate(-p.img.width / 2, -p.img.height / 2);
+    if (asset.kind === 'qr') asset.paint(ctx, p.img.width, p.img.height);
+    else ctx.drawImage(img!, 0, 0, p.img.width, p.img.height);
     ctx.restore();
   }
   // Encoded at once, into bytes the app keeps (storage/hash.ts), so storing it

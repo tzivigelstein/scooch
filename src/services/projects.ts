@@ -14,7 +14,7 @@
 // for it again and reloads it.
 
 import { JOURNAL_PREFIX, JOURNAL_STORAGE, LAST_PROJECT_STORAGE, TABS_CHANNEL } from '../config.ts';
-import { DEFAULT_CUTS, ProjectError, assetMeta, fileKeys, nextIds, serialize } from '../core/projectdoc.js';
+import { DEFAULT_CUTS, ProjectError, assetMeta, fileKeys, nextIds, serialize, sourceOf } from '../core/projectdoc.js';
 import { nextIdsOf, parseClip, parseHistory, serializeClip, serializeHistory } from '../core/undostore.js';
 import {
   cleanName,
@@ -477,7 +477,7 @@ function filesFor(doc: ProjectDoc) {
 function assetOfFile(key: string) {
   const [kind, ref] = key.split(':');
   const asset =
-    kind === 'preview' ? findAsset(ref) : [...allAssets().values()].find((a) => String(a.src) === ref && (kind !== 'bytes' || (a.kind === 'image' && a.derived)));
+    kind === 'preview' ? findAsset(ref) : [...allAssets().values()].find((a) => String(sourceOf(a)) === ref && (kind !== 'bytes' || (a.kind === 'image' && a.derived)));
   return asset ? { asset, kind: kind === 'src' ? ('original' as const) : (kind as 'bytes' | 'preview') } : null;
 }
 
@@ -586,7 +586,7 @@ export async function keepCut(pieces: readonly CutPiece[]) {
     const byKey = new Map([...keys].map(([asset, key]) => [key, asset]));
     const fileOf = (fileKey: string) => {
       const [kind, ref] = fileKey.split(':');
-      const asset = kind === 'preview' ? byKey.get(ref) : [...keys.keys()].find((a) => String(a.src) === ref && (kind !== 'bytes' || (a.kind === 'image' && a.derived)));
+      const asset = kind === 'preview' ? byKey.get(ref) : [...keys.keys()].find((a) => String(sourceOf(a)) === ref && (kind !== 'bytes' || (a.kind === 'image' && a.derived)));
       return asset && { asset, kind: kind === 'src' ? ('original' as const) : (kind as 'bytes' | 'preview') };
     };
     const record = serializeClip(

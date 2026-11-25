@@ -367,6 +367,10 @@ const fr: Catalogue = {
     gapFixed: 'Espacement passé à {value}. Organisez les éléments pour l’appliquer.',
   },
 
+  qr: {
+    name: 'Code QR',
+  },
+
   zoom: {
     control: 'Zoom',
     zoomIn: 'Zoom avant',

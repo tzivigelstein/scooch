@@ -408,11 +408,12 @@ export type Resolution = { vector: true } | { vector?: false; ppp: number; level
 /**
  * At how many ppi a piece prints: pixels of the visible area (with its crop)
  * over its unrotated printed width, in inches. PDF pages with no rotation of
- * their own go as vectors; rotated ones, as their preview.
+ * their own go as vectors; rotated ones, as their preview. QR codes, as
+ * vectors.
  */
 export function printResolution(item: Piece): Resolution {
   const asset = getAsset(item.asset);
-  if (asset.kind === 'pdf' && asset.pageRotation % 360 === 0) return { vector: true };
+  if (asset.kind === 'qr' || (asset.kind === 'pdf' && asset.pageRotation % 360 === 0)) return { vector: true };
   const pixels = asset.px[0] * (isIdentity(item.crop) ? 1 : item.crop!.w);
   const inches = pieceSize(asset, item).uw / 25.4;
   const ppp = Math.round(pixels / inches);

@@ -329,11 +329,12 @@ function tracedFor(wanted: NonNullable<ReturnType<typeof need>>): Traced | undef
  * Whether a piece's contour is its rectangle because its image has no
  * transparent background: a JPEG or a PDF page (drawn on white), or a PNG
  * with nothing transparent in view once it is traced. False while that
- * isn't known, and when the rectangle has another cause.
+ * isn't known, and when the rectangle has another cause: a QR code is cut
+ * along its rectangle whatever its background (its quiet zone is part of it).
  */
 export function lacksTransparency(item: Piece, margin: number, assetOf: (key: string) => AppAsset = getAsset): boolean {
   const asset = assetOf(item.asset);
-  if (!traceable(asset)) return true;
+  if (!traceable(asset)) return asset.kind !== 'qr';
   const wanted = need(item, asset, margin);
   return !!wanted && tracedFor(wanted) === 'opaque';
 }

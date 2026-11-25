@@ -9,7 +9,7 @@ import { resetHistory } from '../../src/state/history.ts';
 import { usePrefs } from '../../src/state/prefs.ts';
 import { setView } from '../../src/state/view.ts';
 import { GRID_DEFAULTS } from '../../src/config.ts';
-import type { ImageAsset, PdfAsset } from '../../src/services/assets.ts';
+import type { ImageAsset, PdfAsset, QrAsset } from '../../src/services/assets.ts';
 
 const MM_PER_INCH = 25.4;
 
@@ -78,6 +78,34 @@ export function fakePdf({ name = 'doc.pdf', src = 1, w = 148, h = 210, page = 1,
     url: 'blob:test',
     pdf: null,
     hashes: fakeHashes(src),
+  };
+  return addAsset(asset);
+}
+
+/**
+ * Adds a fake QR code asset (its fields; no picture is built) and returns its
+ * key. `modules`: its square's side in modules, quiet zone included.
+ */
+export function fakeQr({ text = 'https://scooch.app', w = 40, h = 40, modules = 29, color = '#000000', background = '#ffffff' as string | null, logo = null as QrAsset['logo'] } = {}) {
+  const asset: QrAsset = {
+    kind: 'qr',
+    text,
+    color,
+    background,
+    dots: 'square',
+    eyes: 'square',
+    caption: '',
+    logo,
+    w,
+    h,
+    name: text || 'Código QR',
+    url: 'blob:test',
+    preview: new Blob(),
+    bytes: logo?.bytes ?? new Uint8Array(),
+    hashes: { src: logo?.hash ?? '', preview: '' },
+    drawing: { version: 1, level: 'M', size: modules - 8, units: modules, dots: '', eyes: '', logo: null },
+    signature: JSON.stringify([text, color, background, logo?.hash ?? null, w, h]),
+    paint: () => {},
   };
   return addAsset(asset);
 }

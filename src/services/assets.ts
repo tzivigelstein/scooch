@@ -4,12 +4,14 @@
 // file), `original` (an image's original file, only if `derived`: what gets
 // embedded was re-encoded) and `preview` (the rasterized preview, with its URL
 // in `url`). In a restored project, the pdf.js document (`pdf`) is only opened
-// when another page is needed.
+// when another page is needed. A QR code is an asset too, drawn from its
+// fields (services/qr.ts, which loads with the first one).
 
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { sourceOf } from '../core/projectdoc.js';
-import type { AssetMeta, StoredFile } from '../core/types.ts';
+import type { QrDrawing } from '../core/qrshape.js';
+import type { AssetMeta, QrAssetMeta, QrLogoMeta, StoredFile } from '../core/types.ts';
 import { t } from '../copy/index.ts';
 import { blobOfBytes, hashBlob, hashBytes } from './storage/hash.ts';
 
@@ -63,7 +65,38 @@ export interface PdfAsset extends AssetBase {
   view: [number, number, number, number];
 }
 
-export type AppAsset = ImageAsset | PdfAsset;
+/** A QR code's logo: its file (stored as 'src:N') and its bytes, known. */
+export interface QrLogo extends QrLogoMeta {
+  bytes: Uint8Array;
+  blob: Blob;
+  hash: string;
+}
+
+/**
+ * A QR code (services/qr.ts builds it): its fields as the document keeps them,
+ * its picture (an SVG, crisp at any zoom, in `preview` and `url`) and how it
+ * is drawn (`drawing`, the same for the PDF). `bytes`: its logo's (empty
+ * without one). Editing it builds another one.
+ */
+export interface QrAsset extends Omit<QrAssetMeta, 'logo'> {
+  logo: QrLogo | null;
+  /** What lists and names call it: its text, or «Código QR» while it has none. */
+  readonly name: string;
+  url: string;
+  preview: Blob;
+  bytes: Uint8Array;
+  hashes?: AssetHashes;
+  drawing: QrDrawing;
+  /** Its fields as one text: the same for codes drawn the same («Seleccionar iguales», the PDF's key). */
+  signature: string;
+  /** Draws it into a `w` × `h` box at the origin (the projects' thumbnails). */
+  paint: (ctx: CanvasRenderingContext2D, w: number, h: number) => void;
+}
+
+export type AppAsset = ImageAsset | PdfAsset | QrAsset;
+
+/** The module that builds QR codes, loaded with the first one. */
+export const loadQr = () => import('./qr.ts');
 
 let lastSource = 0;
 
@@ -327,6 +360,7 @@ const MIME = { jpg: 'image/jpeg', png: 'image/png' } as const;
  * bytes to embed (when they differ) or the preview.
  */
 export function assetBlob(asset: AppAsset, kind: 'original' | 'bytes' | 'preview'): Blob {
+  if (asset.kind === 'qr') return asset.logo!.blob;
   if (kind === 'preview') return asset.preview;
   if (kind === 'bytes') return blobOfBytes(asset.bytes, asset.kind === 'image' ? MIME[asset.format] : 'application/pdf');
   if (asset.kind === 'image' && asset.original) return asset.original;
@@ -345,7 +379,10 @@ export async function restoreAssets(doc: { assets: Record<string, AssetMeta> }, 
   const out = new Map<string, AppAsset>();
   try {
     for (const [key, meta] of Object.entries(doc.assets)) {
-      if (meta.kind === 'qr') throw new Error('QR codes are not drawn yet');
+      if (meta.kind === 'qr') {
+        out.set(key, await (await loadQr()).restoreQr(meta, files));
+        continue;
+      }
       const derived = meta.kind === 'image' && meta.derived;
       const bytesKey = derived ? `bytes:${meta.src}` : `src:${meta.src}`;
       if (!shared.has(bytesKey)) shared.set(bytesKey, read(files.get(bytesKey)!.blob));

@@ -43,6 +43,7 @@ const SOURCE_ALLOWED: { file: string; address: RegExp; why: string }[] = [
   { file: 'index.html', address: /^http:\/\/www\.w3\.org\/2000\/svg$/, why: 'the SVG namespace of the icon, drawn from a data: URL; an identifier, never fetched' },
   { file: 'src/components/dialogs/donate.ts', address: /^https:\/\/…$/, why: 'a comment showing the shape of ?donar=' },
   { file: 'src/config.ts', address: /^https:\/\/www\.patreon\.com\/[\w-]+$/, why: 'DONATE_URL, empty today: the link the summary after printing may show, which opens Patreon in another tab only if the person follows it' },
+  { file: 'src/services/qr.ts', address: /^http:\/\/www\.w3\.org\/2000\/svg$/, why: 'the SVG namespace of a QR code’s picture, whose logo and caption it carries as data: URLs; an identifier, never fetched' },
 ];
 
 /** APIs that send or connect: the editor uses none of them. */

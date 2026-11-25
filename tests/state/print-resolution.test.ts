@@ -7,7 +7,7 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import { getDocument, setDocument, type Piece } from '../../src/state/document.ts';
 import { printResolution } from '../../src/state/actions/layout.ts';
-import { fakeImage, fakePdf, piece, resetState } from '../support/state.ts';
+import { fakeImage, fakePdf, fakeQr, piece, resetState } from '../support/state.ts';
 
 beforeEach(() => resetState());
 
@@ -70,5 +70,12 @@ describe('a PDF page', () => {
     const page = fakePdf({ name: 'rotated.pdf', pageRotation: 90 });
     expect(resolutionOf(page)).toEqual({ ppp: 144, level: 'ok' });
     expect(resolutionOf(page, { scale: 200 })).toEqual({ ppp: 72, level: 'low' });
+  });
+});
+
+describe('a QR code', () => {
+  test('it is vector: no ppp, at any size or rotation', () => {
+    const qr = fakeQr();
+    for (const props of [{ scale: 100 }, { scale: 10 }, { scale: 900, r: 90 as const }]) expect(resolutionOf(qr, props), JSON.stringify(props)).toEqual({ vector: true });
   });
 });

@@ -11,7 +11,7 @@ import { dims } from '../../src/state/selectors.ts';
 import { placeNew } from '../../src/state/actions/layout.ts';
 import { duplicate, maxCopies, setScaleField } from '../../src/state/actions/pieces.ts';
 import { selectSame, setSelection } from '../../src/state/actions/selection.ts';
-import { fakeImage, fakePdf, piece, resetState } from '../support/state.ts';
+import { fakeImage, fakePdf, fakeQr, piece, resetState } from '../support/state.ts';
 
 beforeAll(() => {
   URL.revokeObjectURL ??= () => {};
@@ -183,6 +183,18 @@ describe('selectSame', () => {
     selectSame();
     expect([...getDocument().selection].sort()).toEqual([6, 7]);
     expect(heard()).toBe('Se seleccionaron 2 piezas del mismo archivo.');
+  });
+
+  test('QR codes are the same when they are drawn the same: same content and style', () => {
+    const logo = { src: 9, format: 'png' as const, px: [10, 10] as [number, number], bytes: new Uint8Array(), blob: new Blob(), hash: 'h-logo' };
+    const menu = fakeQr({ text: 'menu', logo });
+    const menuAgain = fakeQr({ text: 'menu', logo });
+    const other = fakeQr({ text: 'wifi', logo });
+    const photo = fakeImage({ name: 'logo.png', src: 9 });
+    resetState({ items: [piece(1, menu, 10, 10), piece(2, menuAgain, 60, 10), piece(3, other, 110, 10), piece(4, photo, 10, 60)] });
+    setSelection([1]);
+    selectSame();
+    expect([...getDocument().selection].sort()).toEqual([1, 2]);
   });
 
   test('a file with one piece: it says there are no others', () => {

@@ -4,6 +4,7 @@
 // page is going away).
 import { afterEach, expect, test, vi } from 'vitest';
 import { knownBytes } from '../../src/services/storage/hash.ts';
+import type { AppAsset } from '../../src/services/assets.ts';
 import { drawThumbnail } from '../../src/services/thumbnail.ts';
 
 const context = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
@@ -33,4 +34,16 @@ test('where the browser can’t encode WebP (Safari), a PNG, said as such; an em
   vi.restoreAllMocks();
   canvasGives('data:,');
   expect(await drawThumbnail(210, 297, [], () => undefined, () => null)).toBeNull();
+});
+
+test('a QR code paints itself into its box (its picture is an SVG, which a canvas may not read back)', async () => {
+  canvasGives(`data:image/png;base64,${Buffer.from([137, 80, 78, 71]).toString('base64')}`);
+  const paint = vi.fn();
+  const qr = { kind: 'qr', w: 40, h: 40, paint } as unknown as AppAsset;
+  const item = { id: 1, asset: 'a1', sheet: 1, x: 10, y: 20, scale: 50, r: 90 as const, crop: null };
+  expect(await drawThumbnail(210, 297, [item], () => qr, () => null)).not.toBeNull();
+  // 20 mm at 220 px across 210 mm.
+  const [[ctx, w, h]] = paint.mock.calls;
+  expect(ctx).toBe(context);
+  expect([w, h]).toEqual([(20 * 220) / 210, (20 * 220) / 210]);
 });

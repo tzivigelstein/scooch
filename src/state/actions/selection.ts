@@ -104,14 +104,17 @@ export function selectAll() {
 /**
  * «Seleccionar iguales»: every piece of the document from the same source
  * file as one of the selected ones (see group.sameSource: pages of one PDF
- * count; crop, scale, rotation and page don't matter).
+ * count; crop, scale, rotation and page don't matter), or the same QR code.
  */
 export function selectSame() {
   const { selection, items, busy } = getDocument();
   if (busy) return;
   if (!selection.length) return announce(t('announce.needSelection'));
   const same = sameSource(
-    items.map((item) => ({ id: item.id, src: getAsset(item.asset).src })),
+    items.map((item) => {
+      const asset = getAsset(item.asset);
+      return { id: item.id, src: asset.kind === 'qr' ? asset.signature : asset.src };
+    }),
     new Set(selection)
   );
   setSelection(withPrimaryLast(same, selection.at(-1)), { pinned: true });

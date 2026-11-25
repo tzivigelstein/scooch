@@ -50,7 +50,7 @@ export function containScaleRange(rects: readonly Rect[], anchor: Point, W: numb
 export function groupBounds<I extends RectId>(boxes: readonly Box<I>[], ids: ReadonlySet<I>): Map<number, Rect>;
 /** The shared value (within `tolerance`), or null when they differ («Mixta»). */
 export function common(values: readonly number[], tolerance?: number): number | null;
-export function sameSource<I extends RectId>(items: readonly { id: I; src: number }[], ids: ReadonlySet<I>): I[];
+export function sameSource<I extends RectId>(items: readonly { id: I; src: number | string }[], ids: ReadonlySet<I>): I[];
 export function touchedBy<I extends RectId>(area: Rect, boxes: readonly IdRect<I>[]): I[];
 export function rangeBetween<I extends RectId>(order: readonly I[], from: I, to: I): I[];
 

@@ -334,6 +334,7 @@
   "cuts.gapNote": "Con una separación menor que {value}, las marcas tocan las piezas vecinas",
   "cuts.gapFix": "Usar separación de {value}",
   "cuts.gapFixed": "Se cambió la separación a {value}. Acomoda las piezas para aplicarla.",
+  "qr.name": "Código QR",
   "zoom.control": "Zoom",
   "zoom.zoomIn": "Acercar",
   "zoom.zoomOut": "Alejar",

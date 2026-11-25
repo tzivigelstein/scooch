@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { sourceOf } from '../../src/core/projectdoc.js';
 import { addAsset, assetEntries, getAsset, replaceAssets } from '../../src/state/assets.ts';
 import { getDocument, resetIds, setDocument, type Piece } from '../../src/state/document.ts';
 import { historyDepth, redo, resetHistory, undo } from '../../src/state/history.ts';
@@ -7,6 +8,7 @@ import { historyDepth, redo, resetHistory, undo } from '../../src/state/history.
 import { getView, setView } from '../../src/state/view.ts';
 import { copySelection, cutSelection, hasClip, pastePieces } from '../../src/state/actions/clipboard.ts';
 import { duplicate } from '../../src/state/actions/pieces.ts';
+import { fakeQr } from '../support/state.ts';
 
 beforeAll(() => {
   URL.createObjectURL ??= () => 'blob:pasted';
@@ -89,11 +91,26 @@ describe('clipboard', () => {
     const pasted = getDocument().items.at(-1)!;
     expect(pasted.asset).not.toBe('a1');
     expect(getAsset(pasted.asset).name).toBe('foto1.png');
-    expect(getAsset(pasted.asset).src).not.toBe(1);
+    expect(sourceOf(getAsset(pasted.asset))).not.toBe(1);
     // A second paste reuses the asset it added.
     pastePieces();
     expect(getDocument().items.at(-1)!.asset).toBe(pasted.asset);
     expect(assetEntries().length).toBe(2);
+  });
+
+  test('a QR code into another project: its logo gets a new source id and its picture a URL of its own', () => {
+    const logo = { src: 1, format: 'png' as const, px: [10, 10] as [number, number], bytes: new Uint8Array([1]), blob: new Blob(), hash: 'h-logo' };
+    const qr = fakeQr({ logo });
+    setDocument({ items: [piece(1, qr, 10, 10)], selection: [1] });
+    copySelection();
+    replaceAssets(new Map([['a1', { ...getAsset(key), src: 1 }]]), 2);
+    setDocument({ items: [piece(1, 'a1', 10, 10)], selection: [] });
+    resetHistory();
+    pastePieces();
+    const pasted = getAsset(getDocument().items.at(-1)!.asset);
+    expect(pasted).toMatchObject({ kind: 'qr', text: 'https://scooch.app', logo: { format: 'png', hash: 'h-logo' } });
+    expect(sourceOf(pasted)).not.toBe(1);
+    expect(pasted.url).not.toBe('blob:test');
   });
 
   test('at the 200-piece cap, pasting says no more pieces fit (not «0 piezas más») and adds nothing', () => {

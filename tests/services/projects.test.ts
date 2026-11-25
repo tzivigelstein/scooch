@@ -578,6 +578,65 @@ describe('the cut pieces', () => {
   });
 });
 
+describe('QR codes', () => {
+  const PNG = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 7]);
+
+  /** A project with a QR code with a logo (piece 1, selected), saved. */
+  async function withQr(storage = memoryStorage()) {
+    const app = await start(storage);
+    const { buildQr } = await import('../../src/services/qr.ts');
+    const { addAsset } = await import('../../src/state/assets.ts');
+    const { blobOfBytes } = await import('../../src/services/storage/hash.ts');
+    const logo = { src: 7, format: 'png' as const, px: [64, 64] as [number, number], bytes: PNG, blob: blobOfBytes(PNG, 'image/png'), hash: 'h-logo' };
+    const fields = { text: 'https://scooch.app', color: '#1f3a93', background: null, dots: 'circle' as const, eyes: 'rounded' as const, caption: '', logo };
+    const key = addAsset(await buildQr(fields, 40));
+    app.setDocument({ items: [app.support.piece(1, key, 20, 20)], selection: [1] });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(app.status()).toBe('saved');
+    return { app, buildQr, addAsset, fields };
+  }
+
+  test('a QR code is saved with its logo’s file and opens again the same', async () => {
+    const storage = memoryStorage();
+    const { app } = await withQr(storage);
+    const { doc } = await app.stored();
+    expect(Object.values(doc.assets)).toEqual([expect.objectContaining({ kind: 'qr', text: 'https://scooch.app', dots: 'circle', logo: { src: 7, format: 'png', px: [64, 64] } })]);
+    expect(await storage.files(app.projects.projectSession().record!.id)).toEqual(new Map([['src:7', { blob: expect.any(Blob), hash: 'h-logo' }]]));
+    const again = await start(storage);
+    const qr = again.getAsset(again.getDocument().items[0].asset);
+    expect(qr).toMatchObject({ kind: 'qr', text: 'https://scooch.app', color: '#1f3a93', background: null, dots: 'circle', eyes: 'rounded', logo: { src: 7, hash: 'h-logo' } });
+  });
+
+  test('an edit undoes after reopening: the code before it comes back with its logo', async () => {
+    const storage = memoryStorage();
+    const { app, buildQr, addAsset, fields } = await withQr(storage);
+    const { commit } = await import('../../src/state/history.ts');
+    const { patchItem } = await import('../../src/state/document.ts');
+    const edited = await buildQr({ ...fields, text: 'https://scooch.app/es/', logo: null }, 40);
+    // The step first: an asset no piece uses yet would be released.
+    commit();
+    patchItem(1, { asset: addAsset(edited) });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(app.status()).toBe('saved');
+    const again = await start(storage);
+    expect(again.getAsset(again.getDocument().items[0].asset)).toMatchObject({ text: 'https://scooch.app/es/', logo: null });
+    await vi.waitFor(() => expect(again.historyDepth()).toEqual({ undo: 1, redo: 0 }));
+    again.undoLast();
+    expect(again.getAsset(again.getDocument().items[0].asset)).toMatchObject({ text: 'https://scooch.app', logo: { src: 7, hash: 'h-logo' } });
+  });
+
+  test('a cut QR code pastes back after reopening', async () => {
+    const storage = memoryStorage();
+    const { app } = await withQr(storage);
+    app.clipboard.cutSelection();
+    await vi.advanceTimersByTimeAsync(1000);
+    const again = await start(storage);
+    await again.clipboard.restoreCut();
+    expect(again.clipboard.pastePieces()).toBe(true);
+    expect(again.getAsset(again.getDocument().items.at(-1)!.asset)).toMatchObject({ kind: 'qr', text: 'https://scooch.app', logo: { format: 'png' } });
+  });
+});
+
 describe('a new project (the tab may be closing)', () => {
   test('«Nuevo proyecto» writes it at once, without waiting for its lock first', async () => {
     const storage = memoryStorage();
