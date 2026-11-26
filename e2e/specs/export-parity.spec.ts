@@ -1,11 +1,13 @@
 // The exported PDF against the screen (rasterized by pdf.js in the page) for
 // what only a browser draws on both sides: a cropped and rotated image, a
-// cropped vector PDF page, a PDF page with its own /Rotate and the cut lines
-// (marks and a transparent shape's contour);
+// cropped vector PDF page, a PDF page with its own /Rotate, a styled QR code
+// (read back by jsQR on both) and the cut lines (marks and a transparent
+// shape's contour);
 // and against a committed reference, so any change to what the exporter writes
 // shows up (refresh it with --update-snapshots when the change is on purpose).
-import { expect, test, type App } from '../support/test.ts';
+import { expect, fixture, test, type App } from '../support/test.ts';
 import { embeddedFixtures, exportSummary, inkParity, rasterParity, xobjectKinds } from '../support/export-parity.ts';
+import { readQr } from '../support/qr.ts';
 
 /** The PDF looks like the sheet: a small mean difference and almost no very different pixels. */
 const MEAN = 3;
@@ -80,6 +82,34 @@ test.describe('the PDF matches the sheet on screen', () => {
     expect(parity.mean, 'mean luma difference').toBeLessThan(MEAN);
     expect(parity.big, 'share of very different pixels').toBeLessThan(BIG);
     expect(await xobjectKinds(parity.file)).toEqual(['/Image', '/Image']);
+  });
+
+  test('a QR code with rounded dots and eyes a logo a caption and its own colors turned on the sheet: the same code on both and both read back', async ({ app, page }, info) => {
+    const text = 'https://scooch.app/es/hacer-stickers-en-casa';
+    await page.locator('#add-qr').click();
+    await expect(page.locator('#qr-text')).toBeFocused();
+    await page.keyboard.type(text);
+    await page.locator('#qr-dots').getByRole('radio', { name: 'Redondeados' }).check();
+    await page.locator('#qr-eyes').getByRole('radio', { name: 'Redondeados' }).check();
+    await page.locator('#qr-color-hex').fill('#1F3A93');
+    await page.locator('#qr-color-hex').press('Enter');
+    await page.locator('#qr-background-hex').fill('#FFF8E7');
+    await page.locator('#qr-background-hex').press('Enter');
+    await page.locator('#qr-caption').fill('Escanea el menú');
+    await page.locator('#qr-logo-file').setInputFiles(fixture('sticker.png'));
+    await expect(page.locator('#qr-logo-remove')).toBeVisible();
+    await app.setMeasure('scale', 250);
+    const [id] = await app.ids();
+    await app.piece(id).focus();
+    await page.keyboard.press('r');
+    await expect.poll(async () => (await app.geometry()).pieces[0].r).toBe(90);
+    const parity = await rasterParity(app, info, 'qr-code');
+    expect(parity.mean, 'mean luma difference').toBeLessThan(MEAN);
+    expect(parity.big, 'share of very different pixels').toBeLessThan(BIG);
+    // Its modules and eyes are paths: the only images are its logo and its caption.
+    expect(await xobjectKinds(parity.file)).toEqual(['/Image', '/Image']);
+    expect(await readQr(page, parity.screen), 'the sheet reads back').toBe(text);
+    expect(await readQr(page, parity.pdf), 'the PDF reads back').toBe(text);
   });
 
   test.describe('with cut lines on', () => {
