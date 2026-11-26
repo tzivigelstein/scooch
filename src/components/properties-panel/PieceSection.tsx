@@ -28,7 +28,7 @@ import {
   TriangleAlert,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
 import type { AlignMode } from '../../core/align.js';
 import { PHOTO_SIZES } from '../../core/crop.js';
 import { common, SCALE_RANGE } from '../../core/group.js';
@@ -85,9 +85,13 @@ import { Segmented } from '../ui/Segmented.tsx';
 import { Select, type SelectOption } from '../ui/Select.tsx';
 import { announce } from '../feedback/announcer.ts';
 import { startCrop } from '../canvas/cropMode.ts';
+import { lazyContent, prefetch } from '../lazy.ts';
 import '../ui/Section.css';
 import './sections.css';
 import './PieceSection.css';
+
+/** A QR code's fields (QrFields.tsx): they load once the document has a QR code. */
+const QrFieldsContent = lazyContent(() => import('./QrFields.tsx'));
 
 /** While something loads, controls are disabled except the focused one. */
 const busyOff = (busy: boolean, selector: string) => busy && !document.activeElement?.matches(selector);
@@ -250,6 +254,11 @@ export function PieceSection() {
   const group = n > 1;
   const single = n === 1 ? list[0] : null;
 
+  const hasQr = items.some((item) => getAsset(item.asset).kind === 'qr');
+  useEffect(() => {
+    if (hasQr) prefetch(QrFieldsContent);
+  }, [hasQr]);
+
   const fields = useRef<Record<LengthFieldName, LengthFieldHandle | null>>({ x: null, y: null, width: null, height: null });
   const scaleInput = useRef<HTMLInputElement>(null);
   const slider = useRef<HTMLInputElement>(null);
@@ -330,6 +339,11 @@ export function PieceSection() {
         <p id="piece-name" className="piece-name" data-tip={asset?.name} hidden={group}>
           {name}
         </p>
+        {single && asset?.kind === 'qr' && (
+          <Suspense fallback={null}>
+            <QrFieldsContent />
+          </Suspense>
+        )}
         <div className="prop-grid">
           {FIELDS.map(({ field, id, prefix, label, tip }) => (
             // Off (on several sheets): empty, in place, saying why; nothing to show on the canvas.

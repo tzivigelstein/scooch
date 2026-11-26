@@ -11,9 +11,9 @@
 import { CAPTION_BAND, cleanQr, colorIssue, qrDrawing } from '../core/qrshape.js';
 import type { QrAssetMeta, StoredFile } from '../core/types.ts';
 import { t } from '../copy/index.ts';
-import type { QrAsset, QrLogo } from './assets.ts';
+import { FileProblem, jpegOrientation, MAX_FILE_BYTES, newSource, type QrAsset, type QrLogo } from './assets.ts';
 import type { QrPdfSource } from './pdf.ts';
-import { knownBytes } from './storage/hash.ts';
+import { blobOfBytes, hashBytes, knownBytes } from './storage/hash.ts';
 
 /** A new QR code's side at 100 %, quiet zone included (mm). */
 export const QR_SIDE = 40;
@@ -52,6 +52,51 @@ function logoImage(logo: QrLogo) {
     logoImages.set(logo, img);
   }
   return img;
+}
+
+/** A logo's longer side at the most (px): sharp at its share of a large code. */
+const LOGO_PX = 1024;
+const MAX_PIXELS = 60e6;
+
+/**
+ * An image file as a QR code's logo: a JPG or a PNG as it is when it is no
+ * larger than LOGO_PX and needs no turning (EXIF); anything else (other
+ * formats, larger ones) drawn into a PNG of at most LOGO_PX, which keeps its
+ * transparency. Its file gets a source of its own. Throws FileProblem with
+ * why it can't be used (errors.file.*).
+ */
+export async function readLogo(file: File): Promise<QrLogo> {
+  if (file.size > MAX_FILE_BYTES) throw new FileProblem(t('errors.file.tooHeavy'));
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.src = url;
+  try {
+    await img.decode();
+  } catch {
+    throw new FileProblem(t('errors.file.unsupported'));
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+  const [pw, ph] = [img.naturalWidth, img.naturalHeight];
+  if (!pw || !ph) throw new FileProblem(t('errors.file.noSize'));
+  if (pw * ph > MAX_PIXELS) throw new FileProblem(t('errors.file.tooManyPixels', { mp: Math.round((pw * ph) / 1e6) }));
+  const k = Math.min(1, LOGO_PX / Math.max(pw, ph));
+  const sniffed = bytes[0] === 0xff && bytes[1] === 0xd8 ? 'jpg' : bytes[0] === 0x89 && bytes[1] === 0x50 ? 'png' : null;
+  let data: Uint8Array = bytes;
+  let format: QrLogo['format'] = sniffed ?? 'png';
+  let px: [number, number] = [pw, ph];
+  if (!sniffed || k < 1 || (sniffed === 'jpg' && jpegOrientation(bytes) !== 1)) {
+    px = [Math.max(1, Math.round(pw * k)), Math.max(1, Math.round(ph * k))];
+    const canvas = document.createElement('canvas');
+    [canvas.width, canvas.height] = px;
+    canvas.getContext('2d')?.drawImage(img, 0, 0, px[0], px[1]);
+    const drawn = await pngBytes(canvas);
+    if (!drawn) throw new FileProblem(t('errors.file.processFailed'));
+    data = drawn;
+    format = 'png';
+  }
+  return { src: newSource(), format, px, bytes: data, blob: blobOfBytes(data, MIME[format]), hash: await hashBytes(data) };
 }
 
 // ---------- Caption ----------

@@ -408,6 +408,21 @@ const es = {
     name: 'Código QR',
     // Why «Recortar» doesn't apply to it
     noCrop: 'Un código QR no se recorta',
+    // Its fields in the Item tab: «Colores» over «Código» and «Fondo», «Forma» over «Puntos» and «Ojos» (the three finder squares)
+    text: 'Contenido',
+    caption: 'Texto debajo',
+    colors: 'Colores',
+    color: 'Código',
+    background: 'Fondo',
+    transparent: 'Transparente',
+    picker: 'Elegir color',
+    shape: 'Forma',
+    dots: 'Puntos',
+    eyes: 'Ojos',
+    shapes: { square: 'Cuadrados', rounded: 'Redondeados', circle: 'Círculos' },
+    logoAdd: 'Agregar logo',
+    logoChange: 'Cambiar logo',
+    logoRemove: 'Quitar logo',
     // What may keep it from reading (the Items list's badge and the Item tab's note); {size}: the smallest dot that reads, «0,4 mm»
     problems: {
       empty: 'El código QR está vacío',

@@ -118,6 +118,13 @@ function collectGarbage() {
   retainAssets(used);
 }
 
+/**
+ * Releases at once the assets nothing uses: an edit that keeps adding
+ * assets within one step (typing in a QR code's fields) leaves each previous
+ * one unused, and the next step would release them only later.
+ */
+export const releaseUnusedAssets = () => collectGarbage();
+
 /** The depth of each stack (for tests). */
 export const historyDepth = () => ({ undo: undoStack.length, redo: redoStack.length });
 
