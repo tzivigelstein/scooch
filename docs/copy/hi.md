@@ -63,3 +63,7 @@ here.
 | tema | थीम: अपने-आप, हल्की, गहरी | — |
 | aportar | सहयोग करें | दान करें |
 | personalizado | कस्टम | — |
+| código QR | QR कोड | बारकोड |
+| contenido / texto debajo | सामग्री / नीचे का टेक्स्ट | — |
+| puntos / ojos (de un código QR) | बिंदु / आंखें | मॉड्यूल |
+| logo | लोगो | — |

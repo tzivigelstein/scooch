@@ -258,6 +258,11 @@ mantiene gracias a personas como tú», no «Lo mantengo…»).
 | unidades | mm, cm o in para mostrar y escribir medidas | sistema de medida |
 | tema | los colores de la interfaz: automático (como el sistema), claro u oscuro; la hoja siempre es blanca | apariencia, modo |
 | personalizado | papel con ancho y alto a elección | a medida, custom |
+| código QR | la pieza que se dibuja a partir de su contenido («Agregar código QR»); sus campos en la pestaña Pieza | QR a secas, código de barras |
+| contenido | lo que lee un celular al escanear un código QR: un enlace o cualquier texto | texto, URL (como etiqueta) |
+| texto debajo | la frase corta bajo un código QR | pie, leyenda |
+| puntos / ojos | los módulos de un código QR / sus tres cuadros de las esquinas, cada uno con su forma (cuadrados, redondeados, círculos) | módulos, patrones de búsqueda |
+| logo | la imagen de la persona en el centro de un código QR («Agregar logo», «Cambiar logo», «Quitar logo») | logotipo, ícono |
 | pág. | solo en la lista de piezas, por espacio | — |
 
 Teclas: Ctrl (⌘ en Mac), Shift, Alt, Tab, Enter, Espacio, Supr, Retroceso,

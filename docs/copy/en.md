@@ -71,3 +71,7 @@ app’s names from `en.ts`, the legal pages’ included.
 | cambiar el nombre | rename | — |
 | aportar | support (on Patreon) | donate |
 | personalizado | custom | — |
+| código QR | QR code | QR alone, barcode |
+| contenido / texto debajo | content / text below | URL (as a label), caption |
+| puntos / ojos (de un código QR) | dots / eyes | modules, finder patterns |
+| logo | logo | — |

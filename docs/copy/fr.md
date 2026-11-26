@@ -64,3 +64,7 @@ where they apply. **Needs a review by a native speaker.**
 | tema | thème: automatique, clair, sombre | — |
 | aportar | soutenir | faire un don |
 | personalizado | personnalisé | sur mesure |
+| código QR | code QR | QR seul, code-barres |
+| contenido / texto debajo | contenu / texte dessous | légende |
+| puntos / ojos (de un código QR) | points / yeux | modules |
+| logo | logo | — |

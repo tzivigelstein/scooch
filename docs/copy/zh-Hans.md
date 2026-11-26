@@ -58,3 +58,7 @@ that most need it.
 | preferencias | 偏好设置 | 设置 |
 | aportar | 赞助 | 捐款 |
 | personalizado | 自定义 | — |
+| código QR | 二维码 | 条形码 |
+| contenido / texto debajo | 内容 / 下方文字 | — |
+| puntos / ojos (de un código QR) | 码点 / 码眼 | 模块 |
+| logo | 标志 | 图标 |
