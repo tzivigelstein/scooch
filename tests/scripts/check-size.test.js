@@ -96,6 +96,23 @@ describe('measuring a build', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  test('a lazy chunk with a budget of its own is its JavaScript and its CSS by name, not another chunk whose name starts the same', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'check-size-'));
+    try {
+      mkdirSync(join(dir, 'assets'));
+      writeFileSync(join(dir, 'index.html'), EDITOR);
+      for (const name of ['index-AbC123.js', 'rolldown-runtime-x1.js', 'shared-y2.js', 'qr-Cfe3uCpV.js', 'qr-engine-CpBySBtZ.js', 'QrFields-CYD9PSg0.js', 'QrFields-D6zr8BSo.css', 'index-Z9.css']) writeFileSync(join(dir, 'assets', name), 'export {};');
+      const groups = Object.fromEntries(measureBuild(dir, ['qr', 'qr-engine', 'QrFields', 'gone']).map((g) => [g.id, g.files.map((f) => f.path)]));
+      assert.deepEqual(groups['chunk:qr'], ['assets/qr-Cfe3uCpV.js']);
+      assert.deepEqual(groups['chunk:qr-engine'], ['assets/qr-engine-CpBySBtZ.js']);
+      assert.deepEqual(groups['chunk:QrFields'], ['assets/QrFields-CYD9PSg0.js', 'assets/QrFields-D6zr8BSo.css']);
+      assert.equal(groups['chunk:gone'], undefined);
+      assert.deepEqual(compare([], { chunks: { gone: { kB: 1 } } }).problems, ['chunks › gone: the build has no such chunk; remove its budget']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('comparing sizes with their budgets', () => {

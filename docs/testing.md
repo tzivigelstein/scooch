@@ -171,8 +171,10 @@ built HTML), each language's texts (a chunk of its own: only the one shown
 loads at start), every JavaScript file, the CSS it loads at start (the
 stylesheets the built HTML links, which block the first paint), every CSS file
 (with what the lazy parts bring), each
-static page (its HTML with the inline CSS) and the static pages' scripts (the
-calculator). Each budget says what it covers and the size measured when it
+static page (its HTML with the inline CSS), the static pages' scripts (the
+calculator) and the lazy chunks with a budget of their own («chunks»: a
+chunk's JavaScript and CSS by its name, like the QR codes' `qr-engine`). Each
+budget says what it covers and the size measured when it
 was set; it is that size plus about 5 %, rounded up.
 
 When a size grows on purpose, set the budget to the new size plus about 5 %

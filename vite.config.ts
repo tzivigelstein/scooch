@@ -10,6 +10,9 @@ const packageOf = (id: string | null | undefined) => id?.match(/node_modules[\\/
 /** The language whose texts the module is (src/copy/<language>.ts), or undefined. */
 const catalogueOf = (id: string | null | undefined) => LANGUAGES.find((language) => id?.replace(/\\/g, '/').endsWith(`/src/copy/${language}.ts`));
 
+/** Whether a chunk holds what builds QR codes (src/services/qr.ts). */
+const isQrEngine = (ids: readonly string[]) => ids.some((id) => id.replace(/\\/g, '/').endsWith('/src/services/qr.ts'));
+
 type Output = { type: 'chunk' | 'asset'; fileName: string; facadeModuleId?: string | null; originalFileNames?: readonly string[]; source?: string | Uint8Array };
 
 /**
@@ -90,9 +93,11 @@ export default defineConfig({
         // Each language's texts are «copy-<language>-[hash].js». The chunk the
         // entry shares with the lazy dialogs (React's shared part, storage) has
         // no entry module: «shared» says what it is, instead of the name of
-        // whichever module the bundler picks.
+        // whichever module the bundler picks. What builds QR codes (the encoder,
+        // their drawing and picture), shared by the lazy parts that load it, is
+        // «qr-engine»: it has a size budget of its own.
         chunkFileNames: (chunk) =>
-          `assets/${packageOf(chunk.facadeModuleId)?.replace('/', '-') ?? (catalogueOf(chunk.facadeModuleId) ? 'copy-[name]' : chunk.facadeModuleId || chunk.name === 'rolldown-runtime' ? '[name]' : 'shared')}-[hash].js`,
+          `assets/${packageOf(chunk.facadeModuleId)?.replace('/', '-') ?? (catalogueOf(chunk.facadeModuleId) ? 'copy-[name]' : chunk.facadeModuleId || chunk.name === 'rolldown-runtime' ? '[name]' : isQrEngine(chunk.moduleIds) ? 'qr-engine' : 'shared')}-[hash].js`,
       },
     },
   },

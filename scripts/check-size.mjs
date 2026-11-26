@@ -18,7 +18,10 @@ const BUDGETS = join(ROOT, 'scripts/size-budgets.json');
 export const ANY_PAGE = '*';
 
 /** Groups measured one by one, by the prefix of their id, and the budgets they take. */
-const KEYED = Object.freeze({ 'page:': 'pages', 'language:': 'languages' });
+const KEYED = Object.freeze({ 'page:': 'pages', 'language:': 'languages', 'chunk:': 'chunks' });
+
+/** A lazy chunk's files (its JavaScript and its CSS): «assets/<name>-<8-character hash>.js|css». */
+export const chunkFiles = (all, name) => all.filter((p) => p.startsWith(`assets/${name}-`) && /^[\w-]{8}\.(?:m?js|css)$/.test(p.slice(`assets/${name}-`.length)));
 
 /** Bytes after gzip at its highest level, as a server that compresses ahead of time sends them. */
 export const gzipSize = (bytes) => gzipSync(bytes, { level: 9 }).length;
@@ -140,8 +143,11 @@ const filesUnder = (dir) =>
     .map((d) => relative(dir, join(d.parentPath, d.name)).split(sep).join('/'))
     .sort();
 
-/** The groups the budgets cover, measured in the build folder `dir`. */
-export function measureBuild(dir) {
+/**
+ * The groups the budgets cover, measured in the build folder `dir`. `chunks`:
+ * the names of the lazy chunks with a budget of their own («chunks»).
+ */
+export function measureBuild(dir, chunks = []) {
   const sizes = new Map();
   const file = (path) => {
     if (!sizes.has(path)) {
@@ -171,6 +177,10 @@ export function measureBuild(dir) {
     { id: 'initialCss', label: 'editor: CSS loaded at start', files: local(eagerStyles(editor)) },
     { id: 'totalCss', label: 'CSS, every file', files: all.filter((p) => p.endsWith('.css')).map(file) },
     { id: 'pageScripts', label: 'static pages: their scripts', files: local(pages.flatMap((p) => scriptSources(readFileSync(join(dir, p), 'utf8')))) },
+    ...chunks.flatMap((name) => {
+      const files = chunkFiles(all, name);
+      return files.length ? [{ id: `chunk:${name}`, label: `lazy chunk: ${name} (${files.map((p) => p.split('.').pop()).join(' + ')})`, files: files.map(file) }] : [];
+    }),
     ...pages.map((p) => ({ id: `page:${p}`, label: p, files: [file(p)] })),
     ...(largest ? [{ id: 'pageFirstVisit', label: `static pages: first visit, the largest (${largest.page})`, files: largest.files }] : []),
   ];
@@ -182,7 +192,8 @@ function main() {
     console.error(`No build in ${process.argv[2] ?? 'dist'}: run \`yarn build\` first.`);
     process.exit(1);
   }
-  const { rows, problems } = compare(measureBuild(dir), JSON.parse(readFileSync(BUDGETS, 'utf8')));
+  const budgets = JSON.parse(readFileSync(BUDGETS, 'utf8'));
+  const { rows, problems } = compare(measureBuild(dir, Object.keys(budgets.chunks ?? {})), budgets);
   console.log(formatTable(rows));
   const over = rows.filter((r) => r.over);
   for (const p of problems) console.error(`\n${p}`);

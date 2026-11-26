@@ -27,10 +27,27 @@
       "what": "Hindi's texts: Devanagari takes three bytes a letter in UTF-8, so the same texts weigh more than in the other languages. Its font (about 121 kB of woff2, the Devanagari subset of Noto Sans Devanagari) isn't JavaScript and loads only with them."
     }
   },
+  "chunks": {
+    "qr-engine": {
+      "kB": 7.1,
+      "measured": 6.8,
+      "what": "What builds QR codes in the page (src/core/qrcode.js, the encoder; src/core/qrshape.js, their paths, logo room and colors; src/services/qr.ts, their picture, caption and PDF source): a lazy chunk, loaded with the first QR code added or opened. Most of it is the encoder's tables and Reed–Solomon."
+    },
+    "qr": {
+      "kB": 1.1,
+      "measured": 1.0,
+      "what": "Adding and editing QR codes (src/state/actions/qr.ts): loaded with «Agregar código QR» or the first QR code's fields."
+    },
+    "QrFields": {
+      "kB": 2.4,
+      "measured": 2.2,
+      "what": "A QR code's fields in the Item tab (src/components/properties-panel/QrFields.tsx) and their stylesheet: loaded once the document has a QR code."
+    }
+  },
   "totalJs": {
     "kB": 1184,
     "measured": 1126.9,
-    "what": "Every .js and .mjs file of the build: the editor's lazy chunks (dialogs, crop mode, each language's texts, of which only one loads), pdf.js and its worker (about 500 kB), pdf-lib twice (about 180 kB each: the export worker's, which builds the PDF, and the page's, which loads only when the worker can't), the contour and export workers and the static pages' scripts. Catches a dependency that grows or gets in by accident."
+    "what": "Every .js and .mjs file of the build: the editor's lazy chunks (dialogs, crop mode, QR codes, each language's texts, of which only one loads), pdf.js and its worker (about 500 kB), pdf-lib twice (about 180 kB each: the export worker's, which builds the PDF, and the page's, which loads only when the worker can't), the contour and export workers and the static pages' scripts. Catches a dependency that grows or gets in by accident."
   },
   "initialCss": {
     "kB": 13.1,
@@ -40,7 +57,7 @@
   "totalCss": {
     "kB": 19.9,
     "measured": 18.9,
-    "what": "Every .css file of the build: the editor's stylesheet, the lazy parts' (the dialogs but «confirm», the menus, crop mode, the command palette, the summary after printing: each compressed on its own, about 0.3 to 2.4 kB, loaded when the app is idle or the part opens) and Hindi's font rule (devanagari-*.css, about 0.25 kB, loaded only with Hindi). The static pages carry their CSS inline (counted in each page)."
+    "what": "Every .css file of the build: the editor's stylesheet, the lazy parts' (the dialogs but «confirm», the menus, crop mode, the command palette, the summary after printing, a QR code's fields: each compressed on its own, about 0.3 to 2.4 kB, loaded when the app is idle or the part opens) and Hindi's font rule (devanagari-*.css, about 0.25 kB, loaded only with Hindi). The static pages carry their CSS inline (counted in each page)."
   },
   "pageScripts": {
     "kB": 6.5,
