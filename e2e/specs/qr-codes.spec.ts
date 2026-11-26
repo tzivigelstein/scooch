@@ -28,6 +28,22 @@ async function readPiece(app: App, id: number) {
 }
 
 test.describe('adding and editing a QR code', () => {
+  test('the Content field stops growing at a set height and scrolls its text', async ({ app, page }) => {
+    await addQr(app);
+    const field = page.locator('#qr-text');
+    await field.fill(Array.from({ length: 40 }, () => TEXT).join('\n'));
+    // What dragging the field's corner does: the browser writes a height on it.
+    await field.evaluate((el: HTMLElement) => (el.style.height = '4000px'));
+    const { height, limit, scrolls } = await field.evaluate((el) => ({
+      height: el.getBoundingClientRect().height,
+      limit: parseFloat(getComputedStyle(el).maxHeight),
+      scrolls: el.scrollHeight > el.clientHeight,
+    }));
+    expect(limit).toBeGreaterThan(0);
+    expect(height).toBeLessThanOrEqual(limit + 0.5);
+    expect(scrolls).toBe(true);
+  });
+
   test('Agregar código QR in the top bar adds an empty code to the sheet that its row says is empty and focuses its content', async ({ app, page }) => {
     const id = await addQr(app);
     await expect(app.row(id).locator('.row-name')).toHaveText('Código QR');
