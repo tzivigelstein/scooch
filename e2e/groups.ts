@@ -19,6 +19,7 @@ export const SPEC_GROUPS = {
     'piece-toolbar',
     'pinch-zoom',
     'pointer-editing',
+    'qr-codes',
     'reveal-from-list',
     'selection-and-group',
     'sheets',
