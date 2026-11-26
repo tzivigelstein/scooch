@@ -8,7 +8,7 @@
 // scroll, enough contrast inside modal dialogs. Screenshots of each state (up
 // to 1440 px) are attached to the report. See e2e/support/accessibility.ts.
 import type { Locator, Page } from '@playwright/test';
-import { App, cards, expect, norm, test } from '../support/test.ts';
+import { App, cards, expect, fixture, norm, test } from '../support/test.ts';
 import { Catalogue, DESKTOP, MEDIUM, PHONE, SCHEMES, WIDE, axeSummary, readLayout, scan, sizeTitle, type Size } from '../support/accessibility.ts';
 import { holdApp, skeletonShown } from '../support/boot.ts';
 import { movesOutsideWindow } from '../support/pointer.ts';
@@ -156,6 +156,32 @@ flow('editing', [DESKTOP, MEDIUM, PHONE], async (c, app) => {
   await app.showTab('piece');
   await expect(page.locator('#opaque-note')).toBeVisible();
   await c.state('Contour cut lines on images without a transparent background: their badges and the note');
+});
+
+// ---------- QR codes ----------
+
+flow('QR codes', [DESKTOP, MEDIUM, PHONE], async (c, app) => {
+  const page = c.page;
+  if (c.narrow) {
+    // The top bar of a phone has no room for it: the «Piezas» panel has it.
+    await page.locator('#pieces-dock').click();
+    await expect(page.locator('#pieces-panel.is-open')).toBeVisible();
+    await page.locator('#add-qr-zone').click();
+  } else await page.locator('#add-qr').click();
+  await expect(app.pieces()).toHaveCount(1);
+  await expect(page.locator('#qr-fields')).toBeVisible();
+  await expect(page.locator('#piece-list .row-badge[data-kind="qr"]')).toHaveCount(1);
+  await c.state('a new QR code: its fields and its badge saying it is empty');
+
+  await page.locator('#qr-text').fill('https://scooch.app/es/');
+  await page.locator('#qr-caption').fill('Escanea el menú');
+  await page.getByRole('switch', { name: 'Transparente' }).check();
+  await page.locator('#qr-color-hex').fill('#FFD400');
+  await page.locator('#qr-color-hex').press('Enter');
+  await page.locator('#qr-logo-file').setInputFiles(fixture('sticker.png'));
+  await expect(page.locator('#qr-logo-remove')).toBeVisible();
+  await expect(page.locator('#resolution-note')).toHaveAttribute('data-level', 'low');
+  await c.state('a QR code with a caption a logo and a transparent background: its fields and the note that it has too little contrast');
 });
 
 // ---------- Printing: the advice before, the summary after ----------
