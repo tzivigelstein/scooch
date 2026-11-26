@@ -161,12 +161,14 @@
   }
 
   .row-badge[data-kind="pastMargin"],
-  .row-badge[data-kind="lowRes"] {
+  .row-badge[data-kind="lowRes"],
+  .row-badge[data-kind="qr"] {
     color: var(--warn-text);
   }
 
   :root:not([data-theme="dark"]) .row-badge[data-kind="pastMargin"],
-  :root:not([data-theme="dark"]) .row-badge[data-kind="lowRes"] {
+  :root:not([data-theme="dark"]) .row-badge[data-kind="lowRes"],
+  :root:not([data-theme="dark"]) .row-badge[data-kind="qr"] {
     color: #8a4b00;
   }
 

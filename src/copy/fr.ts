@@ -370,6 +370,12 @@ const fr: Catalogue = {
   qr: {
     name: 'Code QR',
     noCrop: 'Un code QR ne se recadre pas',
+    problems: {
+      empty: 'Le code QR est vide',
+      contrast: 'Peu de contraste : il risque de ne pas se lire',
+      inverted: 'Plus clair que son fond : beaucoup de téléphones ne le lisent pas',
+      small: 'Points de moins de {size} : il risque de ne pas se lire',
+    },
   },
 
   zoom: {

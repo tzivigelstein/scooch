@@ -89,6 +89,8 @@ export interface QrAsset extends Omit<QrAssetMeta, 'logo'> {
   drawing: QrDrawing;
   /** Its fields as one text: the same for codes drawn the same («Seleccionar iguales», the PDF's key). */
   signature: string;
+  /** What keeps it from reading at any size: no content, too little contrast, or lighter than its background (qrshape.colorIssue). */
+  issue: 'empty' | 'contrast' | 'inverted' | null;
   /** Draws it into a `w` × `h` box at the origin (the projects' thumbnails). */
   paint: (ctx: CanvasRenderingContext2D, w: number, h: number) => void;
 }

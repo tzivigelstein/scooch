@@ -21,7 +21,7 @@ import { usePrefs } from '../../state/prefs.ts';
 import { dims, problemsById } from '../../state/selectors.ts';
 import { closeDrawer, isDrawerOpen } from '../../state/actions/drawers.ts';
 import { focusSheet } from '../../state/actions/focus.ts';
-import { printResolution } from '../../state/actions/layout.ts';
+import { printResolution, qrProblem } from '../../state/actions/layout.ts';
 import { remove } from '../../state/actions/pieces.ts';
 import { focusPiece, select, selectRange, toggleInSelection } from '../../state/actions/selection.ts';
 import { flushUi } from '../../state/flush.ts';
@@ -37,11 +37,13 @@ const THUMB_REM = 1.875;
 // Each row's badges (their text is in pieces.badges.<key>). Scissors are «Cortar»: sticking out has its own icon.
 // Why an image's Contour line is its rectangle is something to know, not a problem: the info icon
 // (a hollow square would read as a checkbox).
-const BADGES: readonly { key: 'cut' | 'pastMargin' | 'overlap' | 'lowRes' | 'opaque'; icon: LucideIcon }[] = [
+// A QR code that may not scan says why (qrProblem), where an image may look pixelated.
+const BADGES: readonly { key: 'cut' | 'pastMargin' | 'overlap' | 'lowRes' | 'qr' | 'opaque'; icon: LucideIcon }[] = [
   { key: 'cut', icon: SquareArrowOutDownRight },
   { key: 'pastMargin', icon: SquareDashed },
   { key: 'overlap', icon: Layers },
   { key: 'lowRes', icon: TriangleAlert },
+  { key: 'qr', icon: TriangleAlert },
   { key: 'opaque', icon: Info },
 ];
 
@@ -68,7 +70,8 @@ const Row = memo(function Row({ item, selected, tabStop, cut, pastMargin, overla
   const paged = asset.kind === 'pdf' && asset.pages > 1;
   const res = printResolution(item);
   const thumb = thumbView(item, asset, THUMB_REM);
-  const flags = { cut, pastMargin, overlap, lowRes: !res.vector && res.level === 'low', opaque };
+  const qr = qrProblem(item);
+  const flags = { cut, pastMargin, overlap, lowRes: !res.vector && res.level === 'low', qr: !!qr, opaque };
   const size = t(paged ? 'pieces.rowSizePage' : 'pieces.rowSize', { size: sizeText(w, h), page: asset.kind === 'pdf' ? asset.page : 1 });
   // Both lines can be cut with «…» in a narrow list: the tooltip has them whole.
   return (
@@ -93,7 +96,7 @@ const Row = memo(function Row({ item, selected, tabStop, cut, pastMargin, overla
       </span>
       <span className="row-badges">
         {BADGES.filter((badge) => flags[badge.key]).map((badge) => {
-          const text = t(`pieces.badges.${badge.key}`);
+          const text = badge.key === 'qr' ? qr! : t(`pieces.badges.${badge.key}`);
           return (
             <span key={badge.key} className="row-badge" data-kind={badge.key} data-tip={text}>
               <Icon icon={badge.icon} />

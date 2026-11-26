@@ -86,7 +86,7 @@ export function fakePdf({ name = 'doc.pdf', src = 1, w = 148, h = 210, page = 1,
  * Adds a fake QR code asset (its fields; no picture is built) and returns its
  * key. `modules`: its square's side in modules, quiet zone included.
  */
-export function fakeQr({ text = 'https://scooch.app', w = 40, h = 40, modules = 29, color = '#000000', background = '#ffffff' as string | null, logo = null as QrAsset['logo'] } = {}) {
+export function fakeQr({ text = 'https://scooch.app', w = 40, h = 40, modules = 29, color = '#000000', background = '#ffffff' as string | null, logo = null as QrAsset['logo'], issue = null as QrAsset['issue'] } = {}) {
   const asset: QrAsset = {
     kind: 'qr',
     text,
@@ -105,6 +105,7 @@ export function fakeQr({ text = 'https://scooch.app', w = 40, h = 40, modules = 
     hashes: { src: logo?.hash ?? '', preview: '' },
     drawing: { version: 1, level: 'M', size: modules - 8, units: modules, dots: '', eyes: '', logo: null },
     signature: JSON.stringify([text, color, background, logo?.hash ?? null, w, h]),
+    issue,
     paint: () => {},
   };
   return addAsset(asset);

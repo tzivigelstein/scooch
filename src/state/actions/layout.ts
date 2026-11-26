@@ -10,7 +10,7 @@ import { arrangeSheets, placeIntoSheets, samePlan, type ArrangePlan } from '../.
 import type { Item } from '../../core/types.ts';
 import { clamp, tidy } from '../../core/util.js';
 import { formatList, sentences, t } from '../../copy/index.ts';
-import { paperName } from '../../services/measure.ts';
+import { lengthText, paperName } from '../../services/measure.ts';
 import { getAsset } from '../assets.ts';
 import { getDocument, newItem, newItemId, newSheetId, setDocument, type Piece } from '../document.ts';
 import { commit } from '../history.ts';
@@ -418,6 +418,26 @@ export function printResolution(item: Piece): Resolution {
   const inches = pieceSize(asset, item).uw / 25.4;
   const ppp = Math.round(pixels / inches);
   return { ppp, level: ppp >= 200 ? 'good' : ppp >= 120 ? 'ok' : 'low' };
+}
+
+// ---------- QR codes that may not scan ----------
+
+/**
+ * The smallest module a QR code prints readable with (mm): under it, a home
+ * printer's ink spreads and a phone's camera blurs a module into the next.
+ * Printers' guides ask for 0.33 mm at the least; this leaves room for both.
+ */
+export const MIN_QR_MODULE = 0.4;
+
+/**
+ * Why a QR code piece may not scan as it prints (one sentence: the list's
+ * badge and the Item tab's note), or null; null for any other piece.
+ */
+export function qrProblem(item: Piece): string | null {
+  const asset = getAsset(item.asset);
+  if (asset.kind !== 'qr') return null;
+  if (asset.issue) return t(`qr.problems.${asset.issue}`);
+  return pieceSize(asset, item).uw / asset.drawing.units < MIN_QR_MODULE ? t('qr.problems.small', { size: lengthText(MIN_QR_MODULE) }) : null;
 }
 
 // ---------- Fill with copies (the piece's sheet) ----------

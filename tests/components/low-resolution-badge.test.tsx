@@ -6,7 +6,7 @@ import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { PieceList } from '../../src/components/pieces-panel/PieceList.tsx';
 import { setDocument, type Piece } from '../../src/state/document.ts';
-import { fakeImage, fakePdf, piece, resetState } from '../support/state.ts';
+import { fakeImage, fakePdf, fakeQr, piece, resetState } from '../support/state.ts';
 
 beforeAll(() => {
   URL.revokeObjectURL ??= () => {};
@@ -56,5 +56,18 @@ describe('low-resolution badge in the list', () => {
     show([piece(1, rotated, 10, 10), piece(2, rotated, 10, 70, { scale: 200 })]);
     expect(badges(1)).toEqual([]);
     expect(badges(2)).toEqual(['lowRes']);
+  });
+});
+
+describe('a QR code that may not scan', () => {
+  test('its row says why with the same warning badge, which goes when the reason does', () => {
+    show([piece(1, fakeQr({ w: 40, modules: 29 }), 10, 10, { scale: 20 }), piece(2, fakeQr({ text: 'x', issue: 'inverted' }), 10, 80)]);
+    expect(badges(1)).toEqual(['qr']);
+    const badge = document.querySelector<HTMLElement>('#piece-list [data-id="1"] .row-badge[data-kind="qr"]')!;
+    expect(badge.dataset.tip!.replace(/\u00a0/g, ' ')).toBe('Puntos de menos de 0,4 mm: puede que no se lea');
+    expect(badge.querySelector('.sr-only')!.textContent!.replace(/\u00a0/g, ' ')).toBe('. Puntos de menos de 0,4 mm: puede que no se lea');
+    expect(document.querySelector<HTMLElement>('#piece-list [data-id="2"] .row-badge[data-kind="qr"]')!.dataset.tip).toBe('Más claro que su fondo: muchos celulares no lo leen');
+    show([piece(1, fakeQr({ w: 40, modules: 29 }), 10, 10, { scale: 50 })]);
+    expect(badges(1)).toEqual([]);
   });
 });

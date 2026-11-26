@@ -83,6 +83,13 @@ describe('buildQr', () => {
     expect((await buildQr({ ...FIELDS, text: '' }, 40)).name).toBe('Código QR');
   });
 
+  test('it knows what keeps it from reading at any size: no content or its colors', async () => {
+    expect((await buildQr(FIELDS, 40)).issue).toBeNull();
+    expect((await buildQr({ ...FIELDS, text: '' }, 40)).issue).toBe('empty');
+    expect((await buildQr({ ...FIELDS, color: '#ffffff', background: '#000000' }, 40)).issue).toBe('inverted');
+    expect((await buildQr({ ...FIELDS, color: '#dddddd', background: null }, 40)).issue).toBe('contrast');
+  });
+
   test('codes drawn the same have the same signature', async () => {
     const a = await buildQr(FIELDS, 40);
     expect((await buildQr({ ...FIELDS }, 40)).signature).toBe(a.signature);

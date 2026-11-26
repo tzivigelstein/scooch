@@ -49,7 +49,7 @@ import { dims, sheetIndex } from '../../state/selectors.ts';
 import { setView, useView } from '../../state/view.ts';
 import { applyPhotoSize, photoSizeName, selectionPhotoSize } from '../../state/actions/crop.ts';
 import { changePage } from '../../state/actions/files.ts';
-import { fillSummary, fillWithCopies, printResolution } from '../../state/actions/layout.ts';
+import { fillSummary, fillWithCopies, printResolution, qrProblem } from '../../state/actions/layout.ts';
 import {
   actualSize,
   alignSelection,
@@ -101,6 +101,9 @@ const QUALITY: Record<'vector' | 'good' | 'ok' | 'low', { icon: LucideIcon; note
 };
 
 function resolution(item: Piece) {
+  // A QR code that may not scan says why where an image says it may look pixelated.
+  const problem = qrProblem(item);
+  if (problem) return { level: 'low' as const, text: problem };
   const res = printResolution(item);
   const level: keyof typeof QUALITY = res.vector ? 'vector' : res.level;
   const note = QUALITY[level].note;

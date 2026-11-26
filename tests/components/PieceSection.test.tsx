@@ -129,6 +129,14 @@ describe('a QR code', () => {
     show([piece(1, qr, 30, 30), piece(2, photo, 100, 30)], [1, 2]);
     expect($('photo-size').closest('.photo-row')!.hasAttribute('hidden')).toBe(false);
   });
+
+  test('one that may not scan says why where an image says it may look pixelated, as a warning', () => {
+    show([piece(1, fakeQr({ w: 40, modules: 29 }), 30, 30, { scale: 20 })]);
+    expect($('resolution-note').dataset.level).toBe('low');
+    expect($('resolution-text').textContent!.replace(/ /g, ' ')).toBe('Puntos de menos de 0,4 mm: puede que no se lea');
+    show([piece(1, fakeQr({ issue: 'contrast' }), 30, 30)]);
+    expect($('resolution-text').textContent).toBe('Poco contraste: puede que no se lea');
+  });
 });
 
 describe('quick actions', () => {

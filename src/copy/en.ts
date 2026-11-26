@@ -369,6 +369,12 @@ const en: Catalogue = {
   qr: {
     name: 'QR code',
     noCrop: 'A QR code can’t be cropped',
+    problems: {
+      empty: 'The QR code is empty',
+      contrast: 'Low contrast: it may not scan',
+      inverted: 'Lighter than its background: many phones can’t scan it',
+      small: 'Dots under {size}: it may not scan',
+    },
   },
 
   zoom: {

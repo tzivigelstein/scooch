@@ -369,6 +369,12 @@ const zhHans: Catalogue = {
   qr: {
     name: '二维码',
     noCrop: '二维码不能裁剪',
+    problems: {
+      empty: '二维码没有内容',
+      contrast: '对比度太低，可能无法扫描',
+      inverted: '比背景颜色浅，很多手机无法扫描',
+      small: '码点小于{size}，可能无法扫描',
+    },
   },
 
   zoom: {

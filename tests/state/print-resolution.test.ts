@@ -6,7 +6,7 @@
 // The crop's effect is in crop.test.ts.
 import { beforeEach, describe, expect, test } from 'vitest';
 import { getDocument, setDocument, type Piece } from '../../src/state/document.ts';
-import { printResolution } from '../../src/state/actions/layout.ts';
+import { MIN_QR_MODULE, printResolution, qrProblem } from '../../src/state/actions/layout.ts';
 import { fakeImage, fakePdf, fakeQr, piece, resetState } from '../support/state.ts';
 
 beforeEach(() => resetState());
@@ -77,5 +77,34 @@ describe('a QR code', () => {
   test('it is vector: no ppp, at any size or rotation', () => {
     const qr = fakeQr();
     for (const props of [{ scale: 100 }, { scale: 10 }, { scale: 900, r: 90 as const }]) expect(resolutionOf(qr, props), JSON.stringify(props)).toEqual({ vector: true });
+  });
+
+  /** Why a single piece of `asset` may not scan, with `props` on top of the defaults. */
+  function problemOf(asset: string, props: Partial<Piece> = {}) {
+    setDocument({ items: [piece(1, asset, 20, 20, props)] });
+    // Plain spaces (a length's unit goes after a non-breaking one).
+    return qrProblem(getDocument().items[0])?.replace(/\u00a0/g, ' ') ?? null;
+  }
+
+  test('it may not scan when its dots print under 0.4 mm: 40 mm across 29 modules is 0.4 mm at 29 %', () => {
+    const qr = fakeQr({ w: 40, modules: 29 });
+    expect(MIN_QR_MODULE).toBe(0.4);
+    expect(problemOf(qr)).toBeNull();
+    expect(problemOf(qr, { scale: 29.1 })).toBeNull();
+    expect(problemOf(qr, { scale: 28.9 })).toBe('Puntos de menos de 0,4 mm: puede que no se lea');
+    // Turned, its dots are the same size.
+    expect(problemOf(qr, { scale: 28.9, r: 90 })).toBe('Puntos de menos de 0,4 mm: puede que no se lea');
+    expect(problemOf(fakeQr({ w: 40, modules: 185 }), { scale: 100 })).toBe('Puntos de menos de 0,4 mm: puede que no se lea');
+  });
+
+  test('without content or with colors that keep it from reading it says so at any size', () => {
+    expect(problemOf(fakeQr({ text: '', issue: 'empty' }))).toBe('El código QR está vacío');
+    expect(problemOf(fakeQr({ issue: 'contrast' }))).toBe('Poco contraste: puede que no se lea');
+    expect(problemOf(fakeQr({ issue: 'inverted' }))).toBe('Más claro que su fondo: muchos celulares no lo leen');
+  });
+
+  test('an image or a PDF page has no such problem', () => {
+    expect(problemOf(fakeImage({ px: [10, 10] }), { scale: 1 })).toBeNull();
+    expect(problemOf(fakePdf())).toBeNull();
   });
 });

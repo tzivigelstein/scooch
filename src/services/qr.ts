@@ -8,7 +8,7 @@
 // nothing is downloaded and every script shows. The PDF gets the same raster
 // at print resolution (services/export.ts), so both show the same glyphs.
 
-import { CAPTION_BAND, cleanQr, qrDrawing } from '../core/qrshape.js';
+import { CAPTION_BAND, cleanQr, colorIssue, qrDrawing } from '../core/qrshape.js';
 import type { QrAssetMeta, StoredFile } from '../core/types.ts';
 import { t } from '../copy/index.ts';
 import type { QrAsset, QrLogo } from './assets.ts';
@@ -153,6 +153,7 @@ export async function buildQr(fields: QrFields, w: number, h = w): Promise<QrAss
     hashes: { src: logo?.hash ?? '', preview: '' },
     drawing,
     signature: JSON.stringify([qr.text, qr.color, qr.background, qr.dots, qr.eyes, qr.caption, logo?.hash ?? null, w, height]),
+    issue: qr.text ? colorIssue(qr.color, qr.background) : 'empty',
     paint(ctx, bw, bh) {
       ctx.save();
       ctx.scale(bw / u, bh / (u + band));

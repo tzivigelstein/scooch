@@ -408,6 +408,13 @@ const es = {
     name: 'Código QR',
     // Why «Recortar» doesn't apply to it
     noCrop: 'Un código QR no se recorta',
+    // What may keep it from reading (the Items list's badge and the Item tab's note); {size}: the smallest dot that reads, «0,4 mm»
+    problems: {
+      empty: 'El código QR está vacío',
+      contrast: 'Poco contraste: puede que no se lea',
+      inverted: 'Más claro que su fondo: muchos celulares no lo leen',
+      small: 'Puntos de menos de {size}: puede que no se lea',
+    },
   },
 
   // The canvas zoom (a screen measure: 100 % is not the printed size)
