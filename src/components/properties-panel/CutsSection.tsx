@@ -5,8 +5,7 @@
 // whether «Más opciones» is open is remembered in this browser.
 
 import { Ban, Scan, Shapes, Square, type LucideIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { CUT_COLORS, CUT_WEIGHTS, isHexColor } from '../../core/cutmarks.js';
+import { CUT_COLORS, CUT_WEIGHTS } from '../../core/cutmarks.js';
 import { CUT_LIMITS } from '../../core/projectdoc.js';
 import type { CutDash, CutMode, CutWeight } from '../../core/types.ts';
 import { t } from '../../copy/index.ts';
@@ -15,6 +14,7 @@ import { getDocument, useDocument } from '../../state/document.ts';
 import { endEdit } from '../../state/history.ts';
 import { setCutOptionsOpen, usePrefs } from '../../state/prefs.ts';
 import { gapForCuts, setCuts, useGapForCuts } from '../../state/actions/sheets.ts';
+import { ColorField } from '../ui/ColorField.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { LengthField } from '../ui/LengthField.tsx';
 import { Section } from '../ui/Section.tsx';
@@ -33,54 +33,6 @@ type ColorChoice = 'black' | 'gray' | 'custom';
 const colorChoice = (color: string): ColorChoice => (color.toLowerCase() === CUT_COLORS.black ? 'black' : color.toLowerCase() === CUT_COLORS.gray ? 'gray' : 'custom');
 /** The color «Otro» starts from when the current one is a preset. */
 const FIRST_CUSTOM = '#1f6feb';
-
-function HexField({ color }: { color: string }) {
-  const [text, setText] = useState(color.toUpperCase());
-  const [invalid, setInvalid] = useState(false);
-  useEffect(() => {
-    if (document.activeElement?.id !== 'cut-hex') setText(color.toUpperCase());
-  }, [color]);
-  const confirm = () => {
-    const value = text.trim().startsWith('#') ? text.trim() : `#${text.trim()}`;
-    if (isHexColor(value)) {
-      setInvalid(false);
-      setText(value.toUpperCase());
-      setCuts({ color: value.toLowerCase() }, { final: true });
-    } else setInvalid(true);
-  };
-  return (
-    <>
-      <input
-        id="cut-hex"
-        type="text"
-        className="hex-input"
-        value={text}
-        maxLength={7}
-        spellCheck={false}
-        autoComplete="off"
-        aria-label={t('cuts.hex')}
-        aria-invalid={invalid || undefined}
-        aria-describedby={invalid ? 'cut-hex-error' : undefined}
-        onChange={(e) => {
-          setText(e.target.value);
-          if (invalid && isHexColor(e.target.value.trim())) setInvalid(false);
-        }}
-        onBlur={confirm}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') confirm();
-          if (e.key === 'Escape' && (invalid || text !== color.toUpperCase())) {
-            e.stopPropagation();
-            setText(color.toUpperCase());
-            setInvalid(false);
-          }
-        }}
-      />
-      <p id="cut-hex-error" className="field-error" hidden={!invalid}>
-        {t('cuts.hexInvalid')}
-      </p>
-    </>
-  );
-}
 
 export function CutsSection() {
   const cuts = useDocument((s) => s.cuts);
@@ -203,19 +155,16 @@ export function CutsSection() {
               }))}
             />
             {choice === 'custom' && (
-              <div className="color-row">
-                <input
-                  id="cut-color"
-                  type="color"
-                  value={cuts.color}
-                  aria-label={t('cuts.picker')}
-                  data-tip={t('cuts.picker')}
-                  disabled={busy}
-                  onChange={(e) => setCuts({ color: e.target.value.toLowerCase() }, { key: 'cuts:color' })}
-                  onBlur={() => endEdit()}
-                />
-                <HexField color={cuts.color} />
-              </div>
+              <ColorField
+                id="cut-color"
+                hexId="cut-hex"
+                color={cuts.color}
+                picker={t('cuts.picker')}
+                disabled={busy}
+                onPick={(color) => setCuts({ color }, { key: 'cuts:color' })}
+                onPickEnd={endEdit}
+                onConfirm={(color) => setCuts({ color }, { final: true })}
+              />
             )}
           </div>
           <div className="field">
