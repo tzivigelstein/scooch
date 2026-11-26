@@ -1,5 +1,5 @@
-// Editing a QR code piece: its content, colors, shapes, caption and logo.
-// Loads with the QR code fields of the Item tab (it builds pictures:
+// Adding a QR code piece and editing it: its content, colors, shapes,
+// caption and logo. Loads with the first QR code (it builds pictures:
 // services/qr.ts). Each change builds another asset, like another PDF page
 // (assets never change once added), so undo goes back to the code before;
 // changes with a `key` (typing in a field, dragging in a color picker) share
@@ -7,15 +7,61 @@
 // is being built, the next change builds from what it asked for, and only the
 // last one lands on the sheet.
 
+import { COARSE_QUERY, MAX_ITEMS } from '../../config.ts';
 import { t } from '../../copy/index.ts';
+import { announce } from '../../components/feedback/announcer.ts';
+import { revealPieces } from '../../components/canvas/viewport.ts';
+import { matches } from '../../hooks/useMediaQuery.ts';
 import { FileProblem, type QrAsset } from '../../services/assets.ts';
-import { buildQr, readLogo, type QrFields } from '../../services/qr.ts';
+import { buildQr, QR_SIDE, readLogo, type QrFields } from '../../services/qr.ts';
 import { addAsset, findAsset } from '../assets.ts';
 import { getDocument, patchItem } from '../document.ts';
+import { flushUi } from '../flush.ts';
 import { commit, releaseUnusedAssets } from '../history.ts';
-import { findItem } from '../selectors.ts';
-import { settle } from './layout.ts';
+import { findItem, sheetIndex } from '../selectors.ts';
+import { isCollapsible, openDrawer } from './drawers.ts';
+import { setBusy } from './files.ts';
+import { placeNew, settle } from './layout.ts';
 import { say } from './notify.ts';
+
+/** A new QR code: no content yet (the list says so), black on white, square. */
+const NEW_QR: QrFields = { text: '', color: '#000000', background: '#ffffff', dots: 'square', eyes: 'square', caption: '', logo: null };
+
+/** The piece whose content field takes the focus when its fields show (QrFields.tsx), once. */
+let focusContent: number | null = null;
+export const takeContentFocus = (id: number) => {
+  const take = focusContent === id;
+  if (take) focusContent = null;
+  return take;
+};
+
+/**
+ * Adds a QR code to the current sheet, in a free spot, selected and in view,
+ * as files are added. Its content is what comes next: its fields show (on a
+ * narrow screen, in the properties panel, opened) and its content field takes
+ * the focus, except with a finger (the on-screen keyboard would cover them).
+ */
+export async function addQr() {
+  const { busy, items } = getDocument();
+  if (busy) return;
+  if (items.length >= MAX_ITEMS) return say(t('qr.full', { max: MAX_ITEMS }), { warn: true });
+  setBusy(true);
+  let id: number;
+  try {
+    // Added while busy: the step's cleanup leaves it alone until it is placed.
+    const key = addAsset(await buildQr(NEW_QR, QR_SIDE));
+    commit();
+    placeNew([key]);
+    id = getDocument().selection[0];
+  } finally {
+    setBusy(false);
+  }
+  flushUi();
+  revealPieces([id], id);
+  announce(t('qr.added', { i: sheetIndex(findItem(id)!.sheet) + 1 }));
+  focusContent = matches(COARSE_QUERY) ? null : id;
+  if (isCollapsible('props')) openDrawer('props');
+}
 
 const fieldsOf = ({ text, color, background, dots, eyes, caption, logo }: QrAsset): QrFields => ({ text, color, background, dots, eyes, caption, logo });
 

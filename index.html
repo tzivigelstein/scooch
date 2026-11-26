@@ -230,6 +230,11 @@
           border: 1.5px dashed var(--line-strong);
           border-radius: 0.625rem;
         }
+        /* «Agregar código QR», under the drop zone. */
+        .boot-pane > .boot-drop + .boot-drop {
+          height: 2.3rem;
+          margin-top: -0.25rem;
+        }
         .boot-pane > .boot-row {
           height: 3rem;
           margin: 0 0.5rem;
@@ -427,6 +432,10 @@
           .boot-dock {
             display: block;
           }
+          /* No «Agregar código QR» in the top bar of a narrow screen. */
+          .boot-qr {
+            display: none;
+          }
         }
         /* The dark theme the script above chose. :where() keeps these as weak as
            the rules above, which they follow; the layer keeps them weaker than
@@ -489,11 +498,11 @@
         <div class="boot-bar" aria-hidden="true">
           <i class="boot-brand"></i>
           <span><i class="boot-txt"></i><i></i></span>
-          <span><i class="boot-btn"></i><i class="boot-btn boot-wide"></i><i></i><i></i></span>
+          <span><i class="boot-btn"></i><i class="boot-qr"></i><i class="boot-btn boot-wide"></i><i></i><i></i></span>
           <span class="boot-end"><i class="boot-btn boot-pal"></i><i></i><i></i><i></i><i class="boot-btn"></i></span>
         </div>
         <div class="boot-left" aria-hidden="true">
-          <div class="boot-pane"><i class="boot-txt"></i><i class="boot-drop"></i><i class="boot-row"></i><i class="boot-row"></i><i class="boot-row"></i></div>
+          <div class="boot-pane"><i class="boot-txt"></i><i class="boot-drop"></i><i class="boot-drop"></i><i class="boot-row"></i><i class="boot-row"></i><i class="boot-row"></i></div>
         </div>
         <div class="boot-stage">
           <div class="boot-sheet"><p class="boot-about">{{app.description}}</p></div>

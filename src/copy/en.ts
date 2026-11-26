@@ -367,6 +367,9 @@ const en: Catalogue = {
   },
 
   qr: {
+    add: 'Add QR code',
+    added: 'Added a QR code to sheet {i}',
+    full: 'There are already {max} items, the most there can be. Remove one to add another.',
     name: 'QR code',
     noCrop: 'A QR code can’t be cropped',
     text: 'Content',
@@ -863,6 +866,7 @@ const en: Catalogue = {
     },
     aliases: {
       add: 'upload, import, open, file, image, photo, picture, pdf',
+      addQr: 'qr, link, url, code',
       arrange: 'organize, sort, auto arrange, pack, layout',
       undo: 'revert, back',
       redo: 'repeat, forward',

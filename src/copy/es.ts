@@ -404,6 +404,11 @@ const es = {
 
   // QR code pieces
   qr: {
+    // The buttons of the top bar and the «Piezas» panel, and its command
+    add: 'Agregar código QR',
+    // Screen readers only, once added ({i}: the sheet's number)
+    added: 'Se agregó un código QR a la hoja {i}',
+    full: 'Ya hay {max} piezas, el máximo. Quita alguna para agregar otra.',
     // Its name in the lists and labels while it has no content (then, its content)
     name: 'Código QR',
     // Why «Recortar» doesn't apply to it
@@ -964,6 +969,7 @@ const es = {
     // what someone may type instead of the name (also terms the app avoids)
     aliases: {
       add: 'subir, importar, abrir, archivo, imagen, foto, pdf',
+      addQr: 'qr, enlace, link, url, código',
       arrange: 'organizar, ordenar, autoacomodar, empaquetar',
       undo: 'revertir, atrás',
       redo: 'repetir, adelante',

@@ -14,7 +14,7 @@ import type { QrAsset } from '../../services/assets.ts';
 import { getAsset } from '../../state/assets.ts';
 import { useDocument, type Piece } from '../../state/document.ts';
 import { endEdit } from '../../state/history.ts';
-import { chooseLogo, editQr } from '../../state/actions/qr.ts';
+import { chooseLogo, editQr, takeContentFocus } from '../../state/actions/qr.ts';
 import { Button } from '../ui/Button.tsx';
 import { ColorField } from '../ui/ColorField.tsx';
 import { Segmented } from '../ui/Segmented.tsx';
@@ -57,9 +57,41 @@ function TextBox({ id, value, multiline = false, maxLength, fit = (text) => text
   return multiline ? <textarea className="qr-text" rows={3} {...props} /> : <input type="text" {...props} />;
 }
 
+// Each shape drawn small over its name, as the cut lines' modes: three dots
+// of the code joined (or not) as that shape joins them, and an eye.
+const GLYPHS: Record<'dots' | 'eyes', Partial<Record<QrDots, string>>> = {
+  dots: {
+    square: 'M2 2h12v5H7v7H2z',
+    rounded: 'M4.5 2h7a2.5 2.5 0 0 1 0 5H7v4.5a2.5 2.5 0 0 1-5 0v-7A2.5 2.5 0 0 1 4.5 2z',
+    circle: 'M2 4.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0zM9 4.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0zM2 11.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0z',
+  },
+  eyes: {
+    square: 'M2 2h12v12H2zM4 4v8h8V4zM6 6h4v4H6z',
+    rounded: 'M6 2h4a4 4 0 0 1 4 4v4a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V6a4 4 0 0 1 4-4zM6 4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM7.5 6h1A1.5 1.5 0 0 1 10 7.5v1A1.5 1.5 0 0 1 8.5 10h-1A1.5 1.5 0 0 1 6 8.5v-1A1.5 1.5 0 0 1 7.5 6z',
+  },
+};
+
+function shapeOption<T extends QrDots>(part: 'dots' | 'eyes', value: T) {
+  return {
+    value,
+    label: (
+      <span>
+        <svg className="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d={GLYPHS[part][value]} fill="currentColor" fillRule="evenodd" />
+        </svg>
+        {t(`qr.shapes.${value}`)}
+      </span>
+    ),
+  };
+}
+
 function QrForm({ item, qr }: { item: Piece; qr: QrAsset }) {
   const file = useRef<HTMLInputElement>(null);
   const id = item.id;
+  // Just added: what comes next is its content.
+  useEffect(() => {
+    if (takeContentFocus(id)) document.getElementById('qr-text')?.focus();
+  }, [id]);
   const keyed = (field: string) => ({ key: `qr-${field}:${id}` });
   return (
     <div id="qr-fields" className="qr-fields">
@@ -111,30 +143,32 @@ function QrForm({ item, qr }: { item: Piece; qr: QrAsset }) {
       </fieldset>
       <fieldset className="field qr-group">
         <legend className="qr-group-title">{t('qr.shape')}</legend>
-        <div className="tools-head" role="group" aria-labelledby="qr-dots-label">
+        <div className="qr-color" role="group" aria-labelledby="qr-dots-label">
           <span id="qr-dots-label" className="field-label">
             {t('qr.dots')}
           </span>
           <Segmented<QrDots>
             id="qr-dots"
+            className="segmented stacked"
             name="qr-dots"
             labelledBy="qr-dots-label"
             value={qr.dots}
             onChange={(dots) => void editQr(id, { dots })}
-            options={QR_DOTS.map((value) => ({ value, label: <span>{t(`qr.shapes.${value}`)}</span> }))}
+            options={QR_DOTS.map((value) => shapeOption('dots', value))}
           />
         </div>
-        <div className="tools-head" role="group" aria-labelledby="qr-eyes-label">
+        <div className="qr-color" role="group" aria-labelledby="qr-eyes-label">
           <span id="qr-eyes-label" className="field-label">
             {t('qr.eyes')}
           </span>
           <Segmented<QrEyes>
             id="qr-eyes"
+            className="segmented stacked"
             name="qr-eyes"
             labelledBy="qr-eyes-label"
             value={qr.eyes}
             onChange={(eyes) => void editQr(id, { eyes })}
-            options={QR_EYES.map((value) => ({ value, label: <span>{t(`qr.shapes.${value}`)}</span> }))}
+            options={QR_EYES.map((value) => shapeOption('eyes', value))}
           />
         </div>
       </fieldset>

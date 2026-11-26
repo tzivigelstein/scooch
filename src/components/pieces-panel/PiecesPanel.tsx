@@ -1,6 +1,7 @@
-// The «Piezas» panel: a zone to add files, the list and the total.
+// The «Piezas» panel: a zone to add files and a button to add a QR code, the
+// list and the total.
 
-import { Upload, X } from 'lucide-react';
+import { QrCode, Upload, X } from 'lucide-react';
 import type { FocusEvent } from 'react';
 import { t } from '../../copy/index.ts';
 import { useMediaQuery } from '../../hooks/useMediaQuery.ts';
@@ -8,7 +9,7 @@ import { LEFT_DRAWER_QUERY } from '../../config.ts';
 import { useDocument } from '../../state/document.ts';
 import { useView } from '../../state/view.ts';
 import { closeDrawer, DRAWER_TRIGGERS } from '../../state/actions/drawers.ts';
-import { openFiles } from '../../state/actions/files.ts';
+import { addQrCode, openFiles } from '../../state/actions/files.ts';
 import { clearAll } from '../../state/actions/sheets.ts';
 import { IconButton } from '../ui/Button.tsx';
 import { Icon } from '../ui/Icon.tsx';
@@ -45,6 +46,10 @@ export function PiecesPanel() {
           <span className="addzone-title">{t('pieces.addTitle')}</span>
           <span className="addzone-sub">{t('pieces.addSub')}</span>
         </span>
+      </button>
+      <button type="button" id="add-qr-zone" className="addzone add-qr-zone" onClick={addQrCode}>
+        <Icon icon={QrCode} />
+        <span className="addzone-title">{t('qr.add')}</span>
       </button>
       <div id="list-empty" className="panel-empty" hidden={n > 0}>
         <p>{t('pieces.empty')}</p>

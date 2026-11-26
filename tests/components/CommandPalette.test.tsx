@@ -66,7 +66,7 @@ describe('the combobox and its listbox', () => {
     expect(groups.map((g) => plain(document.getElementById(g.getAttribute('aria-labelledby')!)?.textContent))).toEqual(['General', 'Proyectos', 'Selección', 'Hojas', 'Vista', 'Preferencias']);
     expect(options()).toHaveLength(COMMAND_IDS.length);
     expect(new Set(names()).size).toBe(COMMAND_IDS.length);
-    expect(names().slice(0, 3)).toEqual(['Agregar imágenes o PDF', 'Acomodar las piezas sin superponerlas', 'Deshacer']);
+    expect(names().slice(0, 3)).toEqual(['Agregar imágenes o PDF', 'Agregar código QR', 'Acomodar las piezas sin superponerlas']);
   });
 
   test('the recent commands come first, the newest first, and aren’t repeated in their sections; an id no longer known is left out', () => {

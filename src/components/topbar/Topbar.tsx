@@ -1,14 +1,14 @@
-// The top bar: brand, open project, add, arrange, undo and redo, the command
-// palette, preferences, shortcuts, download and print.
+// The top bar: brand, open project, add, add a QR code, arrange, undo and
+// redo, the command palette, preferences, shortcuts, download and print.
 
-import { Download, ImagePlus, Keyboard, LayoutDashboard, Printer, Redo2, Search, Settings, Undo2 } from 'lucide-react';
+import { Download, ImagePlus, Keyboard, LayoutDashboard, Printer, QrCode, Redo2, Search, Settings, Undo2 } from 'lucide-react';
 import { useRef } from 'react';
 import { keyLabel, t } from '../../copy/index.ts';
 import { SHORTCUTS } from '../../hooks/shortcuts.ts';
 import { useDocument } from '../../state/document.ts';
 import { openPalette, openPrefs, openShortcuts } from '../../state/actions/dialogs.ts';
 import { arrangeAll, redoLast, undoLast } from '../../state/actions/edit.ts';
-import { loadFiles, openFiles } from '../../state/actions/files.ts';
+import { addQrCode, loadFiles, openFiles } from '../../state/actions/files.ts';
 import { exportPdf, printPdf } from '../../state/actions/output.ts';
 import { control } from '../../state/tips.ts';
 import { Button, IconButton } from '../ui/Button.tsx';
@@ -59,6 +59,8 @@ export function Topbar() {
         <Button id="add" className="btn ghost" icon={ImagePlus} tip={t('bar.addTip')} shortcut="add" onClick={openFiles}>
           <span className="btn-label">{t('bar.add')}</span>
         </Button>
+        {/* Not on narrow screens, where the bar has no room: there the «Piezas» panel and the palette have it. */}
+        <IconButton id="add-qr" className="tool add-qr" icon={QrCode} label={t('qr.add')} tip={t('qr.add')} onClick={addQrCode} />
         <Button id="arrange" className="btn accent" icon={LayoutDashboard} tip={t('bar.arrangeTip')} shortcut="arrange" disabled={off('arrange', busy || empty)} onClick={control('arrange', arrangeAll)}>
           <span className="btn-label">{t('bar.arrange')}</span>
         </Button>

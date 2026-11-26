@@ -127,6 +127,11 @@
   }
 
   @media (max-width: 799.98px) {
+    /* No room for it in two rows of a phone's width. */
+    .add-qr {
+      display: none;
+    }
+
     /* Two rows: the brand and the project on top; the actions below. */
     .topbar {
       display: grid;

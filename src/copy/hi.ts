@@ -368,6 +368,9 @@ const hi: Catalogue = {
   },
 
   qr: {
+    add: 'QR कोड जोड़ें',
+    added: 'शीट {i} में एक QR कोड जोड़ा गया',
+    full: 'पहले से {max} आइटम हैं, जो अधिकतम है। दूसरा जोड़ने के लिए कोई हटाएं।',
     name: 'QR कोड',
     noCrop: 'QR कोड क्रॉप नहीं होता',
     text: 'सामग्री',
@@ -864,6 +867,7 @@ const hi: Catalogue = {
     },
     aliases: {
       add: 'अपलोड, इंपोर्ट, खोलें, फ़ाइल, इमेज, फ़ोटो, तस्वीर, pdf, add, upload',
+      addQr: 'qr, लिंक, url, कोड, code',
       arrange: 'जमाएं, सजाएं, लगाएं, लेआउट, arrange',
       undo: 'वापस, पूर्ववत, undo',
       redo: 'दोबारा, आगे, redo',

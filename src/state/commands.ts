@@ -44,6 +44,7 @@ import {
   Pencil,
   Plus,
   Printer,
+  QrCode,
   RectangleHorizontal,
   Redo2,
   RotateCcw,
@@ -87,7 +88,7 @@ import { used, type Route } from './tips.ts';
 import { copySelection, cutSelection, hasClip, pastePieces } from './actions/clipboard.ts';
 import { openPrefs, openProjects, openShortcuts } from './actions/dialogs.ts';
 import { arrangeAll, redoLast, undoLast } from './actions/edit.ts';
-import { openFiles } from './actions/files.ts';
+import { addQrCode, openFiles } from './actions/files.ts';
 import { exportPdf, printPdf } from './actions/output.ts';
 import {
   actualSize,
@@ -281,6 +282,7 @@ function paperChoices(): Choice[] {
 const DEFINITIONS = {
   // General
   add: { section: 'general', label: 'bar.addTip', icon: ImagePlus, aliases: 'commands.aliases.add', keys: ['add'], run: openFiles },
+  addQr: { section: 'general', label: 'qr.add', icon: QrCode, aliases: 'commands.aliases.addQr', run: addQrCode },
   arrange: { section: 'general', label: 'bar.arrangeTip', icon: LayoutDashboard, aliases: 'commands.aliases.arrange', keys: ['arrange'], disabled: noPieces, run: arrangeAll },
   undo: {
     section: 'general',

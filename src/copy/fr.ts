@@ -368,6 +368,9 @@ const fr: Catalogue = {
   },
 
   qr: {
+    add: 'Ajouter un code QR',
+    added: 'Un code QR a été ajouté à la feuille {i}',
+    full: 'Il y a déjà {max} éléments, le maximum. Retirez-en un pour en ajouter un autre.',
     name: 'Code QR',
     noCrop: 'Un code QR ne se recadre pas',
     text: 'Contenu',
@@ -864,6 +867,7 @@ const fr: Catalogue = {
     },
     aliases: {
       add: 'importer, téléverser, ouvrir, fichier, image, photo, pdf',
+      addQr: 'qr, lien, url, code',
       arrange: 'disposer, ranger, agencer, auto, imposition',
       undo: 'revenir, arrière, défaire',
       redo: 'refaire, avant, répéter',

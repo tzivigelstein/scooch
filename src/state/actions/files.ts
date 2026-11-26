@@ -66,6 +66,9 @@ function showBusy() {
   }, BUSY_MIN_SHOWN);
 }
 
+/** Adds a QR code (actions/qr.ts, which loads with the first one). */
+export const addQrCode = () => void import('./qr.ts').then((qr) => qr.addQr());
+
 /** Opens the browser's file picker. */
 export function openFiles() {
   if (getDocument().busy) return;

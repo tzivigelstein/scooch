@@ -367,6 +367,9 @@ const zhHans: Catalogue = {
   },
 
   qr: {
+    add: '添加二维码',
+    added: '已向第{i}张纸添加二维码',
+    full: '已有{max}个素材，达到上限。移除一个才能再添加。',
     name: '二维码',
     noCrop: '二维码不能裁剪',
     text: '内容',
@@ -834,6 +837,7 @@ const zhHans: Catalogue = {
     },
     aliases: {
       add: '上传, 导入, 打开, 文件, 图片, 照片, pdf',
+      addQr: 'qr, 链接, 网址, 码',
       arrange: '排列, 整理, 自动排版, 拼版, 布局',
       undo: '返回, 后退',
       redo: '恢复, 前进',

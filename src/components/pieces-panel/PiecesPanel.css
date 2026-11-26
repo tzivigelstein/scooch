@@ -27,9 +27,15 @@
   }
 
   .addzone:hover,
-  .workspace.is-drop-target .addzone {
+  .workspace.is-drop-target #addzone {
     background: var(--accent-soft);
     border-color: var(--accent);
+  }
+
+  /* A QR code: a button that adds, not a place to drop files (it doesn't light up for them). */
+  .add-qr-zone {
+    margin-top: -0.25rem;
+    padding-block: 0.5rem;
   }
 
   .addzone-text {
