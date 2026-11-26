@@ -17,6 +17,7 @@ import { endEdit } from '../../state/history.ts';
 import { chooseLogo, editQr, takeContentFocus } from '../../state/actions/qr.ts';
 import { Button } from '../ui/Button.tsx';
 import { ColorField } from '../ui/ColorField.tsx';
+import { focusShown } from '../ui/focusShown.ts';
 import { Segmented } from '../ui/Segmented.tsx';
 import { Switch } from '../ui/Switch.tsx';
 import './QrFields.css';
@@ -88,9 +89,10 @@ function shapeOption<T extends QrDots>(part: 'dots' | 'eyes', value: T) {
 function QrForm({ item, qr }: { item: Piece; qr: QrAsset }) {
   const file = useRef<HTMLInputElement>(null);
   const id = item.id;
-  // Just added: what comes next is its content.
+  // Just added: what comes next is its content. (Its stylesheet may still be loading: see focusShown.)
   useEffect(() => {
-    if (takeContentFocus(id)) document.getElementById('qr-text')?.focus();
+    const field = document.getElementById('qr-text');
+    if (field && takeContentFocus(id)) focusShown(field);
   }, [id]);
   const keyed = (field: string) => ({ key: `qr-${field}:${id}` });
   return (
